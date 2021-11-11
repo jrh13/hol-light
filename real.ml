@@ -397,12 +397,6 @@ let REAL_SUB_RDISTRIB = prove
  (`!x y z. (x - y) * z = x * z - y * z`,
   REAL_ARITH_TAC);;
 
-let REAL_OF_NUM_MOD = prove
- (`!m n. &(m MOD n):real = &m - &(m DIV n) * &n`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_EQ_SUB_LADD] THEN
-  REWRITE_TAC[REAL_OF_NUM_CLAUSES] THEN
-  MESON_TAC[DIVISION_SIMP; ADD_SYM]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Theorems about "abs".                                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -1376,6 +1370,21 @@ let REAL_POW_EQ_EQ = prove
 let REAL_EVENPOW_ABS = prove
  (`!x n. EVEN n ==> abs x pow n = x pow n`,
   SIMP_TAC[REAL_POW_EQ_EQ; REAL_ABS_ABS]);;
+
+let REAL_OF_NUM_MOD = prove
+ (`!m n. &(m MOD n):real = &m - &(m DIV n) * &n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_EQ_SUB_LADD] THEN
+  REWRITE_TAC[REAL_OF_NUM_CLAUSES] THEN
+  MESON_TAC[DIVISION_SIMP; ADD_SYM]);;
+
+let REAL_OF_NUM_DIV = prove
+ (`!m n. &(m DIV n):real = &m / &n - &(m MOD n) / &n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_REWRITE_TAC[DIV_ZERO; real_div; REAL_INV_0; REAL_MUL_RZERO;
+                    REAL_SUB_REFL];
+    MATCH_MP_TAC REAL_EQ_LCANCEL_IMP THEN EXISTS_TAC `&n:real` THEN
+    ASM_SIMP_TAC[REAL_SUB_LDISTRIB; REAL_DIV_LMUL; REAL_OF_NUM_EQ] THEN
+    REWRITE_TAC[REAL_OF_NUM_MOD] THEN REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bounds on convex combinations.                                            *)

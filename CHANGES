@@ -8,6 +8,195 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 10th Nov 2021               Library/words.ml
+
+Added a new construct "bits_of_num" analogous to "bits_of_word" but
+for actual numbers not words. The suite of theorems about it helps
+with some kinds of "effectively bitwise" reasoning on natural numbers
+such as pushing division and modulus w.r.t. powers of 2 through sums
+based on the intuition that the bit patterns are not overlapping
+(DIV_MOD_DISJOINT_BITS, DISJOINT_BITS_CLAUSES)
+
+  bits_of_num =
+    |- !n. bits_of_num n = {i | numbit i n}
+
+  BITSUM_BOUND =
+    |- !s k.
+           FINITE s
+           ==> (nsum s (\i. 2 EXP i) < 2 EXP k <=> s SUBSET {i | i < k})
+
+  BITSUM_DIVIDES =
+    |- !s k.
+           FINITE s
+           ==> (2 EXP k divides nsum s (\i. 2 EXP i) <=>
+                DISJOINT {i | i < k} s)
+
+  BITS_OF_NUM_0 =
+    |- bits_of_num 0 = {}
+
+  BITS_OF_NUM_1 =
+    |- bits_of_num 1 = {0}
+
+  BITS_OF_NUM_ADD =
+    |- !m n.
+           DISJOINT (bits_of_num m) (bits_of_num n)
+           ==> bits_of_num(m + n) = bits_of_num m UNION bits_of_num n
+
+  BITS_OF_NUM_DISJOINT_NUMSEG_EQ =
+    |- !n k. DISJOINT {i | i < k} (bits_of_num n) <=> 2 EXP k divides n
+
+  BITS_OF_NUM_DIV =
+    |- !n k. bits_of_num(n DIV 2 EXP k) = {i | k + i IN bits_of_num n}
+
+  BITS_OF_NUM_EQ =
+    |- !m n. bits_of_num m = bits_of_num n <=> m = n
+
+  BITS_OF_NUM_GALOIS =
+    |- !n s. bits_of_num n = s <=> FINITE s /\ nsum s (\i. 2 EXP i) = n
+
+  BITS_OF_NUM_MOD =
+    |- !n k. bits_of_num(n MOD 2 EXP k) = {i | i IN bits_of_num n /\ i < k}
+
+  BITS_OF_NUM_MUL =
+    |- (!n k. bits_of_num(2 EXP k * n) = IMAGE (\i. k + i) (bits_of_num n)) /\
+       (!n k. bits_of_num(n * 2 EXP k) = IMAGE (\i. k + i) (bits_of_num n))
+
+  BITS_OF_NUM_MUL_ALT =
+    |- (!n k.
+            bits_of_num(2 EXP k * n) =
+            {i | k <= i /\ i - k IN bits_of_num n}) /\
+       (!n k.
+            bits_of_num(n * 2 EXP k) =
+            {i | k <= i /\ i - k IN bits_of_num n})
+
+  BITS_OF_NUM_NSUM =
+    |- !s. FINITE s ==> bits_of_num(nsum s (\i. 2 EXP i)) = s
+
+  BITS_OF_NUM_POW2 =
+    |- !k. bits_of_num(2 EXP k) = {k}
+
+  BITS_OF_NUM_SUBSET_NUMSEG_EQ =
+    |- !n k. bits_of_num n SUBSET {i | i < k} <=> n < 2 EXP k
+
+  BITS_OF_NUM_SUBSET_NUMSEG_LT =
+    |- !n. bits_of_num n SUBSET {i | i < n}
+
+  BITS_OF_NUM_VAL =
+    |- !x. bits_of_num(val x) = bits_of_word x
+
+  BITS_OF_WORD_WORD =
+    |- !n. bits_of_word (word n) = {i | i < dimindex (:N)} INTER bits_of_num n
+
+  DISJOINT_BITS_CLAUSES =
+    |- (!k h l.
+            l < 2 EXP k
+            ==> DISJOINT (bits_of_num(2 EXP k * h)) (bits_of_num l)) /\
+       (!k h l.
+            l < 2 EXP k
+            ==> DISJOINT (bits_of_num(h * 2 EXP k)) (bits_of_num l)) /\
+       (!k h l.
+            l < 2 EXP k
+            ==> DISJOINT (bits_of_num l) (bits_of_num(2 EXP k * h))) /\
+       (!k h l.
+            l < 2 EXP k
+            ==> DISJOINT (bits_of_num l) (bits_of_num(h * 2 EXP k))) /\
+       (!m n k.
+            DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(2 EXP k * m))
+                         (bits_of_num(2 EXP k * n))) /\
+       (!m n k.
+            DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(m * 2 EXP k))
+                         (bits_of_num(n * 2 EXP k))) /\
+       (!m n k.
+            DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(m DIV 2 EXP k))
+                         (bits_of_num(n DIV 2 EXP k))) /\
+       (!m n k.
+            DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(m MOD 2 EXP k))
+                         (bits_of_num(n MOD 2 EXP k)))
+
+  DISJOINT_BITS_HILO =
+    |- !k h l.
+           l < 2 EXP k ==> DISJOINT (bits_of_num(2 EXP k * h)) (bits_of_num l)
+
+  DIV_MOD_DISJOINT_BITS =
+    |- (!m n.
+            DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> (m + n) DIV 2 EXP k = m DIV 2 EXP k + n DIV 2 EXP k) /\
+       (!m n.
+            DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> (m + n) MOD 2 EXP k = m MOD 2 EXP k + n MOD 2 EXP k)
+
+  FINITE_BITS_OF_NUM =
+    |- !n. FINITE (bits_of_num n)
+
+  IN_BITS_OF_NUM =
+    |- !n i. i IN bits_of_num n <=> ODD (n DIV 2 EXP i)
+
+  NSUM_BITS_DIV =
+    |- !s k.
+           FINITE s
+           ==> nsum s (\i. 2 EXP i) DIV 2 EXP k =
+               nsum {i | i IN s /\ k <= i} (\i. 2 EXP (i - k))
+
+  NSUM_BITS_EQ =
+    |- !s t.
+           FINITE s /\ FINITE t
+           ==> (nsum s (\i. 2 EXP i) = nsum t (\i. 2 EXP i) <=> s = t)
+
+  NSUM_BITS_MOD =
+    |- !s k.
+           FINITE s
+           ==> nsum s (\i. 2 EXP i) MOD 2 EXP k =
+               nsum {i | i IN s /\ i < k} (\i. 2 EXP i)
+
+  NSUM_BITS_OF_NUM =
+    |- !n. nsum (bits_of_num n) (\i. 2 EXP i) = n
+
+Tue  9th Nov 2021               int.ml, real.ml, Library/words.ml
+
+Added a few miscelleneous lemmas:
+
+  IVAL_WORD_CONG =
+   |- !n. (ival (word n) == &n) (mod (&2 pow dimindex(:N)))
+
+  MULT_DIV =
+    |- (!m n p. p divides m ==> (m * n) DIV p = m DIV p * n) /\
+       (!m n p. p divides n ==> (m * n) DIV p = m * n DIV p)
+
+  REAL_OF_NUM_DIV =
+   |- !m n. &(m DIV n) = &m / &n - &(m MOD n) / &n
+
+  VAL_WORD_AND_NOT_MASK_WORD =
+    |- !x k.
+           val (word_and x (word_not (word(2 EXP k - 1)))) =
+           2 EXP k * val x DIV 2 EXP k
+
+  WORD_AND_MASK_WORDS =
+    |- !i j.
+           word_and (word(2 EXP j - 1)) (word(2 EXP k - 1)) =
+           word(2 EXP MIN j k - 1)
+
+  WORD_AND_NOT_MASK_WORD =
+    |- (!x k.
+            word_and x (word_not (word(2 EXP k - 1))) =
+            word(2 EXP k * val x DIV 2 EXP k)) /\
+       (!x k.
+            word_and (word_not (word(2 EXP k - 1))) x =
+            word(2 EXP k * val x DIV 2 EXP k))
+
+  WORD_OR_MASK_WORDS =
+    |- !i j.
+           word_or (word(2 EXP j - 1)) (word(2 EXP k - 1)) =
+           word(2 EXP MAX j k - 1)
+
+  WORD_USHR_MASK_WORD =
+    |- !k i.
+           k <= dimindex(:N)
+           ==> word_ushr (word(2 EXP k - 1)) i = word(2 EXP (k - i) - 1)
+
 Fri  5th Nov 2021       Library/words.ml
 
 Added more word lemmas, mainly connected with selecting trailing bits and

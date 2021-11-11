@@ -960,6 +960,12 @@ let VAL_IWORD_CONG = prove
   REWRITE_TAC[GSYM(REWRITE_RULE[GSYM INT_REM_EQ] IVAL_VAL_CONG)] THEN
   REWRITE_TAC[INT_REM_EQ; IVAL_IWORD_CONG]);;
 
+let IVAL_WORD_CONG = prove
+ (`!n. (ival(word n:N word) == &n) (mod (&2 pow dimindex(:N)))`,
+  MESON_TAC[IVAL_VAL_CONG; VAL_WORD_CONG; INT_OF_NUM_POW; num_congruent;
+            INTEGER_RULE `(x:int == y) (mod n) /\ (y == z) (mod n)
+                          ==> (x == z) (mod n)`]);;
+
 let IVAL_IWORD = prove
  (`!n. --(&2 pow (dimindex (:N) - 1)) <= n /\ n < &2 pow (dimindex (:N) - 1)
        ==> ival(iword n:N word) = n`,
@@ -1110,6 +1116,193 @@ let BIT_PRED, NUMBIT_CONV =
     TRANS (INST [i',i;n',n] thN) (go (i',n'))
   | Comb(Comb(Const("numbit",_),i'),n') -> go (i',n')
   | _ -> failwith "NUMBIT_CONV";;
+
+let bits_of_num = new_definition
+ `bits_of_num n = {i | numbit i n}`;;
+
+let IN_BITS_OF_NUM = prove
+ (`!n i. i IN bits_of_num n <=> ODD(n DIV 2 EXP i)`,
+  REWRITE_TAC[bits_of_num; numbit; IN_ELIM_THM]);;
+
+let BITS_OF_NUM_SUBSET_NUMSEG_LT = prove
+ (`!n. bits_of_num n SUBSET {i | i < n}`,
+  REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_BITS_OF_NUM] THEN
+  MESON_TAC[DIV_LT; EVEN; LT_POW2_REFL; LET_TRANS; NOT_LE; NOT_EVEN]);;
+
+let FINITE_BITS_OF_NUM = prove
+ (`!n. FINITE(bits_of_num n)`,
+  MESON_TAC[BITS_OF_NUM_SUBSET_NUMSEG_LT; FINITE_NUMSEG_LT; FINITE_SUBSET]);;
+
+let NSUM_BITS_OF_NUM = prove
+ (`!n. nsum (bits_of_num n) (\i. 2 EXP i) = n`,
+  GEN_TAC THEN MP_TAC(SPECL [`2`; `n:num`; `n:num`] DIGITSUM_WORKS_GEN) THEN
+  REWRITE_TAC[MOD_2_CASES; COND_RAND; MULT_CLAUSES] THEN
+  REWRITE_TAC[GSYM NOT_ODD; COND_SWAP; GSYM NSUM_RESTRICT_SET] THEN
+  SIMP_TAC[MOD_LT; LT_POW2_REFL] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  MP_TAC(SPEC `n:num` BITS_OF_NUM_SUBSET_NUMSEG_LT) THEN
+  REWRITE_TAC[bits_of_num; numbit] THEN SET_TAC[]);;
+
+let BITS_OF_NUM_NSUM = prove
+ (`!s. FINITE s ==> bits_of_num (nsum s (\i. 2 EXP i)) = s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[EXTENSION; IN_BITS_OF_NUM; ODD_MOD] THEN
+  X_GEN_TAC `k:num` THEN MP_TAC(SPECL
+    [`2`; `\i:num. 1`; `s:num->bool`; `k:num`] DIGITSUM_DIV_MOD) THEN
+  ASM_SIMP_TAC[ARITH_RULE `1 < 2`; MULT_CLAUSES] THEN ARITH_TAC);;
+
+let BITS_OF_NUM_EQ = prove
+ (`!m n. bits_of_num m = bits_of_num n <=> m = n`,
+  MESON_TAC[NSUM_BITS_OF_NUM]);;
+
+let BITS_OF_NUM_GALOIS = prove
+ (`!n s. bits_of_num n = s <=> FINITE s /\ nsum s (\i. 2 EXP i) = n`,
+  MESON_TAC[FINITE_BITS_OF_NUM; BITS_OF_NUM_NSUM; NSUM_BITS_OF_NUM]);;
+
+let NSUM_BITS_DIV = prove
+ (`!s k. FINITE s
+         ==> nsum s (\i. 2 EXP i) DIV 2 EXP k =
+             nsum {i | i IN s /\ k <= i} (\i. 2 EXP (i - k))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`2`; `\i:num. 1`; `s:num->bool`; `k:num`] DIGITSUM_DIV) THEN
+  ASM_REWRITE_TAC[ARITH_RULE `1 < 2`; MULT_CLAUSES]);;
+
+let NSUM_BITS_MOD = prove
+ (`!s k. FINITE s
+         ==> nsum s (\i. 2 EXP i) MOD 2 EXP k =
+             nsum {i | i IN s /\ i < k} (\i. 2 EXP i)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`2`; `\i:num. 1`; `s:num->bool`; `k:num`] DIGITSUM_MOD) THEN
+  ASM_REWRITE_TAC[ARITH_RULE `1 < 2`; MULT_CLAUSES]);;
+
+let NSUM_BITS_EQ = prove
+ (`!s t. FINITE s /\ FINITE t
+         ==> (nsum s (\i. 2 EXP i) = nsum t (\i. 2 EXP i) <=> s = t)`,
+  MESON_TAC[BITS_OF_NUM_NSUM]);;
+
+let BITSUM_BOUND = prove
+ (`!s k. FINITE s
+         ==> (nsum s (\i. 2 EXP i) < 2 EXP k <=> s SUBSET {i | i < k})`,
+  SIMP_TAC[CONV_RULE(RAND_CONV SYM_CONV) (SPEC_ALL DIV_EQ_0); FINITE_RESTRICT;
+           EXP_EQ_0; ARITH_EQ; NSUM_BITS_DIV; NSUM_EQ_0_IFF] THEN
+  REWRITE_TAC[GSYM NOT_LE] THEN SET_TAC[]);;
+
+let BITS_OF_NUM_SUBSET_NUMSEG_EQ = prove
+ (`!n k. bits_of_num n SUBSET {i | i < k} <=> n < 2 EXP k`,
+  SIMP_TAC[GSYM BITSUM_BOUND; FINITE_BITS_OF_NUM; NSUM_BITS_OF_NUM]);;
+
+let BITSUM_DIVIDES = prove
+ (`!s k. FINITE s
+         ==> (2 EXP k divides nsum s (\i. 2 EXP i) <=>
+              DISJOINT {i | i < k} s)`,
+  SIMP_TAC[DIVIDES_DIV_MULT; NSUM_BITS_DIV; GSYM NSUM_RMUL; GSYM EXP_ADD] THEN
+  SIMP_TAC[SUB_ADD; NSUM_BITS_EQ; FINITE_RESTRICT; FINITE_NUMSEG_LT] THEN
+  REWRITE_TAC[GSYM NOT_LE] THEN SET_TAC[]);;
+
+let BITS_OF_NUM_DISJOINT_NUMSEG_EQ = prove
+ (`!n k. DISJOINT {i | i < k} (bits_of_num n) <=> 2 EXP k divides n`,
+  SIMP_TAC[GSYM BITSUM_DIVIDES; FINITE_BITS_OF_NUM; NSUM_BITS_OF_NUM]);;
+
+let BITS_OF_NUM_0 = prove
+ (`bits_of_num 0 = {}`,
+  REWRITE_TAC[IN_BITS_OF_NUM; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[DIV_0; ODD]);;
+
+let BITS_OF_NUM_POW2 = prove
+ (`!k. bits_of_num(2 EXP k) = {k}`,
+  REWRITE_TAC[IN_BITS_OF_NUM; EXTENSION; IN_ELIM_THM; IN_SING] THEN
+  REPEAT GEN_TAC THEN SIMP_TAC[DIV_EXP; ARITH_EQ] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[ODD_EXP; ARITH] THEN ASM_ARITH_TAC);;
+
+let BITS_OF_NUM_1 = prove
+ (`bits_of_num 1 = {0}`,
+  REWRITE_TAC[GSYM BITS_OF_NUM_POW2; EXP]);;
+
+let BITS_OF_NUM_DIV = prove
+ (`!n k. bits_of_num (n DIV 2 EXP k) = {i | (k + i) IN bits_of_num n}`,
+  REWRITE_TAC[bits_of_num; numbit; IN_ELIM_THM; DIV_DIV; EXP_ADD]);;
+
+let BITS_OF_NUM_MOD = prove
+ (`!n k. bits_of_num (n MOD 2 EXP k) = {i | i IN bits_of_num n /\ i < k}`,
+  SIMP_TAC[BITS_OF_NUM_GALOIS; FINITE_RESTRICT; FINITE_BITS_OF_NUM;
+           GSYM NSUM_BITS_MOD; NSUM_BITS_OF_NUM]);;
+
+let BITS_OF_NUM_MUL_ALT = prove
+ (`(!n k. bits_of_num(2 EXP k * n) = {i | k <= i /\ i - k IN bits_of_num n}) /\
+   (!n k. bits_of_num(n * 2 EXP k) = {i | k <= i /\ i - k IN bits_of_num n})`,
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [MULT_SYM] THEN
+  REWRITE_TAC[] THEN REPEAT GEN_TAC THEN MATCH_MP_TAC(SET_RULE
+   `DISJOINT {i | ~P i} s /\ (!i. P i ==> (i IN s <=> Q i))
+    ==> s = {i | P i /\ Q i}`) THEN
+  REWRITE_TAC[NOT_LE; BITS_OF_NUM_DISJOINT_NUMSEG_EQ] THEN
+  SIMP_TAC[LE_EXISTS; LEFT_IMP_EXISTS_THM; IN_BITS_OF_NUM; EXP_ADD] THEN
+  SIMP_TAC[ADD_SUB2; DIV_MULT2; EXP_EQ_0; ARITH_EQ] THEN
+  CONV_TAC NUMBER_RULE);;
+
+let BITS_OF_NUM_MUL = prove
+ (`(!n k. bits_of_num(2 EXP k * n) = IMAGE (\i. k + i) (bits_of_num n)) /\
+   (!n k. bits_of_num(n * 2 EXP k) = IMAGE (\i. k + i) (bits_of_num n))`,
+  REWRITE_TAC[BITS_OF_NUM_MUL_ALT] THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN
+  MESON_TAC[LE_EXISTS; ADD_SUB2]);;
+
+let BITS_OF_NUM_ADD = prove
+ (`!m n. DISJOINT (bits_of_num m) (bits_of_num n)
+         ==> bits_of_num(m + n) = (bits_of_num m) UNION (bits_of_num n)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[BITS_OF_NUM_GALOIS; FINITE_UNION; FINITE_BITS_OF_NUM] THEN
+  ASM_SIMP_TAC[NSUM_UNION; FINITE_BITS_OF_NUM; NSUM_BITS_OF_NUM]);;
+
+let DISJOINT_BITS_HILO = prove
+ (`!k h l. l < 2 EXP k
+           ==> DISJOINT (bits_of_num(2 EXP k * h)) (bits_of_num l)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM BITS_OF_NUM_SUBSET_NUMSEG_EQ] THEN
+  MATCH_MP_TAC(SET_RULE `DISJOINT t u ==> s SUBSET t ==> DISJOINT u s`) THEN
+  REWRITE_TAC[BITS_OF_NUM_DISJOINT_NUMSEG_EQ] THEN
+  CONV_TAC NUMBER_RULE);;
+
+let DISJOINT_BITS_CLAUSES = prove
+ (`(!k h l. l < 2 EXP k
+            ==> DISJOINT (bits_of_num(2 EXP k * h)) (bits_of_num l)) /\
+   (!k h l. l < 2 EXP k
+            ==> DISJOINT (bits_of_num(h * 2 EXP k)) (bits_of_num l)) /\
+   (!k h l. l < 2 EXP k
+            ==> DISJOINT (bits_of_num l) (bits_of_num(2 EXP k * h))) /\
+   (!k h l. l < 2 EXP k
+            ==> DISJOINT (bits_of_num l) (bits_of_num(h * 2 EXP k))) /\
+   (!m n k. DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(2 EXP k * m))
+                         (bits_of_num(2 EXP k * n))) /\
+   (!m n k. DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(m * 2 EXP k))
+                         (bits_of_num(n * 2 EXP k))) /\
+   (!m n k. DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(m DIV 2 EXP k))
+                         (bits_of_num(n DIV 2 EXP k))) /\
+   (!m n k. DISJOINT (bits_of_num m) (bits_of_num n)
+            ==> DISJOINT (bits_of_num(m MOD 2 EXP k))
+                         (bits_of_num(n MOD 2 EXP k)))`,
+  REPLICATE_TAC 3 (GEN_REWRITE_TAC I [CONJ_ASSOC]) THEN CONJ_TAC THENL
+   [MESON_TAC[DISJOINT_BITS_HILO; MULT_SYM; DISJOINT_SYM];
+    SIMP_TAC[BITS_OF_NUM_DIV; BITS_OF_NUM_MOD; BITS_OF_NUM_MUL_ALT] THEN
+    SET_TAC[]]);;
+
+let DIV_MOD_DISJOINT_BITS = prove
+ (`(!m n. DISJOINT (bits_of_num m) (bits_of_num n)
+          ==> (m + n) DIV 2 EXP k = m DIV 2 EXP k + n DIV 2 EXP k) /\
+   (!m n. DISJOINT (bits_of_num m) (bits_of_num n)
+          ==> (m + n) MOD 2 EXP k = m MOD 2 EXP k + n MOD 2 EXP k)`,
+  SIMP_TAC[GSYM BITS_OF_NUM_EQ; BITS_OF_NUM_ADD; DISJOINT_BITS_CLAUSES;
+           BITS_OF_NUM_DIV; BITS_OF_NUM_MOD] THEN
+  SET_TAC[]);;
+
+let BITS_OF_WORD_WORD = prove
+ (`!n. bits_of_word(word n:N word) =
+       {i | i < dimindex(:N)} INTER bits_of_num n`,
+  REWRITE_TAC[bits_of_num; bits_of_word; BIT_WORD; numbit] THEN SET_TAC[]);;
+
+let BITS_OF_NUM_VAL = prove
+ (`!x:N word. bits_of_num(val x) = bits_of_word(x)`,
+  REWRITE_TAC[bits_of_num; bits_of_word; NUMBIT_VAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A primitive operation for splitting numerals along powers of 2.           *)
@@ -4044,6 +4237,32 @@ let WORD_AND_MASK_WORD = prove
   MATCH_MP_TAC(ARITH_RULE `x MOD n <= x /\ x < e ==> x MOD n < e`) THEN
   REWRITE_TAC[MOD_LE; VAL_BOUND]);;
 
+let VAL_WORD_AND_NOT_MASK_WORD = prove
+ (`!(x:N word) k.
+        val(word_and x (word_not(word(2 EXP k - 1)))) =
+        2 EXP k * val x DIV 2 EXP k`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`x:N word`; `k:num`] VAL_WORD_AND_MASK_WORD) THEN
+  MATCH_MP_TAC(ARITH_RULE `h + l:num = h' + l' ==> l = l' ==> h = h'`) THEN
+  REWRITE_TAC[DIVISION_SIMP] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) VAL_WORD_OR_DISJOINT o lhand o snd) THEN
+  ANTS_TAC THENL
+   [CONV_TAC WORD_BITWISE_RULE; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  AP_TERM_TAC THEN CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_AND_NOT_MASK_WORD = prove
+ (`(!(x:N word) k.
+        word_and x (word_not(word(2 EXP k - 1))) =
+        word(2 EXP k * val x DIV 2 EXP k)) /\
+   (!(x:N word) k.
+        word_and (word_not(word(2 EXP k - 1))) x =
+        word(2 EXP k * val x DIV 2 EXP k))`,
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [WORD_AND_SYM] THEN
+  REWRITE_TAC[] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_AND_NOT_MASK_WORD] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC VAL_WORD_EQ THEN
+  REWRITE_TAC[GSYM VAL_WORD_AND_NOT_MASK_WORD; VAL_BOUND]);;
+
 let WORD_BITMASK = prove
  (`!k. word_of_bits {i | i < k}:N word =
        word_sub (word_of_bits {k}) (word 1)`,
@@ -4056,6 +4275,22 @@ let MASK_WORD_SUB = prove
   GEN_TAC THEN REWRITE_TAC[WORD_SUB] THEN
   REWRITE_TAC[ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN
   REWRITE_TAC[EXP_EQ_0; ARITH_EQ]);;
+
+let WORD_AND_MASK_WORDS = prove
+ (`!i j. word_and (word(2 EXP j - 1)) (word(2 EXP k - 1)):N word =
+         word(2 EXP MIN j k - 1)`,
+  SIMP_TAC[WORD_EQ_BITS_ALT; BIT_WORD_AND; BIT_MASK_WORD] THEN ARITH_TAC);;
+
+let WORD_OR_MASK_WORDS = prove
+ (`!i j. word_or (word(2 EXP j - 1)) (word(2 EXP k - 1)):N word =
+         word(2 EXP MAX j k - 1)`,
+  SIMP_TAC[WORD_EQ_BITS_ALT; BIT_WORD_OR; BIT_MASK_WORD] THEN ARITH_TAC);;
+
+let WORD_USHR_MASK_WORD = prove
+ (`!k i. k <= dimindex(:N)
+         ==> word_ushr (word(2 EXP k - 1):N word) i = word(2 EXP (k - i) - 1)`,
+  SIMP_TAC[WORD_EQ_BITS_ALT; BIT_WORD_USHR; BIT_MASK_WORD] THEN
+  ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Trailing and leading zero count (returning word size for zero input).     *)

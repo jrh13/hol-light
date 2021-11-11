@@ -2234,6 +2234,14 @@ let DIVIDES_DIVIDES_DIV_IMP = prove
  (`!n d e. d * e divides n ==> e divides n DIV d`,
   MESON_TAC[DIVIDES_DIVIDES_DIV_EQ]);;
 
+let MULT_DIV = prove
+ (`(!m n p. p divides m ==> (m * n) DIV p = m DIV p * n) /\
+   (!m n p. p divides n ==> (m * n) DIV p = m * n DIV p)`,
+  MATCH_MP_TAC(TAUT `(a ==> b) /\ a ==> a /\ b`) THEN CONJ_TAC THENL
+   [MESON_TAC[MULT_SYM]; SIMP_TAC[divides; LEFT_IMP_EXISTS_THM]] THEN
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `p = 0` THEN
+  ASM_SIMP_TAC[MULT_CLAUSES; DIV_0; GSYM MULT_ASSOC; DIV_MULT]);;
+
 let NUMBER_TAC =
   let conva = GEN_REWRITE_CONV TRY_CONV [GSYM DIVIDES_ANTISYM] in
   let rec antisym_conv tm =
