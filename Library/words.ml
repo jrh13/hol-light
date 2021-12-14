@@ -761,6 +761,11 @@ let BIT_WORD_1 = prove
   GEN_TAC THEN REWRITE_TAC[ARITH_RULE `1 = 2 EXP 0`] THEN
   SIMP_TAC[BIT_WORD_POW2; LE_1; DIMINDEX_GE_1]);;
 
+let BIT_WORD_BITVAL = prove
+ (`!b i. bit i (word(bitval b):N word) <=> i = 0 /\ b`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[bitval] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[BIT_WORD_0; BIT_WORD_1]);;
+
 let WORD_OF_BITS_SING_AS_WORD_1 = prove
  (`!s i. word_of_bits {0}:N word = word 1`,
   REWRITE_TAC[WORD_OF_BITS_SING_AS_WORD; EXP]);;

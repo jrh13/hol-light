@@ -8,6 +8,22 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue  7th Dec 2021               Library/words.ml
+
+Added one more little missing lemma:
+
+  BIT_WORD_BITVAL =
+    |- !b i. bit i (word(bitval b):N word) <=> i = 0 /\ b
+
+Thu 25th Nov 2021               Examples/nist_curves.ml
+
+Added the other SECG curves defined over prime order fields: secp192k1,
+secp224k1 and secp256k1 (the Bitcoin curve). This extends the existing
+NIST curve material with the same verification of basic data like
+number of points on the curve, and adds some possible computational
+formulas in projective and Jacobian coordinates for Weierstrass curves
+like these with a = 0.
+
 Wed 10th Nov 2021               Library/words.ml
 
 Added a new construct "bits_of_num" analogous to "bits_of_word" but

@@ -1,20 +1,30 @@
 (* ========================================================================= *)
-(* The NIST-recommended elliptic curves over prime-order finite fields.      *)
-(* ========================================================================= *)
+(* The NIST-recommended elliptic curves and other SECG curves defined over   *)
+(* prime-order finite fields. The NIST ones generally correspond to the "r"  *)
+(* (random) curves from SECG, while of the "k" (Koblitz) curves, only the    *)
+(* "Bitcoin curve" secp256k1 seems to be widely used. This table of synomyms *)
+(* is excerpted from https://www.rfc-editor.org/rfc/rfc8422.txt:             *)
+(*                                                                           *)
+(*                   +-----------+------------+------------+                 *)
+(*                   | SECG      | ANSI X9.62 | NIST       |                 *)
+(*                   +-----------+------------+------------+                 *)
+(*                   | secp192r1 | prime192v1 | NIST P-192 |                 *)
+(*                   | secp224r1 |            | NIST P-224 |                 *)
+(*                   | secp256r1 | prime256v1 | NIST P-256 |                 *)
+(*                   | secp384r1 |            | NIST P-384 |                 *)
+(*                   | secp521r1 |            | NIST P-521 |                 *)
+(*                   +-----------+------------+------------+                 *)
+(*                                                                           *)
+(* ------------------------------------------------------------------------- *)
 
 needs "Library/pocklington.ml";;
 needs "Library/grouptheory.ml";;
 needs "Library/ringtheory.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* The curve parameters, copied from the NIST FIPS 186-3 document.           *)
+(* The NIST curve parameters, copied from the NIST FIPS 186-4 document.      *)
+(* See https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf            *)
 (* ------------------------------------------------------------------------- *)
-
-(*** Taken from the document here just by naive copying modulo formatting
-https://csrc.nist.gov/csrc/media/publications/fips/186/3/archive/2009-06-25/documents/fips_186-3.pdf
- *** The generators are paired up into ":(int#int)option" to suit our development
- *** The SEED_nnn values play no role in our development here
- ***)
 
 (*** p192 ***)
 
@@ -62,6 +72,29 @@ let b_521 = new_definition `b_521 = 0x051953eb9618e1c9a1f929a21a0b68540eea2da725
 let G_521 = new_definition `G_521 = SOME(&0xc6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66:int,&0x11839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650:int)`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Similar main parameters for the "k" forms of the SECG curves.             *)
+(* See https://www.secg.org/sec2-v2.pdf                                      *)
+(* ------------------------------------------------------------------------- *)
+
+(*** secp192k1 ***)
+
+let p_192k1 = define `p_192k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFEE37`;;
+let n_192k1 = define `n_192k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFE26F2FC170F69466A74DEFD8D`;;
+let G_192K1 = define `G_192K1 = SOME(&0xDB4FF10EC057E9AE26B07D0280B7F4341DA5D1B1EAE06C7D:int,&0x9B2F2F6D9C5628A7844163D015BE86344082AA88D95E2F9D:int)`;;
+
+(*** secp224k1 ***)
+
+let p_224k1 = define `p_224k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFE56D`;;
+let n_224k1 = define `n_224k1 = 0x010000000000000000000000000001DCE8D2EC6184CAF0A971769FB1F7`;;
+let G_224K1 = define `G_224K1 = SOME(&0xA1455B334DF099DF30FC28A169A467E9E47075A90F7E650EB6B7A45C:int,&0x7E089FED7FBA344282CAFBD6F7E319F7C0B0BD59E2CA4BDB556D61A5:int)`;;
+
+(*** secp256k1 ***)
+
+let p_256k1 = define `p_256k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F`;;
+let n_256k1 = define `n_256k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141`;;
+let G_256K1 = define `G_256K1 = SOME(&0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798:int,&0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8:int)`;;
+
+(* ------------------------------------------------------------------------- *)
 (* Expanded forms of the primes showing pseudo-Mersenne-ness.                *)
 (* ------------------------------------------------------------------------- *)
 
@@ -84,6 +117,33 @@ let P_384 = prove
 let P_521 = prove
  (`p_521 = 2 EXP 521 - 1`,
   REWRITE_TAC[p_521] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let P_192K1 = prove
+ (`p_192k1 = 2 EXP 192 - 2 EXP 32 - 4553`,
+  REWRITE_TAC[p_192k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let P_192K1_ALT = prove
+ (`p_192k1 =
+   2 EXP 192 - 2 EXP 32 - 2 EXP 12 - 2 EXP 8 - 2 EXP 7 - 2 EXP 6 - 2 EXP 3 - 1`,
+  REWRITE_TAC[p_192k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let P_224K1 = prove
+ (`p_224k1 = 2 EXP 224 - 2 EXP 32 - 6803`,
+  REWRITE_TAC[p_224k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let P_224K1_ALT = prove
+ (`p_224k1 =
+   2 EXP 224 - 2 EXP 32 - 2 EXP 12 - 2 EXP 11 - 2 EXP 9 - 2 EXP 7 - 2 EXP 4 - 2 - 1`,
+  REWRITE_TAC[p_224k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let P_256K1 = prove
+ (`p_256k1 = 2 EXP 256 - 2 EXP 32 - 977`,
+  REWRITE_TAC[p_256k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let P_256K1_ALT = prove
+ (`p_256k1 =
+   2 EXP 256 - 2 EXP 32 - 2 EXP 9 - 2 EXP 8 - 2 EXP 7 - 2 EXP 6 - 2 EXP 4 - 1`,
+  REWRITE_TAC[p_256k1] THEN CONV_TAC NUM_REDUCE_CONV);;
 
 (* ------------------------------------------------------------------------- *)
 (* Prove the the orders of the underlying fields and the orders of the       *)
@@ -260,6 +320,82 @@ let PRIME_N521 = time prove
    "3636410625392624440351547907325502812950802686368714273274221490761556277859337865760708490235892541081304511";
    "3615194794881930010216942559103847593050265703173292383701371712350878926821661243755933835426896058418509759880171943"]);;
 
+let PRIME_P192K1 = time prove
+ (`prime p_192k1`,
+  REWRITE_TAC[p_192k1] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "29"; "37"; "41"; "43";
+   "47"; "61"; "79"; "103"; "149"; "193"; "251"; "281"; "487"; "563"; "1559";
+   "2473"; "2683"; "3119"; "7057"; "393721"; "706151"; "3651619"; "8473813";
+   "14606477"; "2307823367"; "11113956389"; "16189543961"; "138580737803";
+   "1295233555201613"; "10489845818524887021689201254173392444641";
+   "6277101735386680763835789423207666416102355444459739541047"]);;
+
+let PRIME_N192K1 = time prove
+ (`prime n_192k1`,
+  REWRITE_TAC[n_192k1] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "29"; "31"; "41"; "59";
+   "73"; "83"; "97"; "137"; "167"; "443"; "971"; "2341"; "4933"; "11519";
+   "29131"; "54151"; "169361"; "444791"; "445097"; "552913"; "815669";
+   "866417"; "1611297632578441"; "31767070186748510944261247684750677";
+   "434093022356392396149847294750353440317757907331";
+   "143250697377609490729449607267616635304860109419231";
+   "6277101735386680763835789423061264271957123915200845512077"]);;
+
+let PRIME_P224K1 = time prove
+ (`prime p_224k1`,
+  REWRITE_TAC[p_224k1] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "19"; "23"; "29"; "37"; "41"; "47"; "59";
+   "79"; "83"; "89"; "101"; "113"; "131"; "163"; "167"; "227"; "419"; "821";
+   "1163"; "1471"; "1601"; "1777"; "3001"; "3137"; "10663"; "10903"; "14983";
+   "17293"; "21347"; "43613"; "48847"; "82837"; "7599533"; "42252061";
+   "17042913689"; "34085827379"; "156976040219402488243";
+   "31670999344427766303479"; "30974237358850355444802463";
+   "9743875111334057846550285755748171501325144788037";
+   "26959946667150639794667015087019630673637144422540572481099315275117"]);;
+
+let PRIME_N224K1 = time prove
+ (`prime n_224k1`,
+  REWRITE_TAC[n_224k1] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "31"; "41"; "61"; "73";
+   "151"; "163"; "191"; "193"; "239"; "311"; "353"; "367"; "479"; "1013";
+   "1511"; "2027"; "3023"; "3067"; "9199"; "9923"; "17573"; "34231"; "59539";
+   "120047"; "252913"; "478453"; "2218883"; "2396171"; "4167731"; "4437767";
+   "10083949"; "12019933"; "21244693"; "33341849"; "6058046233";
+   "24281921209346341"; "58597812472881879287";
+   "2514514399252200308862687893991356095647329471";
+   "4493324444525106632444502514503273391085054513853345758165826444713";
+   "26959946667150639794667015087019640346510327083120074548994958668279"]);;
+
+let PRIME_P256K1 = time prove
+ (`prime p_256k1`,
+  REWRITE_TAC[p_256k1] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "29"; "31"; "41"; "53"; "67";
+   "83"; "97"; "101"; "103"; "131"; "239"; "271"; "419"; "443"; "887"; "971";
+   "1373"; "1627"; "2621"; "2657"; "4423"; "5323"; "7723"; "13441"; "20113";
+   "24809"; "41201"; "96557"; "1206781"; "7240687"; "13331831"; "107590001";
+   "173378833005251801"; "22149492674086928081353";
+   "132896956044521568488119"; "255515944373312847190720520512484175977";
+   "205115282021455665897114700593932402728804164701536103180137503955397371";
+   "115792089237316195423570985008687907853269984665640564039457584007908834671663"]);;
+
+let PRIME_N256K1 = time prove
+ (`prime n_256k1`,
+  REWRITE_TAC[n_256k1] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "29"; "37"; "41"; "59";
+   "67"; "73"; "97"; "109"; "113"; "149"; "199"; "293"; "461"; "631"; "797";
+   "1409"; "1871"; "2011"; "2731"; "2861"; "4051"; "9349"; "16699"; "28181";
+   "85831"; "120233"; "305873"; "1627771"; "4681609"; "44706919";
+   "545358713"; "297159362677"; "107361793816595537";
+   "174723607534414371449"; "29047611873442575647497758179";
+   "341948486974166000522343609283189";
+   "115792089237316195423570985008687907852837564279074904382605163141518161494337"]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some basic sanity checks on the (otherwise unused) c parameter.           *)
 (* ------------------------------------------------------------------------- *)
@@ -298,7 +434,8 @@ let SANITY_CHECK_521 = prove
 (*                                                                           *)
 (* This isn't general enough for working over characteristics 2 and 3,       *)
 (* but is more than enough for all the curves we are concerned with,         *)
-(* where we always have a = -3 and using the integers modulo a large prime.  *)
+(* where we always have a = 0 or a = -3 and are using the integers modulo    *)
+(* a large prime.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
 let weierstrass_point = define
@@ -485,8 +622,7 @@ let weierstrass_field_tac =
         let th = INTEGRAL_DOMAIN_RULE w in
         MATCH_ACCEPT_TAC th ORELSE MATCH_MP_TAC th) THEN
   ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN] THEN
-  REPEAT CONJ_TAC THEN TRY RING_CARRIER_TAC THEN
-  NOT_RING_CHAR_DIVIDES_TAC;;
+  REPEAT CONJ_TAC THEN TRY RING_CARRIER_TAC;;
 
 (* ------------------------------------------------------------------------- *)
 (* Proof of the group properties. This is just done by algebraic brute       *)
@@ -551,7 +687,7 @@ let WEIERSTRASS_CURVE_ADD = prove
   REPEAT(FIRST_X_ASSUM SUBST_ALL_TAC) THEN
   REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_curve] THEN
   REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
-  weierstrass_field_tac);;
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
 
 let WEIERSTRASS_ADD_LNEG = prove
  (`!f a (b:A) p.
@@ -597,7 +733,8 @@ let WEIERSTRASS_ADD_SYM = prove
 let WEIERSTRASS_ADD_ASSOC = prove
  (`!f a (b:A) p q r.
         field f /\
-        ring_char f IN {p_192, p_224, p_256, p_384, p_521} /\
+        ring_char f IN {p_192, p_224, p_256, p_384, p_521,
+                        p_192k1, p_224k1, p_256k1} /\
         ~weierstrass_singular(f,a,b) /\
         a IN ring_carrier f /\ b IN ring_carrier f /\
         weierstrass_curve(f,a,b) p /\
@@ -621,7 +758,8 @@ let WEIERSTRASS_ADD_ASSOC = prove
     MP_TAC THENL
      [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
       REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
-      REWRITE_TAC[p_192; p_224; p_256; p_384; p_521] THEN
+      REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
+                  p_192k1; p_224k1; p_256k1] THEN
       STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV;
       ASM_SIMP_TAC[WEIERSTRASS_ADD_SYM; WEIERSTRASS_CURVE_ADD]];
     ALL_TAC] THEN
@@ -656,14 +794,16 @@ let WEIERSTRASS_ADD_ASSOC = prove
   REWRITE_TAC[DE_MORGAN_THM] THEN REPEAT CONJ_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
   REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
-  REWRITE_TAC[p_192; p_224; p_256; p_384; p_521] THEN
+  REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
+              p_192k1; p_224k1; p_256k1] THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   CONV_TAC(RAND_CONV DIVIDES_CONV) THEN REWRITE_TAC[]);;
 
 let WEIERSTRASS_GROUP = prove
  (`!f a (b:A).
       field f /\
-      ring_char f IN {p_192, p_224, p_256, p_384, p_521} /\
+      ring_char f IN {p_192, p_224, p_256, p_384, p_521,
+                      p_192k1, p_224k1, p_256k1} /\
       a IN ring_carrier f /\ b IN ring_carrier f /\
       ~weierstrass_singular(f,a,b)
       ==> group_carrier(weierstrass_group(f,a,b)) = weierstrass_curve(f,a,b) /\
@@ -675,7 +815,8 @@ let WEIERSTRASS_GROUP = prove
   STRIP_ASSUME_TAC THENL
    [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
     REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
-    REWRITE_TAC[p_192; p_224; p_256; p_384; p_521] THEN
+    REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
+                p_192k1; p_224k1; p_256k1] THEN
     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV;
     ALL_TAC] THEN
   REWRITE_TAC[group_carrier; group_id; group_inv; group_mul; GSYM PAIR_EQ] THEN
@@ -693,7 +834,6 @@ let WEIERSTRASS_GROUP = prove
      [ASM_SIMP_TAC[WEIERSTRASS_ADD_LNEG];
       MATCH_MP_TAC WEIERSTRASS_ADD_SYM THEN
       ASM_SIMP_TAC[WEIERSTRASS_CURVE_NEG; FIELD_IMP_INTEGRAL_DOMAIN]]]);;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Projective coordinates, (x,y,z) |-> (x/z,y/z) and (0,1,0) |-> infinity    *)
@@ -1000,7 +1140,7 @@ let WEIERSTRASS_OF_PROJECTIVE_ADD = prove
   RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
   REPEAT(FIRST_X_ASSUM(DISJ_CASES_TAC) ORELSE
          FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC)) THEN
-  weierstrass_field_tac);;
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
 
 let PROJECTIVE_EQ_ADD = prove
  (`!(f:A ring) a b p p' q q'.
@@ -1345,7 +1485,7 @@ let WEIERSTRASS_OF_JACOBIAN_ADD = prove
   RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
   REPEAT(FIRST_X_ASSUM(DISJ_CASES_TAC) ORELSE
          FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC)) THEN
-  weierstrass_field_tac);;
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
 
 let JACOBIAN_EQ_ADD = prove
  (`!(f:A ring) a b p p' q q'.
@@ -1392,7 +1532,7 @@ let JACOBIAN_OF_WEIERSTRASS_ADD = prove
            WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Definition of the NIST curve groups and proof that they are groups.       *)
+(* Definition of the curve groups and proof that they are groups.            *)
 (* ------------------------------------------------------------------------- *)
 
 let WEIERSTRASS_GROUP_REM = prove
@@ -1518,6 +1658,72 @@ let P521_GROUP = prove
            INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
   CONV_TAC INT_REDUCE_CONV);;
 
+let p192k1_group = define
+ `p192k1_group = weierstrass_group(integer_mod_ring p_192k1,&0,&3)`;;
+
+let P192K1_GROUP = prove
+ (`group_carrier p192k1_group =
+     weierstrass_curve(integer_mod_ring p_192k1,&0,&3) /\
+   group_id p192k1_group =
+     NONE /\
+   group_inv p192k1_group =
+     weierstrass_neg(integer_mod_ring p_192k1,&0,&3) /\
+   group_mul p192k1_group =
+     weierstrass_add(integer_mod_ring p_192k1,&0,&3)`,
+  REWRITE_TAC[p192k1_group] THEN
+  ONCE_REWRITE_TAC[GSYM WEIERSTRASS_GROUP_REM] THEN
+  MATCH_MP_TAC WEIERSTRASS_GROUP THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P192K1] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; weierstrass_singular] THEN
+  SIMP_TAC[p_192k1; INTEGER_MOD_RING; ARITH; IN_ELIM_THM;
+           INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
+  CONV_TAC INT_REDUCE_CONV);;
+
+let p224k1_group = define
+ `p224k1_group = weierstrass_group(integer_mod_ring p_224k1,&0,&5)`;;
+
+let P224K1_GROUP = prove
+ (`group_carrier p224k1_group =
+     weierstrass_curve(integer_mod_ring p_224k1,&0,&5) /\
+   group_id p224k1_group =
+     NONE /\
+   group_inv p224k1_group =
+     weierstrass_neg(integer_mod_ring p_224k1,&0,&5) /\
+   group_mul p224k1_group =
+     weierstrass_add(integer_mod_ring p_224k1,&0,&5)`,
+  REWRITE_TAC[p224k1_group] THEN
+  ONCE_REWRITE_TAC[GSYM WEIERSTRASS_GROUP_REM] THEN
+  MATCH_MP_TAC WEIERSTRASS_GROUP THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P224K1] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; weierstrass_singular] THEN
+  SIMP_TAC[p_224k1; INTEGER_MOD_RING; ARITH; IN_ELIM_THM;
+           INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
+  CONV_TAC INT_REDUCE_CONV);;
+
+let p256k1_group = define
+ `p256k1_group = weierstrass_group(integer_mod_ring p_256k1,&0,&7)`;;
+
+let P256K1_GROUP = prove
+ (`group_carrier p256k1_group =
+     weierstrass_curve(integer_mod_ring p_256k1,&0,&7) /\
+   group_id p256k1_group =
+     NONE /\
+   group_inv p256k1_group =
+     weierstrass_neg(integer_mod_ring p_256k1,&0,&7) /\
+   group_mul p256k1_group =
+     weierstrass_add(integer_mod_ring p_256k1,&0,&7)`,
+  REWRITE_TAC[p256k1_group] THEN
+  ONCE_REWRITE_TAC[GSYM WEIERSTRASS_GROUP_REM] THEN
+  MATCH_MP_TAC WEIERSTRASS_GROUP THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P256K1] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; weierstrass_singular] THEN
+  SIMP_TAC[p_256k1; INTEGER_MOD_RING; ARITH; IN_ELIM_THM;
+           INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
+  CONV_TAC INT_REDUCE_CONV);;
+
 (* ------------------------------------------------------------------------- *)
 (* Prove, more or less by doing a gcd(x^p - x,x^3 + a * x + b) computation   *)
 (* over F_p[x], that there are no solutions to the r.h.s. of the             *)
@@ -1589,9 +1795,9 @@ let EXCLUDE_ELLIPTIC_CURVE_ROOTS =
                     (a + c1 pow 2 - c0) * x + (b + c0 * c1)) (mod p)`,
     INTEGER_TAC)
   and lemma_toconst = prove
-   (`(&0:int == &1 * x pow 2 + c1 * x + c0) (mod p) /\
-     (&0:int == &0 * x pow 2 + &1 * x + d) (mod p)
-     ==> (&0:int == c0 - d * (c1 - d)) (mod p)`,
+   (`(x pow 3 + a * x + b == &0) (mod p) /\
+     (&0:int == &0 * x pow 2 + &1 * x + c0) (mod p)
+     ==> (&0:int == --c0 pow 3 - a * c0 + b) (mod p)`,
     INTEGER_TAC)
   and lemma_3_2 = prove
    (`(x pow 3 + a * x + b:int == &0) (mod p)
@@ -1658,43 +1864,60 @@ let EXCLUDE_ELLIPTIC_CURVE_ROOTS =
     let th3 = MP th2 (EQT_ELIM(INT_REDUCE_CONV(lhand(concl th2)))) in
     let th4 = (CONV_RULE INT_REDUCE_CONV o rule_rem) (UNDISCH th3) in
     let hc = dest_intconst(lhand(lhand(rand(rator(concl th4))))) in
-    let th5 = SPEC (mk_intconst(num_modinv q hc)) (rule_mulc th4) in
-    let th6 = (CONV_RULE INT_REDUCE_CONV o rule_rem) th5 in
-    let th7 = MATCH_MP lemma_tolin (CONJ (ASSUME tm) th6) in
-    let th8 = (CONV_RULE INT_REDUCE_CONV o rule_rem) th7 in
-    let hc = dest_intconst(lhand(lhand(rand(rand(rator(concl th8)))))) in
-    let th9 = SPEC (mk_intconst(num_modinv q hc)) (rule_mulc th8) in
+    let th8 =
+      if hc =/ num_0 then th4 else
+      let th5 = SPEC (mk_intconst(num_modinv q hc)) (rule_mulc th4) in
+      let th6 = (CONV_RULE INT_REDUCE_CONV o rule_rem) th5 in
+      let th7 = MATCH_MP lemma_tolin (CONJ (ASSUME tm) th6) in
+      (CONV_RULE INT_REDUCE_CONV o rule_rem) th7 in
+    let lc = dest_intconst(lhand(lhand(rand(rand(rator(concl th8)))))) in
+    let th9 = SPEC (mk_intconst(num_modinv q lc)) (rule_mulc th8) in
     let tha = (CONV_RULE INT_REDUCE_CONV o rule_rem) th9 in
-    let thb = MATCH_MP lemma_toconst (CONJ th6 tha) in
+    let thb = MATCH_MP lemma_toconst (CONJ (ASSUME tm) tha) in
     let thc = CONV_RULE INT_REDUCE_CONV (REWRITE_RULE[GSYM INT_REM_EQ] thb) in
     NOT_INTRO(DISCH tm thc);;
 
-let NIST_EXCLUDE_ROOTS_TAC(primeth,pth,bth) =
-  X_GEN_TAC `x:int` THEN REWRITE_TAC[INT_ARITH
-   `x pow 3 - &3 * x + b:int = x pow 3 + (-- &3) * x + b`] THEN
-  REWRITE_TAC[pth; bth] THEN
+let NIST_EXCLUDE_ROOTS_TAC primeth defths =
+  X_GEN_TAC `x:int` THEN
+  GEN_REWRITE_TAC ONCE_DEPTH_CONV
+   [INT_ARITH `x pow 3 - &3 * x + b:int = x pow 3 + (-- &3) * x + b /\
+               x pow 3 + &c = x pow 3 + &0 * x + &c`] THEN
+  REWRITE_TAC defths THEN
   W(fun (asl,w) -> ACCEPT_TAC
-    (EXCLUDE_ELLIPTIC_CURVE_ROOTS (rand w) (REWRITE_RULE[pth] primeth)));;
+    (EXCLUDE_ELLIPTIC_CURVE_ROOTS (rand w)
+      (ONCE_REWRITE_RULE defths primeth)));;
 
 let NO_ROOTS_P192 = prove
  (`!x:int. ~((x pow 3 - &3 * x + &b_192 == &0) (mod &p_192))`,
-  NIST_EXCLUDE_ROOTS_TAC(PRIME_P192,p_192,b_192));;
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P192 [p_192;b_192]);;
 
 let NO_ROOTS_P224 = prove
  (`!x:int. ~((x pow 3 - &3 * x + &b_224 == &0) (mod &p_224))`,
-  NIST_EXCLUDE_ROOTS_TAC(PRIME_P224,p_224,b_224));;
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P224 [p_224;b_224]);;
 
 let NO_ROOTS_P256 = prove
  (`!x:int. ~((x pow 3 - &3 * x + &b_256 == &0) (mod &p_256))`,
-  NIST_EXCLUDE_ROOTS_TAC(PRIME_P256,p_256,b_256));;
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P256 [p_256;b_256]);;
 
 let NO_ROOTS_P384 = prove
  (`!x:int. ~((x pow 3 - &3 * x + &b_384 == &0) (mod &p_384))`,
-  NIST_EXCLUDE_ROOTS_TAC(PRIME_P384,p_384,b_384));;
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P384 [p_384;b_384]);;
 
 let NO_ROOTS_P521 = prove
  (`!x:int. ~((x pow 3 - &3 * x + &b_521 == &0) (mod &p_521))`,
-  NIST_EXCLUDE_ROOTS_TAC(PRIME_P521,p_521,b_521));;
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P521 [p_521;b_521]);;
+
+let NO_ROOTS_192K1 = prove
+ (`!x:int. ~((x pow 3 + &3 == &0) (mod &p_192k1))`,
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P192K1 [p_192k1]);;
+
+let NO_ROOTS_224K1 = prove
+ (`!x:int. ~((x pow 3 + &5 == &0) (mod &p_224k1))`,
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P224K1 [p_224k1]);;
+
+let NO_ROOTS_256K1 = prove
+ (`!x:int. ~((x pow 3 + &7 == &0) (mod &p_256k1))`,
+  NIST_EXCLUDE_ROOTS_TAC PRIME_P256K1 [p_256k1]);;
 
 (* ------------------------------------------------------------------------- *)
 (* HOL conversions for explicit calculation with group operations.           *)
@@ -1736,13 +1959,17 @@ let NIST_CARRIER_CONV =
     REWRITE_RULE[b_224; p_224] (CONJUNCT1 P224_GROUP);
     REWRITE_RULE[b_256; p_256] (CONJUNCT1 P256_GROUP);
     REWRITE_RULE[b_384; p_384] (CONJUNCT1 P384_GROUP);
-    REWRITE_RULE[b_521; p_521] (CONJUNCT1 P521_GROUP)] in
+    REWRITE_RULE[b_521; p_521] (CONJUNCT1 P521_GROUP);
+    REWRITE_RULE[p_192k1] (CONJUNCT1 P192K1_GROUP);
+    REWRITE_RULE[p_224k1] (CONJUNCT1 P224K1_GROUP);
+    REWRITE_RULE[p_256k1] (CONJUNCT1 P256K1_GROUP)] in
   GEN_REWRITE_CONV I ths THENC INT_REDUCE_CONV;;
 
 let NIST_ID_CONV =
   GEN_REWRITE_CONV I
    (map (CONJUNCT1 o CONJUNCT2)
-        [P192_GROUP; P224_GROUP; P256_GROUP; P384_GROUP; P521_GROUP]);;
+        [P192_GROUP; P224_GROUP; P256_GROUP; P384_GROUP; P521_GROUP;
+         P192K1_GROUP; P224K1_GROUP; P256K1_GROUP]);;
 
 let NIST_INV_CONV =
   let ths = map
@@ -1755,7 +1982,10 @@ let NIST_INV_CONV =
     REWRITE_RULE[b_224; p_224] (el 2 (CONJUNCTS P224_GROUP));
     REWRITE_RULE[b_256; p_256] (el 2 (CONJUNCTS P256_GROUP));
     REWRITE_RULE[b_384; p_384] (el 2 (CONJUNCTS P384_GROUP));
-    REWRITE_RULE[b_521; p_521] (el 2 (CONJUNCTS P521_GROUP))] in
+    REWRITE_RULE[b_521; p_521] (el 2 (CONJUNCTS P521_GROUP));
+    REWRITE_RULE[p_192k1] (el 2 (CONJUNCTS P192K1_GROUP));
+    REWRITE_RULE[p_224k1] (el 2 (CONJUNCTS P224K1_GROUP));
+    REWRITE_RULE[p_256k1] (el 2 (CONJUNCTS P256K1_GROUP))] in
   GEN_REWRITE_CONV I ths THENC INT_REDUCE_CONV;;
 
 let NIST_MUL_CONV =
@@ -1770,7 +2000,10 @@ let NIST_MUL_CONV =
     REWRITE_RULE[b_224; p_224] (el 3 (CONJUNCTS P224_GROUP));
     REWRITE_RULE[b_256; p_256] (el 3 (CONJUNCTS P256_GROUP));
     REWRITE_RULE[b_384; p_384] (el 3 (CONJUNCTS P384_GROUP));
-    REWRITE_RULE[b_521; p_521] (el 3 (CONJUNCTS P521_GROUP))] in
+    REWRITE_RULE[b_521; p_521] (el 3 (CONJUNCTS P521_GROUP));
+    REWRITE_RULE[p_192k1] (el 3 (CONJUNCTS P192K1_GROUP));
+    REWRITE_RULE[p_224k1] (el 3 (CONJUNCTS P224K1_GROUP));
+    REWRITE_RULE[p_256k1] (el 3 (CONJUNCTS P256K1_GROUP))] in
   GEN_REWRITE_CONV I ths THENC
   DEPTH_CONV(INT_RED_CONV ORELSEC INTEGER_MOD_RING_INV_CONV);;
 
@@ -2160,6 +2393,201 @@ let GENERATED_P521_GROUP = prove
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G521;
               REWRITE_RULE[HAS_SIZE] SIZE_P521_GROUP]);;
 
+let GENERATOR_IN_GROUP_CARRIER_192K1 = prove
+ (`G_192K1 IN group_carrier p192k1_group`,
+  REWRITE_TAC[G_192K1] THEN CONV_TAC NIST_CARRIER_CONV);;
+
+let GROUP_ELEMENT_ORDER_G192K1 = prove
+ (`group_element_order p192k1_group G_192K1 = n_192k1`,
+  SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_PRIME;
+           GENERATOR_IN_GROUP_CARRIER_192K1; PRIME_N192K1] THEN
+  REWRITE_TAC[G_192K1; el 1 (CONJUNCTS P192K1_GROUP);
+              option_DISTINCT] THEN
+  REWRITE_TAC[n_192k1] THEN CONV_TAC(LAND_CONV NIST_POW_CONV) THEN
+  REFL_TAC);;
+
+let FINITE_GROUP_CARRIER_192K1 = prove
+ (`FINITE(group_carrier p192k1_group)`,
+  REWRITE_TAC[P192K1_GROUP] THEN MATCH_MP_TAC FINITE_WEIERSTRASS_CURVE THEN
+  REWRITE_TAC[FINITE_INTEGER_MOD_RING;
+              FIELD_INTEGER_MOD_RING; PRIME_P192K1] THEN
+  REWRITE_TAC[p_192k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let SIZE_P192K1_GROUP = prove
+ (`group_carrier p192k1_group HAS_SIZE n_192k1`,
+  MATCH_MP_TAC GROUP_ADHOC_ORDER_UNIQUE_LEMMA THEN
+  EXISTS_TAC `G_192K1:(int#int)option` THEN
+  REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_192K1;
+              GROUP_ELEMENT_ORDER_G192K1;
+              FINITE_GROUP_CARRIER_192K1] THEN
+  REWRITE_TAC[P192K1_GROUP] THEN CONJ_TAC THENL
+   [W(MP_TAC o PART_MATCH (lhand o rand)
+      CARD_BOUND_WEIERSTRASS_CURVE o lhand o snd) THEN
+    REWRITE_TAC[FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING] THEN
+    REWRITE_TAC[PRIME_P192K1] THEN ANTS_TAC THENL
+     [REWRITE_TAC[p_192k1] THEN CONV_TAC NUM_REDUCE_CONV;
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] LET_TRANS)] THEN
+    SIMP_TAC[CARD_INTEGER_MOD_RING; p_192k1; ARITH] THEN
+    REWRITE_TAC[n_192k1] THEN CONV_TAC NUM_REDUCE_CONV;
+    REWRITE_TAC[FORALL_OPTION_THM; IN; FORALL_PAIR_THM] THEN
+    REWRITE_TAC[weierstrass_curve; weierstrass_neg; option_DISTINCT] THEN
+    MAP_EVERY X_GEN_TAC [`x:int`; `y:int`] THEN REWRITE_TAC[option_INJ] THEN
+    SIMP_TAC[INTEGER_MOD_RING; INTEGER_MOD_RING_POW;
+             p_192k1; ARITH; PAIR_EQ; IN_ELIM_THM]] THEN
+  ASM_CASES_TAC `y:int = &0` THENL
+   [ASM_REWRITE_TAC[] THEN CONV_TAC INT_REDUCE_CONV THEN
+    DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC (MP_TAC o SYM)) THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN MP_TAC(SPEC `x:int` NO_ROOTS_192K1) THEN
+    REWRITE_TAC[INT_MUL_LZERO; INT_ADD_LID] THEN
+    REWRITE_TAC[GSYM INT_REM_EQ; p_192k1; INT_REM_ZERO];
+    STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP (INT_ARITH
+     `--y rem p = y ==> y rem p = y ==> (--y rem p = y rem p)`)) THEN
+    ANTS_TAC THENL [ASM_SIMP_TAC[INT_REM_LT]; ALL_TAC] THEN
+    REWRITE_TAC[INT_REM_EQ; INTEGER_RULE
+     `(--y:int == y) (mod p) <=> p divides (&2 * y)`] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (INTEGER_RULE
+     `p divides (a * b:int) ==> coprime(a,p) ==> p divides b`)) THEN
+    REWRITE_TAC[GSYM num_coprime; ARITH; COPRIME_2] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN ASM_INT_ARITH_TAC]);;
+
+let GENERATED_P192K1_GROUP = prove
+ (`subgroup_generated p192k1_group {G_192K1} = p192k1_group`,
+  SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
+           GENERATOR_IN_GROUP_CARRIER_192K1;
+           FINITE_GROUP_CARRIER_192K1] THEN
+  REWRITE_TAC[GROUP_ELEMENT_ORDER_G192K1;
+              REWRITE_RULE[HAS_SIZE] SIZE_P192K1_GROUP]);;
+
+let GENERATOR_IN_GROUP_CARRIER_224K1 = prove
+ (`G_224K1 IN group_carrier p224k1_group`,
+  REWRITE_TAC[G_224K1] THEN CONV_TAC NIST_CARRIER_CONV);;
+
+let GROUP_ELEMENT_ORDER_G224K1 = prove
+ (`group_element_order p224k1_group G_224K1 = n_224k1`,
+  SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_PRIME;
+           GENERATOR_IN_GROUP_CARRIER_224K1; PRIME_N224K1] THEN
+  REWRITE_TAC[G_224K1; el 1 (CONJUNCTS P224K1_GROUP);
+              option_DISTINCT] THEN
+  REWRITE_TAC[n_224k1] THEN CONV_TAC(LAND_CONV NIST_POW_CONV) THEN
+  REFL_TAC);;
+
+let FINITE_GROUP_CARRIER_224K1 = prove
+ (`FINITE(group_carrier p224k1_group)`,
+  REWRITE_TAC[P224K1_GROUP] THEN MATCH_MP_TAC FINITE_WEIERSTRASS_CURVE THEN
+  REWRITE_TAC[FINITE_INTEGER_MOD_RING;
+              FIELD_INTEGER_MOD_RING; PRIME_P224K1] THEN
+  REWRITE_TAC[p_224k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let SIZE_P224K1_GROUP = prove
+ (`group_carrier p224k1_group HAS_SIZE n_224k1`,
+  MATCH_MP_TAC GROUP_ADHOC_ORDER_UNIQUE_LEMMA THEN
+  EXISTS_TAC `G_224K1:(int#int)option` THEN
+  REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_224K1;
+              GROUP_ELEMENT_ORDER_G224K1;
+              FINITE_GROUP_CARRIER_224K1] THEN
+  REWRITE_TAC[P224K1_GROUP] THEN CONJ_TAC THENL
+   [W(MP_TAC o PART_MATCH (lhand o rand)
+      CARD_BOUND_WEIERSTRASS_CURVE o lhand o snd) THEN
+    REWRITE_TAC[FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING] THEN
+    REWRITE_TAC[PRIME_P224K1] THEN ANTS_TAC THENL
+     [REWRITE_TAC[p_224k1] THEN CONV_TAC NUM_REDUCE_CONV;
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] LET_TRANS)] THEN
+    SIMP_TAC[CARD_INTEGER_MOD_RING; p_224k1; ARITH] THEN
+    REWRITE_TAC[n_224k1] THEN CONV_TAC NUM_REDUCE_CONV;
+    REWRITE_TAC[FORALL_OPTION_THM; IN; FORALL_PAIR_THM] THEN
+    REWRITE_TAC[weierstrass_curve; weierstrass_neg; option_DISTINCT] THEN
+    MAP_EVERY X_GEN_TAC [`x:int`; `y:int`] THEN REWRITE_TAC[option_INJ] THEN
+    SIMP_TAC[INTEGER_MOD_RING; INTEGER_MOD_RING_POW;
+             p_224k1; ARITH; PAIR_EQ; IN_ELIM_THM]] THEN
+  ASM_CASES_TAC `y:int = &0` THENL
+   [ASM_REWRITE_TAC[] THEN CONV_TAC INT_REDUCE_CONV THEN
+    DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC (MP_TAC o SYM)) THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN MP_TAC(SPEC `x:int` NO_ROOTS_224K1) THEN
+    REWRITE_TAC[INT_MUL_LZERO; INT_ADD_LID] THEN
+    REWRITE_TAC[GSYM INT_REM_EQ; p_224k1; INT_REM_ZERO];
+    STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP (INT_ARITH
+     `--y rem p = y ==> y rem p = y ==> (--y rem p = y rem p)`)) THEN
+    ANTS_TAC THENL [ASM_SIMP_TAC[INT_REM_LT]; ALL_TAC] THEN
+    REWRITE_TAC[INT_REM_EQ; INTEGER_RULE
+     `(--y:int == y) (mod p) <=> p divides (&2 * y)`] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (INTEGER_RULE
+     `p divides (a * b:int) ==> coprime(a,p) ==> p divides b`)) THEN
+    REWRITE_TAC[GSYM num_coprime; ARITH; COPRIME_2] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN ASM_INT_ARITH_TAC]);;
+
+let GENERATED_P224K1_GROUP = prove
+ (`subgroup_generated p224k1_group {G_224K1} = p224k1_group`,
+  SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
+           GENERATOR_IN_GROUP_CARRIER_224K1;
+           FINITE_GROUP_CARRIER_224K1] THEN
+  REWRITE_TAC[GROUP_ELEMENT_ORDER_G224K1;
+              REWRITE_RULE[HAS_SIZE] SIZE_P224K1_GROUP]);;
+
+let GENERATOR_IN_GROUP_CARRIER_256K1 = prove
+ (`G_256K1 IN group_carrier p256k1_group`,
+  REWRITE_TAC[G_256K1] THEN CONV_TAC NIST_CARRIER_CONV);;
+
+let GROUP_ELEMENT_ORDER_G256K1 = prove
+ (`group_element_order p256k1_group G_256K1 = n_256k1`,
+  SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_PRIME;
+           GENERATOR_IN_GROUP_CARRIER_256K1; PRIME_N256K1] THEN
+  REWRITE_TAC[G_256K1; el 1 (CONJUNCTS P256K1_GROUP);
+              option_DISTINCT] THEN
+  REWRITE_TAC[n_256k1] THEN CONV_TAC(LAND_CONV NIST_POW_CONV) THEN
+  REFL_TAC);;
+
+let FINITE_GROUP_CARRIER_256K1 = prove
+ (`FINITE(group_carrier p256k1_group)`,
+  REWRITE_TAC[P256K1_GROUP] THEN MATCH_MP_TAC FINITE_WEIERSTRASS_CURVE THEN
+  REWRITE_TAC[FINITE_INTEGER_MOD_RING;
+              FIELD_INTEGER_MOD_RING; PRIME_P256K1] THEN
+  REWRITE_TAC[p_256k1] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let SIZE_P256K1_GROUP = prove
+ (`group_carrier p256k1_group HAS_SIZE n_256k1`,
+  MATCH_MP_TAC GROUP_ADHOC_ORDER_UNIQUE_LEMMA THEN
+  EXISTS_TAC `G_256K1:(int#int)option` THEN
+  REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_256K1;
+              GROUP_ELEMENT_ORDER_G256K1;
+              FINITE_GROUP_CARRIER_256K1] THEN
+  REWRITE_TAC[P256K1_GROUP] THEN CONJ_TAC THENL
+   [W(MP_TAC o PART_MATCH (lhand o rand)
+      CARD_BOUND_WEIERSTRASS_CURVE o lhand o snd) THEN
+    REWRITE_TAC[FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING] THEN
+    REWRITE_TAC[PRIME_P256K1] THEN ANTS_TAC THENL
+     [REWRITE_TAC[p_256k1] THEN CONV_TAC NUM_REDUCE_CONV;
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] LET_TRANS)] THEN
+    SIMP_TAC[CARD_INTEGER_MOD_RING; p_256k1; ARITH] THEN
+    REWRITE_TAC[n_256k1] THEN CONV_TAC NUM_REDUCE_CONV;
+    REWRITE_TAC[FORALL_OPTION_THM; IN; FORALL_PAIR_THM] THEN
+    REWRITE_TAC[weierstrass_curve; weierstrass_neg; option_DISTINCT] THEN
+    MAP_EVERY X_GEN_TAC [`x:int`; `y:int`] THEN REWRITE_TAC[option_INJ] THEN
+    SIMP_TAC[INTEGER_MOD_RING; INTEGER_MOD_RING_POW;
+             p_256k1; ARITH; PAIR_EQ; IN_ELIM_THM]] THEN
+  ASM_CASES_TAC `y:int = &0` THENL
+   [ASM_REWRITE_TAC[] THEN CONV_TAC INT_REDUCE_CONV THEN
+    DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC (MP_TAC o SYM)) THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN MP_TAC(SPEC `x:int` NO_ROOTS_256K1) THEN
+    REWRITE_TAC[INT_MUL_LZERO; INT_ADD_LID] THEN
+    REWRITE_TAC[GSYM INT_REM_EQ; p_256k1; INT_REM_ZERO];
+    STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP (INT_ARITH
+     `--y rem p = y ==> y rem p = y ==> (--y rem p = y rem p)`)) THEN
+    ANTS_TAC THENL [ASM_SIMP_TAC[INT_REM_LT]; ALL_TAC] THEN
+    REWRITE_TAC[INT_REM_EQ; INTEGER_RULE
+     `(--y:int == y) (mod p) <=> p divides (&2 * y)`] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (INTEGER_RULE
+     `p divides (a * b:int) ==> coprime(a,p) ==> p divides b`)) THEN
+    REWRITE_TAC[GSYM num_coprime; ARITH; COPRIME_2] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN ASM_INT_ARITH_TAC]);;
+
+let GENERATED_P256K1_GROUP = prove
+ (`subgroup_generated p256k1_group {G_256K1} = p256k1_group`,
+  SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
+           GENERATOR_IN_GROUP_CARRIER_256K1;
+           FINITE_GROUP_CARRIER_256K1] THEN
+  REWRITE_TAC[GROUP_ELEMENT_ORDER_G256K1;
+              REWRITE_RULE[HAS_SIZE] SIZE_P256K1_GROUP]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Point doubling in projective coordinates.                                 *)
 (*                                                                           *)
@@ -2267,8 +2695,63 @@ let P3_DBL_2007_BL_2 = prove
   weierstrass_field_tac THEN ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Point doubling in projective coordinates assuming a = 0.                  *)
+(*                                                                           *)
+(* Source: Bernstein-Lange [2007] "Faster addition and doubling..." with     *)
+(* trivial constant propagation from a = 0.                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(***
+ *** http://hyperelliptic.org/EFD/g1p/auto-code/shortw/projective/doubling/dbl-2007-bl.op3
+ *** plus trivial constant propagation
+ ***)
+
+let p0_dbl_2007_bl = new_definition
+ `p0_dbl_2007_bl (f:A ring,a:A,b:A) (x1,y1,z1) =
+      let xx = ring_pow f x1 2 in
+      let zz = ring_pow f z1 2 in
+      let w = ring_mul f (ring_of_num f 3) xx in
+      let t2 = ring_mul f y1 z1 in
+      let s = ring_mul f (ring_of_num f 2) t2 in
+      let ss = ring_pow f s 2 in
+      let sss = ring_mul f s ss in
+      let r = ring_mul f y1 s in
+      let rr = ring_pow f r 2 in
+      let t3 = ring_add f x1 r in
+      let t4 = ring_pow f t3 2 in
+      let t5 = ring_sub f t4 xx in
+      let b = ring_sub f t5 rr in
+      let t6 = ring_pow f w 2 in
+      let t7 = ring_mul f (ring_of_num f 2) b in
+      let h = ring_sub f t6 t7 in
+      let x3 = ring_mul f h s in
+      let t8 = ring_sub f b h in
+      let t9 = ring_mul f (ring_of_num f 2) rr in
+      let t10 = ring_mul f w t8 in
+      let y3 = ring_sub f t10 t9 in
+      let z3 = sss in
+      (x3,y3,z3)`;;
+
+let P0_DBL_2007_BL = prove
+ (`!f a b x1 y1 z1:A.
+        field f /\
+        a = ring_0 f /\ b IN ring_carrier f /\
+        projective_point f (x1,y1,z1)
+        ==> projective_eq f (p0_dbl_2007_bl (f,a,b) (x1,y1,z1))
+                            (projective_add (f,a,b) (x1,y1,z1) (x1,y1,z1))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[projective_point] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM SUBST_ALL_TAC THEN
+  REWRITE_TAC[p0_dbl_2007_bl; projective_add; projective_eq;
+              projective_neg; projective_0] THEN
+  ASM_CASES_TAC `z1:A = ring_0 f` THEN
+  ASM_REWRITE_TAC[projective_add; projective_eq;
+                  projective_neg; projective_0] THEN
+  ASM_REWRITE_TAC[LET_DEF; LET_END_DEF; PAIR_EQ; projective_eq] THEN
+  weierstrass_field_tac THEN ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Pure point addition in projective coordinates. This sequence never uses   *)
-(* the value of "a" so there's no special optimized version for a = -3.      *)
+(* the value of "a" so there's no special optimized version for special "a". *)
 (*                                                                           *)
 (* Source Cohen-Miyaji-Ono [1998] "Efficient elliptic curve exponentiation"  *)
 (*                                                                           *)
@@ -2330,7 +2813,7 @@ let PR_ADD_1998_CMO_2 = prove
 (* Mixed point addition in projective coordinates. Here "mixed" means        *)
 (* assuming z2 = 1, which holds if the second point was directly injected    *)
 (* from the Weierstrass coordinates via (x,y) |-> (x,y,1). This never uses   *)
-(* the value of "a" so there's no special optimized version for a = -3.      *)
+(* the value of "a" so there's no special optimized version for special "a". *)
 (*                                                                           *)
 (* Source Cohen-Miyaji-Ono [1998] "Efficient elliptic curve exponentiation"  *)
 (*                                                                           *)
@@ -2529,8 +3012,75 @@ let J3_DBL_2001_B' = prove
   weierstrass_field_tac THEN ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Point doubling in Jacobian coordinates assuming a = 0.                    *)
+(*                                                                           *)
+(* Source: Lange [2009].                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+(***
+ *** https://hyperelliptic.org/EFD/g1p/auto-code/shortw/jacobian-0/doubling/dbl-2009-l.op3
+ ***)
+
+let j0_dbl_2009_l = new_definition
+ `j0_dbl_2009_l (f:A ring,a:A,b:A) (x1,y1,z1) =
+      let a = ring_pow f x1 2 in
+      let b = ring_pow f y1 2 in
+      let c = ring_pow f b 2 in
+      let t0 = ring_add f x1 b in
+      let t1 = ring_pow f t0 2 in
+      let t2 = ring_sub f t1 a in
+      let t3 = ring_sub f t2 c in
+      let d = ring_mul f (ring_of_num f 2) t3 in
+      let e = ring_mul f (ring_of_num f 3) a in
+      let g = ring_pow f e 2 in
+      let t4 = ring_mul f (ring_of_num f 2) d in
+      let x3 = ring_sub f g t4 in
+      let t5 = ring_sub f d x3 in
+      let t6 = ring_mul f (ring_of_num f 8) c in
+      let t7 = ring_mul f e t5 in
+      let y3 = ring_sub f t7 t6 in
+      let t8 = ring_mul f y1 z1 in
+      let z3 = ring_mul f (ring_of_num f 2) t8 in
+      (x3,y3,z3)`;;
+
+let J0_DBL_2009_L = prove
+ (`!f a b x1 y1 z1:A.
+        field f /\
+        a = ring_0 f /\ b IN ring_carrier f /\
+        projective_point f (x1,y1,z1)
+        ==> jacobian_eq f (j0_dbl_2009_l (f,a,b) (x1,y1,z1))
+                          (jacobian_add (f,a,b) (x1,y1,z1) (x1,y1,z1))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[projective_point] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM SUBST_ALL_TAC THEN
+  REWRITE_TAC[j0_dbl_2009_l; jacobian_add; jacobian_eq;
+              jacobian_neg; jacobian_0] THEN
+  ASM_CASES_TAC `z1:A = ring_0 f` THEN
+  ASM_REWRITE_TAC[jacobian_add; jacobian_eq;
+                  jacobian_neg; jacobian_0] THEN
+  ASM_REWRITE_TAC[LET_DEF; LET_END_DEF; PAIR_EQ; jacobian_eq] THEN
+  weierstrass_field_tac THEN ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let J0_DBL_2009_L' = prove
+ (`!f a b x1 y1 z1:A.
+        field f /\
+        a = ring_0 f /\ b IN ring_carrier f /\
+        projective_point f (x1,y1,z1) /\
+        (z1 = ring_0 f ==> (x1,y1,z1) = jacobian_0 (f,a,b))
+        ==> j0_dbl_2009_l (f,a,b) (x1,y1,z1) =
+            jacobian_add (f,a,b) (x1,y1,z1) (x1,y1,z1)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[projective_point] THEN
+  ASM_CASES_TAC `z1:A = ring_0 f` THEN
+  ASM_REWRITE_TAC[jacobian_add; jacobian_eq; jacobian_0; PAIR_EQ;
+                  jacobian_neg; jacobian_0; j0_dbl_2009_l] THEN
+  STRIP_TAC THEN REPEAT(FIRST_X_ASSUM SUBST_ALL_TAC) THEN
+  ASM_REWRITE_TAC[jacobian_add; jacobian_eq;
+                  jacobian_neg; jacobian_0] THEN
+  ASM_REWRITE_TAC[LET_DEF; LET_END_DEF; PAIR_EQ; jacobian_eq] THEN
+  weierstrass_field_tac THEN ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Pure point addition in Jacobian coordinates. This sequence never uses     *)
-(* the value of "a" so there's no special optimized version for a = -3.      *)
+(* the value of "a" so there's no special optimized version for special "a". *)
 (*                                                                           *)
 (* Source: Bernstein-Lange [2007] "Faster addition and doubling..."          *)
 (*                                                                           *)
@@ -2600,7 +3150,7 @@ let JA_ADD_2007_BL = prove
 (* Mixed point addition in Jacobian coordinates. Here "mixed" means          *)
 (* assuming z2 = 1, which holds if the second point was directly injected    *)
 (* from the Weierstrass coordinates via (x,y) |-> (x,y,1). This never uses   *)
-(* the value of "a" so there's no special optimized version for a = -3.      *)
+(* the value of "a" so there's no special optimized version for special "a". *)
 (*                                                                           *)
 (* Source: Bernstein-Lange [2007] "Faster addition and doubling..."          *)
 (*                                                                           *)
@@ -2660,4 +3210,4 @@ let JA_MADD_2007_BL = prove
    ASM_REWRITE_TAC[jacobian_add; jacobian_eq;
                    jacobian_neg; jacobian_0; LET_DEF; LET_END_DEF]) THEN
   REPEAT(FIRST_X_ASSUM(MP_TAC o check (free_in `(=):A->A->bool` o concl))) THEN
-  weierstrass_field_tac);;
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
