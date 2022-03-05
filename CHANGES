@@ -8,6 +8,68 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  4th Mar 2022               Examples/nist_curves.ml
+
+Added a formalization of curve25519, and Montgomery curves in general,
+to the increasingly inaccurately-named "nist_curves.ml" file. Mainly
+for ease of re-use of the existing short Weierstrass material, the
+properties of Montgomery operations are first derived from their
+Weierstrass versions via the standard mapping, even defining the
+"wei25519" curve as the short Weierstrass variant (nomenclature taken
+from Struik's "Alternative Elliptic Curve Representations"). After
+that, all the usual things are proved about curve25519, including the
+y-free doubling and differential addition operations (following
+Bernstein and Lange, "Montgomery cuves and the Montgomery ladder") and
+a y-recovery formula (from Okeya and Sakurai). Also filled out the
+earlier curve material with some additional facts, most interestingly
+a standard easily computable endomorphism of secp256k1.
+
+Thu 24th Feb 2022               Library/grouptheory.ml
+
+Added this somewhat technical lemma which is handy for explicitly
+creating a group as an isomorphic image and not then doing a
+separate proof of group-ness and the isomorphism with the original:
+
+  CREATE_ISOMORPHIC_COPY_OF_GROUP =
+    |- !f g G s z i m.
+         z IN s /\
+         (!x. x IN group_carrier G ==> f x IN s /\ g (f x) = x) /\
+         (!y. y IN s ==> g y IN group_carrier G /\ f (g y) = y) /\
+         g z = group_id G /\
+         (!x. x IN s ==> i x = f (group_inv G (g x))) /\
+         (!x y. x IN s /\ y IN s ==> m x y = f (group_mul G (g x) (g y)))
+         ==> group_isomorphisms (G,group (s,z,i,m)) (f,g) /\
+             group_carrier (group (s,z,i,m)) = s /\
+             group_id (group (s,z,i,m)) = z /\
+             group_inv (group (s,z,i,m)) = i /\
+             group_mul (group (s,z,i,m)) = m
+
+Wed 23rd Feb 2022               Library/ringtheory.ml
+
+Added an explicit conversion INTEGER_MOD_RING_RED_CONV for computing
+terms in "integer_mod_ring n" (for nonzero n, the case of n = 0 being
+just the integers anyway). This also adds the theorem:
+
+  RING_INV_INTEGER_MOD_RING =
+    |- !n a.
+           ring_inv (integer_mod_ring n) (&a) =
+           (if (n = 0 \/ ~(n = 1) /\ a < n) /\ coprime(a,n)
+            then &(inverse_mod n a) else &0)
+
+This introduces a dependency on the Library/pocklington.ml file for
+some additional material about "inverse_mod".
+
+Wed 23rd Feb 2022               calc_num.ml, int.ml, Library/pocklington.ml
+
+Moved EXP_MOD_CONV from "Library/pocklington.ml" into the core (in the
+process slightly improving the implementation) and added an analogous
+integer form INT_POW_REM_CONV.
+
+Wed 23rd Feb 2022               Library/pocklington.ml
+
+Added INVERSE_MOD_CONV, an explicit calculation conversion for modular
+inverse terms of the form `inverse_mod m n` for numerals m and n.
+
 Tue  7th Dec 2021               Library/words.ml
 
 Added one more little missing lemma:

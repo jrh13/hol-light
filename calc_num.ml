@@ -1503,3 +1503,39 @@ let EXPAND_CASES_CONV =
   let rec conv tm =
     (base_CONV ORELSEC (step_CONV THENC LAND_CONV conv)) tm in
   conv THENC (REWRITE_CONV[GSYM CONJ_ASSOC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Computation of (a EXP k) MOD n keeping intermediates reduced              *)
+(* ------------------------------------------------------------------------- *)
+
+let EXP_MOD_CONV =
+  let [pth_0; pth_even; pth_odd] = (CONJUNCTS o prove)
+   (`(a EXP 0) MOD n = 1 MOD n /\
+     (a EXP (NUMERAL(BIT0 k))) MOD n =
+     ((a EXP (NUMERAL k) MOD n) EXP 2) MOD n /\
+     (a EXP (NUMERAL(BIT1 k))) MOD n =
+     (a * ((a EXP (NUMERAL k) MOD n) EXP 2) MOD n) MOD n`,
+    REWRITE_TAC[EXP; EXP_2] THEN REWRITE_TAC[BIT0; BIT1; NUMERAL] THEN
+    REWRITE_TAC[EXP; EXP_ADD] THEN CONV_TAC MOD_DOWN_CONV THEN
+    REWRITE_TAC[]) in
+  let conv_zero = GEN_REWRITE_CONV I [MOD_ZERO]
+  and conv_0 = GEN_REWRITE_CONV I [pth_0]
+  and conv_even = GEN_REWRITE_CONV I [pth_even]
+  and conv_odd = GEN_REWRITE_CONV I [pth_odd] in
+  let rec conv tm =
+    ((conv_0 THENC NUM_MOD_CONV) ORELSEC
+     (conv_even THENC
+      LAND_CONV(LAND_CONV conv THENC NUM_EXP_CONV) THENC
+      NUM_MOD_CONV) ORELSEC
+     (conv_odd THENC
+      LAND_CONV(RAND_CONV(LAND_CONV(LAND_CONV conv THENC NUM_EXP_CONV) THENC
+                          NUM_MOD_CONV) THENC
+                NUM_MULT_CONV) THENC
+      NUM_MOD_CONV)) tm in
+  let fullconv = (conv_zero THENC NUM_EXP_CONV) ORELSEC conv in
+  fun tm ->
+    match tm with
+      Comb(Comb(Const("MOD",_),
+                Comb(Comb(Const("EXP",_),m),k)),n)
+      when is_numeral m && is_numeral k && is_numeral n -> fullconv tm
+  | _ -> failwith "EXP_MOD_CONV";;

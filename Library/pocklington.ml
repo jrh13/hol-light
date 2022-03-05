@@ -840,6 +840,33 @@ let INVERSE_MOD_INVERSION = prove
   ASM_REWRITE_TAC[LE_MULT_LCANCEL; INVERSE_MOD_BOUND_LE] THEN
   REWRITE_TAC[LE_MULT_RCANCEL] THEN ASM_ARITH_TAC);;
 
+let INVERSE_MOD_CONV =
+  let rec gcdex(m,n) =
+    if n </ m then let (x,y) = gcdex(n,m) in (y,x)
+    else if m =/ Int 0 then (Int 0,Int 1) else
+    let q = quo_num n m in
+    let r = n -/ q */ m in
+    let (x,y) = gcdex(r,m) in (y -/ q */ x,x) in
+  let pth_01,pth = (CONJ_PAIR o prove)
+   (`(inverse_mod 0 n = 1 /\ inverse_mod 1 n = 1) /\
+     (MAX 2 p <= n /\ (m * p) MOD n = 1 ==> inverse_mod n m = p)`,
+    CONJ_TAC THENL [REWRITE_TAC[inverse_mod; ARITH]; STRIP_TAC] THEN
+    MATCH_MP_TAC INVERSE_MOD_UNIQUE THEN ONCE_REWRITE_TAC[CONG_SYM] THEN
+    ASM_REWRITE_TAC[CONG; MOD_EQ_SELF] THEN ASM_ARITH_TAC)
+  and dest_iterm = dest_binop `inverse_mod`
+  and m_tm = `m:num` and n_tm = `n:num` and p_tm = `p:num` in
+  let baseconv = GEN_REWRITE_CONV I [pth_01] in
+  fun tm ->
+   let ntm,mtm = dest_iterm tm in
+   let n = dest_numeral ntm and m = dest_numeral mtm in
+   if n <=/ num_1 then baseconv tm else
+   let (x,y) = gcdex(m,n) in
+   let d = x */ m +/ y */ n in
+   if d <>/ num_1 then failwith "INVERSE_MOD_CONV: not coprime" else
+   let p = mod_num x n in
+   let th = INST[mtm,m_tm; ntm,n_tm; mk_numeral p,p_tm] pth in
+   MP th (EQT_ELIM(NUM_REDUCE_CONV(lhand(concl th))));;
+
 (* ------------------------------------------------------------------------- *)
 (* Square-free natural numbers.                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -2349,49 +2376,6 @@ let certify_prime =
       Primroot_and_factors((n,pfact),a,map (fun n -> n,cert_prime n) primes) in
   fun n -> if length(multifactor n) = 1 then cert_prime n
            else failwith "certify_prime: input is not a prime";;
-
-(* ------------------------------------------------------------------------- *)
-(* Relatively efficient evaluation of "(a EXP k) MOD n".                     *)
-(* ------------------------------------------------------------------------- *)
-
-let EXP_MOD_CONV =
-  let pth = prove
-   (`~(n = 0)
-     ==> ((a EXP 0) MOD n = 1 MOD n) /\
-         ((a EXP (NUMERAL (BIT0 m))) MOD n =
-                let b = (a EXP (NUMERAL m)) MOD n in
-                (b * b) MOD n) /\
-         ((a EXP (NUMERAL (BIT1 m))) MOD n =
-                let b = (a EXP (NUMERAL m)) MOD n in
-                (a * ((b * b) MOD n)) MOD n)`,
-    DISCH_TAC THEN REWRITE_TAC[EXP] THEN
-    REWRITE_TAC[NUMERAL; BIT0; BIT1] THEN
-    REWRITE_TAC[EXP; EXP_ADD] THEN
-    CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN
-    ASM_SIMP_TAC[MOD_MULT_LMOD; MOD_MULT_RMOD] THEN
-    REWRITE_TAC[MULT_ASSOC] THEN
-    ASM_SIMP_TAC[MOD_MULT_LMOD; MOD_MULT_RMOD] THEN
-    ONCE_REWRITE_TAC[MULT_SYM] THEN
-    REWRITE_TAC[MULT_ASSOC] THEN
-    ASM_SIMP_TAC[MOD_MULT_LMOD; MOD_MULT_RMOD])
-  and pth_cong = prove
-   (`~(n = 0) ==> ((x == y) (mod n) <=> x MOD n = y MOD n)`,
-    REWRITE_TAC[CONG])
-  and n_tm = `n:num` in
-  fun tm ->
-    let ntm = rand tm in
-    let th1 = INST [ntm,n_tm] pth in
-    let th2 = EQF_ELIM(NUM_EQ_CONV(rand(lhand(concl th1)))) in
-    let th_base,th_steps = CONJ_PAIR(MP th1 th2) in
-    let conv_base = GEN_REWRITE_CONV I [th_base]
-    and conv_step = GEN_REWRITE_CONV I [th_steps] in
-    let rec conv tm =
-      try conv_base tm with Failure _ ->
-      (conv_step THENC
-       RAND_CONV conv THENC
-       let_CONV THENC
-       NUM_REDUCE_CONV) tm in
-    conv tm;;
 
 (* ------------------------------------------------------------------------- *)
 (* HOL checking of primality certificate, using Pocklington shortcut.        *)

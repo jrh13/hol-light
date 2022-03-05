@@ -18,6 +18,7 @@
 (* ------------------------------------------------------------------------- *)
 
 needs "Library/pocklington.ml";;
+needs "Library/primitive.ml";;
 needs "Library/grouptheory.ml";;
 needs "Library/ringtheory.ml";;
 
@@ -88,11 +89,32 @@ let p_224k1 = define `p_224k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 let n_224k1 = define `n_224k1 = 0x010000000000000000000000000001DCE8D2EC6184CAF0A971769FB1F7`;;
 let G_224K1 = define `G_224K1 = SOME(&0xA1455B334DF099DF30FC28A169A467E9E47075A90F7E650EB6B7A45C:int,&0x7E089FED7FBA344282CAFBD6F7E319F7C0B0BD59E2CA4BDB556D61A5:int)`;;
 
-(*** secp256k1 ***)
+(*** secp256k1, including parameters beta and lambda for an endomorphism ***)
 
 let p_256k1 = define `p_256k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F`;;
 let n_256k1 = define `n_256k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141`;;
 let G_256K1 = define `G_256K1 = SOME(&0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798:int,&0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8:int)`;;
+let p256k1_beta = define `p256k1_beta = 0x7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee`;;
+let p256k1_lambda = define `p256k1_lambda = 0x5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72`;;
+
+(* ------------------------------------------------------------------------- *)
+(* And also for curve25519; here n_25519 is the large prime factor of the    *)
+(* group order, which is actually 8 * n_25519. We specify parameters also    *)
+(* for the Weierstrass mapping of curve25519 (wei25519 in the terminology of *)
+(* "draft-ietf-lwig-curve-representations-09").                              *)
+(* ------------------------------------------------------------------------- *)
+
+let p_25519 = define`p_25519 = 57896044618658097711785492504343953926634992332820282019728792003956564819949`;;
+let n_25519 = define`n_25519 = 7237005577332262213973186563042994240857116359379907606001950938285454250989`;;
+let a_25519 = define`a_25519 = 19298681539552699237261830834781317975544997444273427339909597334573241639236`;;
+let b_25519 = define`b_25519 = 55751746669818908907645289078257140818241103727901012315294400837956729358436`;;
+let g_25519 = define `g_25519 = SOME(&0x2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaad245a:int,&0x20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9:int)`;;
+let gg_25519 = define `gg_25519 = SOME(&26209954324546670665403455918906049867068731898706945806410342575476729061509:int,&35197529511187359173101698576797651179158701633820552795916138355302448607023:int)`;;
+
+let A_25519 = define `A_25519 = 486662`;;
+let B_25519 = define `B_25519 = 1`;;
+let G_25519 = define `G_25519 = SOME(&0x09:int,&0x20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9:int)`;;
+let GG_25519 = define `GG_25519 = SOME(&6911272784993971428141625084124731891523734454433518466500745240824540625972:int,&35197529511187359173101698576797651179158701633820552795916138355302448607023:int)`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Expanded forms of the primes showing pseudo-Mersenne-ness.                *)
@@ -145,15 +167,24 @@ let P_256K1_ALT = prove
    2 EXP 256 - 2 EXP 32 - 2 EXP 9 - 2 EXP 8 - 2 EXP 7 - 2 EXP 6 - 2 EXP 4 - 1`,
   REWRITE_TAC[p_256k1] THEN CONV_TAC NUM_REDUCE_CONV);;
 
+let P_25519 = prove
+ (`p_25519 = 2 EXP 255 - 19`,
+  REWRITE_TAC[p_25519] THEN ARITH_TAC);;
+
+let N_25519 = prove
+ (`n_25519 = 2 EXP 252 + 27742317777372353535851937790883648493`,
+  REWRITE_TAC[n_25519] THEN ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Prove the the orders of the underlying fields and the orders of the       *)
-(* elliptic curve groups themselves are indeed prime. The former is basic    *)
-(* to the fact that we have a field, while the latter is useful to           *)
-(* verify that the orders of the groups are actually what is claimed.        *)
-(* To make this a bit faster and independent of external factorization       *)
-(* tools, we first implement a variant of PRIME_CONV using a list of         *)
-(* all necessary primes for the certification of the given prime: to         *)
-(* certify p, need all primes q dividing p - 1, and so on recursively.       *)
+(* elliptic curve groups themselves (or its large prime factor in the case   *)
+(* of curve25519) are indeed prime. The former is basic to the fact that we  *)
+(* have a field, while the latter is useful to verify that the orders of     *)
+(* the groups are actually what is claimed. To make this a bit faster and    *)
+(* independent of external factorization tools, we first implement a         *)
+(* variant of PRIME_CONV using a list of all necessary primes for the        *)
+(* certification of the given prime: to certify p, need all primes q         *)
+(* dividing p - 1, and so on recursively.                                    *)
 (* ------------------------------------------------------------------------- *)
 
 let guided_certify_prime hints =
@@ -396,6 +427,33 @@ let PRIME_N256K1 = time prove
    "341948486974166000522343609283189";
    "115792089237316195423570985008687907852837564279074904382605163141518161494337"]);;
 
+let PRIME_P25519 = prove
+ (`prime p_25519`,
+  REWRITE_TAC[p_25519] THEN (CONV_TAC o PRIME_RULE)
+   ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "29"; "31"; "37"; "41";
+    "43"; "47"; "53"; "59"; "83"; "97"; "103"; "107"; "127"; "131"; "173";
+    "223"; "239"; "353"; "419"; "479"; "487"; "991"; "1723"; "2437"; "3727";
+    "4153"; "9463"; "32573"; "37853"; "57467"; "65147"; "75707"; "132049";
+    "430751"; "569003"; "1923133"; "8574133"; "2773320623"; "72106336199";
+    "1919519569386763"; "31757755568855353";
+    "75445702479781427272750846543864801";
+    "74058212732561358302231226437062788676166966415465897661863160754340907";
+    "57896044618658097711785492504343953926634992332820282019728792003956564819949"]);;
+
+let PRIME_N25519 = prove
+ (`prime n_25519`,
+  REWRITE_TAC[n_25519] THEN (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "41"; "43"; "47"; "67";
+   "73"; "79"; "113"; "269"; "307"; "1361"; "1723"; "2551"; "2851"; "2939";
+   "3797"; "5879"; "17231"; "22111"; "30703"; "34123"; "41081"; "82163";
+   "132667"; "137849"; "409477"; "531581"; "1224481"; "14741173"; "58964693";
+   "292386187"; "213441916511"; "1257559732178653"; "4434155615661930479";
+   "3044861653679985063343"; "172054593956031949258510691";
+   "198211423230930754013084525763697";
+   "19757330305831588566944191468367130476339";
+   "276602624281642239937218680557139826668747";
+   "7237005577332262213973186563042994240857116359379907606001950938285454250989"]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some basic sanity checks on the (otherwise unused) c parameter.           *)
 (* ------------------------------------------------------------------------- *)
@@ -433,9 +491,7 @@ let SANITY_CHECK_521 = prove
 (*         y^2 = x^3 + a * x + b   over some field F                         *)
 (*                                                                           *)
 (* This isn't general enough for working over characteristics 2 and 3,       *)
-(* but is more than enough for all the curves we are concerned with,         *)
-(* where we always have a = 0 or a = -3 and are using the integers modulo    *)
-(* a large prime.                                                            *)
+(* but is more than enough for all the curves we are concerned with.         *)
 (* ------------------------------------------------------------------------- *)
 
 let weierstrass_point = define
@@ -734,7 +790,7 @@ let WEIERSTRASS_ADD_ASSOC = prove
  (`!f a (b:A) p q r.
         field f /\
         ring_char f IN {p_192, p_224, p_256, p_384, p_521,
-                        p_192k1, p_224k1, p_256k1} /\
+                        p_192k1, p_224k1, p_256k1, p_25519} /\
         ~weierstrass_singular(f,a,b) /\
         a IN ring_carrier f /\ b IN ring_carrier f /\
         weierstrass_curve(f,a,b) p /\
@@ -759,7 +815,7 @@ let WEIERSTRASS_ADD_ASSOC = prove
      [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
       REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
       REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
-                  p_192k1; p_224k1; p_256k1] THEN
+                  p_192k1; p_224k1; p_256k1; p_25519] THEN
       STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV;
       ASM_SIMP_TAC[WEIERSTRASS_ADD_SYM; WEIERSTRASS_CURVE_ADD]];
     ALL_TAC] THEN
@@ -795,7 +851,7 @@ let WEIERSTRASS_ADD_ASSOC = prove
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
   REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
   REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
-              p_192k1; p_224k1; p_256k1] THEN
+              p_192k1; p_224k1; p_256k1; p_25519] THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   CONV_TAC(RAND_CONV DIVIDES_CONV) THEN REWRITE_TAC[]);;
 
@@ -803,7 +859,7 @@ let WEIERSTRASS_GROUP = prove
  (`!f a (b:A).
       field f /\
       ring_char f IN {p_192, p_224, p_256, p_384, p_521,
-                      p_192k1, p_224k1, p_256k1} /\
+                      p_192k1, p_224k1, p_256k1, p_25519} /\
       a IN ring_carrier f /\ b IN ring_carrier f /\
       ~weierstrass_singular(f,a,b)
       ==> group_carrier(weierstrass_group(f,a,b)) = weierstrass_curve(f,a,b) /\
@@ -816,7 +872,7 @@ let WEIERSTRASS_GROUP = prove
    [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
     REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
     REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
-                p_192k1; p_224k1; p_256k1] THEN
+                p_192k1; p_224k1; p_256k1; p_25519] THEN
     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV;
     ALL_TAC] THEN
   REWRITE_TAC[group_carrier; group_id; group_inv; group_mul; GSYM PAIR_EQ] THEN
@@ -834,6 +890,79 @@ let WEIERSTRASS_GROUP = prove
      [ASM_SIMP_TAC[WEIERSTRASS_ADD_LNEG];
       MATCH_MP_TAC WEIERSTRASS_ADD_SYM THEN
       ASM_SIMP_TAC[WEIERSTRASS_CURVE_NEG; FIELD_IMP_INTEGRAL_DOMAIN]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Easily computable endomorphisms in some special cases.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let weierstrass_triplex = define
+ `weierstrass_triplex f (c:A) NONE = NONE /\
+  weierstrass_triplex f c (SOME(x:A,y:A)) = SOME(ring_mul f c x,y)`;;
+
+let GROUP_ENDOMORPHISM_TRIPLEX = prove
+ (`!f a b c:A.
+        field f /\
+        ring_char f IN
+        {p_192, p_224, p_256, p_384, p_521, p_192k1, p_224k1, p_256k1,
+         p_25519} /\
+        a IN ring_carrier f /\
+        b IN ring_carrier f /\
+        ~weierstrass_singular (f,a,b) /\
+        c IN ring_carrier f /\ ring_pow f c 3 = ring_1 f /\ a = ring_0 f
+        ==> group_endomorphism (weierstrass_group(f,a,b))
+                               (weierstrass_triplex f c)`,
+  REPEAT STRIP_TAC THEN UNDISCH_THEN `a:A = ring_0 f` SUBST_ALL_TAC THEN
+  ASM_SIMP_TAC[group_endomorphism; GROUP_HOMOMORPHISM] THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; WEIERSTRASS_GROUP] THEN
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; IN] THEN
+  REWRITE_TAC[weierstrass_curve; weierstrass_triplex; weierstrass_add] THEN
+  REPEAT STRIP_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_triplex] THEN
+  TRY RING_CARRIER_TAC THEN
+  REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[weierstrass_singular]) THEN
+  weierstrass_field_tac THEN TRY RING_CARRIER_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
+              p_192k1; p_224k1; p_256k1; p_25519] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC(RAND_CONV DIVIDES_CONV) THEN REWRITE_TAC[]);;
+
+let weierstrass_quady = define
+ `weierstrass_quady f (c:A) NONE = NONE /\
+  weierstrass_quady f c (SOME(x:A,y:A)) = SOME(ring_neg f x,ring_mul f c y)`;;
+
+let GROUP_ENDOMORPHISM_QUADY = prove
+ (`!f a b c:A.
+        field f /\
+        ring_char f IN
+        {p_192, p_224, p_256, p_384, p_521, p_192k1, p_224k1, p_256k1,
+         p_25519} /\
+        a IN ring_carrier f /\
+        b IN ring_carrier f /\
+        ~weierstrass_singular (f,a,b) /\
+        c IN ring_carrier f /\ b = ring_0 f /\
+        ring_pow f c 4 = ring_1 f /\ ~(ring_pow f c 2 = ring_1 f)
+        ==> group_endomorphism (weierstrass_group(f,a,b))
+                               (weierstrass_quady f c)`,
+  REPEAT STRIP_TAC THEN UNDISCH_THEN `b:A = ring_0 f` SUBST_ALL_TAC THEN
+  ASM_SIMP_TAC[group_endomorphism; GROUP_HOMOMORPHISM] THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; WEIERSTRASS_GROUP] THEN
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; IN] THEN
+  REWRITE_TAC[weierstrass_curve; weierstrass_quady; weierstrass_add] THEN
+  REPEAT STRIP_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_quady] THEN
+  TRY RING_CARRIER_TAC THEN
+  REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[weierstrass_singular]) THEN
+  weierstrass_field_tac THEN TRY RING_CARRIER_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
+              p_192k1; p_224k1; p_256k1; p_25519] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC(RAND_CONV DIVIDES_CONV) THEN REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Projective coordinates, (x,y,z) |-> (x/z,y/z) and (0,1,0) |-> infinity    *)
@@ -1724,6 +1853,29 @@ let P256K1_GROUP = prove
            INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
   CONV_TAC INT_REDUCE_CONV);;
 
+let wei25519_group = define
+ `wei25519_group =
+    weierstrass_group(integer_mod_ring p_25519,&a_25519,&b_25519)`;;
+
+let WEI25519_GROUP = prove
+ (`group_carrier wei25519_group =
+     weierstrass_curve(integer_mod_ring p_25519,&a_25519,&b_25519) /\
+   group_id wei25519_group =
+     NONE /\
+   group_inv wei25519_group =
+     weierstrass_neg(integer_mod_ring p_25519,&a_25519,&b_25519) /\
+   group_mul wei25519_group =
+     weierstrass_add(integer_mod_ring p_25519,&a_25519,&b_25519)`,
+  REWRITE_TAC[wei25519_group] THEN
+  ONCE_REWRITE_TAC[GSYM WEIERSTRASS_GROUP_REM] THEN
+  MATCH_MP_TAC WEIERSTRASS_GROUP THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P25519] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; weierstrass_singular] THEN
+  SIMP_TAC[p_25519; INTEGER_MOD_RING; ARITH; IN_ELIM_THM;
+           INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
+  REWRITE_TAC[a_25519; b_25519] THEN CONV_TAC INT_REDUCE_CONV);;
+
 (* ------------------------------------------------------------------------- *)
 (* Prove, more or less by doing a gcd(x^p - x,x^3 + a * x + b) computation   *)
 (* over F_p[x], that there are no solutions to the r.h.s. of the             *)
@@ -1733,7 +1885,7 @@ let P256K1_GROUP = prove
 
 let num_modinv =
   let rec gcdex(m,n) =
-    if n <=/ m then let (x,y) = gcdex(n,m) in (y,x)
+    if n </ m then let (x,y) = gcdex(n,m) in (y,x)
     else if m =/ Int 0 then (Int 0,Int 1) else
     let q = quo_num n m in
     let r = n -/ q */ m in
@@ -1962,14 +2114,15 @@ let NIST_CARRIER_CONV =
     REWRITE_RULE[b_521; p_521] (CONJUNCT1 P521_GROUP);
     REWRITE_RULE[p_192k1] (CONJUNCT1 P192K1_GROUP);
     REWRITE_RULE[p_224k1] (CONJUNCT1 P224K1_GROUP);
-    REWRITE_RULE[p_256k1] (CONJUNCT1 P256K1_GROUP)] in
+    REWRITE_RULE[p_256k1] (CONJUNCT1 P256K1_GROUP);
+    REWRITE_RULE[a_25519; b_25519; p_25519] (CONJUNCT1 WEI25519_GROUP)] in
   GEN_REWRITE_CONV I ths THENC INT_REDUCE_CONV;;
 
 let NIST_ID_CONV =
   GEN_REWRITE_CONV I
    (map (CONJUNCT1 o CONJUNCT2)
         [P192_GROUP; P224_GROUP; P256_GROUP; P384_GROUP; P521_GROUP;
-         P192K1_GROUP; P224K1_GROUP; P256K1_GROUP]);;
+         P192K1_GROUP; P224K1_GROUP; P256K1_GROUP; WEI25519_GROUP]);;
 
 let NIST_INV_CONV =
   let ths = map
@@ -1985,7 +2138,9 @@ let NIST_INV_CONV =
     REWRITE_RULE[b_521; p_521] (el 2 (CONJUNCTS P521_GROUP));
     REWRITE_RULE[p_192k1] (el 2 (CONJUNCTS P192K1_GROUP));
     REWRITE_RULE[p_224k1] (el 2 (CONJUNCTS P224K1_GROUP));
-    REWRITE_RULE[p_256k1] (el 2 (CONJUNCTS P256K1_GROUP))] in
+    REWRITE_RULE[p_256k1] (el 2 (CONJUNCTS P256K1_GROUP));
+    REWRITE_RULE[a_25519; b_25519; p_25519]
+      (el 2 (CONJUNCTS WEI25519_GROUP))] in
   GEN_REWRITE_CONV I ths THENC INT_REDUCE_CONV;;
 
 let NIST_MUL_CONV =
@@ -2003,7 +2158,9 @@ let NIST_MUL_CONV =
     REWRITE_RULE[b_521; p_521] (el 3 (CONJUNCTS P521_GROUP));
     REWRITE_RULE[p_192k1] (el 3 (CONJUNCTS P192K1_GROUP));
     REWRITE_RULE[p_224k1] (el 3 (CONJUNCTS P224K1_GROUP));
-    REWRITE_RULE[p_256k1] (el 3 (CONJUNCTS P256K1_GROUP))] in
+    REWRITE_RULE[p_256k1] (el 3 (CONJUNCTS P256K1_GROUP));
+    REWRITE_RULE[a_25519; b_25519; p_25519]
+      (el 3 (CONJUNCTS WEI25519_GROUP))] in
   GEN_REWRITE_CONV I ths THENC
   DEPTH_CONV(INT_RED_CONV ORELSEC INTEGER_MOD_RING_INV_CONV);;
 
@@ -2042,8 +2199,8 @@ let NIST_POW_CONV =
   conv;;
 
 (* ------------------------------------------------------------------------- *)
-(* Proof that the NIST curve groups p_xxx have the sizes n_xxx claimed.      *)
-(* Since the orders n_xxx are all prime, we just need to exhibit a           *)
+(* Proof that the various curve groups p_xxx have the sizes n_xxx claimed.   *)
+(* When the orders n_xxx are prime, we just need to exhibit a                *)
 (* generator with g^n = 1 (n g = 0 in additive terminology) and then do      *)
 (* a little bit more work rule out small multiples of n as the order.        *)
 (* For multiples >= 3 this follows from the trivial bound; for 2 n we        *)
@@ -2052,6 +2209,7 @@ let NIST_POW_CONV =
 (* while directly above we have proved that there are no such points.        *)
 (* It would be more direct and natural to use the Hasse bound, implying      *)
 (* the order is close to p, but we'd have to prove that result formally.     *)
+(* For wei25519 we have a simpler argument from the naive bound.             *)
 (* ------------------------------------------------------------------------- *)
 
 let CAUCHY_GROUP_THEOREM_2 = prove
@@ -2145,6 +2303,14 @@ let GENERATED_P192_GROUP = prove
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G192;
               REWRITE_RULE[HAS_SIZE] SIZE_P192_GROUP]);;
 
+let CYCLIC_P192_GROUP = prove
+ (`cyclic_group p192_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P192_GROUP]);;
+
+let ABELIAN_P192_GROUP = prove
+ (`abelian_group p192_group`,
+  MESON_TAC[CYCLIC_P192_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
 let GENERATOR_IN_GROUP_CARRIER_224 = prove
  (`G_224 IN group_carrier p224_group`,
   REWRITE_TAC[G_224] THEN CONV_TAC NIST_CARRIER_CONV);;
@@ -2206,6 +2372,14 @@ let GENERATED_P224_GROUP = prove
            FINITE_GROUP_CARRIER_224] THEN
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G224;
               REWRITE_RULE[HAS_SIZE] SIZE_P224_GROUP]);;
+
+let CYCLIC_P224_GROUP = prove
+ (`cyclic_group p224_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P224_GROUP]);;
+
+let ABELIAN_P224_GROUP = prove
+ (`abelian_group p224_group`,
+  MESON_TAC[CYCLIC_P224_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
 
 let GENERATOR_IN_GROUP_CARRIER_256 = prove
  (`G_256 IN group_carrier p256_group`,
@@ -2269,6 +2443,14 @@ let GENERATED_P256_GROUP = prove
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G256;
               REWRITE_RULE[HAS_SIZE] SIZE_P256_GROUP]);;
 
+let CYCLIC_P256_GROUP = prove
+ (`cyclic_group p256_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P256_GROUP]);;
+
+let ABELIAN_P256_GROUP = prove
+ (`abelian_group p256_group`,
+  MESON_TAC[CYCLIC_P256_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
 let GENERATOR_IN_GROUP_CARRIER_384 = prove
  (`G_384 IN group_carrier p384_group`,
   REWRITE_TAC[G_384] THEN CONV_TAC NIST_CARRIER_CONV);;
@@ -2331,6 +2513,14 @@ let GENERATED_P384_GROUP = prove
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G384;
               REWRITE_RULE[HAS_SIZE] SIZE_P384_GROUP]);;
 
+let CYCLIC_P384_GROUP = prove
+ (`cyclic_group p384_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P384_GROUP]);;
+
+let ABELIAN_P384_GROUP = prove
+ (`abelian_group p384_group`,
+  MESON_TAC[CYCLIC_P384_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
 let GENERATOR_IN_GROUP_CARRIER_521 = prove
  (`G_521 IN group_carrier p521_group`,
   REWRITE_TAC[G_521] THEN CONV_TAC NIST_CARRIER_CONV);;
@@ -2392,6 +2582,14 @@ let GENERATED_P521_GROUP = prove
            FINITE_GROUP_CARRIER_521] THEN
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G521;
               REWRITE_RULE[HAS_SIZE] SIZE_P521_GROUP]);;
+
+let CYCLIC_P521_GROUP = prove
+ (`cyclic_group p521_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P521_GROUP]);;
+
+let ABELIAN_P521_GROUP = prove
+ (`abelian_group p521_group`,
+  MESON_TAC[CYCLIC_P521_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
 
 let GENERATOR_IN_GROUP_CARRIER_192K1 = prove
  (`G_192K1 IN group_carrier p192k1_group`,
@@ -2458,6 +2656,14 @@ let GENERATED_P192K1_GROUP = prove
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G192K1;
               REWRITE_RULE[HAS_SIZE] SIZE_P192K1_GROUP]);;
 
+let CYCLIC_P192K1_GROUP = prove
+ (`cyclic_group p192k1_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P192K1_GROUP]);;
+
+let ABELIAN_P192K1_GROUP = prove
+ (`abelian_group p192k1_group`,
+  MESON_TAC[CYCLIC_P192K1_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
 let GENERATOR_IN_GROUP_CARRIER_224K1 = prove
  (`G_224K1 IN group_carrier p224k1_group`,
   REWRITE_TAC[G_224K1] THEN CONV_TAC NIST_CARRIER_CONV);;
@@ -2523,6 +2729,14 @@ let GENERATED_P224K1_GROUP = prove
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G224K1;
               REWRITE_RULE[HAS_SIZE] SIZE_P224K1_GROUP]);;
 
+let CYCLIC_P224K1_GROUP = prove
+ (`cyclic_group p224k1_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P224K1_GROUP]);;
+
+let ABELIAN_P224K1_GROUP = prove
+ (`abelian_group p224k1_group`,
+  MESON_TAC[CYCLIC_P224K1_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
 let GENERATOR_IN_GROUP_CARRIER_256K1 = prove
  (`G_256K1 IN group_carrier p256k1_group`,
   REWRITE_TAC[G_256K1] THEN CONV_TAC NIST_CARRIER_CONV);;
@@ -2587,6 +2801,144 @@ let GENERATED_P256K1_GROUP = prove
            FINITE_GROUP_CARRIER_256K1] THEN
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G256K1;
               REWRITE_RULE[HAS_SIZE] SIZE_P256K1_GROUP]);;
+
+let CYCLIC_P256K1_GROUP = prove
+ (`cyclic_group p256k1_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_P256K1_GROUP]);;
+
+let ABELIAN_P256K1_GROUP = prove
+ (`abelian_group p256k1_group`,
+  MESON_TAC[CYCLIC_P256K1_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
+let FINITE_GROUP_CARRIER_WEI25519 = prove
+ (`FINITE(group_carrier wei25519_group)`,
+  REWRITE_TAC[WEI25519_GROUP] THEN MATCH_MP_TAC FINITE_WEIERSTRASS_CURVE THEN
+  REWRITE_TAC[FINITE_INTEGER_MOD_RING;
+              FIELD_INTEGER_MOD_RING; PRIME_P25519] THEN
+  REWRITE_TAC[p_25519] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let GENERATOR_IN_GROUP_CARRIER_WEI25519 = prove
+ (`g_25519 IN group_carrier wei25519_group`,
+  REWRITE_TAC[g_25519] THEN CONV_TAC NIST_CARRIER_CONV);;
+
+let GROUP_ELEMENT_ORDER_WEI25519_G25519 = prove
+ (`group_element_order wei25519_group g_25519 = n_25519`,
+  SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_PRIME;
+           GENERATOR_IN_GROUP_CARRIER_WEI25519; PRIME_N25519] THEN
+  REWRITE_TAC[g_25519; el 1 (CONJUNCTS WEI25519_GROUP);
+              option_DISTINCT] THEN
+  REWRITE_TAC[n_25519] THEN CONV_TAC(LAND_CONV NIST_POW_CONV) THEN
+  REFL_TAC);;
+
+let FULLGENERATOR_IN_GROUP_CARRIER_WEI25519 = prove
+ (`gg_25519 IN group_carrier wei25519_group`,
+  REWRITE_TAC[gg_25519] THEN CONV_TAC NIST_CARRIER_CONV);;
+
+let GROUP_ELEMENT_ORDER_WEI25519_GG25519 = prove
+ (`group_element_order wei25519_group gg_25519 = 8 * n_25519`,
+  ABBREV_TAC
+   `h = SOME
+     (&784994156384216107199399111990385161439916830893843497063691184659069321411,
+      &10506421237558716435988711236408671798265365380393424752549290025458740468278)
+    :(int#int)option` THEN
+  SUBGOAL_THEN
+   `h IN group_carrier wei25519_group /\
+    group_element_order wei25519_group h = 8`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "h" THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [CONV_TAC NIST_CARRIER_CONV;
+      SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_ALT; ARITH]] THEN
+    DISCH_TAC THEN REWRITE_TAC[WEI25519_GROUP] THEN CONJ_TAC THENL
+     [CONV_TAC(LAND_CONV NIST_POW_CONV) THEN REFL_TAC; ALL_TAC] THEN
+    REWRITE_TAC[IMP_CONJ_ALT] THEN CONV_TAC EXPAND_CASES_CONV THEN
+    CONV_TAC NUM_REDUCE_CONV THEN REPEAT CONJ_TAC THEN
+    CONV_TAC(RAND_CONV(LAND_CONV NIST_POW_CONV)) THEN
+    REWRITE_TAC[option_DISTINCT];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `gg_25519 = group_mul wei25519_group h g_25519` SUBST1_TAC THENL
+   [EXPAND_TAC "h" THEN REWRITE_TAC[g_25519; gg_25519] THEN
+    CONV_TAC(RAND_CONV NIST_MUL_CONV) THEN REFL_TAC;
+    ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) GROUP_ELEMENT_ORDER_MUL_EQ o
+    lhand o snd) THEN
+  ASM_REWRITE_TAC[GROUP_ELEMENT_ORDER_WEI25519_G25519] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_WEI25519] THEN CONJ_TAC THENL
+   [EXPAND_TAC "h" THEN REWRITE_TAC[g_25519] THEN
+    CONV_TAC(BINOP_CONV NIST_MUL_CONV) THEN REFL_TAC;
+    REWRITE_TAC[n_25519] THEN CONV_TAC COPRIME_CONV]);;
+
+let SIZE_WEI25519_GROUP = prove
+ (`group_carrier wei25519_group HAS_SIZE (8 * n_25519)`,
+  REWRITE_TAC[HAS_SIZE; FINITE_GROUP_CARRIER_WEI25519] THEN
+  MP_TAC(ISPECL [`wei25519_group`; `gg_25519`]
+    GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER) THEN
+  REWRITE_TAC[FINITE_GROUP_CARRIER_WEI25519;
+              FULLGENERATOR_IN_GROUP_CARRIER_WEI25519] THEN
+  REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM;
+               GROUP_ELEMENT_ORDER_WEI25519_GG25519] THEN
+  X_GEN_TAC `d:num` THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (ARITH_RULE `d = 0 \/ d = 1 \/ 2 <= d`) THEN
+  ASM_SIMP_TAC[CARD_EQ_0; FINITE_GROUP_CARRIER_WEI25519;
+               MULT_CLAUSES; GROUP_CARRIER_NONEMPTY] THEN
+  MATCH_MP_TAC(ARITH_RULE
+   `s < 16 * n /\ 2 * n <= d * n ==> s = (8 * n) * d ==> x = 8 * n`) THEN
+  REWRITE_TAC[LE_MULT_RCANCEL; n_25519; ARITH_EQ] THEN
+  ASM_REWRITE_TAC[GSYM n_25519; WEI25519_GROUP] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) CARD_BOUND_WEIERSTRASS_CURVE o
+    lhand o snd) THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; PRIME_P25519] THEN
+  SIMP_TAC[FINITE_INTEGER_MOD_RING; CARD_INTEGER_MOD_RING;
+           n_25519; p_25519; ARITH_EQ] THEN
+  ARITH_TAC);;
+
+let GENERATED_WEI25519_GROUP = prove
+ (`subgroup_generated wei25519_group {gg_25519} = wei25519_group`,
+  SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
+           FULLGENERATOR_IN_GROUP_CARRIER_WEI25519;
+           FINITE_GROUP_CARRIER_WEI25519] THEN
+  REWRITE_TAC[GROUP_ELEMENT_ORDER_WEI25519_GG25519;
+              REWRITE_RULE[HAS_SIZE] SIZE_WEI25519_GROUP]);;
+
+let CYCLIC_WEI25519_GROUP = prove
+ (`cyclic_group wei25519_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_WEI25519_GROUP]);;
+
+let ABELIAN_WEI25519_GROUP = prove
+ (`abelian_group wei25519_group`,
+  MESON_TAC[CYCLIC_WEI25519_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Easily computable endomorphism of secp256k1 curve.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let GROUP_ENDOMORPHISM_TRIPLEX_BETA = prove
+ (`group_endomorphism p256k1_group
+        (weierstrass_triplex (integer_mod_ring p_256k1) (&p256k1_beta))`,
+  REWRITE_TAC[p256k1_group] THEN MATCH_MP_TAC GROUP_ENDOMORPHISM_TRIPLEX THEN
+  SIMP_TAC[INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR; INTEGER_MOD_RING_POW;
+           p_256k1; IN_INSERT; FIELD_INTEGER_MOD_RING; ARITH; p256k1_beta;
+           IN_ELIM_THM; weierstrass_singular; INTEGER_MOD_RING_OF_NUM] THEN
+  REWRITE_TAC[REWRITE_RULE[p_256k1] PRIME_P256K1] THEN
+  CONV_TAC INT_REDUCE_CONV);;
+
+let P256K1_TRIPLEX_BETA = prove
+ (`!x. x IN group_carrier p256k1_group
+       ==> weierstrass_triplex (integer_mod_ring p_256k1) (&p256k1_beta) x =
+           group_pow p256k1_group x p256k1_lambda`,
+  GEN_REWRITE_TAC (BINDER_CONV o LAND_CONV o ONCE_DEPTH_CONV)
+   [GSYM GENERATED_P256K1_GROUP] THEN
+  MATCH_MP_TAC  GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS THEN
+  EXISTS_TAC `p256k1_group` THEN
+  SIMP_TAC[ABELIAN_GROUP_HOMOMORPHISM_POWERING; ABELIAN_P256K1_GROUP] THEN
+  REWRITE_TAC[GSYM group_endomorphism] THEN
+  REWRITE_TAC[GROUP_ENDOMORPHISM_TRIPLEX_BETA; ETA_AX] THEN
+  REWRITE_TAC[IMP_CONJ_ALT; IN_SING; FORALL_UNWIND_THM2] THEN
+  DISCH_TAC THEN
+  SIMP_TAC[weierstrass_triplex; p256k1_beta; p256k1_lambda; G_256K1] THEN
+  CONV_TAC(RAND_CONV NIST_POW_CONV) THEN REWRITE_TAC[option_INJ; PAIR_EQ] THEN
+  REWRITE_TAC[INTEGER_MOD_RING; p_256k1] THEN CONV_TAC INT_REDUCE_CONV);;
 
 (* ------------------------------------------------------------------------- *)
 (* Point doubling in projective coordinates.                                 *)
@@ -3211,3 +3563,684 @@ let JA_MADD_2007_BL = prove
                    jacobian_neg; jacobian_0; LET_DEF; LET_END_DEF]) THEN
   REPEAT(FIRST_X_ASSUM(MP_TAC o check (free_in `(=):A->A->bool` o concl))) THEN
   weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Montgomery curves in general, B * y^2 = x^3 + A * x^2 + x.                *)
+(* ------------------------------------------------------------------------- *)
+
+let montgomery_point = define
+ `(montgomery_point f NONE <=> T) /\
+  (montgomery_point f (SOME(x:A,y)) <=>
+        x IN ring_carrier f /\ y IN ring_carrier f)`;;
+
+let montgomery_curve = define
+ `(montgomery_curve(f:A ring,a:A,b:A) NONE <=> T) /\
+  (montgomery_curve(f:A ring,a:A,b:A) (SOME(x,y)) <=>
+        x IN ring_carrier f /\ y IN ring_carrier f /\
+        ring_mul f b (ring_pow f y 2) =
+        ring_add f (ring_pow f x 3)
+                   (ring_add f (ring_mul f a (ring_pow f x 2)) x))`;;
+
+let montgomery_singular = define
+ `montgomery_singular (f:A ring,a:A,b:A) <=>
+        b = ring_0 f \/ ring_pow f a 2 = ring_of_num f 4`;;
+
+let montgomery_neg = define
+ `(montgomery_neg (f:A ring,a:A,b:A) NONE = NONE) /\
+  (montgomery_neg (f:A ring,a:A,b:A) (SOME(x:A,y)) = SOME(x,ring_neg f y))`;;
+
+let montgomery_add = define
+ `(!y. montgomery_add (f:A ring,a:A,b:A) NONE y = y) /\
+  (!x. montgomery_add (f:A ring,a:A,b:A) x NONE = x) /\
+  (!x1 y1 x2 y2.
+        montgomery_add (f:A ring,a:A,b:A) (SOME(x1,y1)) (SOME(x2,y2)) =
+        if x1 = x2 then
+          if y1 = y2 /\ ~(y1 = ring_0 f) then
+            let l = ring_div f
+                (ring_add f (ring_mul f (ring_of_num f 3) (ring_pow f x1 2))
+                            (ring_add f (ring_mul f (ring_of_num f 2)
+                                                    (ring_mul f a x1))
+                                        (ring_of_num f 1)))
+                (ring_mul f (ring_of_num f 2) (ring_mul f b y1)) in
+            let x3 = ring_sub f (ring_sub f (ring_mul f b (ring_pow f l 2)) a)
+                                (ring_mul f (ring_of_num f 2) x1) in
+            let y3 = ring_sub f (ring_mul f l (ring_sub f x1 x3)) y1 in
+            SOME(x3,y3)
+          else NONE
+        else
+          let l = ring_div f (ring_sub f y2 y1) (ring_sub f x2 x1) in
+          let x3 = ring_sub f (ring_sub f (ring_mul f b (ring_pow f l 2)) a)
+                              (ring_add f x1 x2) in
+          let y3 = ring_sub f (ring_mul f l (ring_sub f x1 x3)) y1 in
+          SOME(x3,y3))`;;
+
+let montgomery_group = define
+ `montgomery_group (f:A ring,a:A,b:A) =
+        group(montgomery_curve(f,a,b),
+              NONE,
+              montgomery_neg(f,a,b),
+              montgomery_add(f,a,b))`;;
+
+let FINITE_MONTGOMERY_CURVE = prove
+ (`!f a b:A. field f /\ FINITE(ring_carrier f)
+             ==> FINITE(montgomery_curve(f,a,b))`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC
+   `IMAGE SOME {(x,y) | (x:A) IN ring_carrier f /\ y IN ring_carrier f} UNION
+    {NONE}` THEN
+  ASM_SIMP_TAC[FINITE_UNION; FINITE_IMAGE; FINITE_SING; FINITE_PRODUCT] THEN
+  REWRITE_TAC[montgomery_curve; SUBSET; FORALL_OPTION_THM;
+              IN_UNION; IN_SING; IN_IMAGE; option_INJ; FORALL_PAIR_THM;
+              IN_ELIM_PAIR_THM; UNWIND_THM1] THEN
+  SIMP_TAC[montgomery_curve; IN]);;
+
+let CARD_BOUND_MONTGOMERY_CURVE = prove
+ (`!f a b:A. field f /\ FINITE(ring_carrier f) /\
+             a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f)
+             ==> CARD(montgomery_curve(f,a,b))
+                   <= 2 * CARD(ring_carrier f) + 1`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(MESON[FINITE_SUBSET; CARD_SUBSET; LE_TRANS]
+   `!s. t SUBSET s /\ FINITE s /\ CARD s <= n ==> CARD t <= n`) THEN
+  EXISTS_TAC
+   `IMAGE SOME
+     {(x,y) | (x:A) IN ring_carrier f /\ y IN ring_carrier f /\
+              ring_pow f y 2 =
+              ring_div f (ring_add f (ring_pow f x 3)
+                           (ring_add f (ring_mul f a (ring_pow f x 2)) x)) b}
+    UNION {NONE}` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[montgomery_curve; SUBSET; FORALL_OPTION_THM;
+      IN_UNION; IN_SING; IN_IMAGE; option_INJ; FORALL_PAIR_THM;
+      IN_ELIM_PAIR_THM; UNWIND_THM1] THEN
+    REWRITE_TAC[option_DISTINCT; IN_CROSS] THEN
+    REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [IN] THEN
+    ASM_REWRITE_TAC[montgomery_curve] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN weierstrass_field_tac;
+    MATCH_MP_TAC FINITE_CARD_LE_UNION] THEN
+  REWRITE_TAC[FINITE_SING; CARD_SING; LE_REFL] THEN
+  MATCH_MP_TAC FINITE_CARD_LE_IMAGE THEN
+  MATCH_MP_TAC FINITE_QUADRATIC_CURVE THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Map from Montgomery to Weierstrass by (x,y) |-> ((x + A / 3) / B, y / B)  *)
+(* and from Weierstrass to Montgomery by (x,y) |-> (B * x - A / 3, B * y)    *)
+(* and thus Montgomery(A,B) curve gives Weierstrass(a,b) where               *)
+(*                                                                           *)
+(*     a = (1 - A^2 / 3) / B^2                                               *)
+(*     b = A * (2 * A^2 - 9) / (27 * B^3)                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let wcurve_of_mcurve = define
+ `wcurve_of_mcurve(f,(a:A),b) =
+   (f,
+    ring_div f (ring_sub f (ring_of_num f 1)
+                           (ring_div f (ring_pow f a 2) (ring_of_num f 3)))
+               (ring_pow f b 2),
+    ring_div f (ring_mul f a (ring_sub f (ring_mul f (ring_of_num f 2)
+                                                     (ring_pow f a 2))
+                                         (ring_of_num f 9)))
+               (ring_mul f (ring_of_num f 27) (ring_pow f b 3)))`;;
+
+let WCURVE_OF_MCURVE_SINGULAR_EQ = prove
+ (`!f a b:A.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f)
+        ==> (weierstrass_singular(wcurve_of_mcurve(f,a,b)) <=>
+             ring_pow f a 2 = ring_of_num f 4)`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REWRITE_TAC[montgomery_singular; weierstrass_singular; wcurve_of_mcurve] THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let WCURVE_OF_MCURVE_NONSINGULAR = prove
+ (`!f a b:A.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        ~montgomery_singular(f,a,b)
+        ==> ~weierstrass_singular(wcurve_of_mcurve(f,a,b))`,
+  SIMP_TAC[montgomery_singular; DE_MORGAN_THM; WCURVE_OF_MCURVE_SINGULAR_EQ]);;
+
+let weierstrass_of_montgomery = define
+ `weierstrass_of_montgomery(f,a:A,b) NONE = NONE /\
+  weierstrass_of_montgomery(f,a:A,b) (SOME(x,y)) =
+  SOME(ring_div f (ring_add f x (ring_div f a (ring_of_num f 3))) b,
+       ring_div f y b)`;;
+
+let montgomery_of_weierstrass = define
+ `montgomery_of_weierstrass(f,a:A,b) NONE = NONE /\
+  montgomery_of_weierstrass(f,a:A,b) (SOME(x,y)) =
+  SOME(ring_sub f (ring_mul f b x) (ring_div f a (ring_of_num f 3)),
+       ring_mul f b y)`;;
+
+let MONTGOMERY_OF_WEIERSTRASS_OF_MONTGOMERY = prove
+ (`!f a (b:A) p.
+        field f /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f) /\
+        montgomery_point f p
+        ==> montgomery_of_weierstrass(f,a,b)
+              (weierstrass_of_montgomery(f,a,b) p) = p`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_RULE ["2"] `prime 3`]
+   `field f /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 3) /\ P`] THEN
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[montgomery_of_weierstrass; weierstrass_of_montgomery] THEN
+  REWRITE_TAC[montgomery_point; option_INJ; PAIR_EQ] THEN
+  REPEAT STRIP_TAC THEN weierstrass_field_tac);;
+
+let WEIERSTRASS_OF_MONTGOMERY_OF_WEIERSTRASS = prove
+ (`!f a (b:A) p.
+        field f /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f) /\
+        weierstrass_point f p
+        ==> weierstrass_of_montgomery(f,a,b)
+              (montgomery_of_weierstrass(f,a,b) p) = p`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_RULE ["2"] `prime 3`]
+   `field f /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 3) /\ P`] THEN
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[montgomery_of_weierstrass; weierstrass_of_montgomery] THEN
+  REWRITE_TAC[weierstrass_point; option_INJ; PAIR_EQ] THEN
+  REPEAT STRIP_TAC THEN weierstrass_field_tac);;
+
+let WEIERSTRASS_OF_MONTGOMERY = prove
+ (`!f (a:A) b p.
+        field f /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        montgomery_curve(f,a,b) p
+        ==> weierstrass_curve (wcurve_of_mcurve(f,a,b))
+                              (weierstrass_of_montgomery(f,a,b) p)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[montgomery_curve; weierstrass_curve;
+              weierstrass_of_montgomery; wcurve_of_mcurve] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_RULE ["2"] `prime 3`]
+   `field f /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 3) /\ P`] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let MONTGOMERY_OF_WEIERSTRASS = prove
+ (`!f (a:A) b p.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f) /\
+        weierstrass_curve (wcurve_of_mcurve(f,a,b)) p
+        ==> montgomery_curve(f,a,b) (montgomery_of_weierstrass(f,a,b) p)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[montgomery_curve; weierstrass_curve;
+              montgomery_of_weierstrass; wcurve_of_mcurve] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let WEIERSTRASS_OF_MONTGOMERY_NEG = prove
+ (`!f (a:A) b p.
+        field f /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        ~(b = ring_0 f) /\
+        montgomery_curve(f,a,b) p
+        ==> montgomery_neg(f,a,b) p =
+            montgomery_of_weierstrass(f,a,b)
+             (weierstrass_neg (wcurve_of_mcurve(f,a,b))
+                              (weierstrass_of_montgomery(f,a,b) p))`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[montgomery_curve; weierstrass_of_montgomery;
+              montgomery_of_weierstrass;  wcurve_of_mcurve;
+              montgomery_neg; weierstrass_neg] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[option_INJ; PAIR_EQ] THEN
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_RULE ["2"] `prime 3`]
+   `field f /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 3) /\ P`] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let WEIERSTRASS_OF_MONTGOMERY_ADD = prove
+ (`!f (a:A) b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        ~(b = ring_0 f) /\
+        montgomery_curve(f,a,b) p /\ montgomery_curve(f,a,b) q
+        ==> montgomery_add(f,a,b) p q =
+            montgomery_of_weierstrass(f,a,b)
+             (weierstrass_add (wcurve_of_mcurve(f,a,b))
+                              (weierstrass_of_montgomery(f,a,b) p)
+                              (weierstrass_of_montgomery(f,a,b) q))`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[montgomery_curve; weierstrass_of_montgomery;
+              montgomery_of_weierstrass;  wcurve_of_mcurve;
+              montgomery_add; weierstrass_add] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[option_INJ; PAIR_EQ] THEN
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[weierstrass_of_montgomery]) THEN
+  REPEAT LET_TAC THEN
+  ASM_REWRITE_TAC[montgomery_of_weierstrass; weierstrass_of_montgomery] THEN
+  REWRITE_TAC[option_INJ; option_DISTINCT; PAIR_EQ] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let GROUP_ISOMORPHISMS_WEIERSTRASS_MONTGOMERY_GROUP,MONTGOMERY_GROUP =
+ (CONJ_PAIR o prove)
+ (`(!f a (b:A).
+      field f /\
+      ring_char f IN {p_192, p_224, p_256, p_384, p_521,
+                      p_192k1, p_224k1, p_256k1, p_25519} /\
+      a IN ring_carrier f /\ b IN ring_carrier f /\
+      ~montgomery_singular(f,a,b)
+      ==> group_isomorphisms
+           (weierstrass_group(wcurve_of_mcurve(f,a,b)),montgomery_group(f,a,b))
+           (montgomery_of_weierstrass(f,a,b),
+            weierstrass_of_montgomery(f,a,b))) /\
+   (!f a (b:A).
+      field f /\
+      ring_char f IN {p_192, p_224, p_256, p_384, p_521,
+                      p_192k1, p_224k1, p_256k1, p_25519} /\
+      a IN ring_carrier f /\ b IN ring_carrier f /\
+      ~montgomery_singular(f,a,b)
+      ==> group_carrier(montgomery_group(f,a,b)) = montgomery_curve(f,a,b) /\
+          group_id(montgomery_group(f,a,b)) = NONE /\
+          group_inv(montgomery_group(f,a,b)) = montgomery_neg(f,a,b) /\
+          group_mul(montgomery_group(f,a,b)) = montgomery_add(f,a,b))`,
+  REWRITE_TAC[AND_FORALL_THM; TAUT
+   `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `~(ring_char(f:A ring) = 2) /\ ~(ring_char f = 3)`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
+    REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+    REWRITE_TAC[p_192; p_224; p_256; p_384; p_521;
+                p_192k1; p_224k1; p_256k1; p_25519] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV;
+    ALL_TAC] THEN
+  MP_TAC(ISPECL (striplist dest_pair (rand(concl wcurve_of_mcurve)))
+                WEIERSTRASS_GROUP) THEN
+  REWRITE_TAC[GSYM wcurve_of_mcurve] THEN ANTS_TAC THENL
+   [ASM_SIMP_TAC[WCURVE_OF_MCURVE_NONSINGULAR] THEN
+    REPEAT CONJ_TAC THEN RING_CARRIER_TAC;
+    STRIP_TAC] THEN
+  SUBGOAL_THEN
+   `(!x. weierstrass_curve (wcurve_of_mcurve (f,(a:A),b)) x
+         ==> weierstrass_point f x) /\
+    (!y. montgomery_curve (f,a,b) y ==> montgomery_point f y)`
+  STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[FORALL_PAIR_THM; FORALL_OPTION_THM] THEN
+    SIMP_TAC[weierstrass_curve; weierstrass_point; wcurve_of_mcurve;
+                montgomery_curve; montgomery_point];
+    ALL_TAC] THEN
+  REWRITE_TAC[montgomery_group] THEN
+  MATCH_MP_TAC CREATE_ISOMORPHIC_COPY_OF_GROUP THEN
+  ASM_REWRITE_TAC[IN] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[montgomery_singular; DE_MORGAN_THM]) THEN
+  ASM_SIMP_TAC[WEIERSTRASS_OF_MONTGOMERY_NEG; WEIERSTRASS_OF_MONTGOMERY_ADD;
+    MONTGOMERY_OF_WEIERSTRASS; WEIERSTRASS_OF_MONTGOMERY_OF_WEIERSTRASS;
+    WEIERSTRASS_OF_MONTGOMERY; MONTGOMERY_OF_WEIERSTRASS_OF_MONTGOMERY] THEN
+  REWRITE_TAC[montgomery_curve; weierstrass_of_montgomery]);;
+
+(* ------------------------------------------------------------------------- *)
+(* curve25519 in particular, via the connection with wei25519 initially.     *)
+(* ------------------------------------------------------------------------- *)
+
+let curve25519_group = define
+ `curve25519_group =
+    montgomery_group(integer_mod_ring p_25519,&A_25519,&1)`;;
+
+let CURVE25519_GROUP = prove
+ (`group_carrier curve25519_group =
+     montgomery_curve(integer_mod_ring p_25519,&A_25519,&1) /\
+   group_id curve25519_group =
+     NONE /\
+   group_inv curve25519_group =
+     montgomery_neg(integer_mod_ring p_25519,&A_25519,&1) /\
+   group_mul curve25519_group =
+     montgomery_add(integer_mod_ring p_25519,&A_25519,&1)`,
+  REWRITE_TAC[curve25519_group] THEN
+  MATCH_MP_TAC MONTGOMERY_GROUP THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P25519] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; montgomery_singular] THEN
+  SIMP_TAC[p_25519; INTEGER_MOD_RING; ARITH; IN_ELIM_THM;
+           INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
+  REWRITE_TAC[A_25519] THEN CONV_TAC INT_REDUCE_CONV);;
+
+let WCURVE_OF_MCURVE_25519 = prove
+ (`wcurve_of_mcurve(integer_mod_ring p_25519,&A_25519,&1) =
+   (integer_mod_ring p_25519,&a_25519,&b_25519)`,
+  REWRITE_TAC[wcurve_of_mcurve; p_25519; PAIR_EQ;
+              a_25519; b_25519; A_25519] THEN
+  CONV_TAC(DEPTH_CONV INTEGER_MOD_RING_RED_CONV) THEN
+  REWRITE_TAC[]);;
+
+let GROUP_ISOMORPHISMS_WEI25519_CURVE25519 = prove
+ (`group_isomorphisms (wei25519_group,curve25519_group)
+      (montgomery_of_weierstrass (integer_mod_ring p_25519,&A_25519,&1),
+       weierstrass_of_montgomery (integer_mod_ring p_25519,&A_25519,&1))`,
+  REWRITE_TAC[wei25519_group; curve25519_group] THEN
+  REWRITE_TAC[GSYM WCURVE_OF_MCURVE_25519] THEN
+  MATCH_MP_TAC GROUP_ISOMORPHISMS_WEIERSTRASS_MONTGOMERY_GROUP THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P25519] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; montgomery_singular] THEN
+  SIMP_TAC[p_25519; INTEGER_MOD_RING; ARITH; IN_ELIM_THM;
+           INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
+  REWRITE_TAC[A_25519] THEN CONV_TAC INT_REDUCE_CONV);;
+
+let ISOMORPHIC_GROUPS_CURVE25519_WEI25519 = prove
+ (`curve25519_group isomorphic_group wei25519_group`,
+  ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+  MP_TAC GROUP_ISOMORPHISMS_WEI25519_CURVE25519 THEN
+  MESON_TAC[isomorphic_group; GROUP_ISOMORPHISMS_IMP_ISOMORPHISM]);;
+
+let FINITE_GROUP_CARRIER_CURVE25519 = prove
+ (`FINITE(group_carrier curve25519_group)`,
+  REWRITE_TAC[FINITE_GROUP_CARRIER_WEI25519;
+              MATCH_MP ISOMORPHIC_GROUP_FINITENESS
+                       ISOMORPHIC_GROUPS_CURVE25519_WEI25519]);;
+
+let MONTGOMERY_OF_WEIERSTRASS_G25519 = prove
+ (`montgomery_of_weierstrass(integer_mod_ring p_25519,&A_25519,&1) g_25519 =
+   G_25519`,
+  REWRITE_TAC[montgomery_of_weierstrass; g_25519; G_25519; A_25519] THEN
+  REWRITE_TAC[p_25519; option_INJ; PAIR_EQ] THEN
+  CONV_TAC(DEPTH_CONV INTEGER_MOD_RING_RED_CONV) THEN REWRITE_TAC[]);;
+
+let MONTGOMERY_OF_WEIERSTRASS_GG25519 = prove
+ (`montgomery_of_weierstrass(integer_mod_ring p_25519,&A_25519,&1) gg_25519 =
+   GG_25519`,
+  REWRITE_TAC[montgomery_of_weierstrass; gg_25519; GG_25519; A_25519] THEN
+  REWRITE_TAC[p_25519; option_INJ; PAIR_EQ] THEN
+  CONV_TAC(DEPTH_CONV INTEGER_MOD_RING_RED_CONV) THEN REWRITE_TAC[]);;
+
+let GENERATOR_IN_GROUP_CARRIER_CURVE25519 = prove
+ (`G_25519 IN group_carrier curve25519_group`,
+  REWRITE_TAC[GSYM MONTGOMERY_OF_WEIERSTRASS_G25519] THEN
+  MP_TAC GROUP_ISOMORPHISMS_WEI25519_CURVE25519 THEN
+  REWRITE_TAC[group_isomorphisms; group_homomorphism] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_WEI25519]);;
+
+let GROUP_ELEMENT_ORDER_CURVE25519_G25519 = prove
+ (`group_element_order curve25519_group G_25519 = n_25519`,
+  REWRITE_TAC[GSYM MONTGOMERY_OF_WEIERSTRASS_G25519] THEN
+  REWRITE_TAC[GSYM GROUP_ELEMENT_ORDER_WEI25519_G25519] THEN
+  MATCH_MP_TAC GROUP_ELEMENT_ORDER_MONOMORPHIC_IMAGE THEN
+  REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_WEI25519; ETA_AX] THEN
+  MESON_TAC[GROUP_ISOMORPHISMS_WEI25519_CURVE25519;
+            GROUP_ISOMORPHISMS_IMP_ISOMORPHISM;
+            GROUP_ISOMORPHISM_IMP_MONOMORPHISM]);;
+
+let FULLGENERATOR_IN_GROUP_CARRIER_CURVE25519 = prove
+ (`GG_25519 IN group_carrier curve25519_group`,
+ REWRITE_TAC[GSYM MONTGOMERY_OF_WEIERSTRASS_GG25519] THEN
+  MP_TAC GROUP_ISOMORPHISMS_WEI25519_CURVE25519 THEN
+  REWRITE_TAC[group_isomorphisms; group_homomorphism] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  REWRITE_TAC[FULLGENERATOR_IN_GROUP_CARRIER_WEI25519]);;
+
+let GROUP_ELEMENT_ORDER_CURVE25519_GG25519 = prove
+ (`group_element_order curve25519_group GG_25519 = 8 * n_25519`,
+  REWRITE_TAC[GSYM MONTGOMERY_OF_WEIERSTRASS_GG25519] THEN
+  REWRITE_TAC[GSYM GROUP_ELEMENT_ORDER_WEI25519_GG25519] THEN
+  MATCH_MP_TAC GROUP_ELEMENT_ORDER_MONOMORPHIC_IMAGE THEN
+  REWRITE_TAC[FULLGENERATOR_IN_GROUP_CARRIER_WEI25519; ETA_AX] THEN
+  MESON_TAC[GROUP_ISOMORPHISMS_WEI25519_CURVE25519;
+            GROUP_ISOMORPHISMS_IMP_ISOMORPHISM;
+            GROUP_ISOMORPHISM_IMP_MONOMORPHISM]);;
+
+let SIZE_CURVE25519_GROUP = prove
+ (`group_carrier curve25519_group HAS_SIZE (8 * n_25519)`,
+  REWRITE_TAC[SIZE_WEI25519_GROUP;
+              MATCH_MP ISOMORPHIC_GROUP_HAS_ORDER
+                       ISOMORPHIC_GROUPS_CURVE25519_WEI25519]);;
+
+let GENERATED_CURVE25519_GROUP = prove
+ (`subgroup_generated curve25519_group {GG_25519} = curve25519_group`,
+  SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
+           FULLGENERATOR_IN_GROUP_CARRIER_CURVE25519;
+           FINITE_GROUP_CARRIER_CURVE25519] THEN
+  REWRITE_TAC[GROUP_ELEMENT_ORDER_CURVE25519_GG25519;
+              REWRITE_RULE[HAS_SIZE] SIZE_CURVE25519_GROUP]);;
+
+let CYCLIC_CURVE25519_GROUP = prove
+ (`cyclic_group curve25519_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_CURVE25519_GROUP]);;
+
+let ABELIAN_CURVE25519_GROUP = prove
+ (`abelian_group curve25519_group`,
+  MESON_TAC[CYCLIC_CURVE25519_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Observe that there are no points of order 2 besides (0,0). We could       *)
+(* also deduce this from the structure of the group above but this seems     *)
+(* more direct and is in line with how other curves are done above.          *)
+(* ------------------------------------------------------------------------- *)
+
+let NO_ROOTS_P25519 = prove
+ (`!x:int. ~((x pow 2 + &A_25519 * x + &1 == &0) (mod &p_25519))`,
+  REWRITE_TAC[A_25519; INT_ARITH
+   `(x:int) pow 2 + &486662 * x + &1 =
+    (x + &243331) pow 2 - &59209975560`] THEN
+  MP_TAC(SPECL [`p_25519`; `59209975560`] EULER_CRITERION) THEN
+  REWRITE_TAC[PRIME_P25519] THEN MATCH_MP_TAC(TAUT
+   `~q /\ ~r /\ (~p ==> s) ==> (p <=> q \/ r) ==> s`) THEN
+  REWRITE_TAC[p_25519] THEN REPEAT CONJ_TAC THENL
+   [CONV_TAC(RAND_CONV DIVIDES_CONV) THEN REWRITE_TAC[];
+    REWRITE_TAC[CONG] THEN CONV_TAC
+     (DEPTH_CONV(FIRST_CONV[NUM_SUB_CONV;NUM_DIV_CONV;NUM_MOD_CONV])) THEN
+    CONV_TAC(RAND_CONV(LAND_CONV EXP_MOD_CONV)) THEN ARITH_TAC;
+    REWRITE_TAC[GSYM p_25519; NOT_EXISTS_THM] THEN DISCH_TAC] THEN
+  X_GEN_TAC `x:int` THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `num_of_int((x + &243331) rem &p_25519)`) THEN
+  REWRITE_TAC[num_congruent; GSYM INT_OF_NUM_CLAUSES; CONTRAPOS_THM] THEN
+  SIMP_TAC[INT_OF_NUM_OF_INT; INT_REM_POS; INT_OF_NUM_EQ;
+           p_25519; ARITH_EQ] THEN
+  REWRITE_TAC[GSYM p_25519; GSYM INT_REM_EQ] THEN
+  CONV_TAC INT_REM_DOWN_CONV THEN
+  REWRITE_TAC[INT_REM_EQ] THEN INTEGER_TAC);;
+
+let CURVE25519_ZEROPOINTS = prove
+ (`!x y. SOME(x,y) IN group_carrier curve25519_group
+         ==> (y = &0 <=> x = &0)`,
+  REWRITE_TAC[CURVE25519_GROUP] THEN REWRITE_TAC[IN] THEN
+  REWRITE_TAC[montgomery_curve] THEN
+  SIMP_TAC[p_25519; INTEGER_MOD_RING; INTEGER_MOD_RING_POW; ARITH] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; GSYM INT_FORALL_POS] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; INT_OF_NUM_REM] THEN
+  REWRITE_TAC[GSYM p_25519; MULT_CLAUSES] THEN
+  X_GEN_TAC `x:num` THEN DISCH_TAC THEN
+  X_GEN_TAC `y:num` THEN DISCH_TAC THEN CONV_TAC MOD_DOWN_CONV THEN
+  SUBGOAL_THEN
+    `(y = 0 <=> x = 0) <=>
+     ((y == 0) (mod p_25519) <=> (x == 0) (mod p_25519))`
+  SUBST1_TAC THENL [ASM_SIMP_TAC[CONG; MOD_LT; MOD_0]; ALL_TAC] THEN
+  REWRITE_TAC[GSYM CONG; CONG_0_DIVIDES] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CONG_DIVIDES) THEN
+  REWRITE_TAC[EXP_2; ARITH_RULE
+   `x EXP 3 + a * x EXP 2 + x = x * (x * x + a * x + 1)`] THEN
+  ASM_SIMP_TAC[PRIME_DIVPROD_EQ; PRIME_P25519] THEN
+  DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC(TAUT `~q ==> (p \/ q <=> p)`) THEN
+  REWRITE_TAC[GSYM CONG_0_DIVIDES] THEN
+  REWRITE_TAC[num_congruent; GSYM INT_OF_NUM_CLAUSES; GSYM INT_POW_2] THEN
+  REWRITE_TAC[NO_ROOTS_P25519]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Doubling without using y coordinates.                                     *)
+(*                                                                           *)
+(* x' = (x^2 - 1)^2 / (4 * (x^3 + A * x^2 + x))                              *)
+(* ------------------------------------------------------------------------- *)
+
+let MONTGOMERY_DOUBLE_YLESS = prove
+ (`!f a (b:A) x y.
+      field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+      a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f) /\
+      montgomery_curve (f,a,b) (SOME(x,y))
+      ==> ?y'. montgomery_add (f,a,b) (SOME(x,y)) (SOME(x,y)) =
+               if y = ring_0 f then NONE else
+               let x' = ring_div f
+                (ring_pow f (ring_sub f (ring_pow f x 2) (ring_of_num f 1)) 2)
+                (ring_mul f (ring_of_num f 4)
+                    (ring_add f (ring_pow f x 3)
+                                (ring_add f (ring_mul f a (ring_pow f x 2))
+                                x))) in
+               SOME(x',y')`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[montgomery_curve; montgomery_add; COND_SWAP] THEN
+  STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN
+  REWRITE_TAC[option_INJ; ONCE_REWRITE_RULE[CONJ_SYM] PAIR_EQ] THEN
+  REWRITE_TAC[UNWIND_THM1] THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let CURVE25519_DOUBLE_YLESS = prove
+ (`!x y. SOME(x,y) IN group_carrier curve25519_group
+         ==> ?y'. group_mul curve25519_group (SOME(x,y)) (SOME(x,y)) =
+                  if x = &0 then NONE else
+                  SOME(ring_div (integer_mod_ring p_25519)
+                    ((x pow 2 - &1) pow 2 rem &p_25519)
+                    ((&4 * (x pow 3 + &A_25519 * x pow 2 + x)) rem &p_25519),
+                    y')`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP CURVE25519_ZEROPOINTS) THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC[CURVE25519_GROUP] THEN
+  DISCH_THEN(ASSUME_TAC o REWRITE_RULE[IN]) THEN
+  MP_TAC(ISPECL
+   [`integer_mod_ring p_25519`; `&A_25519:int`; `&1:int`; `x:int`; `y:int`]
+   MONTGOMERY_DOUBLE_YLESS) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P25519] THEN
+    REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; montgomery_singular] THEN
+    SIMP_TAC[p_25519; INTEGER_MOD_RING; ARITH; IN_ELIM_THM;
+             INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM] THEN
+    REWRITE_TAC[A_25519] THEN CONV_TAC INT_REDUCE_CONV;
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[INTEGER_MOD_RING; ring_sub; INTEGER_MOD_RING_POW;
+              INTEGER_MOD_RING_OF_NUM] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN
+  REWRITE_TAC[option_INJ; PAIR_EQ] THEN
+  CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[GSYM INT_SUB]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Differential addition without using y coordinates.                        *)
+(*                                                                           *)
+(* If (x1,y1) + (x2,y2) = (xs,ys) and (x1,y1) - (x2,y2) = (xd,yd)            *)
+(* then xs * xd = (x1 * x2 - 1)^2 / (x1 - x2)^2                              *)
+(* ------------------------------------------------------------------------- *)
+
+let MONTGOMERY_DIFFADD_YLESS = prove
+ (`!f a (b:A) x1 y1 x2 y2 xs ys xd yd.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f) /\
+        x1 IN ring_carrier f /\ y1 IN ring_carrier f /\
+        x2 IN ring_carrier f /\ y2 IN ring_carrier f /\
+        montgomery_curve (f,a,b) (SOME(x1,y1)) /\
+        montgomery_curve (f,a,b) (SOME(x2,y2)) /\
+        montgomery_add(f,a,b) (SOME(x1,y1)) (SOME(x2,y2)) = SOME(xs,ys) /\
+        montgomery_add(f,a,b) (SOME(x1,y1)) (SOME(x2,ring_neg f y2)) =
+        SOME(xd,yd)
+        ==> ring_mul f xs xd =
+            ring_div f
+              (ring_pow f (ring_sub f (ring_mul f x1 x2) (ring_of_num f 1)) 2)
+              (ring_pow f (ring_sub f x1 x2) 2)`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[montgomery_curve; montgomery_add; LET_DEF; LET_END_DEF] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[option_DISTINCT]) THEN
+  REWRITE_TAC[option_INJ; PAIR_EQ] THEN REPEAT STRIP_TAC THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let CURVE25519_DIFFADD_YLESS = prove
+ (`!x1 y1 x2 y2 xs ys xd yd.
+        SOME(x1,y1) IN group_carrier curve25519_group /\
+        SOME(x2,y2) IN group_carrier curve25519_group /\
+        group_mul curve25519_group (SOME(x1,y1)) (SOME(x2,y2)) = SOME(xs,ys) /\
+        group_div curve25519_group (SOME(x1,y1)) (SOME(x2,y2)) = SOME(xd,yd)
+        ==> (xs * xd) rem &p_25519 =
+            ring_div (integer_mod_ring p_25519)
+                     (((x1 * x2 - &1) pow 2) rem &p_25519)
+                     (((x1 - x2) pow 2) rem &p_25519)`,
+  REWRITE_TAC[IN] THEN
+  MP_TAC(ISPECL [`integer_mod_ring p_25519`; `&A_25519:int`; `&1:int`]
+        MONTGOMERY_DIFFADD_YLESS) THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  MATCH_MP_TAC MONO_IMP THEN
+  REWRITE_TAC[CURVE25519_GROUP; group_div] THEN
+  SIMP_TAC[montgomery_neg; montgomery_curve] THEN
+  MATCH_MP_TAC(TAUT `p /\ q ==> (r ==> p) /\ q`) THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P25519] THEN
+  SIMP_TAC[INTEGER_MOD_RING; ring_sub; INTEGER_MOD_RING_POW;
+           INTEGER_MOD_RING_OF_NUM; p_25519; ARITH; A_25519; IN_ELIM_THM] THEN
+  CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[INT_SUB] THEN
+  CONV_TAC INT_REDUCE_CONV);;
+
+(* ------------------------------------------------------------------------- *)
+(* The Okeya-Sakurai y coordinate recovery formula:                          *)
+(*                                                                           *)
+(* Suppose (x1,y1) + (x,y) = (x2,y2). Then                                   *)
+(* y1 = ((x1 * x + 1) * (x1 + x + 2 * A) - 2 * A - (x1 - x)^2 * x2) /        *)
+(*      (2 * B * y)                                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let MONTGOMERY_ADD_YRECOVERY = prove
+ (`!f a (b:A) x y x1 y1 x2 y2.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\ ~(b = ring_0 f) /\
+        montgomery_curve (f,a,b) (SOME(x,y)) /\ ~(y = ring_0 f) /\
+        montgomery_curve (f,a,b) (SOME(x1,y1)) /\
+        montgomery_add(f,a,b) (SOME(x,y)) (SOME(x1,y1)) = SOME(x2,y2)
+        ==> y1 = ring_div f
+                  (ring_sub f
+                   (ring_sub f
+                    (ring_mul f (ring_add f (ring_mul f x1 x) (ring_1 f))
+                    (ring_add f x1
+                      (ring_add f x (ring_mul f (ring_of_num f 2) a))))
+                      (ring_mul f (ring_of_num f 2) a))
+                     (ring_mul f (ring_pow f (ring_sub f x1 x) 2) x2))
+                  (ring_mul f (ring_of_num f 2) (ring_mul f b y))`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REWRITE_TAC[montgomery_singular] THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[montgomery_curve; montgomery_add; LET_DEF; LET_END_DEF] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[option_DISTINCT]) THEN
+  REWRITE_TAC[option_INJ; PAIR_EQ] THEN REPEAT STRIP_TAC THEN
+  weierstrass_field_tac THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let CURVE25519_ADD_YRCOVERY = prove
+ (`!x y x1 y1 x2 y2.
+        SOME(x,y) IN group_carrier curve25519_group /\ ~(y = &0) /\
+        SOME(x1,y1) IN group_carrier curve25519_group /\
+        group_mul curve25519_group (SOME(x,y)) (SOME(x1,y1)) = SOME(x2,y2)
+        ==> y1 = ring_div (integer_mod_ring p_25519)
+                 (((x1 * x + &1) * (x1 + x + &2 * &A_25519) -
+                   &2 * &A_25519 - (x1 - x) pow 2 * x2) rem &p_25519)
+                 ((&2 * y) rem &p_25519)`,
+  REWRITE_TAC[IN] THEN
+  MP_TAC(ISPECL [`integer_mod_ring p_25519`; `&A_25519:int`; `&1:int`]
+        MONTGOMERY_ADD_YRECOVERY) THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[CURVE25519_GROUP] THEN
+  SIMP_TAC[montgomery_curve] THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR;
+              PRIME_P25519] THEN
+  SIMP_TAC[INTEGER_MOD_RING; ring_sub; INTEGER_MOD_RING_POW;
+           INTEGER_MOD_RING_OF_NUM; p_25519; ARITH; A_25519; IN_ELIM_THM] THEN
+  CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[INT_SUB] THEN
+  CONV_TAC INT_REDUCE_CONV THEN DISCH_THEN SUBST1_TAC THEN
+  BINOP_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN INT_ARITH_TAC);;

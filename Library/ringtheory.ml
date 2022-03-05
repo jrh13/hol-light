@@ -3,6 +3,7 @@
 (* ========================================================================= *)
 
 needs "Library/binomial.ml";;
+needs "Library/pocklington.ml";;
 needs "Library/card.ml";;
 
 (* ------------------------------------------------------------------------- *)
@@ -14015,6 +14016,88 @@ let INTEGRAL_DOMAIN_INTEGER_MOD_RING = prove
     ASM_REWRITE_TAC[TRIVIAL_INTEGER_MOD_RING];
     ASM_SIMP_TAC[FINITE_INTEGRAL_DOMAIN_EQ_FIELD;
                  FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Conversion for explicit calculation over integer_mod_ring n (nonzero n)   *)
+(* ------------------------------------------------------------------------- *)
+
+let RING_INV_INTEGER_MOD_RING = prove
+ (`!n a. ring_inv (integer_mod_ring n) (&a) =
+         if (n = 0 \/ ~(n = 1) /\ a < n) /\ coprime(a,n)
+         then &(inverse_mod n a) else &0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ring_inv] THEN
+  SIMP_TAC[INTEGER_MOD_RING; INTEGER_MOD_RING_UNIT; GSYM num_coprime] THEN
+  ASM_CASES_TAC `coprime(a:num,n)` THEN ASM_REWRITE_TAC[] THEN
+  POP_ASSUM MP_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_SIMP_TAC[COPRIME_0; INTEGER_MOD_RING; LE_1; inverse_mod; ARITH] THEN
+    REWRITE_TAC[IN_UNIV; INT_MUL_LID; IN_ELIM_THM; INT_REM_0; SELECT_UNIQUE];
+    ASM_SIMP_TAC[INTEGER_MOD_RING; LE_1; IN_ELIM_THM] THEN
+    REWRITE_TAC[INT_OF_NUM_LT; INT_OF_NUM_LE; LE_0] THEN DISCH_TAC] THEN
+  ASM_CASES_TAC `a:num < n` THEN ASM_REWRITE_TAC[COND_SWAP] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC SELECT_UNIQUE THENL
+   [REWRITE_TAC[INT_REM_1] THEN INT_ARITH_TAC; ALL_TAC] THEN
+  X_GEN_TAC `p:int` THEN REWRITE_TAC[] THEN EQ_TAC THENL
+   [SPEC_TAC(`p:int`,`p:int`) THEN
+    REWRITE_TAC[IMP_CONJ; GSYM INT_FORALL_POS] THEN
+    REWRITE_TAC[INT_OF_NUM_CLAUSES; INT_OF_NUM_REM] THEN
+    REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC INVERSE_MOD_UNIQUE THEN ASM_SIMP_TAC[CONG; LT_IMP_LE];
+    DISCH_THEN SUBST1_TAC THEN
+    ASM_REWRITE_TAC[INT_OF_NUM_CLAUSES; INT_OF_NUM_REM; GSYM CONG] THEN
+    REWRITE_TAC[INVERSE_MOD_BOUND; INVERSE_MOD_RMUL_EQ] THEN
+    ONCE_REWRITE_TAC[COPRIME_SYM] THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC]);;
+
+let INTEGER_MOD_RING_RED_CONV =
+  let [pth_0; pth_1; pth_num; pth_neg; pth_add; pth_sub; pth_mul; pth_pow] =
+      (CONJUNCTS o prove)
+   (`ring_0 (integer_mod_ring n) = &0 /\
+     ring_1 (integer_mod_ring n) = &1 rem &n /\
+     ring_of_num (integer_mod_ring n) m = &m rem &n /\
+     ring_neg (integer_mod_ring n) (&a) = --(&a) rem &n /\
+     ring_add (integer_mod_ring n) (&a) (&b) = (&a + &b) rem &n /\
+     ring_sub (integer_mod_ring n) (&a) (&b) = (&a - &b) rem &n /\
+     ring_mul (integer_mod_ring n) (&a) (&b) = (&a * &b) rem &n /\
+     ring_pow (integer_mod_ring n) (&a) k = (&a pow k) rem &n`,
+   REWRITE_TAC[ring_sub; INT_SUB; INTEGER_MOD_RING_OF_NUM] THEN
+   REWRITE_TAC[INTEGER_MOD_RING_POW; INTEGER_MOD_RING] THEN
+   CONV_TAC INT_REM_DOWN_CONV THEN REFL_TAC)
+  and pth_inv = SPEC_ALL RING_INV_INTEGER_MOD_RING
+  and pth_div = prove
+   (`ring_div (integer_mod_ring n) (&a) (&b) =
+        if (n = 0 \/ ~(n = 1) /\ b < n) /\ coprime(b,n)
+         then (&a * &(inverse_mod n b)) rem &n else &0`,
+    REWRITE_TAC[ring_div; RING_INV_INTEGER_MOD_RING] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[INTEGER_MOD_RING] THEN
+    REWRITE_TAC[INT_MUL_RZERO; INT_REM_ZERO]) in
+  let baseconv =
+    GEN_REWRITE_CONV I [pth_0] ORELSEC
+    ((GEN_REWRITE_CONV I [pth_1; pth_num] ORELSEC
+      (GEN_REWRITE_CONV I [pth_neg] THENC
+       LAND_CONV(TRY_CONV INT_NEG_CONV)) ORELSEC
+      (GEN_REWRITE_CONV I [pth_add] THENC
+       LAND_CONV(TRY_CONV INT_ADD_CONV)) ORELSEC
+      (GEN_REWRITE_CONV I [pth_sub] THENC
+       LAND_CONV(TRY_CONV INT_SUB_CONV)) ORELSEC
+      (GEN_REWRITE_CONV I [pth_mul] THENC
+       LAND_CONV(TRY_CONV INT_MUL_CONV))) THENC
+     INT_REM_CONV) ORELSEC
+    (GEN_REWRITE_CONV I [pth_pow] THENC INT_POW_REM_CONV) ORELSEC
+    (GEN_REWRITE_CONV I [pth_inv] THENC
+     RATOR_CONV(LAND_CONV(DEPTH_CONV(NUM_RED_CONV ORELSEC COPRIME_CONV))) THENC
+     (GEN_REWRITE_CONV I [CONJUNCT2(SPEC_ALL COND_CLAUSES)] ORELSEC
+      (GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL COND_CLAUSES)] THENC
+       RAND_CONV INVERSE_MOD_CONV))) ORELSEC
+    (GEN_REWRITE_CONV I [pth_div] THENC
+     RATOR_CONV(LAND_CONV(DEPTH_CONV(NUM_RED_CONV ORELSEC COPRIME_CONV))) THENC
+     (GEN_REWRITE_CONV I [CONJUNCT2(SPEC_ALL COND_CLAUSES)] ORELSEC
+      (GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL COND_CLAUSES)] THENC
+       LAND_CONV(RAND_CONV(RAND_CONV INVERSE_MOD_CONV) THENC
+                 INT_MUL_CONV) THENC
+       INT_REM_CONV))) in
+  fun tm ->
+    let th = baseconv tm in
+    if is_intconst(rand(concl th)) then th
+    else failwith "INTEGER_MOD_RING_RED_CONV";;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid of monomials over an arbitrary set of "variables".                 *)

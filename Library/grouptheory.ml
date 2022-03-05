@@ -4586,6 +4586,35 @@ let ISOMORPHIC_GROUP_ABELIANNESS = prove
   ASM_MESON_TAC[isomorphic_group; ISOMORPHIC_GROUP_SYM;
                 GROUP_MONOMORPHISM_EPIMORPHISM]);;
 
+let CREATE_ISOMORPHIC_COPY_OF_GROUP = prove
+ (`!(f:A->B) g G s z i m.
+        z IN s /\
+        (!x. x IN group_carrier G ==> f x IN s /\ g(f x) = x) /\
+        (!y. y IN s ==> g y IN group_carrier G /\ f(g y) = y) /\
+        g z = group_id G /\
+        (!x. x IN s ==> i x = f(group_inv G (g x))) /\
+        (!x y. x IN s /\ y IN s ==> m x y = f(group_mul G (g x) (g y)))
+        ==> group_isomorphisms (G,group(s,z,i,m)) (f,g) /\
+            group_carrier (group(s,z,i,m)) = s /\
+            group_id (group(s,z,i,m)) = z /\
+            group_inv (group(s,z,i,m)) = i /\
+            group_mul (group(s,z,i,m)) = m`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MATCH_MP_TAC(TAUT `(q ==> p) /\ q ==> p /\ q`) THEN CONJ_TAC THENL
+   [STRIP_TAC THEN ONCE_REWRITE_TAC[GROUP_ISOMORPHISMS_SYM] THEN
+    ASM_REWRITE_TAC[GROUP_ISOMORPHISMS; GROUP_HOMOMORPHISM] THEN
+    ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; GROUP_MUL];
+    PURE_REWRITE_TAC
+     [GSYM PAIR_EQ; group_carrier; group_id; group_inv; group_mul;
+      BETA_THM; PAIR] THEN
+    REWRITE_TAC[GSYM(CONJUNCT2 group_tybij)] THEN
+    REWRITE_TAC(map (GSYM o REWRITE_RULE[FUN_EQ_THM])
+     [group_carrier; group_id; group_inv; group_mul]) THEN
+    ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 4)
+      [GROUP_ID; GROUP_MUL; GROUP_INV; GROUP_MUL_ASSOC;
+       GROUP_MUL_LID; GROUP_MUL_RID; GROUP_MUL_LINV; GROUP_MUL_RINV] THEN
+    ASM_MESON_TAC[GROUP_ID]]);;
+
 let ISOMORPHIC_COPY_OF_GROUP = prove
  (`!(G:A group) (s:B->bool).
         (?G'. group_carrier G' = s /\ G isomorphic_group G') <=>
@@ -4594,36 +4623,17 @@ let ISOMORPHIC_COPY_OF_GROUP = prove
    [MESON_TAC[ISOMORPHIC_GROUP_CARD_EQ; CARD_EQ_TRANS];
     REWRITE_TAC[EQ_C_BIJECTIONS; LEFT_IMP_EXISTS_THM]] THEN
   MAP_EVERY X_GEN_TAC [`f:A->B`; `g:B->A`] THEN STRIP_TAC THEN
-  ABBREV_TAC
-   `G' = group(s:B->bool,
+  MATCH_MP_TAC(MESON[GROUP_ISOMORPHISM_IMP_ISOMORPHIC; group_isomorphism]
+   `(?G'. group_isomorphisms(G,G') (f:A->B,g) /\ group_carrier G' = s)
+    ==> ?G'. group_carrier G' = s /\ G isomorphic_group G'`) THEN
+  EXISTS_TAC `group(s:B->bool,
               f (group_id G:A),
               (\x. f(group_inv G (g x))),
               (\x1 x2. f(group_mul G (g x1) (g x2))))` THEN
-  SUBGOAL_THEN
-   `group_carrier G' = s /\
-    group_id G' = (f:A->B) (group_id G) /\
-    group_inv G' = (\x. f(group_inv G (g x))) /\
-    group_mul G' = (\x1 x2. f(group_mul G (g x1) (g x2)))`
-  STRIP_ASSUME_TAC THENL
-   [EXPAND_TAC "G'" THEN PURE_REWRITE_TAC
-     [GSYM PAIR_EQ; group_carrier; group_id; group_inv; group_mul;
-      BETA_THM; PAIR] THEN
-    REWRITE_TAC[GSYM(CONJUNCT2 group_tybij)] THEN
-    REWRITE_TAC(map (GSYM o REWRITE_RULE[FUN_EQ_THM])
-     [group_carrier; group_id; group_inv; group_mul]) THEN
-    SUBGOAL_THEN `s = IMAGE (f:A->B) (group_carrier G)` SUBST1_TAC THENL
-     [ASM SET_TAC[]; ALL_TAC] THEN
-    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
-    REWRITE_TAC[FORALL_IN_IMAGE] THEN
-    REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
-    ASM_SIMP_TAC[FUN_IN_IMAGE; GROUP_ID; GROUP_INV; GROUP_MUL] THEN
-    MESON_TAC[GROUP_MUL_ASSOC; GROUP_MUL_LID; GROUP_MUL_RID;
-              GROUP_MUL_LINV; GROUP_MUL_RINV];
-    EXISTS_TAC `G':B group` THEN ASM_REWRITE_TAC[isomorphic_group] THEN
-    EXISTS_TAC `f:A->B` THEN REWRITE_TAC[group_isomorphism] THEN
-    EXISTS_TAC `g:B->A` THEN REWRITE_TAC[group_isomorphisms] THEN
-    ASM_SIMP_TAC[group_homomorphism; GROUP_ID; SUBSET; FORALL_IN_IMAGE;
-                 GROUP_INV; GROUP_ADD; GROUP_MUL]]);;
+  W(MP_TAC o PART_MATCH (lhand o rand) CREATE_ISOMORPHIC_COPY_OF_GROUP o
+    lhand o snd) THEN
+  ANTS_TAC THENL [ALL_TAC; SIMP_TAC[]] THEN
+  ASM_SIMP_TAC[GROUP_ID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Perform group operations setwise.                                         *)
