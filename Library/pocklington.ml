@@ -2362,20 +2362,22 @@ let setify_num s =
   let s' = sort (<=/) s in
   try uniq_num s' with Unchanged -> s';;
 
-let certify_prime =
+let general_certify_prime factorizer =
   let rec cert_prime n =
     if n <=/ num_2 then
        if n =/ num_2 then Prime_2
        else failwith "certify_prime: not a prime!"
     else
       let m = n -/ num_1 in
-      let pfact = multifactor m in
+      let pfact = factorizer m in
       let primes = setify_num pfact in
       let ms = map (fun d -> div_num m d) primes in
       let a = find_primitive_root m ms n in
       Primroot_and_factors((n,pfact),a,map (fun n -> n,cert_prime n) primes) in
-  fun n -> if length(multifactor n) = 1 then cert_prime n
-           else failwith "certify_prime: input is not a prime";;
+  fun n -> if length(factorizer n) = 1 then cert_prime n
+           else failwith "guided_certify_prime: input is not a prime";;
+
+let certify_prime = general_certify_prime multifactor;;
 
 (* ------------------------------------------------------------------------- *)
 (* HOL checking of primality certificate, using Pocklington shortcut.        *)
@@ -2504,6 +2506,38 @@ let PRIME_CONV =
     let ptm,tm = dest_comb tm0 in
     if ptm <> prime_tm then failwith "expected term of form prime(n)"
     else PRIME_TEST tm;;
+
+(* ------------------------------------------------------------------------- *)
+(* A version where the hereditary sub-factors are given by the user.         *)
+(* This makes the rule usable without separate factoring software,           *)
+(* and faster even where it is available.                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let extract_primes_from_certificate =
+  let rec extr cert acc =
+    match cert with
+      Prime_2 -> num_2::acc
+    | Primroot_and_factors((p,_),_,l) ->
+        itlist (fun (q,d) a -> extr d (q::a)) l (p::acc) in
+  fun n ->
+    uniq(map string_of_num (sort (</) (extr (certify_prime n) [])));;
+
+let guided_certify_prime hints =
+  let rec guidedfactor n =
+    if exists (fun p -> p =/ n) hints then [n] else
+    let p = find (fun p -> mod_num n p =/ num_0) hints in
+    p::(guidedfactor (quo_num n p)) in
+  general_certify_prime guidedfactor;;
+
+let GUIDED_PROVE_PRIME hints = check_certificate o guided_certify_prime hints;;
+
+let PRIME_RULE =
+  let prime_tm = `prime` in
+  fun hints tm0 ->
+    let ptm,tm = dest_comb tm0 in
+    if ptm <> prime_tm then failwith "expected term of form prime(n)" else
+    let n = dest_numeral tm in
+    GUIDED_PROVE_PRIME (map num_of_string hints @ [n]) n;;
 
 (* ------------------------------------------------------------------------- *)
 (* Example.                                                                  *)

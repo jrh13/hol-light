@@ -1,0 +1,189 @@
+(* ========================================================================= *)
+(* curve25519, in its plain Montgomery form.                                 *)
+(* ========================================================================= *)
+
+needs "EC/montgomery.ml";;
+needs "EC/excluderoots.ml";;
+needs "EC/computegroup.ml";;
+
+add_curve montgomery_curve;;
+add_curveneg montgomery_neg;;
+add_curveadd montgomery_add;;
+
+(* ------------------------------------------------------------------------- *)
+(* Parameters for curve25519. Here  n_25519 is the large prime factor of the *)
+(* group order, the full group order being 8 * n_25519. Likewise C_25519 is  *)
+(* the generator of the prime order subgroup and CC_25519 is a generator for *)
+(* the full group.                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let p_25519 = define `p_25519 = 57896044618658097711785492504343953926634992332820282019728792003956564819949`;;
+let n_25519 = define `n_25519 = 7237005577332262213973186563042994240857116359379907606001950938285454250989`;;
+let A_25519 = define `A_25519 = 486662`;;
+let B_25519 = define `B_25519 = 1`;;
+let C_25519 = define `C_25519 = SOME(&0x09:int,&0x20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9:int)`;;
+let CC_25519 = define `CC_25519 = SOME(&6911272784993971428141625084124731891523734454433518466500745240824540625972:int,&35197529511187359173101698576797651179158701633820552795916138355302448607023:int)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Primality of the field characteristic and (sub)group order.               *)
+(* ------------------------------------------------------------------------- *)
+
+let P_25519 = prove
+ (`p_25519 = 2 EXP 255 - 19`,
+  REWRITE_TAC[p_25519] THEN ARITH_TAC);;
+
+let N_25519 = prove
+ (`n_25519 = 2 EXP 252 + 27742317777372353535851937790883648493`,
+  REWRITE_TAC[n_25519] THEN ARITH_TAC);;
+
+let PRIME_P25519 = prove
+ (`prime p_25519`,
+  REWRITE_TAC[p_25519] THEN (CONV_TAC o PRIME_RULE)
+   ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "29"; "31"; "37"; "41";
+    "43"; "47"; "53"; "59"; "83"; "97"; "103"; "107"; "127"; "131"; "173";
+    "223"; "239"; "353"; "419"; "479"; "487"; "991"; "1723"; "2437"; "3727";
+    "4153"; "9463"; "32573"; "37853"; "57467"; "65147"; "75707"; "132049";
+    "430751"; "569003"; "1923133"; "8574133"; "2773320623"; "72106336199";
+    "1919519569386763"; "31757755568855353";
+    "75445702479781427272750846543864801";
+    "74058212732561358302231226437062788676166966415465897661863160754340907";
+    "57896044618658097711785492504343953926634992332820282019728792003956564819949"]);;
+
+let PRIME_N25519 = prove
+ (`prime n_25519`,
+  REWRITE_TAC[n_25519] THEN (CONV_TAC o PRIME_RULE)
+  ["2"; "3"; "5"; "7"; "11"; "13"; "17"; "19"; "23"; "41"; "43"; "47"; "67";
+   "73"; "79"; "113"; "269"; "307"; "1361"; "1723"; "2551"; "2851"; "2939";
+   "3797"; "5879"; "17231"; "22111"; "30703"; "34123"; "41081"; "82163";
+   "132667"; "137849"; "409477"; "531581"; "1224481"; "14741173"; "58964693";
+   "292386187"; "213441916511"; "1257559732178653"; "4434155615661930479";
+   "3044861653679985063343"; "172054593956031949258510691";
+   "198211423230930754013084525763697";
+   "19757330305831588566944191468367130476339";
+   "276602624281642239937218680557139826668747";
+   "7237005577332262213973186563042994240857116359379907606001950938285454250989"]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Definition of the curve group and proof of its key properties.            *)
+(* ------------------------------------------------------------------------- *)
+
+let curve25519_group = define
+ `curve25519_group =
+    montgomery_group(integer_mod_ring p_25519,&A_25519,&1)`;;
+
+let CURVE25519_GROUP = prove
+ (`group_carrier curve25519_group =
+     montgomery_curve(integer_mod_ring p_25519,&A_25519,&1) /\
+   group_id curve25519_group =
+     NONE /\
+   group_inv curve25519_group =
+     montgomery_neg(integer_mod_ring p_25519,&A_25519,&1) /\
+   group_mul curve25519_group =
+     montgomery_add(integer_mod_ring p_25519,&A_25519,&1)`,
+  REWRITE_TAC[curve25519_group] THEN MATCH_MP_TAC MONTGOMERY_GROUP THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; INTEGER_MOD_RING_CHAR; PRIME_P25519] THEN
+  REWRITE_TAC[A_25519; B_25519; p_25519; montgomery_nonsingular] THEN
+  SIMP_TAC[INTEGER_MOD_RING_CLAUSES; ARITH; IN_ELIM_THM] THEN
+  CONV_TAC INT_REDUCE_CONV);;
+
+add_ecgroup [A_25519; B_25519; p_25519] CURVE25519_GROUP;;
+
+let FINITE_GROUP_CARRIER_CURVE25519 = prove
+ (`FINITE(group_carrier curve25519_group)`,
+  REWRITE_TAC[CURVE25519_GROUP] THEN MATCH_MP_TAC FINITE_MONTGOMERY_CURVE THEN
+  REWRITE_TAC[FINITE_INTEGER_MOD_RING;
+              FIELD_INTEGER_MOD_RING; PRIME_P25519] THEN
+  REWRITE_TAC[p_25519] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let GENERATOR_IN_GROUP_CARRIER_CURVE25519 = prove
+ (`C_25519 IN group_carrier curve25519_group`,
+  REWRITE_TAC[C_25519] THEN CONV_TAC ECGROUP_CARRIER_CONV);;
+
+let GROUP_ELEMENT_ORDER_CURVE25519_C25519 = prove
+ (`group_element_order curve25519_group C_25519 = n_25519`,
+  SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_PRIME;
+           GENERATOR_IN_GROUP_CARRIER_CURVE25519; PRIME_N25519] THEN
+  REWRITE_TAC[C_25519; el 1 (CONJUNCTS CURVE25519_GROUP);
+              option_DISTINCT] THEN
+  REWRITE_TAC[n_25519] THEN CONV_TAC(LAND_CONV ECGROUP_POW_CONV) THEN
+  REFL_TAC);;
+
+let FULLGENERATOR_IN_GROUP_CARRIER_CURVE25519 = prove
+ (`CC_25519 IN group_carrier curve25519_group`,
+  REWRITE_TAC[CC_25519] THEN CONV_TAC ECGROUP_CARRIER_CONV);;
+
+let GROUP_ELEMENT_ORDER_CURVE25519_CC25519 = prove
+ (`group_element_order curve25519_group CC_25519 = 8 * n_25519`,
+  ABBREV_TAC
+   `h = SOME
+     (&39382357235489614581723060781553021112529911719440698176882885853963445705823,
+      &10506421237558716435988711236408671798265365380393424752549290025458740468278)
+    :(int#int)option` THEN
+  SUBGOAL_THEN
+   `h IN group_carrier curve25519_group /\
+    group_element_order curve25519_group h = 8`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "h" THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [CONV_TAC ECGROUP_CARRIER_CONV;
+      SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_ALT; ARITH]] THEN
+    DISCH_TAC THEN REWRITE_TAC[CURVE25519_GROUP] THEN CONJ_TAC THENL
+     [CONV_TAC(LAND_CONV ECGROUP_POW_CONV) THEN REFL_TAC; ALL_TAC] THEN
+    REWRITE_TAC[IMP_CONJ_ALT] THEN CONV_TAC EXPAND_CASES_CONV THEN
+    CONV_TAC NUM_REDUCE_CONV THEN REPEAT CONJ_TAC THEN
+    CONV_TAC(RAND_CONV(LAND_CONV ECGROUP_POW_CONV)) THEN
+    REWRITE_TAC[option_DISTINCT];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `CC_25519 = group_mul curve25519_group h C_25519` SUBST1_TAC THENL
+   [EXPAND_TAC "h" THEN REWRITE_TAC[C_25519; CC_25519] THEN
+    CONV_TAC(RAND_CONV ECGROUP_MUL_CONV) THEN REFL_TAC;
+    ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) GROUP_ELEMENT_ORDER_MUL_EQ o
+    lhand o snd) THEN
+  ASM_REWRITE_TAC[GROUP_ELEMENT_ORDER_CURVE25519_C25519] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_CURVE25519] THEN CONJ_TAC THENL
+   [EXPAND_TAC "h" THEN REWRITE_TAC[C_25519] THEN
+    CONV_TAC(BINOP_CONV ECGROUP_MUL_CONV) THEN REFL_TAC;
+    REWRITE_TAC[n_25519] THEN CONV_TAC COPRIME_CONV]);;
+
+let SIZE_CURVE25519_GROUP = prove
+ (`group_carrier curve25519_group HAS_SIZE (8 * n_25519)`,
+  REWRITE_TAC[HAS_SIZE; FINITE_GROUP_CARRIER_CURVE25519] THEN
+  MP_TAC(ISPECL [`curve25519_group`; `CC_25519`]
+    GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER) THEN
+  REWRITE_TAC[FINITE_GROUP_CARRIER_CURVE25519;
+              FULLGENERATOR_IN_GROUP_CARRIER_CURVE25519] THEN
+  REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM;
+               GROUP_ELEMENT_ORDER_CURVE25519_CC25519] THEN
+  X_GEN_TAC `d:num` THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (ARITH_RULE `d = 0 \/ d = 1 \/ 2 <= d`) THEN
+  ASM_SIMP_TAC[CARD_EQ_0; FINITE_GROUP_CARRIER_CURVE25519;
+               MULT_CLAUSES; GROUP_CARRIER_NONEMPTY] THEN
+  MATCH_MP_TAC(ARITH_RULE
+   `s < 16 * n /\ 2 * n <= d * n ==> s = (8 * n) * d ==> x = 8 * n`) THEN
+  REWRITE_TAC[LE_MULT_RCANCEL; n_25519; ARITH_EQ] THEN
+  ASM_REWRITE_TAC[GSYM n_25519; CURVE25519_GROUP] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) CARD_BOUND_MONTGOMERY_CURVE o
+    lhand o snd) THEN
+  REWRITE_TAC[FIELD_INTEGER_MOD_RING; PRIME_P25519] THEN
+  SIMP_TAC[FINITE_INTEGER_MOD_RING; CARD_INTEGER_MOD_RING;
+           IN_INTEGER_MOD_RING_CARRIER; n_25519; p_25519;
+           INTEGER_MOD_RING; A_25519; INT_OF_NUM_CLAUSES; ARITH_EQ] THEN
+  ARITH_TAC);;
+
+let GENERATED_CURVE25519_GROUP = prove
+ (`subgroup_generated curve25519_group {CC_25519} = curve25519_group`,
+  SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
+           FULLGENERATOR_IN_GROUP_CARRIER_CURVE25519;
+           FINITE_GROUP_CARRIER_CURVE25519] THEN
+  REWRITE_TAC[GROUP_ELEMENT_ORDER_CURVE25519_CC25519;
+              REWRITE_RULE[HAS_SIZE] SIZE_CURVE25519_GROUP]);;
+
+let CYCLIC_CURVE25519_GROUP = prove
+ (`cyclic_group curve25519_group`,
+  MESON_TAC[CYCLIC_GROUP_ALT; GENERATED_CURVE25519_GROUP]);;
+
+let ABELIAN_CURVE25519_GROUP = prove
+ (`abelian_group curve25519_group`,
+  MESON_TAC[CYCLIC_CURVE25519_GROUP; CYCLIC_IMP_ABELIAN_GROUP]);;

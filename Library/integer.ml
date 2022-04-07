@@ -438,13 +438,13 @@ let INT_LCM_RMUL = prove
 (* More lemmas about coprimality.                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let int_coprime = prove
+let INT_COPRIME = prove
  (`!a b. coprime(a,b) <=> !d. d divides a /\ d divides b ==> d divides &1`,
   REWRITE_TAC[INT_COPRIME_GCD; INT_GCD_UNIQUE; INT_POS; INT_DIVIDES_1]);;
 
-let INT_COPRIME = prove
+let INT_COPRIME_ALT = prove
  (`!a b. coprime(a,b) <=> !d. d divides a /\ d divides b <=> d divides &1`,
-  MESON_TAC[INT_DIVIDES_1; INT_DIVIDES_TRANS; int_coprime]);;
+  MESON_TAC[INT_DIVIDES_1; INT_DIVIDES_TRANS; INT_COPRIME]);;
 
 let INT_COPRIME_SYM = prove
  (`!a b. coprime(a,b) <=> coprime(b,a)`,
@@ -1039,14 +1039,14 @@ let INT_PRIMES_INFINITE = prove
 
 let INT_COPRIME_PRIME = prove
  (`!p a b. coprime(a,b) ==> ~(int_prime(p) /\ p divides a /\ p divides b)`,
-  REWRITE_TAC[int_coprime] THEN
+  REWRITE_TAC[INT_COPRIME] THEN
   MESON_TAC[INT_DIVIDES_ONE; INT_PRIME_NEG; INT_PRIME_1]);;
 
 let INT_COPRIME_PRIME_EQ = prove
  (`!a b. coprime(a,b) <=> !p. ~(int_prime(p) /\ p divides a /\ p divides b)`,
   REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[INT_COPRIME_PRIME]; ALL_TAC] THEN
   ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
-  REWRITE_TAC[int_coprime; INT_DIVIDES_ONE_ABS] THEN
+  REWRITE_TAC[INT_COPRIME; INT_DIVIDES_ONE_ABS] THEN
   ONCE_REWRITE_TAC[NOT_FORALL_THM] THEN REWRITE_TAC[NOT_IMP] THEN
   DISCH_THEN(X_CHOOSE_THEN `d:int` STRIP_ASSUME_TAC) THEN
   FIRST_ASSUM(X_CHOOSE_TAC `p:int` o MATCH_MP INT_PRIME_FACTOR) THEN
@@ -1054,7 +1054,7 @@ let INT_COPRIME_PRIME_EQ = prove
 
 let INT_PRIME_COPRIME = prove
  (`!x p. int_prime(p) ==> p divides x \/ coprime(p,x)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[int_coprime] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INT_COPRIME] THEN
   MATCH_MP_TAC(TAUT `(~b ==> a) ==> a \/ b`) THEN
   REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; INT_DIVIDES_ONE_ABS] THEN
   DISCH_THEN(X_CHOOSE_THEN `d:int` STRIP_ASSUME_TAC) THEN
@@ -1066,7 +1066,7 @@ let INT_PRIME_COPRIME_EQ = prove
  (`!p n. int_prime p ==> (coprime(p,n) <=> ~(p divides n))`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(TAUT `(b \/ a) /\ ~(a /\ b) ==> (a <=> ~b)`) THEN
-  ASM_SIMP_TAC[INT_PRIME_COPRIME; int_coprime; INT_DIVIDES_ONE_ABS] THEN
+  ASM_SIMP_TAC[INT_PRIME_COPRIME; INT_COPRIME; INT_DIVIDES_ONE_ABS] THEN
   ASM_MESON_TAC[INT_DIVIDES_REFL; INT_PRIME_1; INT_PRIME_ABS]);;
 
 let INT_COPRIME_PRIMEPOW = prove

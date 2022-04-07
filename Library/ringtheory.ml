@@ -1754,6 +1754,29 @@ let RING_DIV = prove
              ==> ring_div r a b IN ring_carrier r`,
   SIMP_TAC[ring_div; RING_MUL; RING_INV]);;
 
+let RING_CLAUSES = prove
+ (`(!(r:A ring). ring_0 r IN ring_carrier r) /\
+   (!(r:A ring). ring_1 r IN ring_carrier r) /\
+   (!(r:A ring) n. ring_of_num r n IN ring_carrier r) /\
+   (!(r:A ring) x. x IN ring_carrier r ==> ring_neg r x IN ring_carrier r) /\
+   (!(r:A ring) x. x IN ring_carrier r ==> ring_inv r x IN ring_carrier r) /\
+   (!(r:A ring) x y.
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> ring_add r x y IN ring_carrier r) /\
+   (!(r:A ring) x y.
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> ring_sub r x y IN ring_carrier r) /\
+   (!(r:A ring) x y.
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> ring_mul r x y IN ring_carrier r) /\
+   (!(r:A ring) x y.
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> ring_div r x y IN ring_carrier r) /\
+   (!(r:A ring) x n. x IN ring_carrier r
+                     ==> ring_pow r x n IN ring_carrier r)`,
+  REWRITE_TAC[RING_0; RING_1; RING_OF_NUM; RING_NEG; RING_INV;
+              RING_ADD; RING_SUB; RING_MUL; RING_DIV;RING_POW]);;
+
 let RING_RINV_UNIQUE = prove
  (`!r a b:A.
         a IN ring_carrier r /\ b IN ring_carrier r /\
@@ -1783,6 +1806,11 @@ let RING_INV_1 = prove
 let RING_DIV_1 = prove
  (`!r x:A. x IN ring_carrier r ==> ring_div r x (ring_1 r) = x`,
   SIMP_TAC[ring_div; RING_INV_1; RING_MUL_RID]);;
+
+let RING_1_DIV = prove
+ (`!(r:A ring) x.
+        x IN ring_carrier r ==> ring_div r (ring_1 r) x = ring_inv r x`,
+  SIMP_TAC[ring_div; RING_INV; RING_MUL_LID]);;
 
 let RING_INV_ZERO = prove
  (`!r x:A. ~ring_unit r x ==> ring_inv r x = ring_0 r`,
@@ -4378,9 +4406,8 @@ let FIELD_10 = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Rule and tactic methods of proving carrier membership by backchaining.    *)
-(* The rule RING_CARRIER_RULE collects as a hypothesis list the "atomic"     *)
-(* membership assumptions, if any. The tactic also tries                     *)
-(* expanding ABBREV_TAC-style definitions and using existing assumptions.    *)
+(* The tactic also tries expanding ABBREV_TAC-style definitions and using    *)
+(* existing assumptions.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
 let RING_CARRIER_RULE =
@@ -4395,43 +4422,46 @@ let RING_CARRIER_RULE =
   and rule_sub = PART_MATCH rand RING_SUB
   and rule_mul = PART_MATCH rand RING_MUL
   and rule_div = PART_MATCH rand RING_DIV in
-  let rule_nullary tm =
-    try rule_0 tm
-    with Failure _ -> try
-        rule_1 tm
-    with Failure _ -> try
-        rule_n tm
-    with Failure _ ->
-        rule_z tm
-  and rule_unary tm =
-    try rule_neg tm
-    with Failure _ -> try
-        rule_inv tm
-    with Failure _ ->
-        rule_pow tm
-  and rule_binary tm =
-    try rule_add tm
-    with Failure _ -> try
-        rule_sub tm
-    with Failure _ -> try
-        rule_mul tm
-    with Failure _ ->
-        rule_div tm in
-  let rec rule tm =
-   try rule_nullary tm
-   with Failure _ -> try
-       let th = rule_unary tm in
-       MP th (rule(lhand(concl th)))
-   with Failure _ -> try
-       let th = rule_binary tm in
-       MP th (CONJ (rule(lhand(lhand(concl th))))
-                   (rule(rand(lhand(concl th)))))
-   with Failure _ ->
-       ASSUME tm in
-  fun tm ->
-    match tm with
-      Comb(Comb(Const("IN",_),t),Comb(Const("ring_carrier",_),r)) -> rule tm
-  | _ -> failwith "RING_CARRIER_RULE";;
+  fun asm ->
+    let rule_nullary tm =
+      try find (fun a -> concl a = tm) asm
+      with Failure _ -> try
+          rule_0 tm
+      with Failure _ -> try
+          rule_1 tm
+      with Failure _ -> try
+          rule_n tm
+      with Failure _ ->
+          rule_z tm
+    and rule_unary tm =
+      try rule_neg tm
+      with Failure _ -> try
+          rule_inv tm
+      with Failure _ ->
+          rule_pow tm
+    and rule_binary tm =
+      try rule_add tm
+      with Failure _ -> try
+          rule_sub tm
+      with Failure _ -> try
+          rule_mul tm
+      with Failure _ ->
+          rule_div tm in
+    let rec rule tm =
+     try rule_nullary tm
+     with Failure _ -> try
+         let th = rule_unary tm in
+         MP th (rule(lhand(concl th)))
+     with Failure _ -> try
+         let th = rule_binary tm in
+         MP th (CONJ (rule(lhand(lhand(concl th))))
+                     (rule(rand(lhand(concl th)))))
+     with Failure _ ->
+         ASSUME tm in
+    fun tm ->
+      match tm with
+        Comb(Comb(Const("IN",_),t),Comb(Const("ring_carrier",_),r)) -> rule tm
+    | _ -> failwith "RING_CARRIER_RULE";;
 
 let RING_CARRIER_TAC =
   let tac_0 = MATCH_ACCEPT_TAC RING_0
@@ -7459,7 +7489,8 @@ let RING_RULE =
            ==> ring_add r p q = ring_of_int r (&0)`,
       SIMP_TAC[RING_ADD_RZERO; RING_OF_INT_OF_NUM; RING_OF_NUM_0; IN_UNIV]) in
     let decorule =
-      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) [cth] o
+      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) 
+       [cth; GSYM RING_OF_INT_OF_NUM] o
       PART_MATCH lhand pth in
     fun tm ->
       let avs,bod = strip_forall tm in
@@ -13872,9 +13903,27 @@ let INTEGER_MOD_RING = prove
   REPEAT STRIP_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
   CONV_TAC INTEGER_RULE);;
 
+let IN_INTEGER_MOD_RING_CARRIER = prove
+ (`!n a. a IN ring_carrier(integer_mod_ring n) <=>
+         &n:int = &0 \/ &0 <= a /\ a < &n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[CONJUNCT1 INTEGER_MOD_RING; IN_UNIV; INT_OF_NUM_EQ] THEN
+  ASM_SIMP_TAC[INTEGER_MOD_RING; LE_1; IN_ELIM_THM]);;
+
+let INTEGER_MOD_RING_CARRIER_REM = prove
+ (`!n x. x rem &n IN ring_carrier(integer_mod_ring n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_SIMP_TAC[INTEGER_MOD_RING; LE_1; IN_UNIV; IN_ELIM_THM] THEN
+  ASM_MESON_TAC[INT_DIVISION; INT_OF_NUM_EQ; INT_ABS_NUM]);;
+
 let INTEGER_MOD_RING_TRIVIAL = prove
  (`integer_mod_ring 0 = integer_ring`,
   REWRITE_TAC[integer_mod_ring]);;
+
+let INTEGER_MOD_RING_SUB = prove
+ (`!n. ring_sub (integer_mod_ring n) = \a b. (a - b) rem &n`,
+  REWRITE_TAC[ring_sub; INT_SUB; INTEGER_MOD_RING; FUN_EQ_THM] THEN
+  CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[]);;
 
 let INTEGER_MOD_RING_POW = prove
  (`!n a k. ring_pow (integer_mod_ring n) a k = (a pow k) rem &n`,
@@ -13892,6 +13941,23 @@ let INTEGER_MOD_RING_OF_INT = prove
  (`!n x. ring_of_int (integer_mod_ring n) x = x rem &n`,
   REWRITE_TAC[RING_OF_INT_CLAUSES; FORALL_INT_CASES] THEN
   REWRITE_TAC[INTEGER_MOD_RING_OF_NUM; INTEGER_MOD_RING; INT_NEG_REM]);;
+
+let INTEGER_MOD_RING_CLAUSES = prove
+ (`ring_carrier (integer_mod_ring 0) = (:int) /\
+   (!n. 0 < n
+        ==> ring_carrier(integer_mod_ring n) = {m | &0 <= m /\ m < &n}) /\
+   (!n. ring_0 (integer_mod_ring n) = &0) /\
+   (!n. ring_1 (integer_mod_ring n) = &1 rem &n) /\
+   (!n. ring_neg (integer_mod_ring n) = (\a. --a rem &n)) /\
+   (!n. ring_add (integer_mod_ring n) = (\a b. (a + b) rem &n)) /\
+   (!n. ring_sub (integer_mod_ring n) = (\a b. (a - b) rem &n)) /\
+   (!n. ring_mul (integer_mod_ring n) = (\a b. (a * b) rem &n)) /\
+   (!n. ring_pow (integer_mod_ring n) = (\a k. (a pow k) rem &n)) /\
+   (!n. ring_of_num (integer_mod_ring n) = (\k. &k rem &n)) /\
+   (!n. ring_of_int (integer_mod_ring n) = \x. x rem &n)`,
+  REWRITE_TAC[INTEGER_MOD_RING; INTEGER_MOD_RING_SUB; FUN_EQ_THM;
+              INTEGER_MOD_RING_POW; INTEGER_MOD_RING_OF_NUM;
+              INTEGER_MOD_RING_OF_INT]);;
 
 let INTEGER_MOD_RING_CHAR = prove
  (`!n. ring_char (integer_mod_ring n) = n`,
@@ -14098,6 +14164,92 @@ let INTEGER_MOD_RING_RED_CONV =
     let th = baseconv tm in
     if is_intconst(rand(concl th)) then th
     else failwith "INTEGER_MOD_RING_RED_CONV";;
+
+(* ------------------------------------------------------------------------- *)
+(* The ring (and field) of real numbers.                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let real_ring = new_definition
+ `real_ring = ring((:real),&0,&1,( -- ),( + ),( * ))`;;
+
+let REAL_RING_CLAUSES = prove
+ (`ring_carrier real_ring = (:real) /\
+   ring_0 real_ring = &0 /\
+   ring_1 real_ring = &1 /\
+   ring_neg real_ring = ( -- ) /\
+   ring_add real_ring = ( + ) /\
+   ring_mul real_ring = ( * )`,
+  PURE_REWRITE_TAC
+   [GSYM PAIR_EQ; ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul;
+    BETA_THM; PAIR] THEN
+  PURE_REWRITE_TAC[real_ring; GSYM(CONJUNCT2 ring_tybij)] THEN
+  REWRITE_TAC[IN_UNIV] THEN CONV_TAC REAL_RING);;
+
+let FIELD_REAL_RING = prove
+ (`field real_ring`,
+  REWRITE_TAC[field; REAL_RING_CLAUSES; IN_UNIV] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  MESON_TAC[REAL_MUL_RINV]);;
+
+let INTEGRAL_DOMAIN_REAL_RING = prove
+ (`integral_domain real_ring`,
+  REWRITE_TAC[integral_domain; REAL_RING_CLAUSES; REAL_ENTIRE; IN_UNIV] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+let REAL_RING_OF_NUM = prove
+ (`ring_of_num real_ring = real_of_num`,
+  REWRITE_TAC[FUN_EQ_THM] THEN INDUCT_TAC THEN
+  ASM_REWRITE_TAC[ring_of_num; REAL_RING_CLAUSES; GSYM REAL_OF_NUM_SUC]);;
+
+let REAL_RING_OF_INT = prove
+ (`ring_of_int real_ring = real_of_int`,
+  REWRITE_TAC[FUN_EQ_THM; I_THM] THEN
+  REWRITE_TAC[RING_OF_INT_CLAUSES; FORALL_INT_CASES] THEN
+  REWRITE_TAC[int_neg_th; int_of_num_th; REAL_RING_OF_NUM] THEN
+  REWRITE_TAC[REAL_RING_CLAUSES]);;
+
+let REAL_RING_CHAR = prove
+ (`ring_char real_ring = 0`,
+  SIMP_TAC[RING_CHAR_EQ_0; REAL_RING_OF_NUM; REAL_RING_CLAUSES;
+           REAL_OF_NUM_EQ]);;
+
+let REAL_RING_SUB = prove
+ (`ring_sub real_ring = (-)`,
+  REWRITE_TAC[FUN_EQ_THM; ring_sub; REAL_RING_CLAUSES] THEN REAL_ARITH_TAC);;
+
+let REAL_RING_INV = prove
+ (`ring_inv real_ring = inv`,
+  REWRITE_TAC[FUN_EQ_THM; ring_inv; REAL_RING_CLAUSES] THEN
+  SIMP_TAC[FIELD_UNIT; FIELD_REAL_RING; REAL_RING_CLAUSES;
+           IN_UNIV; COND_SWAP] THEN
+  GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_INV_0] THEN
+  MATCH_MP_TAC SELECT_UNIQUE THEN POP_ASSUM MP_TAC THEN
+  CONV_TAC REAL_FIELD);;
+
+let REAL_RING_DIV = prove
+ (`ring_div real_ring = (/)`,
+  REWRITE_TAC[FUN_EQ_THM; ring_div; REAL_RING_CLAUSES; REAL_RING_INV] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_RING_POW = prove
+ (`ring_pow real_ring = (pow)`,
+  REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+  INDUCT_TAC THEN ASM_REWRITE_TAC[ring_pow; real_pow; REAL_RING_CLAUSES]);;
+
+let REAL_FIELD_CLAUSES = prove
+ (`ring_carrier real_ring = (:real) /\
+   ring_0 real_ring = &0 /\
+   ring_1 real_ring = &1 /\
+   ring_neg real_ring = ( -- ) /\
+   ring_add real_ring = ( + ) /\
+   ring_mul real_ring = ( * ) /\
+   ring_of_num real_ring = real_of_num /\
+   ring_sub real_ring = (-) /\
+   ring_inv real_ring = inv /\
+   ring_div real_ring = (/) /\
+   ring_pow real_ring = (pow)`,
+  REWRITE_TAC[REAL_RING_CLAUSES; REAL_RING_OF_NUM; REAL_RING_SUB;
+              REAL_RING_INV; REAL_RING_DIV; REAL_RING_POW]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid of monomials over an arbitrary set of "variables".                 *)
@@ -17704,3 +17856,154 @@ let INTEGRAL_DOMAIN_RULE =
       let ty = mk_vartype("Y"^itlist ((^) o dest_vartype) tvs "") in
       let tm' = inst[ty,aty] tm in
       INST_TYPE [aty,ty] (INTEGRAL_DOMAIN_RULE_BASIC tm');;
+
+(* ------------------------------------------------------------------------- *)
+(* An elimination-based tactic for fields analogous to REAL_FIELD etc.       *)
+(* When this succeeds it may in general leave subgoals about characteristic. *)
+(* ------------------------------------------------------------------------- *)
+
+let FIELD_TAC =
+  let carrier_tac =
+    W(fun (asl,w) ->
+          let vs = filter ((=) `:A` o type_of)
+                          (union (frees w) (freesl (map (concl o snd) asl))) in
+          let cjs = map (fun x -> vsubst[x,`x:A`] `(x:A) IN ring_carrier f`)
+                        vs in
+          if cjs = [] then ALL_TAC else
+          SUBGOAL_THEN (list_mk_conj cjs) STRIP_ASSUME_TAC THENL
+           [REPEAT CONJ_TAC THEN RING_CARRIER_TAC; ALL_TAC])
+  and rabinify_tac =
+    let rabinowitsch_lemma = prove
+     (`!x y:A. ~(x = y)
+               ==> !r. field r /\ x IN ring_carrier r /\ y IN ring_carrier r
+                        ==> ?z. z IN ring_carrier r /\
+                                ring_mul r (ring_sub r x y) z = ring_1 r`,
+      REPEAT STRIP_TAC THEN EXISTS_TAC `ring_inv r (ring_sub r x y):A` THEN
+      ASM_SIMP_TAC[FIELD_MUL_RINV; RING_SUB_EQ_0; RING_INV; RING_SUB]) in
+    REPEAT
+     (FIRST_X_ASSUM(MP_TAC o ISPEC `f:A ring` o
+         MATCH_MP rabinowitsch_lemma) THEN
+      ANTS_TAC THENL
+       [ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THEN
+        RING_CARRIER_TAC; STRIP_TAC])
+  and invelim_tac =
+    let is_fieldinv = can (term_match [] `ring_inv f (x:A)`)
+    and pth = prove
+     (`!f t:A.
+            field f
+            ==> t IN ring_carrier f
+                ==> ring_inv f t = ring_0 f /\ t = ring_0 f \/
+                    (?z. z IN ring_carrier f /\
+                         ring_inv f t = z /\ ring_mul f t z = ring_1 f)`,
+      ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+      REPEAT STRIP_TAC THEN ASM_CASES_TAC `t:A = ring_0 f` THEN
+      ASM_SIMP_TAC[RING_INV_0; UNWIND_THM1; FIELD_MUL_RINV; RING_INV]) in
+    W(fun (asl,w) ->
+          let ctms = sort free_in (find_terms is_fieldinv w) in
+          if ctms = [] then failwith "invelim_tac" else
+          FIRST_ASSUM(MP_TAC o ISPEC (rand(hd ctms)) o MATCH_MP pth) THEN
+          ANTS_TAC THENL [RING_CARRIER_TAC; ALL_TAC] THEN
+          DISCH_THEN(DISJ_CASES_THEN2
+           (CONJUNCTS_THEN2 SUBST1_TAC MP_TAC)
+           (CHOOSE_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+             (CONJUNCTS_THEN2 SUBST1_TAC MP_TAC))))) in
+  REWRITE_TAC[DE_MORGAN_THM] THEN
+  REPEAT STRIP_TAC THEN
+  TRY(MATCH_MP_TAC(MESON[] `(~(a = b) ==> F) ==> a = b`) THEN DISCH_TAC) THEN
+  TRY(FIRST_ASSUM CONTR_TAC) THEN
+  carrier_tac THEN
+  ASM_REWRITE_TAC[] THEN
+  rabinify_tac THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o check (can (find_term is_eq) o concl))) THEN
+  REWRITE_TAC[ring_div] THEN
+  REPEAT invelim_tac THEN
+  W(fun (asl,w) ->
+        let th = INTEGRAL_DOMAIN_RULE w in
+        MATCH_ACCEPT_TAC th ORELSE MATCH_MP_TAC th) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN] THEN
+  REPEAT CONJ_TAC THEN TRY RING_CARRIER_TAC;;
+
+let FIELD_INV_EQ_0 = prove
+ (`!f x:A. field f /\ x IN ring_carrier f
+           ==> (ring_inv f x = ring_0 f <=> x = ring_0 f)`,
+  FIELD_TAC);;
+
+let FIELD_DIV_EQ_0 = prove
+ (`!f x y:A. field f /\ x IN ring_carrier f /\ y IN ring_carrier f
+           ==> (ring_div f x y = ring_0 f <=> x = ring_0 f \/ y = ring_0 f)`,
+  FIELD_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* A more direct tactic to pull division terms up, but not using any         *)
+(* intelligence on the side-conditions, just finding them in the             *)
+(* assumptions modulo straightforward backchaining.                          *)
+(* ------------------------------------------------------------------------- *)
+
+let RING_PULL_DIV = prove
+ (`!f:A ring.
+    field f
+    ==> (!x y n. x IN ring_carrier f /\ y IN ring_carrier f
+                 ==> ring_pow f (ring_div f x y) n =
+                     ring_div f (ring_pow f x n) (ring_pow f y n)) /\
+        (!x1 y1 x2 y2.
+                x1 IN ring_carrier f /\ x2 IN ring_carrier f /\
+                y1 IN ring_carrier f /\ y2 IN ring_carrier f
+                ==> ring_div f (ring_div f x1 y1) (ring_div f x2 y2) =
+                    ring_div f (ring_mul f x1 y2) (ring_mul f x2 y1)) /\
+        (!x1 x2 y. x1 IN ring_carrier f /\ x2 IN ring_carrier f /\
+                   y IN ring_carrier f /\ ~(y = ring_0 f)
+                   ==> ring_add f (ring_div f x1 y) (ring_div f x2 y) =
+                       ring_div f (ring_add f x1 x2) y /\
+                       ring_sub f (ring_div f x1 y) (ring_div f x2 y) =
+                       ring_div f (ring_sub f x1 x2) y /\
+                       (ring_div f x1 y = ring_div f x2 y <=> x1 = x2) /\
+                       ring_add f (ring_div f x1 y) x2 =
+                       ring_div f (ring_add f x1 (ring_mul f x2 y)) y /\
+                       ring_add f x1 (ring_div f x2 y) =
+                       ring_div f (ring_add f (ring_mul f x1 y) x2) y /\
+                       ring_sub f (ring_div f x1 y) x2 =
+                       ring_div f (ring_sub f x1 (ring_mul f x2 y)) y /\
+                       ring_sub f x1 (ring_div f x2 y) =
+                       ring_div f (ring_sub f (ring_mul f x1 y) x2) y /\
+                       ring_mul f (ring_div f x1 y) x2 =
+                       ring_div f (ring_mul f x1 x2) y /\
+                       ring_mul f x1 (ring_div f x2 y) =
+                       ring_div f (ring_mul f x1 x2) y /\
+                       (ring_div f x1 y = x2 <=> x1 = ring_mul f x2 y) /\
+                       (x1 = ring_div f x2 y <=> ring_mul f x1 y = x2)) /\
+        (!x y. x IN ring_carrier f /\ y IN ring_carrier f /\
+               ~(x = ring_0 f) /\ ~(y = ring_0 f)
+               ==> ~(ring_mul f x y = ring_0 f)) /\
+        (!x n. x IN ring_carrier f /\ ~(x = ring_0 f)
+               ==> ~(ring_pow f x n = ring_0 f))`,
+  SIMP_TAC[FIELD_POW_EQ_0] THEN
+  GEN_TAC THEN DISCH_TAC THEN CONJ_TAC THENL
+   [SIMP_TAC[ring_div; RING_MUL_POW; RING_POW_INV; RING_INV];
+    FIELD_TAC]);;
+
+let RING_PULL_DIV_CONV =
+  let divthms,sidethms = chop_list 13
+    (CONJUNCTS(REWRITE_RULE[FORALL_AND_THM; IMP_IMP; GSYM CONJ_ASSOC;
+                            RIGHT_IMP_FORALL_THM;
+                            TAUT `a ==> b /\ c <=> (a ==> b) /\ (a ==> c)`]
+                   RING_PULL_DIV)) in
+  let simpers = map (PART_MATCH (lhand o rand)) divthms
+  and siders = map (PART_MATCH rand) sidethms in
+  fun asm ->
+    let rec sideprove t =
+        try find (fun a -> concl a = t) asm with Failure _ ->
+        try RING_CARRIER_RULE asm t with Failure _ ->
+        tryfind (fun sfn ->
+                   let th = sfn t in
+                   let scs = conjuncts(fst(dest_imp(concl th))) in
+                   MP th (end_itlist CONJ (map sideprove scs)))
+                siders in
+   fun tm ->
+        tryfind (fun sfn ->
+                let th = sfn tm in
+                let scs = conjuncts(fst(dest_imp(concl th))) in
+                MP th (end_itlist CONJ (map sideprove scs)))
+        simpers;;
+
+let RING_PULL_DIV_TAC (asl,w) =
+  CONV_TAC (REDEPTH_CONV(RING_PULL_DIV_CONV (map snd asl))) (asl,w);;

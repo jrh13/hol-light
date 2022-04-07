@@ -40,7 +40,6 @@ STANDALONE_EXAMPLES:=\
 	Library/modmul_group \
 	Library/multiplicative \
 	Examples/multiwf \
-	Examples/nist_curves \
 	Examples/padics \
 	Examples/pell \
 	Library/permutations \
@@ -71,6 +70,7 @@ EXTENDED_EXAMPLES:=\
 	Arithmetic/make \
 	Boyer_Moore/make \
 	Complex/make \
+	EC/make \
 	GL/make \
 	Geometric_Algebra/make \
 	IEEE/make \

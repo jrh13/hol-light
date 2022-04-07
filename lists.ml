@@ -506,6 +506,12 @@ let MAP_I = prove
  (`MAP I = I`,
   REWRITE_TAC[FUN_EQ_THM; I_DEF; MAP_ID]);;
 
+let BUTLAST_CLAUSES = prove
+ (`BUTLAST([]:A list) = [] /\
+   (!a:A. BUTLAST [a] = []) /\
+   (!(a:A) h t. BUTLAST(CONS a (CONS h t)) = CONS a (BUTLAST(CONS h t)))`,
+  REWRITE_TAC[BUTLAST; NOT_CONS_NIL]);;
+
 let BUTLAST_APPEND = prove
  (`!l m:A list. BUTLAST(APPEND l m) =
                 if m = [] then BUTLAST l else APPEND l (BUTLAST m)`,

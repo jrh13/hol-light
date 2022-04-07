@@ -8,6 +8,265 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed  6th Apr 2022               EC/* [new directory], Examples/nist_curves.ml [deleted]
+
+Replaced the increasingly unwieldy and poorly-named "nist_curves.ml"
+file with a new directory "EC" (for Elliptic Curves) that develops
+elliptic curve theory in a more systematic way, with separate files
+for all the specific curves, as well as adding new material,
+particularly around Edwards curves. The general short Weierstrass,
+Montgomery and Edwards forms are defined and their properties derived
+separately to minimize interdependencies, and here the only field
+characteristic assumptions made are common or natural ones: char = 2
+and char = 3 are excluded for short Weierstrass, just char = 2 is
+excluded for Montgomery, and in principle there are no restrictions at
+all on the Edwards theory (though "edwards_nonsingular" cannot be
+satisfied in a *finite* field of characteristic 2 since then every
+element is a square).
+
+Wed  6th Apr 2022               lists.ml
+
+Added a little clausal rewrite for BUTLAST:
+
+  BUTLAST_CLAUSES =
+   |- BUTLAST []  = [] /\
+      (!a. BUTLAST [a] = []) /\
+      (!a h t. BUTLAST(CONS a (CONS h t)) = CONS a (BUTLAST(CONS h t)))
+
+Mon  4th Apr 2022               Library/ringtheory.ml
+
+Fixed a prenormalization bug where RING_RULE and RING_TAC were not
+handling the general case of "ring_of_num r n".
+
+Fri  1st Apr 2022               Library/ringtheory.ml
+
+Added a few more trivial theorems about terms involving inversion being
+zero in a field and a handy collection of the various individual closure
+properties (RING_ADD, RING_POW etc.) into a single clausal theorem:
+
+  FIELD_DIV_EQ_0 =
+    |- !f x y.
+           field f /\ x IN ring_carrier f /\ y IN ring_carrier f
+           ==> (ring_div f x y = ring_0 f <=> x = ring_0 f \/ y = ring_0 f)
+
+  FIELD_INV_EQ_0 =
+    |- !f x.
+           field f /\ x IN ring_carrier f
+           ==> (ring_inv f x = ring_0 f <=> x = ring_0 f)
+
+  RING_1_DIV =
+    |- !r x. x IN ring_carrier r ==> ring_div r (ring_1 r) x = ring_inv r x
+
+  RING_CLAUSES =
+    |- (!r. ring_0 r IN ring_carrier r) /\
+       (!r. ring_1 r IN ring_carrier r) /\
+       (!r n. ring_of_num r n IN ring_carrier r) /\
+       (!r x. x IN ring_carrier r ==> ring_neg r x IN ring_carrier r) /\
+       (!r x. x IN ring_carrier r ==> ring_inv r x IN ring_carrier r) /\
+       (!r x y.
+            x IN ring_carrier r /\ y IN ring_carrier r
+            ==> ring_add r x y IN ring_carrier r) /\
+       (!r x y.
+            x IN ring_carrier r /\ y IN ring_carrier r
+            ==> ring_sub r x y IN ring_carrier r) /\
+       (!r x y.
+            x IN ring_carrier r /\ y IN ring_carrier r
+            ==> ring_mul r x y IN ring_carrier r) /\
+       (!r x y.
+            x IN ring_carrier r /\ y IN ring_carrier r
+            ==> ring_div r x y IN ring_carrier r) /\
+       (!r x n. x IN ring_carrier r ==> ring_pow r x n IN ring_carrier r)
+
+Tue 29th Mar 2022               Library/grouptheory.ml
+
+Added a couple more lemmas about orders of powers in groups:
+
+ GROUP_ELEMENT_ORDER_EQ_MUL_GEN =
+  |- !G x k n.
+         x IN group_carrier G /\ ~(k = 0)
+         ==> (group_element_order G x = k * n <=>
+              k divides group_element_order G x /\
+              group_element_order G (group_pow G x k) = n)
+
+ GROUP_ELEMENT_ORDER_EQ_MUL =
+  |- !G x k n.
+         x IN group_carrier G /\ ~(k = 0) /\ k divides n
+         ==> (group_element_order G x = k * n <=>
+              group_element_order G (group_pow G x k) = n)
+
+Wed 23rd Mar 2022               Library/ringtheory.ml
+
+Added one more trivial rewrite that's handy to hide explicit case splits
+over the trivial case of integers modulo:
+
+  IN_INTEGER_MOD_RING_CARRIER =
+    |- !n a.
+         a IN ring_carrier(integer_mod_ring n) <=>
+         &n = &0 \/ &0 <= a /\ a < &n
+
+Wed 16th Mar 2022               Library/ringtheory.ml
+
+Added some basic support for generic field automation to the ring theory,
+adapted and extended from material already there in "nist_curves.ml".
+This includes an elimination-based tactic FIELD_TAC as well as a more
+directed "pull division terms up" tactic RING_PULL_DIV_TAC and its
+contextual conversion RING_PULL_DIV_CONV, these based on the following
+new clausal theorem:
+
+  |- !f. field f
+         ==> (!x y n.
+                  x IN ring_carrier f /\ y IN ring_carrier f
+                  ==> ring_pow f (ring_div f x y) n =
+                      ring_div f (ring_pow f x n) (ring_pow f y n)) /\
+             (!x1 y1 x2 y2.
+                  x1 IN ring_carrier f /\
+                  x2 IN ring_carrier f /\
+                  y1 IN ring_carrier f /\
+                  y2 IN ring_carrier f
+                  ==> ring_div f (ring_div f x1 y1) (ring_div f x2 y2) =
+                      ring_div f (ring_mul f x1 y2) (ring_mul f x2 y1)) /\
+             (!x1 x2 y.
+                  x1 IN ring_carrier f /\
+                  x2 IN ring_carrier f /\
+                  y IN ring_carrier f /\
+                  ~(y = ring_0 f)
+                  ==> ring_add f (ring_div f x1 y) (ring_div f x2 y) =
+                      ring_div f (ring_add f x1 x2) y /\
+                      ring_sub f (ring_div f x1 y) (ring_div f x2 y) =
+                      ring_div f (ring_sub f x1 x2) y /\
+                      (ring_div f x1 y = ring_div f x2 y <=> x1 = x2) /\
+                      ring_add f (ring_div f x1 y) x2 =
+                      ring_div f (ring_add f x1 (ring_mul f x2 y)) y /\
+                      ring_add f x1 (ring_div f x2 y) =
+                      ring_div f (ring_add f (ring_mul f x1 y) x2) y /\
+                      ring_sub f (ring_div f x1 y) x2 =
+                      ring_div f (ring_sub f x1 (ring_mul f x2 y)) y /\
+                      ring_sub f x1 (ring_div f x2 y) =
+                      ring_div f (ring_sub f (ring_mul f x1 y) x2) y /\
+                      ring_mul f (ring_div f x1 y) x2 =
+                      ring_div f (ring_mul f x1 x2) y /\
+                      ring_mul f x1 (ring_div f x2 y) =
+                      ring_div f (ring_mul f x1 x2) y /\
+                      (ring_div f x1 y = x2 <=> x1 = ring_mul f x2 y) /\
+                      (x1 = ring_div f x2 y <=> ring_mul f x1 y = x2)) /\
+             (!x y.
+                  x IN ring_carrier f /\
+                  y IN ring_carrier f /\
+                  ~(x = ring_0 f) /\
+                  ~(y = ring_0 f)
+                  ==> ~(ring_mul f x y = ring_0 f)) /\
+             (!x n.
+                  x IN ring_carrier f /\ ~(x = ring_0 f)
+                  ==> ~(ring_pow f x n = ring_0 f))
+
+Wed 16th Mar 2022               Library/pocklington.ml
+
+Removed some functions around primality proving from "nist_curves.ml" and
+put them in the main "pocklington.ml" file, as well as filling out the
+functions a bit. The new functions are:
+
+  general_certify_prime - Like certify_prime with any factorizing function
+
+  guided_certify_prime - Taking a set of hereditary sub-factors as a hint
+
+  extract_primes_from_certificate - Getting such sub-factor hints from number
+
+  GUIDED_PROVE_PRIME, PRIME_RULE - Proving primality with sub-factor hints
+
+Mon 14th Mar 2022               Library/integer.ml
+
+Did a bit of renaming to resolve a name clash with the core "int_coprime"
+theorem from int.ml, renaming int_coprime -> INT_COPRIME and the former
+INT_COPRIME -> INT_COPRIME_ALT in this file, so now:
+
+  int_coprime =
+    |- !a b. coprime(a,b) <=> (?x y. a * x + b * y = &1)
+
+  INT_COPRIME =
+    |- !a b.
+         coprime(a,b) <=> (!d. d divides a /\ d divides b ==> d divides &1)
+
+  INT_COPRIME_ALT =
+    |- !a b.
+         coprime(a,b) <=> (!d. d divides a /\ d divides b <=> d divides &1)
+
+Fri 11th Mar 2022               Library/ringtheory.ml
+
+Added a few more handy facts about "integer_mod_ring", as well
+as defining the ring/field of real numbers explicitly as a ring
+structure and proving the usual facts about that too:
+
+  real_ring =
+    |- real_ring = ring ((:real),&0,&1,(--),(+),(*))
+
+  FIELD_REAL_RING =
+    |- field real_ring
+
+  INTEGER_MOD_RING_CARRIER_REM =
+    |- !n x. x rem &n IN ring_carrier (integer_mod_ring n)
+
+  INTEGER_MOD_RING_CLAUSES =
+    |- ring_carrier (integer_mod_ring 0) = (:int) /\
+       (!n. 0 < n
+            ==> ring_carrier (integer_mod_ring n) = {m | &0 <= m /\ m < &n}) /\
+       (!n. ring_0 (integer_mod_ring n) = &0) /\
+       (!n. ring_1 (integer_mod_ring n) = &1 rem &n) /\
+       (!n. ring_neg (integer_mod_ring n) = (\a. --a rem &n)) /\
+       (!n. ring_add (integer_mod_ring n) = (\a b. (a + b) rem &n)) /\
+       (!n. ring_sub (integer_mod_ring n) = (\a b. (a - b) rem &n)) /\
+       (!n. ring_mul (integer_mod_ring n) = (\a b. (a * b) rem &n)) /\
+       (!n. ring_pow (integer_mod_ring n) = (\a k. a pow k rem &n)) /\
+       (!n. ring_of_num (integer_mod_ring n) = (\k. &k rem &n)) /\
+       (!n. ring_of_int (integer_mod_ring n) = (\x. x rem &n))
+
+  INTEGER_MOD_RING_SUB =
+    |- !n. ring_sub (integer_mod_ring n) = (\a b. (a - b) rem &n)
+
+  INTEGRAL_DOMAIN_REAL_RING =
+    |- integral_domain real_ring
+
+  REAL_FIELD_CLAUSES =
+    |- ring_carrier real_ring = (:real) /\
+       ring_0 real_ring = &0 /\
+       ring_1 real_ring = &1 /\
+       ring_neg real_ring = (--) /\
+       ring_add real_ring = (+) /\
+       ring_mul real_ring = (*) /\
+       ring_of_num real_ring = & /\
+       ring_sub real_ring = (-) /\
+       ring_inv real_ring = inv /\
+       ring_div real_ring = (/) /\
+       ring_pow real_ring = (pow)
+
+  REAL_RING_CHAR =
+    |- ring_char real_ring = 0
+
+  REAL_RING_CLAUSES =
+    |- ring_carrier real_ring = (:real) /\
+       ring_0 real_ring = &0 /\
+       ring_1 real_ring = &1 /\
+       ring_neg real_ring = (--) /\
+       ring_add real_ring = (+) /\
+       ring_mul real_ring = (*)
+
+  REAL_RING_DIV =
+    |- ring_div real_ring = (/)
+
+  REAL_RING_INV =
+    |- ring_inv real_ring = inv
+
+  REAL_RING_OF_INT =
+    |- ring_of_int real_ring = real_of_int
+
+  REAL_RING_OF_NUM =
+    |- ring_of_num real_ring = &
+
+  REAL_RING_POW =
+    |- ring_pow real_ring = (pow)
+
+  REAL_RING_SUB =
+    |- ring_sub real_ring = (-)
+
 Fri  4th Mar 2022               Examples/nist_curves.ml
 
 Added a formalization of curve25519, and Montgomery curves in general,

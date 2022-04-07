@@ -9098,6 +9098,28 @@ let GROUP_ELEMENT_ORDER_MUL_EQ = prove
     ASM_SIMP_TAC[GROUP_POW_MUL; GROUP_MUL; GROUP_POW_ELEMENT_ORDER] THEN
     REWRITE_TAC[GROUP_POW_ID]]);;
 
+let GROUP_ELEMENT_ORDER_EQ_MUL_GEN = prove
+ (`!G (x:A) k n.
+        x IN group_carrier G /\ ~(k = 0)
+        ==> (group_element_order G x = k * n <=>
+             k divides group_element_order G x /\
+             group_element_order G (group_pow G x k) = n)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_POW_GEN] THEN
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)`) THEN
+  CONJ_TAC THENL [CONV_TAC NUMBER_RULE; SIMP_TAC[DIVIDES_GCD_RIGHT]] THEN
+  REWRITE_TAC[GSYM DIVIDES_GCD_RIGHT] THEN DISCH_TAC THEN
+  MATCH_MP_TAC(NUM_RING
+   `~(k = 0) /\ x' * k = x ==> (x = k * n <=> x' = n)`) THEN
+  ASM_SIMP_TAC[GSYM DIVIDES_DIV_MULT]);;
+
+let GROUP_ELEMENT_ORDER_EQ_MUL = prove
+ (`!G (x:A) k n.
+        x IN group_carrier G /\ ~(k = 0) /\ k divides n
+        ==> (group_element_order G x = k * n <=>
+             group_element_order G (group_pow G x k) = n)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_MUL_GEN] THEN
+  ASM_MESON_TAC[GROUP_ELEMENT_ORDER_POW_DIVIDES; DIVIDES_TRANS]);;
+
 let ABELIAN_GROUP_ELEMENT_ORDER_MUL_EQ = prove
  (`!G x y:A.
         abelian_group G /\ x IN group_carrier G /\ y IN group_carrier G /\
