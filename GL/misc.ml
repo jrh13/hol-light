@@ -1,8 +1,22 @@
 (* ========================================================================= *)
 (* Miscellanea                                                               *)
 (*                                                                           *)
-(* (c) Copyright, Marco Maggesi, Cosimo Perini Brogi 2020-2021.              *)
+(* (c) Copyright, Marco Maggesi, Cosimo Perini Brogi 2020-2022.              *)
 (* ========================================================================= *)
+
+(* ------------------------------------------------------------------------- *)
+(* Theorem-tacticals.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let THEN_GTCL (ttcl1:thm_tactical) (ttcl2:thm_tactical) : thm_tactical =
+  fun ttac th -> ttcl1 ttac th THEN ttcl2 ttac th;;
+
+let ORELSE_GTCL (ttcl1:thm_tactical) (ttcl2:thm_tactical) : thm_tactical =
+  fun ttac th -> ttcl1 ttac th ORELSE ttcl2 ttac th;;
+
+(* Già definita nella standard library. *)
+let rec REPEAT_GTCL (ttcl:thm_tactical) : thm_tactical = fun ttac th g ->
+    try ttcl (REPEAT_GTCL ttcl ttac) th g with Failure _ -> ttac th g;;
 
 let LABEL_ASM_CASES_TAC s tm =
   ASM_CASES_TAC tm THEN POP_ASSUM (LABEL_TAC s);;

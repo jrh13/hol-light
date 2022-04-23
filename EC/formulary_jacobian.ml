@@ -42,7 +42,7 @@ let ja_dbl_2007_bl = new_definition
       let t14 = ring_sub f t13 yy in
       let z3 = ring_sub f t14 zz in
       (x3,y3,z3)`;;
-              
+
 let JA_DBL_2007_BL = prove
  (`!f a b x1 y1 z1:A.
         field f /\

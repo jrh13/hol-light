@@ -8,6 +8,20 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 22nd Apr 2022               GL/*
+
+Added an update from Marco Maggesi and Cosimo Perini Brogi to their GL
+provability logic theory. This now includes a decision procedure (GL_RULE
+and GL_TAC) for the GL logic that will prove a valid formula or generate
+a countermodel for an invalid one (stored in "!the_gl_countermodel").
+This example, in the provability interpretation, corresponds to a
+formalized Goedel's Second Incompleteness Theorem: if a system is
+consistent it does not prove its own consistency. The file GL/decid.ml
+has a number of applications of this kind:
+
+  #  GL_RULE `|-- (Not (Box False) --> Not (Box (Not (Box False))))`;;
+  val it : thm = |- |-- (Not Box False --> Not Box Not Box False)
+
 Wed  6th Apr 2022               EC/* [new directory], Examples/nist_curves.ml [deleted]
 
 Replaced the increasingly unwieldy and poorly-named "nist_curves.ml"

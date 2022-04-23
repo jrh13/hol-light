@@ -1,7 +1,7 @@
 (* ========================================================================= *)
 (* Syntax and semantics of modal logic.                                      *)
 (*                                                                           *)
-(* (c) Copyright, Marco Maggesi, Cosimo Perini Brogi 2020-2021.              *)
+(* (c) Copyright, Marco Maggesi, Cosimo Perini Brogi 2020-2022.              *)
 (*                                                                           *)
 (* Part of this code is copied or adapted from                               *)
 (*   John Harrison (2017) The HOL Light Tutorial.                            *)
@@ -330,3 +330,16 @@ let BISIMILAR_VALID = prove
     ==> (!p. L2 |= p ==> L1 |= p)`,
   REWRITE_TAC[valid; holds_in; FORALL_PAIR_THM] THEN
   MESON_TAC[BISIMILAR_HOLDS; BISIMILAR_IN]);;
+
+(* ----------------------------------------------------------------------- *)
+(* Further operators.                                                      *)
+(* ----------------------------------------------------------------------- *)
+
+parse_as_prefix "Diam";;
+parse_as_prefix "Dotbox";;
+
+let diam_DEF = new_definition
+  `Diam p = Not Box Not p`;;
+
+let dotbox_DEF = new_definition
+  `Dotbox p = (Box p && p)`;;

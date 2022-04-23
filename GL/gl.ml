@@ -1,7 +1,7 @@
 (* ========================================================================= *)
 (* Axiomatic of the modal provability logic GL.                              *)
 (*                                                                           *)
-(* (c) Copyright, Marco Maggesi, Cosimo Perini Brogi 2020-2021.              *)
+(* (c) Copyright, Marco Maggesi, Cosimo Perini Brogi 2020-2022.              *)
 (*                                                                           *)
 (* The initial part of this code has been adapted from the proof of the      *)
 (* Godel incompleteness theorems formalized by John Harrison, distributed    *)

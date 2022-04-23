@@ -7489,7 +7489,7 @@ let RING_RULE =
            ==> ring_add r p q = ring_of_int r (&0)`,
       SIMP_TAC[RING_ADD_RZERO; RING_OF_INT_OF_NUM; RING_OF_NUM_0; IN_UNIV]) in
     let decorule =
-      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) 
+      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV)
        [cth; GSYM RING_OF_INT_OF_NUM] o
       PART_MATCH lhand pth in
     fun tm ->

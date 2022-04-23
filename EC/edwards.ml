@@ -314,7 +314,7 @@ let ABELIAN_EDWARDS_GROUP = prove
       ==> abelian_group(edwards_group(f,a,d))`,
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[abelian_group; EDWARDS_GROUP] THEN
   REWRITE_TAC[IN] THEN ASM_MESON_TAC[EDWARDS_ADD_SYM]);;
-   
+
 (* ------------------------------------------------------------------------- *)
 (* Characterizing low-order points on an Edwards curve.                      *)
 (* ------------------------------------------------------------------------- *)
