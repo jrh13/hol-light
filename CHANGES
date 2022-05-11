@@ -8,6 +8,20 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 10th May 2022               EC/edwards448.ml [new file], Library/grouptheory.ml
+
+Added a formalization of the "Goldilocks" curve edwards448, based on Mike
+Hamburg's paper "Ed448-Goldilocks" (https://eprint.iacr.org/2015/625.pdf).
+So far, we just have the Edwards form of it as in that paper. This is all
+highly analogous to curve25519.ml, except that the group order computation
+is a bit more involved: to avoid using a more refined Hasse-type bound
+we need to do a bit of explicit analysis of the low-order points because
+the group order is less than half of the very naive bound.
+
+Also made a couple of trivial variable name tweaks to grouptheory.ml to
+avoid name clashes with "decode" and "encode" when loaded with some other
+theories.
+
 Fri 22nd Apr 2022               GL/*
 
 Added an update from Marco Maggesi and Cosimo Perini Brogi to their GL

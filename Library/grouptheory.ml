@@ -2248,13 +2248,13 @@ let CARD_LE_SUBGROUP_GENERATED = prove
   REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LE_C]) THEN
   REWRITE_TAC[SURJECTIVE_ON_RIGHT_INVERSE; LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`decode:K->A`; `encode:A->K`] THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`gdecmap:K->A`; `gencmap:A->K`] THEN DISCH_TAC THEN
   (CHOOSE_TAC o prove_general_recursive_function_exists)
     `?groupel:(bool#K)list->A.
         groupel [] = group_id G /\
-        (!x l. groupel (CONS (F,x) l) = group_mul G (decode x) (groupel l)) /\
+        (!x l. groupel (CONS (F,x) l) = group_mul G (gdecmap x) (groupel l)) /\
         (!x l. groupel (CONS (T,x) l) =
-               group_mul G (group_inv G (decode x)) (groupel l))` THEN
+               group_mul G (group_inv G (gdecmap x)) (groupel l))` THEN
   TRANS_TAC CARD_LE_TRANS
    `IMAGE (groupel:(bool#K)list->A)
           {l | !x. MEM x l ==> x IN (:bool) CROSS k}` THEN
@@ -2279,8 +2279,8 @@ let CARD_LE_SUBGROUP_GENERATED = prove
     REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     DISCH_THEN(X_CHOOSE_THEN `l:(bool#K)list` STRIP_ASSUME_TAC) THEN
     CONJ_TAC THENL
-     [EXISTS_TAC `CONS (F,(encode:A->K) x) l`;
-      EXISTS_TAC `CONS (T,(encode:A->K) x) l`] THEN
+     [EXISTS_TAC `CONS (F,(gencmap:A->K) x) l`;
+      EXISTS_TAC `CONS (T,(gencmap:A->K) x) l`] THEN
     ASM_SIMP_TAC[ALL; IN_CROSS; IN_UNIV]]);;
 
 let COUNTABLE_SUBGROUP_GENERATED = prove
