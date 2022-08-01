@@ -839,7 +839,7 @@ let instantiate_casewise_recursion,
         W(fun (asl,w) -> MAP_EVERY (fun t -> SPEC_TAC(t,t))
                                    (subtract (frees w) [ord])) THEN
         W(fun (asl,w) -> ACCEPT_TAC(ASSUME w)) in
-      let th2 = prove(bod,SIMP_ADMISS_TAC) in
+      let th2 = TAC_PROOF(([],bod),SIMP_ADMISS_TAC) in
       let th3 = SIMPLE_EXISTS ord th2 in
       let allasms = hyp th3 and wfasm = lhand(concl th2) in
       let th4 = ASSUME(list_mk_conj(wfasm::subtract allasms [wfasm])) in

@@ -140,11 +140,11 @@ let DEFAULT_PROVER =
            EQT_ELIM(LIMITED_REWRITE_CONV 4 (th'::ths') tm) in
   fun ths tm ->
     let sths = itlist (union o CONJUNCTS) ths [] in
-    try prove(tm,MAP_FIRST MATCH_ACCEPT_TAC sths)
+    try TAC_PROOF(([],tm),MAP_FIRST MATCH_ACCEPT_TAC sths)
     with Failure _ -> try
         FREEZE_THENL REWRITE_PROVER ths tm
     with Failure _ ->
-        prove(tm,GEN_MESON_TAC 0 30 1 ths);;
+        TAC_PROOF(([],tm),GEN_MESON_TAC 0 30 1 ths);;
 
 let default_prover = ref DEFAULT_PROVER;;
 

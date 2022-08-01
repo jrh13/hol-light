@@ -51,11 +51,23 @@ let ECGROUP_INV_CONV tm =
   GEN_REWRITE_CONV I (!curveneg_clauses) THENC
   DEPTH_CONV INTEGER_MOD_RING_RED_CONV) tm;;
 
-let ECGROUP_MUL_CONV tm =
- (GEN_REWRITE_CONV (RATOR_CONV o RATOR_CONV) (!ecgroup_muls) THENC
-  GEN_REWRITE_CONV I (!curveadd_clauses) THENC
-  DEPTH_CONV(INTEGER_MOD_RING_RED_CONV ORELSEC INT_RED_CONV) THENC
-  REPEATC(let_CONV THENC DEPTH_CONV INTEGER_MOD_RING_RED_CONV)) tm;;
+let ECGROUP_MUL_CONV =
+  let pconv =
+    RATOR_CONV(LAND_CONV
+     (DEPTH_CONV(INTEGER_MOD_RING_RED_CONV ORELSEC INT_RED_CONV))) THENC
+    GEN_REWRITE_CONV I [COND_CLAUSES] in
+  let condconv tm =
+    match tm with
+      Comb(Comb(Comb(Const("COND",_),p),_),_) -> pconv tm
+    | _ -> failwith "condconv" in
+  let bodyconv =
+    REPEATC condconv THENC
+    REPEATC(SUBLET_CONV(DEPTH_CONV INTEGER_MOD_RING_RED_CONV) THENC
+            let_CONV) THENC
+    DEPTH_CONV INTEGER_MOD_RING_RED_CONV in
+  fun tm ->
+   (GEN_REWRITE_CONV (RATOR_CONV o RATOR_CONV) (!ecgroup_muls) THENC
+    GEN_REWRITE_CONV I (!curveadd_clauses) THENC bodyconv) tm;;
 
 let ECGROUP_POW_CONV =
   let pth = prove

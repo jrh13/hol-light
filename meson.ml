@@ -841,7 +841,14 @@ let ASM_MESON_TAC = GEN_MESON_TAC 0 50 1;;
 let MESON_TAC ths = POP_ASSUM_LIST(K ALL_TAC) THEN ASM_MESON_TAC ths;;
 
 (* ------------------------------------------------------------------------- *)
-(* Also introduce a rule.                                                  *)
+(* Also introduce a rule.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let MESON ths tm = prove(tm,MESON_TAC ths);;
+let MESON ths tm =
+  let th = TAC_PROOF(([],tm),MESON_TAC ths) in
+  let asl,tm' = dest_thm th in
+  if asl <> [] && not(subset asl (unions (map hyp ths)))
+  then failwith "MESON: too many assumptions in result"
+  else if tm' = tm then th else
+  try EQ_MP (ALPHA tm' tm) th
+  with Failure _ -> failwith "MESON: the wrong result";;

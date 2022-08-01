@@ -684,7 +684,7 @@ let HOL_BY =
         with Failure _ ->
           let ths'' = map (CONV_RULE BETASET_CONV) ths'
           and th'' = TRANS th' (BETASET_CONV tm') in
-          EQ_MP (SYM th'') (prove(rand(concl th''),MESON_TAC ths'')))
+          EQ_MP (SYM th'') (MESON ths'' (rand(concl th''))))
     with Failure _ -> failwith "HOL_BY";;
 
 (* ------------------------------------------------------------------------- *)

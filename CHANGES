@@ -8,6 +8,40 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon  1st Aug 2022               Library/words.ml
+
+Added a straightforward variant of existing word lemmas:
+
+  REAL_VAL_WORD_XOR =
+    |- !x y.
+           &(val(word_xor x y)) =
+           (&(val x) + &(val y)) - &2 * &(val(word_and x y))
+
+Wed 27th Jul 2022               tactics.ml, define.ml, meson.ml, Examples/holby.ml, Examples/mizar.ml, 100/e_is_transcendental.ml
+
+Made "prove" explicitly check that the result does not include any
+additional assumptions. This seems usually what is expected (if not
+TAC_PROOF can be used directly). There were just a few places
+where the original behavior was used essentially, and those have
+been updated.
+
+Mon 25th Jul 2022               EC/computegroup.ml
+
+Slightly improved the efficiency of ECGROUP_MUL_CONV using a more
+refined reduction strategy.
+
+Mon 25th Jul 2022               pair.ml
+
+Added SUBLET_CONV, to apply a conversion to the RHSs of the toplevel
+let-term but neither expand it as with let_CONV nor apply the
+conversion to the body, e.g.
+
+  # SUBLET_CONV NUM_ADD_CONV
+     `let x = 5 + 2 and y = 8 + 17 and z = 3 + 7 in x + y + z`;;
+  val it : thm =
+    |- (let x = 5 + 2 and y = 8 + 17 and z = 3 + 7 in x + y + z) =
+       (let x = 7 and y = 25 and z = 10 in x + y + z)
+
 Tue 10th May 2022               EC/edwards448.ml [new file], Library/grouptheory.ml
 
 Added a formalization of the "Goldilocks" curve edwards448, based on Mike

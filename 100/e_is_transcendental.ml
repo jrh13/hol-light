@@ -22,6 +22,20 @@
  *  jesse.bingham@gmail.com
  *)
 
+(* Added 2022-07-29: use the original version of the prove function,
+ * which did not complain about additional assumptions in the result,
+ * though or clarity, give it a different name PROVE (uppercase).
+ * Theorems with extra assumptions are used in a few places here so
+ * it seemed easier to do this rather than modify the proofs.
+ *)
+
+let PROVE(t,tac) =
+  let th = TAC_PROOF(([],t),tac) in
+  let t' = concl th in
+  if t' = t then th else
+  try EQ_MP (ALPHA t' t) th
+  with Failure _ -> failwith "PROVE: justification generated wrong theorem";;
+
 (* this is needed since the sum from the HOL core (iter.ml, i think)
  * which is used below, gets overwritten when Library/analysis.ml is loaded.
  *)
@@ -75,7 +89,7 @@ let PDI_DEF = new_recursive_definition num_RECURSION
     `    (poly_diff_iter p 0 = p)
       /\ (poly_diff_iter p (SUC n) = poly_diff (poly_diff_iter p n))
     `
-let PDI_POLY_DIFF_COMM = prove(
+let PDI_POLY_DIFF_COMM = PROVE(
     `! p n.(poly_diff_iter (poly_diff p) n) = (poly_diff (poly_diff_iter p n))`,
     STRIP_TAC THEN INDUCT_TAC THEN (ASM_SIMP_TAC [PDI_DEF])
 )
@@ -87,14 +101,14 @@ let SOD = new_definition `!p. SOD p = SODN p (LENGTH p)`;;
 
 let PHI = new_definition `Phi f x = (exp (-- x)) * (poly (SOD f) x)`
 
-let PLANETMATH_EQN_1_1_1 = prove(
+let PLANETMATH_EQN_1_1_1 = PROVE(
     `! x f.((Phi f) diffl ((exp (--x)) * ((poly (poly_diff (SOD f)) x) - (poly (SOD f) x))) )(x)`,
     let lem1 = SPECL [`\x.exp (--x)`;
                       `\x.poly (SOD f) x`;
                       `--(exp (--x))`;
                       `poly (poly_diff (SOD f)) x`;
                       `x:real`]  DIFF_MUL in
-    let EXP_NEG_X_DIFF = prove(
+    let EXP_NEG_X_DIFF = PROVE(
           `!x. ((\x.exp (--x)) diffl (-- (exp (--x))))(x)`,
           STRIP_TAC THEN DIFF_TAC THEN REAL_ARITH_TAC) in
     let lem2 = SPEC `x:real` EXP_NEG_X_DIFF in
@@ -102,7 +116,7 @@ let PLANETMATH_EQN_1_1_1 = prove(
     let lem4 = CONJ lem2 lem3 in
     let lem5 = BETA_RULE (MP lem1 lem4) in
     let lem6 = REAL_ARITH `(a*(b - c)) = (-- a*c) + (b*a)` in
-    let PHI_abs = prove(
+    let PHI_abs = PROVE(
           `Phi f  = \x.((exp (-- x)) * (poly (SOD f) x))`,
           (PURE_REWRITE_TAC [SYM (ABS `x:real` (SPEC_ALL PHI))])
           THEN (ACCEPT_TAC (SYM (ETA_CONV `\x.(Phi f x)`))))
@@ -113,17 +127,17 @@ let PLANETMATH_EQN_1_1_1 = prove(
     (ACCEPT_TAC lem5)
 )
 
-let POLY_SUB = prove(
+let POLY_SUB = PROVE(
         `!p1 p2 x. poly (p1 ++ (neg p2)) x = poly p1 x - poly p2 x`,
         (REWRITE_TAC [POLY_ADD;poly_neg;POLY_CMUL]) THEN REAL_ARITH_TAC
 )
-let ZERO_INSERT_NUMSEG = prove(
+let ZERO_INSERT_NUMSEG = PROVE(
     `!n. (0..n) = (0 INSERT (1..n))`,
     let lem01 = SIMP_RULE [ARITH_RULE `0 <= n`] (SPECL [`0`;`n:num`] NUMSEG_LREC) in
     let lem02 = SIMP_RULE [ARITH_RULE `0 + 1 = 1`] lem01 in
     (ACCEPT_TAC (GEN_ALL (GSYM lem02)))
 )
-let PDI_POLYDIFF_SUC_LEMMA = prove(
+let PDI_POLYDIFF_SUC_LEMMA = PROVE(
     `!f n .(poly_diff_iter (poly_diff f) n) = poly_diff_iter f (SUC n)`,
     STRIP_TAC THEN INDUCT_TAC THENL
     [ (SIMP_TAC [PDI_DEF]);
@@ -132,7 +146,7 @@ let PDI_POLYDIFF_SUC_LEMMA = prove(
       (SIMP_TAC [PDI_POLY_DIFF_COMM])
     ]
 )
-let SOD_POLY_DIFF_ITERATE = prove(
+let SOD_POLY_DIFF_ITERATE = PROVE(
     `!f .(SOD (poly_diff f)) = iterate (++) (1..(LENGTH f)) (\i.poly_diff_iter f i)`,
     let lemA1 = SPECL [`1`;`0`] NUMSEG_EMPTY in
     let lemA2 = SIMP_RULE [ARITH_RULE `0 < 1`] lemA1 in
@@ -148,7 +162,7 @@ let SOD_POLY_DIFF_ITERATE = prove(
     let lem10 = ONCE_REWRITE_RULE [GSYM lem9] lem5 in
     let lem11 = ONCE_REWRITE_RULE [GSYM (ETA_CONV `(\i. poly_diff_iter f i)`)] lem10 in
     let lem12 = SIMP_RULE [o_DEF] lem11 in
-    let lemma0 = prove(
+    let lemma0 = PROVE(
         `! h t.SUC (LENGTH (poly_diff (CONS h t))) = LENGTH (CONS h t)`,
         (SIMP_TAC [LENGTH_POLY_DIFF;LENGTH;PRE])
     ) in
@@ -163,10 +177,10 @@ let SOD_POLY_DIFF_ITERATE = prove(
       (SIMP_TAC [lem12;GSYM lemma0])
     ]
 )
-let ZERO_ITERATE_POLYADD_LEMMA = prove(
+let ZERO_ITERATE_POLYADD_LEMMA = PROVE(
     `!n f .iterate (++) (0 INSERT (1..n)) f
            = (f 0) ++ iterate (++) (1..n) f`,
-    let lem0 = prove(`!n. ~(0 IN (1..n))`,
+    let lem0 = PROVE(`!n. ~(0 IN (1..n))`,
                       STRIP_TAC THEN (ONCE_REWRITE_TAC [IN_NUMSEG]) THEN
                       ARITH_TAC) in
     let lem1 = ISPEC `poly_add` ITERATE_CLAUSES_GEN in
@@ -179,7 +193,7 @@ let ZERO_ITERATE_POLYADD_LEMMA = prove(
     let lem9 = SIMP_RULE [lem0] lem7  in
     (ACCEPT_TAC (GEN_ALL lem9))
 )
-let SOD_SOD_POLYDIFF = prove(
+let SOD_SOD_POLYDIFF = PROVE(
     `!f .(SOD f) = f ++ (SOD (poly_diff f))`,
     (ONCE_REWRITE_TAC [SOD_POLY_DIFF_ITERATE]) THEN (ONCE_REWRITE_TAC [SOD]) THEN
     (ONCE_REWRITE_TAC [SODN]) THEN
@@ -187,17 +201,17 @@ let SOD_SOD_POLYDIFF = prove(
     (ONCE_REWRITE_TAC [ZERO_ITERATE_POLYADD_LEMMA]) THEN
     (BETA_TAC) THEN (SIMP_TAC [PDI_DEF])
 )
-let SUC_INSERT_NUMSEG = prove(
+let SUC_INSERT_NUMSEG = PROVE(
     `!n. (0..(SUC n)) = (SUC n) INSERT (0..n)`,
     let lem01 = SIMP_RULE [ARITH_RULE `0 <= SUC n`]
                           (SPECL [`0`;`n:num`] NUMSEG_REC) in
     ACCEPT_TAC (GEN_ALL lem01)
 )
-let SUC_NOT_IN_NUMSEG = prove(
+let SUC_NOT_IN_NUMSEG = PROVE(
     `!m n. ~((SUC n) IN (m..n))`,
     STRIP_TAC THEN (ONCE_REWRITE_TAC [IN_NUMSEG]) THEN ARITH_TAC
 )
-let SUC_ITERATE_PDI_POLYDIFF_LEMMA = prove(
+let SUC_ITERATE_PDI_POLYDIFF_LEMMA = PROVE(
     `iterate (++) ((SUC n) INSERT (0..n)) (\i.poly_diff_iter (poly_diff p) i) =
      (poly_diff_iter (poly_diff p) (SUC n)) ++
      iterate (++) (0..n) (\i.poly_diff_iter (poly_diff p) i)`,
@@ -211,7 +225,7 @@ let SUC_ITERATE_PDI_POLYDIFF_LEMMA = prove(
     let lem9 = SIMP_RULE [SPEC `0` SUC_NOT_IN_NUMSEG] lem7 in
     ACCEPT_TAC lem9
 )
-let SODN_POLY_DIFF_COMM = prove(
+let SODN_POLY_DIFF_COMM = PROVE(
     `!n p.(SODN (poly_diff p) n) = poly_diff (SODN p n)`,
     let lem = MP (ISPEC `poly_add` ITERATE_SING) MONOIDAL_POLY_ADD in
     let lem1 = ISPEC `poly_add` ITERATE_CLAUSES_GEN in
@@ -241,7 +255,7 @@ let SODN_POLY_DIFF_COMM = prove(
       (ONCE_REWRITE_TAC [lema3]) THEN (SIMP_TAC [PDI_DEF])
     ]
 )
-let SUC_ITERATE_POLYADD_LEMMA = prove(
+let SUC_ITERATE_POLYADD_LEMMA = PROVE(
     `!n f .iterate (++) ((SUC n) INSERT (0..n)) f
            = (f (SUC n)) ++ iterate (++) (0..n) f`,
     let lem1 = ISPEC `poly_add` ITERATE_CLAUSES_GEN in
@@ -254,7 +268,7 @@ let SUC_ITERATE_POLYADD_LEMMA = prove(
     let lem9 = SIMP_RULE [SPEC `0` SUC_NOT_IN_NUMSEG] lem7  in
     ACCEPT_TAC (GEN_ALL lem9)
 )
-let NUMSEG_LENGTH_POLYDIFF_LEMMA = prove(
+let NUMSEG_LENGTH_POLYDIFF_LEMMA = PROVE(
     `!f. (0..(LENGTH f)) = ((LENGTH f) INSERT (0..(LENGTH (poly_diff f))))`,
     (SIMP_TAC [LENGTH_POLY_DIFF]) THEN (LIST_INDUCT_TAC) THENL
     [ (SIMP_TAC [LENGTH;PRE]) THEN (SIMP_TAC [NUMSEG_CLAUSES]) THEN
@@ -263,35 +277,35 @@ let NUMSEG_LENGTH_POLYDIFF_LEMMA = prove(
       (SIMP_TAC [ARITH_RULE `0 <= SUC n`;NUMSEG_REC])
     ]
 )
-let POLY_DIFF_LENGTH_LT = prove(
+let POLY_DIFF_LENGTH_LT = PROVE(
     `!p. (~(p=[])) ==> (LENGTH (poly_diff p)) < (LENGTH p)`,
     SIMP_TAC [LENGTH_POLY_DIFF;LENGTH_EQ_NIL;
                ARITH_RULE `!n.(~(n=0)) ==> (PRE n) < n`]
 );;
-let POLY_DIFF_LENGTH_LE_SUC = prove(
+let POLY_DIFF_LENGTH_LE_SUC = PROVE(
     `! p n . (LENGTH p <= SUC n)  ==> (LENGTH (poly_diff p) <= n)`,
     (REPEAT STRIP_TAC) THEN (ASM_CASES_TAC `p:(real)list =[]`) THENL
     [ (ASM_SIMP_TAC [poly_diff;LENGTH]) THEN (ARITH_TAC);
       (ASM_MESON_TAC [POLY_DIFF_LENGTH_LT;LT_SUC_LE;LTE_TRANS])
     ]
 )
-let PDI_LENGTH_AUX = prove(
+let PDI_LENGTH_AUX = PROVE(
     `! n p. (LENGTH p <= n) ==> poly_diff_iter p n = []`,
     INDUCT_TAC THENL
     [ MESON_TAC [PDI_DEF;LENGTH_EQ_NIL;ARITH_RULE `n <= 0 <=> n = 0`];
       ASM_MESON_TAC [PDI_DEF;PDI_POLY_DIFF_COMM;POLY_DIFF_LENGTH_LE_SUC] ]
 )
-let PDI_LENGTH_NIL =  prove(
+let PDI_LENGTH_NIL =  PROVE(
     `! p . poly_diff_iter p (LENGTH p) = []`,
     SIMP_TAC [PDI_LENGTH_AUX;LE_REFL]
 )
-let SOD_POLYDIFF_THEOREM = prove(
+let SOD_POLYDIFF_THEOREM = PROVE(
     `!f .(SOD (poly_diff f)) = (poly_diff (SOD f))`,
-    let lemmmag = prove(
+    let lemmmag = PROVE(
         `0 INSERT (0..0) = (0..0)`,
         (SIMP_TAC [NUMSEG_SING]) THEN
         (SIMP_TAC [INSERT_DEF;NOT_IN_EMPTY;IN])) in
-    let SUC_LENGTH_CONS = prove(
+    let SUC_LENGTH_CONS = PROVE(
         `SUC (LENGTH (t:(real)list)) = (LENGTH (CONS h t))`,
         (SIMP_TAC [LENGTH])) in
     (ONCE_REWRITE_TAC [SOD]) THEN
@@ -317,23 +331,23 @@ let SOD_POLYDIFF_THEOREM = prove(
        (SIMP_TAC [POLY_ADD_CLAUSES ]);
     ]
 )
-let SOD_SOD_DIFF_LEMMA = prove(
+let SOD_SOD_DIFF_LEMMA = PROVE(
     `!f x.(poly (SOD f) x) - (poly (poly_diff (SOD f)) x) = poly f x`,
     MESON_TAC [SOD_SOD_POLYDIFF; POLY_ADD ; POLY_SUB;SOD_POLYDIFF_THEOREM;
                REAL_ARITH `((x:real) + y) -y = x`]
 )
 
-let PLANETMATH_EQN_1_1_2 = prove(
+let PLANETMATH_EQN_1_1_2 = PROVE(
     `!f x.
         ((exp (--x)) * ((poly (poly_diff (SOD f)) x) - (poly (SOD f) x)))
         = (-- (exp (--x))) * (poly f x)`,
-    let lem17 = prove(`!x y.(x - y) = (-- (y - x))`,REAL_ARITH_TAC) in
+    let lem17 = PROVE(`!x y.(x - y) = (-- (y - x))`,REAL_ARITH_TAC) in
     (REPEAT STRIP_TAC) THEN
     (ONCE_REWRITE_TAC [lem17]) THEN (ONCE_REWRITE_TAC [SOD_SOD_DIFF_LEMMA])
     THEN REAL_ARITH_TAC
 )
 
-let PLANETMATH_EQN_1_1_3 = prove(
+let PLANETMATH_EQN_1_1_3 = PROVE(
     `! x f.((Phi f) diffl (-- (exp (--x)) * (poly f x)))(x)`,
     (ONCE_REWRITE_TAC [GSYM PLANETMATH_EQN_1_1_2]) THEN (ACCEPT_TAC PLANETMATH_EQN_1_1_1)
 )
@@ -341,7 +355,7 @@ let PHI_CONTL =
    let lem0 = SPECL [`Phi f`;`-- (exp (--x)) * (poly f x)`;`x:real`] DIFF_CONT in
    GEN_ALL (MP lem0 (SPEC_ALL PLANETMATH_EQN_1_1_3))
 
-let PHI_DIFFERENTIABLE = prove(
+let PHI_DIFFERENTIABLE = PROVE(
     `!f x.(Phi f) differentiable x`,
     (SIMP_TAC [differentiable]) THEN (REPEAT STRIP_TAC) THEN
     (EXISTS_TAC `((exp (--x)) * ((poly (poly_diff (SOD f)) x) - (poly (SOD f) x)))`)
@@ -349,9 +363,9 @@ let PHI_DIFFERENTIABLE = prove(
 )
 let PLANETMATH_EQN_1_2 =
    (* this one's a bit nasty *)
-   let FO_LEMMA2 = GEN_ALL (prove(
+   let FO_LEMMA2 = GEN_ALL (PROVE(
          `((! l z. (C (l:real) (z:real)) ==> l = (l' z))) ==> ((? (l:real) (z:real) .(A z) /\ (B  z) /\ (C l z) /\ (D l) ) ==> (? (z:real).((A z) /\ (B z) /\ (D (l' z)))))`,
-       let lem0 = prove(`(! (l:real) z.(C l (z:real)) ==> l = (l' z)) ==> ((C l z) = ((C l z) /\ l = (l' z)))`, MESON_TAC[]) in
+       let lem0 = PROVE(`(! (l:real) z.(C l (z:real)) ==> l = (l' z)) ==> ((C l z) = ((C l z) /\ l = (l' z)))`, MESON_TAC[]) in
        let lem1 = UNDISCH lem0 in
         (STRIP_TAC THEN (ONCE_REWRITE_TAC [lem1]) THEN (MESON_TAC[]))
    )) in
@@ -361,7 +375,7 @@ let PLANETMATH_EQN_1_2 =
     let MVT_SPEC3 = UNDISCH MVT_SPEC2 in
     let MVT_SPEC4 = UNDISCH MVT_SPEC3 in
     let MVT_SPEC5 = UNDISCH MVT_SPEC4 in
-    let lem0 = prove(`! x. x - &0 = x`,REAL_ARITH_TAC) in
+    let lem0 = PROVE(`! x. x - &0 = x`,REAL_ARITH_TAC) in
     let MVT_SPEC6 = ONCE_REWRITE_RULE [lem0] MVT_SPEC5 in
     let DIFF_UNIQ_SPEC1 = SPEC `Phi f` DIFF_UNIQ in
     let DIFF_UNIQ_SPEC2 = SPEC `l:real` DIFF_UNIQ_SPEC1 in
@@ -385,7 +399,7 @@ let PLANETMATH_EQN_1_2 =
     lem83
 
 let xi_DEF  = new_specification ["xi"]
-    (let FO_LEM = prove(
+    (let FO_LEM = PROVE(
          `  (! x f.(P x) ==> ? z. (Q z x f))
           = (! (x:real) (f:(real)list). ? (z:real). (P x) ==> (Q z x f))`,
          MESON_TAC []) in
@@ -393,7 +407,7 @@ let xi_DEF  = new_specification ["xi"]
       (ONCE_REWRITE_RULE [FO_LEM]
         (GEN_ALL (DISCH_ALL PLANETMATH_EQN_1_2)))))
 
-let PLANETMATH_LEMMA_1 = prove(
+let PLANETMATH_LEMMA_1 = PROVE(
     `!x f.  &0 < x
             ==> poly (SOD f) (&0) * exp x =
                 poly (SOD f) x + x * exp (x - xi x f) * poly f (xi x f)`,
@@ -410,7 +424,7 @@ let PLANETMATH_LEMMA_1 = prove(
     let fact00 = REAL_ARITH `(B:real) - ((expx * C) * (--expy))  * D = B + C * (expx * expy) * D` in
     let lem08 = ONCE_REWRITE_RULE [fact00] lem07 in
     let lem09 = SIMP_RULE [GSYM REAL_EXP_ADD] lem08 in
-    let lem10 = SIMP_RULE [prove(`(x:real) + -- y =  x - y`, REAL_ARITH_TAC)] lem09 in
+    let lem10 = SIMP_RULE [PROVE(`(x:real) + -- y =  x - y`, REAL_ARITH_TAC)] lem09 in
     let lem11 = GEN_ALL (DISCH_ALL lem10) in
     let lem12 = SPECL [`poly (SOD f) (&0)`;
                        `poly (SOD f) x`;
@@ -427,7 +441,7 @@ end;;
 
 module Pm_lemma2 = struct
 
-let POLY_MCLAURIN =  prove(
+let POLY_MCLAURIN =  PROVE(
     `! p x. poly p x =
             psum (0, LENGTH p) (\m.poly (poly_diff_iter p m) (&0) / &(FACT m) * x pow m)`,
     let lem002 = SPECL [`poly p`;`\n.poly (poly_diff_iter p n)`] MCLAURIN_ALL_LE in
@@ -439,10 +453,10 @@ let POLY_MCLAURIN =  prove(
     let lem009 = ONCE_REWRITE_RULE [poly] lem008 in
     let lem010 = SIMP_RULE [REAL_ARITH `!x. ((&0)/x) = &0`] lem009 in
     let lem011 = SIMP_RULE [REAL_MUL_LZERO;REAL_ADD_RID] lem010 in
-    let lem012 = prove(`(? t . (A t) /\ B) ==> B`, MESON_TAC []) in
+    let lem012 = PROVE(`(? t . (A t) /\ B) ==> B`, MESON_TAC []) in
     ACCEPT_TAC (GEN_ALL (MATCH_MP lem012 lem011))
 )
-let DIFF_ADD_CONST_COMMUTE = prove(
+let DIFF_ADD_CONST_COMMUTE = PROVE(
     `!f a l x . (f diffl l) (x + a) ==> ((\x. f (x + a)) diffl l) x`,
     let lem01 = CONJ (SPEC_ALL DIFF_X) (SPECL [`a:real`;`x:real`] DIFF_CONST) in
     let lem02 = BETA_RULE (MATCH_MP DIFF_ADD lem01) in
@@ -453,7 +467,7 @@ let DIFF_ADD_CONST_COMMUTE = prove(
     let lem06 = GEN_ALL (SIMP_RULE [lem03] lem05) in
     ACCEPT_TAC lem06
 )
-let POLY_DIFF_ADD_CONST_COMMUTE = prove(
+let POLY_DIFF_ADD_CONST_COMMUTE = PROVE(
     `! p1 p2 a.(!x.(poly p2 x) = (poly p1 (x-a)))
             ==> (!x . ((poly (poly_diff p2) x) = (poly (poly_diff p1) (x-a))))`,
     let lem01 = SPECL
@@ -469,7 +483,7 @@ let POLY_DIFF_ADD_CONST_COMMUTE = prove(
     (REPEAT STRIP_TAC) THEN (ACCEPT_TAC lem08)
 )
 
-let HARD_WON = prove(
+let HARD_WON = PROVE(
     `! p1 p2 a n.(!x.(poly p2 x) = (poly p1 (x-a)))
             ==> ((\x.poly (poly_diff_iter p2 n) x) = (\x.(poly (poly_diff_iter p1 n) (x - a)))) `,
     let lem = SPECL [`poly_diff_iter p1 n`;`poly_diff_iter p2 n`;`a:real`] POLY_DIFF_ADD_CONST_COMMUTE in
@@ -494,7 +508,7 @@ let POLY_SHIFT_DEF = new_recursive_definition list_RECURSION
 
 (* POLY_SHIFT simply says that poly_shift does what is supposed to do
  *)
-let POLY_SHIFT = prove(
+let POLY_SHIFT = PROVE(
     `! p a x .(poly p (x + a)) = (poly (poly_shift p a) x)`,
     let lem01 = ASSUME `! a x . poly  t (x + a) = poly (poly_shift t a ) x` in
     LIST_INDUCT_TAC THENL
@@ -506,7 +520,7 @@ let POLY_SHIFT = prove(
      (ONCE_REWRITE_TAC [GSYM lem01]) THEN (REAL_ARITH_TAC)
     ]
 )
-let POLY_SHIFT_LENGTH = prove(
+let POLY_SHIFT_LENGTH = PROVE(
     `! p a . (LENGTH (poly_shift p a)) = (LENGTH p)`,
 
     (LIST_INDUCT_TAC) THENL
@@ -518,7 +532,7 @@ let POLY_SHIFT_LENGTH = prove(
          ARITH_RULE `! n. SUC n >n`])
     ]
 )
-let POLY_TAYLOR = prove(
+let POLY_TAYLOR = PROVE(
     `! p x a. poly p x =
               psum (0,LENGTH p) (\m.poly (poly_diff_iter p m) a/ &(FACT m) * (x - a) pow m)`,
     let lem01 = SPEC `poly_shift p a` POLY_MCLAURIN in
@@ -536,13 +550,13 @@ let POLY_TAYLOR = prove(
     let lem13 = ONCE_REWRITE_RULE [REAL_ARITH `(x:real) - a + a = x`] lem12 in
     ACCEPT_TAC (GEN_ALL lem13 )
 )
-let PLANETMATH_LEMMA_2_A = prove(
+let PLANETMATH_LEMMA_2_A = PROVE(
     `! p a x . poly p x =
        ((\s .psum (0,LENGTH p) ((\m.poly (poly_diff_iter p m) a/ &(FACT m) * (s m))))
          (\m.(x - a) pow m))`,
     BETA_TAC THEN (MATCH_ACCEPT_TAC POLY_TAYLOR)
 )
-let ITERATE_SUC_REC = prove(
+let ITERATE_SUC_REC = PROVE(
     `!(op:D -> D -> D) m n (f:num -> D) .
               monoidal op ==>
               (m <= SUC n) ==>
@@ -553,7 +567,7 @@ let ITERATE_SUC_REC = prove(
     let lem2 = CONJUNCT2 (UNDISCH lem1) in
     let lem3 = ISPECL [`f:(num -> D)`;`SUC n`;`m..n`] lem2 in
     let lem4 = SIMP_RULE [] (DISCH_ALL lem3) in
-    let lem50 = prove(
+    let lem50 = PROVE(
         `!m n. ~((SUC n) IN (m..n))`,
         STRIP_TAC THEN (ONCE_REWRITE_TAC [IN_NUMSEG]) THEN ARITH_TAC) in
     let lem5 = SIMP_RULE [lem50;FINITE_SUPPORT;FINITE_NUMSEG] lem4 in
@@ -561,18 +575,18 @@ let ITERATE_SUC_REC = prove(
     let lem7 = ONCE_REWRITE_RULE [lem0] lem6 in
     SIMP_TAC [lem7]
 );;
-let ITERATE_POLY_ADD_PRE_REC = prove(
+let ITERATE_POLY_ADD_PRE_REC = PROVE(
     `!f n . n > 0
         ==> iterate (++) (0..n) f = (f n) ++ (iterate (++) (0..n-1) f)`,
     MESON_TAC [ITERATE_CLAUSES_NUMSEG; MONOIDAL_POLY_ADD; POLY_ADD_SYM;
                ARITH_RULE `0 <= x`; ARITH_RULE `n > 0 ==> n = SUC (n - 1)`]
 );;
-let PSUM_ITERATE = prove(
+let PSUM_ITERATE = PROVE(
     `! n m f. psum (m,n) f
               = if (n > 0) then (iterate (+) (m..((n+m)-1)) f) else &0`,
     let lem01 = ARITH_RULE `~(n+m=0) ==> (SUC n + m) -1 = SUC ((n + m) -1)` in
     let lem02 = MP (ISPEC `(+)` ITERATE_SING) MONOIDAL_REAL_ADD in
-    let lem03 = prove(
+    let lem03 = PROVE(
           `iterate (+) (m..SUC ((n + m) - 1)) f
            = f (SUC ((n+m)-1)) + iterate (+) (m..(n+m)-1) f`,
            MESON_TAC [ARITH_RULE `m <= SUC ((n+m)-1)`;ITERATE_CLAUSES_NUMSEG;
@@ -595,12 +609,12 @@ let PSUM_ITERATE = prove(
       ]
     ]
 );;
-let FACT_DIV_RCANCELS = prove(
+let FACT_DIV_RCANCELS = PROVE(
     `!n x. x / &(FACT n) * &(FACT n) = x`,
     MESON_TAC [REAL_ARITH `!x. &0 < x ==> ~(x = &0)`;
                REAL_DIV_RMUL;FACT_LT;REAL_OF_NUM_LT]
 )
-let PLANETMATH_LEMMA_2_B = prove(
+let PLANETMATH_LEMMA_2_B = PROVE(
     `! p (x:real) a . poly (SOD p) a =
        ((\s .psum (0,LENGTH p) ((\m.poly (poly_diff_iter p m) a/ &(FACT m) * (s m))))
          (\m. &(FACT m)))`,
@@ -623,15 +637,15 @@ end;;
 
 module Pm_eqn4 = struct
 
-let N_IS_INT = prove(
+let N_IS_INT = PROVE(
     `!n . integer (&n)`,
     MESON_TAC [is_int]
 )
-let NEG_N_IS_INT = prove(
+let NEG_N_IS_INT = PROVE(
     `!n . integer (--(&n))`,
     MESON_TAC [is_int]
 );;
-let PLANETMATH_EQN_3 = prove(
+let PLANETMATH_EQN_3 = PROVE(
     `!f. 0 < nu
           ==> poly (SOD f) (&0) * exp (&nu) =
               poly (SOD f) (&nu) +
@@ -656,7 +670,7 @@ let RHS = new_definition
                               * (poly f (xi (&i) f))
                           )`
 
-let E_POW_N = prove(
+let E_POW_N = PROVE(
     `!n.(exp (real_of_num 1)) pow n = exp(&n)`,
     SIMP_TAC [GSYM REAL_EXP_N;REAL_MUL_RID])
 
@@ -671,7 +685,7 @@ let E_POW_N = prove(
  *  Harrison's transcendental predicate.
  *)
 
-let NO_CONST_TERM_POLY_ROOT = prove(
+let NO_CONST_TERM_POLY_ROOT = PROVE(
     `!p . (~(x = &0) /\ ((HD p) = &0) /\ (poly p x = &0) /\ ~(p = []))
            ==> ((poly (TL p) x) = &0)`,
     LIST_INDUCT_TAC THEN
@@ -679,7 +693,7 @@ let NO_CONST_TERM_POLY_ROOT = prove(
     (MESON_TAC [REAL_ARITH `((&0):real) + x = x`;REAL_ENTIRE])
 )
 
-let NEGATED_POLY_ROOT = prove(
+let NEGATED_POLY_ROOT = PROVE(
     `!p . (poly p x = &0) ==> (poly ((-- &1) ## p) x = &0)`,
     MESON_TAC [POLY_CMUL;REAL_ARITH `(-- &1) * ((&0):real) = &0`]
 )
@@ -693,7 +707,7 @@ let POLY_NUKE = new_recursive_definition list_RECURSION
                 /\ (poly_nuk (CONS (c:real) t) =
                    (if (c = &0) then (poly_nuk t) else (CONS c t)))`
 
-let POLY_NUKE_ROOT = prove(
+let POLY_NUKE_ROOT = PROVE(
     `!p . ((~(x = &0)) /\ (poly p x = &0)) ==> (poly (poly_nuk p) x = &0)`,
     LIST_INDUCT_TAC THENL
     [ SIMP_TAC[POLY_NUKE];
@@ -701,22 +715,22 @@ let POLY_NUKE_ROOT = prove(
       (ASM_MESON_TAC [HD;TL;POLY_NUKE;NOT_CONS_NIL;NO_CONST_TERM_POLY_ROOT])
     ]
 )
-let POLY_NUKE_ZERO = prove(
+let POLY_NUKE_ZERO = PROVE(
     `!p . (poly p = poly []) <=> (poly (poly_nuk p) = poly [])`,
     LIST_INDUCT_TAC THEN (ASM_MESON_TAC [POLY_ZERO;ALL;POLY_NUKE])
 )
-let POLY_CONST_NO_ROOTS = prove(
+let POLY_CONST_NO_ROOTS = PROVE(
     `! c.  ~(poly [c] = poly []) ==> ~(poly [c] x = &0)`,
     (MESON_TAC [poly;REAL_ENTIRE;POLY_ZERO;ALL;
                 REAL_ARITH `(x:real) + &0 = x`;
                 REAL_ARITH `(x:real) * &0 = &0`])
 )
-let LENGTH_1 = prove(
+let LENGTH_1 = PROVE(
     `! lst . (LENGTH lst = 1) <=> (? x. lst = [x])`,
     LIST_INDUCT_TAC THEN
     (MESON_TAC [LENGTH;ARITH_RULE `SUC x = 1 <=> x = 0`;NOT_CONS_NIL;LENGTH_EQ_NIL])
 )
-let SOUP_LEMMA = prove(
+let SOUP_LEMMA = PROVE(
     `!p . ~(x = &0) /\ ~(poly p = poly []) /\ (poly p x = &0)
             ==> LENGTH (poly_nuk p) > 1`,
     let l0 = ARITH_RULE `(~(n = 0) /\ ~(n = 1)) <=> n > 1` in
@@ -726,31 +740,31 @@ let SOUP_LEMMA = prove(
       (ASM_MESON_TAC [l1;POLY_CONST_NO_ROOTS;LENGTH_1;LENGTH;POLY_NUKE_ZERO]) ]
 )
 
-let POLY_NUKE_HD_NONZERO = prove(
+let POLY_NUKE_HD_NONZERO = PROVE(
     `!p . ~(poly p = poly []) ==> ~((HD (poly_nuk p)) = &0)`,
     LIST_INDUCT_TAC THEN (ASM_CASES_TAC `(h:real) = &0`) THEN
     (ASM_SIMP_TAC [HD;POLY_ZERO;ALL;POLY_NUKE])
 )
 
-let IS_INT_POLY_NUKE = prove(
+let IS_INT_POLY_NUKE = PROVE(
     `!p . (ALL integer p) ==> (ALL integer (poly_nuk p))`,
     LIST_INDUCT_TAC THEN (ASM_MESON_TAC [ALL;POLY_NUKE;N_IS_INT])
 )
 
-let POLY_X_NOT_POLY_NIL = prove(
+let POLY_X_NOT_POLY_NIL = PROVE(
     `~(poly [&0;&1] = poly [])`,
-    (SIMP_TAC [FUN_EQ_THM;POLY_X;poly;prove(`(~ ! x .P x) <=> (? x. ~ P x)`,MESON_TAC[])] )
+    (SIMP_TAC [FUN_EQ_THM;POLY_X;poly;PROVE(`(~ ! x .P x) <=> (? x. ~ P x)`,MESON_TAC[])] )
     THEN (EXISTS_TAC `real_of_num 1`) THEN (REAL_ARITH_TAC)
 )
 
-let NOT_TRANSCENDENTAL_ZERO = prove(
+let NOT_TRANSCENDENTAL_ZERO = PROVE(
       `~ (transcendental (&0))`,
       (REWRITE_TAC [transcendental;algebraic]) THEN
       (EXISTS_TAC `[&0 ; &1]:(real)list`) THEN
       (MESON_TAC [POLY_X;POLY_X_NOT_POLY_NIL;ALL;N_IS_INT])
 )
 
-let ALL_IS_INT_POLY_CMUL = prove(
+let ALL_IS_INT_POLY_CMUL = PROVE(
     `! p c. (integer c) /\ (ALL integer p) ==> (ALL integer (c ## p))`,
     (LIST_INDUCT_TAC) THEN (ASM_SIMP_TAC [poly_cmul;ALL;INTEGER_MUL])
 )
@@ -759,7 +773,7 @@ let ALL_IS_INT_POLY_CMUL = prove(
  * Harrison's transcendental predicate from 100/liouville.ml is equivalent
  * to my predicate conjoined with x != 0.
  *)
-let TRANSCENDENTAL_MY_TRANSCENDENTAL = prove(
+let TRANSCENDENTAL_MY_TRANSCENDENTAL = PROVE(
     `!x. transcendental x <=>
          (~(x = &0) /\
              ~ ? c.     (ALL integer c)
@@ -768,7 +782,7 @@ let TRANSCENDENTAL_MY_TRANSCENDENTAL = prove(
                      /\ (HD c) > &0 )`,
     let contra_pos = TAUT `(~X ==> ~Y /\ ~Z) <=> ((Y \/ Z) ==> X)` in
     let contra_pos2 = TAUT `((~X /\ ~Y) ==> ~Z) <=> (Z ==> ~X ==> Y)` in
-    let l0 = prove(`!c . LENGTH c > 1 ==> HD c > &0 ==> ~(poly c = poly [])`,
+    let l0 = PROVE(`!c . LENGTH c > 1 ==> HD c > &0 ==> ~(poly c = poly [])`,
                    LIST_INDUCT_TAC THEN
                    (ASM_MESON_TAC [LENGTH_EQ_NIL;ARITH_RULE `n > 1 ==> ~(n = 0)`;
                                    REAL_ARITH `(x:real) > &0 ==> ~(x = &0)`;
@@ -777,10 +791,10 @@ let TRANSCENDENTAL_MY_TRANSCENDENTAL = prove(
                    then (poly_nuk p)
                    else ((-- &1) ## (poly_nuk p))` in
     let l2 = REAL_ARITH `!(x:real). (&0 <= x) /\ ~(x = &0) ==> x > &0` in
-    let l3 = prove( `! c p. LENGTH (c ## p) =  LENGTH p`,
+    let l3 = PROVE( `! c p. LENGTH (c ## p) =  LENGTH p`,
                     STRIP_TAC THEN LIST_INDUCT_TAC THEN
                     (ASM_SIMP_TAC [poly_cmul;LENGTH])) in
-    let POLY_CMUL_HD = prove(
+    let POLY_CMUL_HD = PROVE(
         `! x p . (~(p = [])) ==> HD (x ## p) = x * (HD p)`,
         STRIP_TAC THEN LIST_INDUCT_TAC THEN (SIMP_TAC [NOT_CONS_NIL;poly_cmul;HD])
     ) in
@@ -801,7 +815,7 @@ let TRANSCENDENTAL_MY_TRANSCENDENTAL = prove(
     ]
 )
 
-let E_TRANSCENDENTAL_EQUIV = prove(
+let E_TRANSCENDENTAL_EQUIV = PROVE(
     `(transcendental (exp (&1))) <=>
      (~ ? c.  (ALL integer c)
            /\ ((LENGTH c) > 1)
@@ -812,10 +826,10 @@ let E_TRANSCENDENTAL_EQUIV = prove(
 )
 
 (* TBD mentionedin paper *)
-let PLANETMATH_EQN_4 =  prove(
+let PLANETMATH_EQN_4 =  PROVE(
     `(~ (transcendental (exp (&1)))) ==> ? c .
           ((ALL integer c) /\ ((LENGTH c) > 1) /\ ((EL 0 c) > &0) /\ (! f .((LHS c f) = (RHS c f))))`,
-     let foo2 = prove( `(HD c) > (real_of_num 0) ==> EL 0 c > &0`,SIMP_TAC [EL]) in
+     let foo2 = PROVE( `(HD c) > (real_of_num 0) ==> EL 0 c > &0`,SIMP_TAC [EL]) in
      let lem01 = SPECL [`f:num->real`;`0`;`0`;`PRE (LENGTH (c:(real)list))`] SUM_COMBINE_R in
      let lem02 = ARITH_RULE `(0 <= 0 + 1 /\ 0 <= (PRE (LENGTH (c:(real)list))))` in
      let lem03 = GSYM (MP lem01 (lem02) ) in
@@ -837,7 +851,7 @@ let PLANETMATH_EQN_4 =  prove(
      in
      let lem21 = GEN `nu:num` (SPEC_ALL PLANETMATH_EQN_3_TWEAKED) in
      let lem3 = CONJ lem21 lem2 in
-     let NUM_CASES_LEMMA = prove(
+     let NUM_CASES_LEMMA = PROVE(
          ` !P .((! n .(0 < n) ==> (P n)) /\ (P 0) ==> ! n . P n)`,
          (REPEAT STRIP_TAC) THEN (SPEC_TAC (`n:num`,`n:num`)) THEN
          INDUCT_TAC THEN (ASM_SIMP_TAC[]) THEN
@@ -906,20 +920,20 @@ end;;
 
 module Pm_eqn4_rhs = struct
 
-let ABS_LE_MUL2 = prove(
+let ABS_LE_MUL2 = PROVE(
   `!(w:real) x y z. abs(w) <= y /\ abs(x) <= z ==> abs(w * x) <= (y * z)`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   REWRITE_TAC[ABS_MUL] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
   ASM_REWRITE_TAC[ABS_POS])
 
-let SEPTEMBER_2009_LEMMA = prove(
+let SEPTEMBER_2009_LEMMA = PROVE(
     `!x f n n'.
     (!i.(0 <= i /\ i <= n) ==> (abs (poly (f i) x)) <= &(n')) ==>
     (abs (poly (poly_mul_iter f n) x)) <= (&(n') pow n)`,
     let lem0 = ASSUME `!i. 0 <= i /\ i <= SUC n ==> abs (poly (f i) x) <= &n'` in
     let lem1 = SPEC `SUC n` lem0 in
     let lem2 = SIMP_RULE [ARITH_RULE `0 <= SUC n /\ SUC n <= SUC n`] lem1 in
-    let lem3 = prove(`(!i:num.(P0 i) ==> (P1 i)) ==> (!i:num.((P1 i) ==> (Q i))) ==> (!i:num.((P0 i) ==> (Q i)))`, MESON_TAC[]) in
+    let lem3 = PROVE(`(!i:num.(P0 i) ==> (P1 i)) ==> (!i:num.((P1 i) ==> (Q i))) ==> (!i:num.((P0 i) ==> (Q i)))`, MESON_TAC[]) in
     let lem4 = ARITH_RULE `!i.(0 <= i /\ i <= n) ==> (0 <= i /\ i <= SUC n)` in
     let lem5 = GEN `Q:num->bool` (MATCH_MP lem3 lem4) in
     let lem6 = ASSUME `!n'. (!i. 0 <= i /\ i <= n ==> abs (poly (f i) x) <= &n') ==> abs (poly (poly_mul_iter f n) x) <= &n' pow n` in
@@ -935,7 +949,7 @@ let SEPTEMBER_2009_LEMMA = prove(
       (SIMP_TAC [lem2;lem11])
     ]
 )
-let SEPTEMBER_2009_LEMMA_2 = prove(
+let SEPTEMBER_2009_LEMMA_2 = PROVE(
     `&0 < x /\ x < &n
       ==> (!i. 0 <= i /\ i <= n ==> abs(poly [-- &i; &1] x) <= &n)`,
     (REWRITE_TAC [GSYM REAL_LE]) THEN (REPEAT STRIP_TAC) THEN
@@ -950,7 +964,7 @@ let SEPTEMBER_2009_LEMMA_2 = prove(
     ]
 )
 
-let FACT_DIV_LCANCELS = prove(
+let FACT_DIV_LCANCELS = PROVE(
     `!n x.  &(FACT n) * x / &(FACT n)  = x`,
     let lem0 = SPECL [`0`;`FACT n`] REAL_OF_NUM_LT in
     let lem1 = ONCE_REWRITE_RULE [GSYM lem0] FACT_LT in
@@ -959,7 +973,7 @@ let FACT_DIV_LCANCELS = prove(
     let lem4 = MATCH_MP lem3 (SPEC_ALL lem1) in
     ACCEPT_TAC (GEN_ALL (MP lem2 lem4))
 )
-let NOVEMBER_LEMMA_1 = prove(
+let NOVEMBER_LEMMA_1 = PROVE(
     `p > 1 ==>
       &0 < x /\ x < &n ==>
        (abs(poly (g n p) x)) <=
@@ -1017,7 +1031,7 @@ let NOVEMBER_LEMMA_1 = prove(
    INDUCT_TAC THENL [(REAL_ARITH_TAC); (ACCEPT_TAC lem3)]
 )
 
-let NOVEMBER_LEMMA_2 = prove(
+let NOVEMBER_LEMMA_2 = PROVE(
     ` 1 <= v /\ v <= n
        ==> ((&0) < ( xi (&v) f)  /\ (xi (&v) f) < (&n))`,
     let l0 = SPECL [`(&v):real`;`f:(real)list`] Pm_lemma1.xi_DEF in
@@ -1032,7 +1046,7 @@ let NOVEMBER_LEMMA_2 = prove(
     (MATCH_MP_TAC l7) THEN (ACCEPT_TAC  l3)
 )
 
-let REAL_LE_MUL3 = prove(
+let REAL_LE_MUL3 = PROVE(
     `! w0 x0 y0 w1 x1 (y1:real).
      (&0 <= w0) ==> (&0 <= x0) ==> (&0 <= y0) ==>
      (w0 <= w1) ==> (x0 <= x1) ==> (y0 <= y1) ==>
@@ -1047,7 +1061,7 @@ let MAX_ABS_DEF =
        `    (max_abs [] = &0)
         /\  (max_abs (CONS h t) = real_max (real_abs h) (max_abs t))`
 
-let MAX_ABS_LE = prove(
+let MAX_ABS_LE = PROVE(
     `! cs i.
      (0 <= i /\ i < (LENGTH cs) ==>
        (real_abs (EL i cs)) <= (max_abs cs))`,
@@ -1062,7 +1076,7 @@ let MAX_ABS_LE = prove(
       ]
     ]
 )
-let KEATS_PART_1 = prove(
+let KEATS_PART_1 = PROVE(
     `1 <= i /\ i <= PRE (LENGTH c) ==> ( &i * abs (EL i c) <= &i * max_abs c)`,
     let keats12 = ARITH_RULE `1 <= i /\ i <= (PRE (LENGTH (c:(real)list))) ==> (0 <= i /\ i < LENGTH c)` in
     let keats13 = IMP_TRANS keats12 (SPECL [`c:(real)list`;`i:num`] MAX_ABS_LE) in
@@ -1073,7 +1087,7 @@ let KEATS_PART_1 = prove(
     let keats18 = MATCH_MP keats16 keats17 in
     ACCEPT_TAC (DISCH_ALL keats18)
 )
-let KEATS_PART_2 = prove(
+let KEATS_PART_2 = PROVE(
     `(1 <= v /\ v <= PRE (LENGTH (c:(real)list))) ==>
        abs (exp ((&v) - xi (&v) (g (PRE (LENGTH c)) p))) <= abs (exp (&(PRE (LENGTH (c:(real)list)))))`,
     let j0 = ASSUME `1 <= v /\ (v:num) <= (PRE (LENGTH (c:(real)list)))` in
@@ -1100,7 +1114,7 @@ let j2 = MP (SPEC `PRE (LENGTH (c:(real)list))` j1) j00 in
 )
 let KEATS_PART_3 =
     UNDISCH
-    (prove(
+    (PROVE(
     `p > 1 ==> (1 <= i /\ i <= PRE (LENGTH (c:(real)list)))
      ==> abs (poly (g (PRE (LENGTH c)) p) (xi (&i) (g (PRE (LENGTH c)) p))) <=
          &1 / &(FACT (p - 1)) *
@@ -1119,7 +1133,7 @@ let KEATS_PART_3 =
     MATCH_ACCEPT_TAC (DISCH_ALL k9)
 ))
 
-let RHS_4_F5_LE_SUM = prove(
+let RHS_4_F5_LE_SUM = PROVE(
     `abs (RHS c (g (PRE (LENGTH c)) p)) <=
      sum (1..PRE (LENGTH c))
      (\i. &i *
@@ -1141,7 +1155,7 @@ let RHS_4_F5_LE_SUM = prove(
 )
 
 
-let RHS_4_BOUND_PRE = prove(
+let RHS_4_BOUND_PRE = PROVE(
         `abs (RHS c (g (PRE (LENGTH c)) p)) <=
           (sum (1..PRE (LENGTH c)) &) *
                (max_abs c *
@@ -1204,19 +1218,19 @@ let RHS_4_BOUND =
     ONCE_REWRITE_RULE [l2] RHS_4_BOUND_PRE
 ;;
 
-let JESSE_POW_LEMMA = prove(
+let JESSE_POW_LEMMA = PROVE(
      `(p:num) > 1 ==> !x.real_pow x p = x * (real_pow x (p-1))`,
      let c0 = UNDISCH (ARITH_RULE `(p:num) > 1 ==> p = SUC (p - 1) `) in
      STRIP_TAC THEN STRIP_TAC THEN
      (CONV_TAC (RATOR_CONV (ONCE_REWRITE_CONV [c0]))) THEN
      (SIMP_TAC [real_pow])
 )
-let JESSE_REAL_ABS_LE = prove(
+let JESSE_REAL_ABS_LE = PROVE(
     `!(x:real) y.(abs x) <= y ==> (abs x) <= (abs y)`,
     let int10 = UNDISCH (REAL_ARITH `(real_abs x) <= y ==>  y = real_abs y`) in
     (REPEAT STRIP_TAC) THEN (ASM_SIMP_TAC [GSYM int10])
 )
-let OLDGERMAN_LEMMA = prove(
+let OLDGERMAN_LEMMA = PROVE(
   ` !C2 C e.
         &0 < e
         ==> (?N . !n. n >= N ==>
@@ -1236,7 +1250,7 @@ let OLDGERMAN_LEMMA = prove(
    (ASM_SIMP_TAC [ARITH_RULE `n' >= SUC n ==> n' >= n`])
 )
 
-let RHS_4_LT_ONE_MESSY = prove(
+let RHS_4_LT_ONE_MESSY = PROVE(
    `?p0. !p. p > 1 ==> p> p0 ==> abs (RHS c (g (PRE (LENGTH c)) p)) < &1`,
    let c1 = ONCE_REWRITE_RULE [ UNDISCH JESSE_POW_LEMMA ] RHS_4_BOUND in
    let c2 = SPECL [`real_pow (&(PRE (LENGTH (c:(real)list)))) (p-1)`]
@@ -1288,7 +1302,7 @@ let RHS_4_LT_ONE_MESSY = prove(
    (DISCH_TAC) THEN
    (MATCH_ACCEPT_TAC int12)
 )
-let LT_ONE = prove(
+let LT_ONE = PROVE(
         `!c. ?p0. !p. p> p0 ==> abs (RHS c (g (PRE (LENGTH c)) p)) < &1`,
     STRIP_TAC THEN (CHOOSE_TAC RHS_4_LT_ONE_MESSY) THEN (EXISTS_TAC `SUC p0`) THEN
     (ASM_MESON_TAC [ARITH_RULE `p > SUC p0 ==> (p > p0 /\ p > 1)`])
@@ -1300,21 +1314,21 @@ end;;
 
 module Pm_eqn4_lhs = struct
 
-let N_IS_INT = prove(
+let N_IS_INT = PROVE(
     `!n . integer (&n)`,
     MESON_TAC [is_int]
 )
-let NEG_N_IS_INT = prove(
+let NEG_N_IS_INT = PROVE(
     `!n . integer (--(&n))`,
     MESON_TAC [is_int]
 )
-let INT_OF_REAL_ADD = prove(
+let INT_OF_REAL_ADD = PROVE(
     `!x y.(integer x) /\ (integer y)
            ==> (int_of_real (x + y)) =
                (int_of_real x) + (int_of_real y)`,
     SIMP_TAC[integer;int_add;int_rep;N_IS_INT;NEG_N_IS_INT]
 )
-let INT_OF_REAL_MUL = prove(
+let INT_OF_REAL_MUL = PROVE(
     `!x y.(integer x) /\ (integer y)
            ==> (int_of_real (x * y)) =
                (int_of_real x) * (int_of_real y)`,
@@ -1376,12 +1390,12 @@ let INT_OF_REAL_CONV =
     let th3 = PURE_REWRITE_CONV(ths @ [int_pow_th; int_add_th; int_mul_th; int_sub_th; int_neg_th; int_of_num_th]) rexp in
     itlist DISCH is_int_assumpts (final_tweak th3)
 
-let ALL_IS_INT = prove(
+let ALL_IS_INT = PROVE(
     `! h t . (ALL integer (CONS h t)) ==> (integer h)  /\ (ALL integer t)`,
     SIMP_TAC [ALL]
 )
 
-let ALL_IS_INT_POLY_ADD = prove(
+let ALL_IS_INT_POLY_ADD = PROVE(
     `! p1 p2 . (ALL integer p1) /\ (ALL integer p2) ==> (ALL integer (p1 ++ p2))`,
     let lem01 = UNDISCH (SPECL [`h:real`;`t:(real)list`] ALL_IS_INT) in
     let [lem02;lem03] = CONJUNCTS lem01 in
@@ -1404,12 +1418,12 @@ let ALL_IS_INT_POLY_ADD = prove(
       ]
     ]
 )
-let ALL_IS_INT_POLY_CMUL = prove(
+let ALL_IS_INT_POLY_CMUL = PROVE(
     `! p c. (integer c) /\ (ALL integer p) ==> (ALL integer (c ## p))`,
     (LIST_INDUCT_TAC) THEN (ASM_SIMP_TAC [poly_cmul;ALL;INTEGER_MUL])
 )
 
-let ALL_IS_INT_POLY_MUL = prove(
+let ALL_IS_INT_POLY_MUL = PROVE(
     `! p1 p2 . (ALL integer p1) /\ (ALL integer p2) ==> (ALL integer (p1 ** p2))`,
     let lem01 = UNDISCH (SPECL [`h:real`;`t:(real)list`] ALL_IS_INT) in
     let lem02 = UNDISCH (SPECL [`h':real`;`t':(real)list`] ALL_IS_INT) in
@@ -1442,7 +1456,7 @@ let ALL_IS_INT_POLY_MUL = prove(
       ]
     ]
 )
-let NOT_POLY_MUL_ITER_NIL = prove(
+let NOT_POLY_MUL_ITER_NIL = PROVE(
     `! n . ~((poly_mul_iter (\i.[ -- &i; &1]) n) = [])`,
     let lem02 = SIMP_RULE [NOT_CONS_NIL] (ISPEC `[ -- &(SUC n); &1]` NOT_POLY_MUL_NIL ) in
     let lem03 = ISPEC `(poly_mul_iter (\i.[ -- &i; &1]) n)` lem02 in
@@ -1453,9 +1467,9 @@ let NOT_POLY_MUL_ITER_NIL = prove(
     ]
 )
 
-let ALL_IS_INT_POLY_MUL_ITER = prove(
+let ALL_IS_INT_POLY_MUL_ITER = PROVE(
     `! n. (ALL integer (poly_mul_iter (\i.[-- &i; &1]) n))`,
-    let FOOBAR_LEMMA =  prove(
+    let FOOBAR_LEMMA =  PROVE(
         `ALL integer [-- &(SUC n); &1]`,
         (SIMP_TAC [ALL]) THEN (SIMP_TAC [N_IS_INT;NEG_N_IS_INT])) in
     INDUCT_TAC THENL
@@ -1467,7 +1481,7 @@ let ALL_IS_INT_POLY_MUL_ITER = prove(
     ]
 )
 
-let ALL_IS_INT_POLY_EXP = prove(
+let ALL_IS_INT_POLY_EXP = PROVE(
     `!n p. (ALL integer p) ==> (ALL integer (poly_exp p n))`,
     let lem01 = ASSUME `! p. ALL integer p ==> ALL integer (poly_exp p n)` in
     let lem02 = ASSUME ` ALL integer p` in
@@ -1481,7 +1495,7 @@ let ALL_IS_INT_POLY_EXP = prove(
    ]
 )
 
-let BLAHBLAH = prove(
+let BLAHBLAH = PROVE(
     `! p1 p2. (LENGTH p1 <= LENGTH p2) ==> (&0 ## p1 ++ p2) = p2`,
      LIST_INDUCT_TAC THENL
      [ (SIMP_TAC [LENGTH;poly_cmul;poly_add]);
@@ -1493,7 +1507,7 @@ let BLAHBLAH = prove(
      ]
 )
 
-let BLAHBLAH3 = prove(
+let BLAHBLAH3 = PROVE(
     `! n h t. (LENGTH t) <= LENGTH (poly_exp [&0;&1] n ** CONS h t)`,
     let lem04 = ASSUME `! h t . LENGTH t <= LENGTH (poly_exp [&0;&1] n ** CONS h t)` in
     let lem05 = SPECL [`h:real`;`t:(real)list`] lem04  in
@@ -1506,7 +1520,7 @@ let BLAHBLAH3 = prove(
        (ASM_SIMP_TAC [BLAHBLAH]) THEN (ACCEPT_TAC lem08)
     ]
 )
-let TELEVISION = prove (
+let TELEVISION = PROVE (
     `!n p.(~ (p = [])) ==>  EL n (poly_exp [&0;&1] n ** p) = HD p`,
     let lem = MATCH_MP BLAHBLAH (SPEC_ALL BLAHBLAH3) in
     INDUCT_TAC THENL
@@ -1520,7 +1534,7 @@ let TELEVISION = prove (
         ]
     ]
 )
-let JOSHUA = prove(
+let JOSHUA = PROVE(
     `!i n p.(~ (p = [])) /\ (i < n) ==>  EL i (poly_exp [&0;&1] n ** p) = &0`,
     let lem0000 = SPECL [`t:(real)list`;`poly_exp [&0;&1] n ** (CONS h t)`] BLAHBLAH in
     let lem0001 = MATCH_MP lem0000 (SPEC_ALL BLAHBLAH3)  in
@@ -1546,7 +1560,7 @@ let JOSHUA = prove(
       ]
     ]
 )
-let POLY_MUL_HD = prove(
+let POLY_MUL_HD = PROVE(
     `! p1 p2. (~(p1 = []) /\ ~(p2 = [])) ==> (HD (p1 ** p2)) = (HD p1) * (HD p2)`,
     LIST_INDUCT_TAC THENL
     [ (SIMP_TAC[]);
@@ -1561,15 +1575,15 @@ let POLY_MUL_HD = prove(
       ]
     ]
 )
-let POLY_MUL_ITER_HD_FACTORIAL = prove(
+let POLY_MUL_ITER_HD_FACTORIAL = PROVE(
     `! n. (HD (poly_mul_iter (\i.[-- &i; &1]) n)) = ((-- &1) pow n) * (&(FACT n))`,
-    let lem01 = prove(`~([-- &(SUC n); &1] = [])`,SIMP_TAC [NOT_CONS_NIL]) in
+    let lem01 = PROVE(`~([-- &(SUC n); &1] = [])`,SIMP_TAC [NOT_CONS_NIL]) in
     let lem02 = ISPECL
                   [`[-- &(SUC n); &1]`;`poly_mul_iter (\i.[-- &i; &1]) n`]
                   POLY_MUL_HD in
     let lem03 = CONJ lem01 (SPEC_ALL NOT_POLY_MUL_ITER_NIL) in
     let lem04 = MP lem02 lem03 in
-    let lem05 = prove(
+    let lem05 = PROVE(
         `!n. ((-- &1) pow n) = -- ((-- &1) pow (SUC n))`,
         STRIP_TAC THEN (ONCE_REWRITE_TAC [pow]) THEN REAL_ARITH_TAC
     ) in
@@ -1582,7 +1596,7 @@ let POLY_MUL_ITER_HD_FACTORIAL = prove(
       (CONV_TAC (RATOR_CONV (ONCE_REWRITE_CONV [lem05]))) THEN REAL_ARITH_TAC
     ]
 )
-let PLANETMATH_THM_5_1 =  prove(
+let PLANETMATH_THM_5_1 =  PROVE(
     `! n p.
        p > 0 ==>
        n > 0 ==>
@@ -1593,7 +1607,7 @@ let PLANETMATH_THM_5_1 =  prove(
        /\ (ALL integer As)`,
     let lem01 = SPECL [`poly_exp [&0;&1] (p - 1)`;`poly_exp (poly_mul_iter (\i.[-- &i; &1]) n) p`] ALL_IS_INT_POLY_MUL in
     let lem02 = SPECL [`p-1`;`[&0;&1]`] ALL_IS_INT_POLY_EXP in
-    let lem03 = prove(`ALL integer [&0;&1]`, (REWRITE_TAC [ALL]) THEN (SIMP_TAC [N_IS_INT])) in
+    let lem03 = PROVE(`ALL integer [&0;&1]`, (REWRITE_TAC [ALL]) THEN (SIMP_TAC [N_IS_INT])) in
     let lem04 = MP lem02 lem03 in
     let lem05 = SPECL [`p:num`;`poly_mul_iter (\i.[-- &i; &1]) n`] ALL_IS_INT_POLY_EXP in
     let lem06 = MP lem05 (SPEC_ALL ALL_IS_INT_POLY_MUL_ITER)  in
@@ -1622,7 +1636,7 @@ let PLANETMATH_THM_5_1 =  prove(
 )
 let as_def =
     let ll01 = SPEC_ALL PLANETMATH_THM_5_1 in
-    let FO_LEMMA1 = prove(`((p > 0) ==> (n > 0) ==> (? z. C p n z))
+    let FO_LEMMA1 = PROVE(`((p > 0) ==> (n > 0) ==> (? z. C p n z))
                             <=> (? z. (p > 0) ==> (n > 0) ==> C p n z)`,MESON_TAC[]) in
     let ll02 = GEN_ALL (SIMP_RULE [FO_LEMMA1] ll01) in
     let ll03 = ONCE_REWRITE_RULE [SKOLEM_CONV (concl ll02)] ll02 in
@@ -1637,11 +1651,11 @@ let fact_As
 let ALL_integer_As
     = (GEN_ALL o DISCH_ALL o CONJUNCT2 o CONJUNCT2 o CONJUNCT2 o  UNDISCH o UNDISCH o SPEC_ALL) as_def
 
-let POLY_DIFF_AUX_LEM1 = prove(
+let POLY_DIFF_AUX_LEM1 = PROVE(
     `! i p k. i < (LENGTH p) ==> EL i (poly_diff_aux k p) = (EL i p) * &(i + k)`,
     let lem0001 = ASSUME `! p k . i < LENGTH p ==> EL i (poly_diff_aux k p ) = EL i p * &(i + k)` in
     let lem0002 = SPECL [` t:(real)list`;`SUC k`] lem0001 in
-    let lem0003 = prove(`SUC i < LENGTH (CONS (h:real) t) <=> i < LENGTH t`,(SIMP_TAC [LENGTH]) THEN ARITH_TAC) in
+    let lem0003 = PROVE(`SUC i < LENGTH (CONS (h:real) t) <=> i < LENGTH t`,(SIMP_TAC [LENGTH]) THEN ARITH_TAC) in
     INDUCT_TAC THENL
     [ LIST_INDUCT_TAC THENL
       [ (SIMP_TAC [poly_diff_aux;LENGTH]) THEN ARITH_TAC;
@@ -1652,7 +1666,7 @@ let POLY_DIFF_AUX_LEM1 = prove(
         (SIMP_TAC [lem0003;lem0002;ARITH_RULE `i + SUC k = SUC i + k`]) ]
     ]
 )
-let EL_POLY_DIFF = prove(
+let EL_POLY_DIFF = PROVE(
     `! i p. i < (LENGTH (poly_diff p)) ==> EL i (poly_diff p) = (EL (SUC i) p) * &(SUC i)`,
     let lem01 =  SPECL [`SUC i`;`t:(real)list`;`1`] POLY_DIFF_AUX_LEM1  in
     INDUCT_TAC THENL
@@ -1668,23 +1682,23 @@ let EL_POLY_DIFF = prove(
         (SIMP_TAC [poly_diff;NOT_CONS_NIL;TL;LENGTH_POLY_DIFF_AUX ]) THEN (SIMP_TAC [lem01;EL;TL]) THEN ARITH_TAC ]
      ]
 )
-let POLY_AT_ZERO = prove(
+let POLY_AT_ZERO = PROVE(
     `!p .(~(p = [])) ==> poly p (&0) = HD p`,
     LIST_INDUCT_TAC THENL [ SIMP_TAC []; (SIMP_TAC [poly;HD]) THEN REAL_ARITH_TAC ]
 )
-let PDI_POLY_DIFF_COMM = prove(
+let PDI_POLY_DIFF_COMM = PROVE(
     `! p n.(poly_diff_iter (poly_diff p) n) = (poly_diff (poly_diff_iter p n))`,
     STRIP_TAC THEN INDUCT_TAC THENL
     [(SIMP_TAC [Pm_lemma1.PDI_DEF]);
      (ONCE_REWRITE_TAC [Pm_lemma1.PDI_DEF]) THEN (ASM_SIMP_TAC [])]
 )
-let EL_PDI_AT_ZERO = prove(
+let EL_PDI_AT_ZERO = PROVE(
      `!i p. (i < (LENGTH p))
          ==> ( poly (poly_diff_iter p i) (&0)) = ((EL i p) * (&(FACT i)))`,
-    let lem03 = prove(`SUC i < LENGTH (CONS (h:real) t) <=> i < LENGTH t`,(SIMP_TAC [LENGTH]) THEN ARITH_TAC) in
+    let lem03 = PROVE(`SUC i < LENGTH (CONS (h:real) t) <=> i < LENGTH t`,(SIMP_TAC [LENGTH]) THEN ARITH_TAC) in
     let lem04 = ASSUME `!p . i < LENGTH p ==> poly (poly_diff_iter p i) (&0) = EL i p * &(FACT i)` in
     let lem05 = SIMP_RULE [LENGTH_POLY_DIFF;LENGTH;PRE] (SPEC `poly_diff (CONS h t)` lem04) in
-    let lem06 = prove(`i < LENGTH t ==> i < LENGTH (poly_diff (CONS h t))`,SIMP_TAC [LENGTH_POLY_DIFF;PRE;LENGTH]) in
+    let lem06 = PROVE(`i < LENGTH t ==> i < LENGTH (poly_diff (CONS h t))`,SIMP_TAC [LENGTH_POLY_DIFF;PRE;LENGTH]) in
     INDUCT_TAC THENL
     [ (LIST_INDUCT_TAC THENL
       [(SIMP_TAC [LENGTH]) THEN ARITH_TAC; (SIMP_TAC [Pm_lemma1.PDI_DEF;FACT;EL;NOT_CONS_NIL;POLY_AT_ZERO]) THEN REAL_ARITH_TAC]);
@@ -1695,19 +1709,19 @@ let EL_PDI_AT_ZERO = prove(
       ]
     ]
 )
-let EL_PDI_AT_ZERO2 = prove(
+let EL_PDI_AT_ZERO2 = PROVE(
     `!i p. ((~ (p = [])) /\ (i <= (LENGTH p) - 1)) ==> ( poly (poly_diff_iter p i) (&0)) = ((EL i p) * (&(FACT i)))`,
     STRIP_TAC THEN LIST_INDUCT_TAC THEN
     (SIMP_TAC [NOT_CONS_NIL;LENGTH;ARITH_RULE `(i <= (SUC x) -1) <=> (i < (SUC x))`;EL_PDI_AT_ZERO])
 )
-let POLY_CMUL_PDI = prove(
+let POLY_CMUL_PDI = PROVE(
     `!p c i. (poly_diff_iter (c ## p) i) = c ##(poly_diff_iter p i)`,
     STRIP_TAC THEN STRIP_TAC THEN INDUCT_TAC THEN (ASM_SIMP_TAC [Pm_lemma1.PDI_DEF;POLY_CMUL_POLY_DIFF])
 )
-let LENGTH_g = prove(
+let LENGTH_g = PROVE(
     `! n p . (LENGTH (g n p)) >= p `,
     let lem00 = ARITH_RULE `SUC ((SUC p ) - 1) = SUC p` in
-    let lem01 = prove(`! n p. ~((poly_exp (poly_mul_iter (\i.[-- &i; &1]) n ) (SUC p)) = [])`,
+    let lem01 = PROVE(`! n p. ~((poly_exp (poly_mul_iter (\i.[-- &i; &1]) n ) (SUC p)) = [])`,
                        SIMP_TAC [NOT_POLY_EXP_NIL; NOT_POLY_MUL_ITER_NIL]) in
     let lem02 = MATCH_MP POLY_MUL_LENGTH2 (SPEC_ALL lem01) in
     let lem03 = SPECL [`poly_exp [&0;&1] (SUC p - 1)`] lem02 in
@@ -1716,29 +1730,29 @@ let LENGTH_g = prove(
      (SIMP_TAC [Pm_eqn5.PLANETMATH_EQN_5;POLY_CMUL_LENGTH]) THEN STRIP_TAC THEN INDUCT_TAC THENL
      [ ARITH_TAC; SIMP_TAC [lem05]]
 )
-let LENGTH_As = prove(
+let LENGTH_As = PROVE(
     `! n p . p > 0 ==> n > 0 ==> LENGTH (As n p) >= p`,
     let lem50 = ADD_ASSUM `p > 0` (ADD_ASSUM `n > 0` (SPEC_ALL LENGTH_g)) in
     let lem51 = ONCE_REWRITE_RULE [UNDISCH_ALL (SPEC_ALL g_eq_As)] lem50 in
     let lem52 = ONCE_REWRITE_RULE [POLY_CMUL_LENGTH] lem51 in
     SIMP_TAC [lem52]
 )
-let REAL_MUL_RDIV = prove(
+let REAL_MUL_RDIV = PROVE(
     `!x y. ~(y = &0) ==> ((x * y) / y = x)`,
     SIMP_TAC[real_div; GSYM REAL_MUL_ASSOC; REAL_MUL_RINV; REAL_MUL_RID]
 )
-let REAL_MUL_DIV_ASSOC = prove(
+let REAL_MUL_DIV_ASSOC = PROVE(
     `!x y z.((x * z) / y = x * (z / y))`,
     SIMP_TAC [real_div;GSYM REAL_MUL_ASSOC]
 )
-let IS_INT_FACT_DIV = prove(
+let IS_INT_FACT_DIV = PROVE(
     `! n m. n >= m ==> integer ( (&(FACT n))/(&(FACT m)) )`,
     let lem0 = SPEC_ALL (ONCE_REWRITE_RULE [GSYM (SPECL [`FACT n`;`0`] REAL_OF_NUM_EQ)] FACT_NZ) in
     let lem1 = SPECL [`&(SUC n)`;`&(FACT n)`]  REAL_MUL_RDIV in
     let lem2 = MP lem1 lem0 in
     let lem4 = ASSUME `! m. n >= m ==> integer (&(FACT n)/ &(FACT m))` in
     let lem5 = UNDISCH (SPEC_ALL lem4) in
-    let lem6 = prove(`integer(&(SUC n))`,SIMP_TAC [N_IS_INT]) in
+    let lem6 = PROVE(`integer(&(SUC n))`,SIMP_TAC [N_IS_INT]) in
     let lem7 = CONJ lem6 lem5 in
     let lem8 = MATCH_MP INTEGER_MUL lem7  in
     let lem9 = UNDISCH_ALL (ARITH_RULE `(~(n >= m)) ==> (SUC n >= m) ==>  m = SUC n`) in
@@ -1752,7 +1766,7 @@ let IS_INT_FACT_DIV = prove(
       ]
     ]
 )
-let SATURDAY_LEMMA = prove(
+let SATURDAY_LEMMA = PROVE(
     `!x. p > 1 ==> m >= p ==> x * ((&(FACT m))/(&(FACT (p-1)))) = x * (&p) * ((&(FACT m))/(&(FACT p)))`,
     let lem01 = UNDISCH (ARITH_RULE `p > 1 ==> SUC (p -1) = p`) in
     let lem02 = ADD_ASSUM `p > 1` (SPEC `p - 1` (CONJUNCT2 FACT)) in
@@ -1772,7 +1786,7 @@ let SATURDAY_LEMMA = prove(
     (ONCE_REWRITE_TAC [lem03]) THEN
     (SIMP_TAC [REAL_MUL_ASSOC;GSYM REAL_OF_NUM_MUL])
 )
-let SHRIVER = prove(
+let SHRIVER = PROVE(
     `!f0. (!i. m <= i /\ i <= SUC n ==> (f0 i))
        ==> (!i. m <= i /\ i <= n ==> (f0 i)) `,
     let lem01 = UNDISCH_ALL (ARITH_RULE `i <= n ==> i <= SUC n`) in
@@ -1782,7 +1796,7 @@ let SHRIVER = prove(
     let lem05 = MP lem04 lem02 in
     (REPEAT STRIP_TAC) THEN (ACCEPT_TAC lem05)
 )
-let IS_INT_SUM = prove(
+let IS_INT_SUM = PROVE(
  `!f n m.(!i.m <= i /\  i <= n ==> integer (f i)) ==> integer (sum (m..n) f)`,
   let l0 = SPECL [`m:num`;`n:num`;`i:num`] IN_NUMSEG in
   let l1 = SPECL [`m:num`;`SUC n`] NUMSEG_EMPTY in
@@ -1821,11 +1835,11 @@ let IS_INT_SUM = prove(
     ]
   ]
 )
-let ALL_IMP_EL = prove(
+let ALL_IMP_EL = PROVE(
     `! (l:(a)list) i P. (ALL P l) ==> (i < LENGTH l) ==> P (EL i l)`,
     SIMP_TAC[GSYM ALL_EL]
 )
-let KEY_LEMMA = prove(
+let KEY_LEMMA = PROVE(
     `n > 0 ==>
      p > 0 ==>
     ! i . p <= i /\ i <= (LENGTH (As n p) - 1) ==> integer ((&(FACT i)/ &(FACT p)) * (EL i (As n p)))`,
@@ -1843,7 +1857,7 @@ let KEY_LEMMA = prove(
     (REPEAT STRIP_TAC) THEN (SIMP_TAC[UNDISCH jem8;kem2;INTEGER_MUL])
 )
 
-let KEY_LEMMA2 = prove(
+let KEY_LEMMA2 = PROVE(
     `p > 1 ==>
      n > 0 ==>
      ? K0 .   integer K0
@@ -1868,23 +1882,23 @@ let KEY_LEMMA2 = prove(
     (EXISTS_TAC `sum (p .. LENGTH (As n p) -1) (\x. &(FACT x) / &(FACT p) * EL x (As n p))`) THEN
     (SIMP_TAC [nem6])
 )
-let NOT_g_NIL = prove(
+let NOT_g_NIL = PROVE(
     `!n p . ~ ((g n p ) = [])`,
      SIMP_TAC [Pm_eqn5.PLANETMATH_EQN_5; NOT_CONS_NIL; NOT_POLY_EXP_NIL; NOT_POLY_CMUL_NIL;
                NOT_POLY_MUL_NIL;NOT_POLY_MUL_ITER_NIL]
 )
-let FACT_DIV_RCANCELS = prove(
+let FACT_DIV_RCANCELS = PROVE(
     `!n x. x / &(FACT n) * &(FACT n) = x`,
     MESON_TAC [REAL_ARITH `!x. &0 < x ==> ~(x = &0)`;
                REAL_DIV_RMUL;FACT_LT;REAL_OF_NUM_LT]
 )
 
-let PSUM_ITERATE = prove(
+let PSUM_ITERATE = PROVE(
     `! n m f. psum (m,n) f
               = if (n > 0) then (iterate (+) (m..((n+m)-1)) f) else &0`,
     let lem01 = ARITH_RULE `~(n+m=0) ==> (SUC n + m) -1 = SUC ((n + m) -1)` in
     let lem02 = MP (ISPEC `(+)` ITERATE_SING) MONOIDAL_REAL_ADD in
-    let lem03 = prove(
+    let lem03 = PROVE(
           `iterate (+) (m..SUC ((n + m) - 1)) f
            = f (SUC ((n+m)-1)) + iterate (+) (m..(n+m)-1) f`,
            MESON_TAC [ARITH_RULE `m <= SUC ((n+m)-1)`;ITERATE_CLAUSES_NUMSEG;
@@ -1909,7 +1923,7 @@ let PSUM_ITERATE = prove(
 )
 
 
-let PLANETMATH_EQN_5_2 = prove(
+let PLANETMATH_EQN_5_2 = PROVE(
     `p > 1 ==>
      n > 0 ==>
      (? K0.   integer K0
@@ -1987,19 +2001,19 @@ let PLANETMATH_EQN_5_2 = prove(
     let josh17 = SIMP_RULE [PSUM_ITERATE;ARITH_RULE `~(0 > 0)`] josh16 in
     ACCEPT_TAC josh17
 )
-let PLANETMATH_DIVIDES_FACT_PRIME_1 = prove (
+let PLANETMATH_DIVIDES_FACT_PRIME_1 = PROVE (
     `!p n. (prime p) /\ p > n ==> ~(num_divides p (FACT n))`,
     (SIMP_TAC [DIVIDES_FACT_PRIME]) THEN ARITH_TAC
 )
-let INT_OF_REAL_NEG_NUM = prove(
+let INT_OF_REAL_NEG_NUM = PROVE(
     `!(n:num).int_of_real (-- (real_of_num n)) = -- (int_of_real (real_of_num n))`,
     SIMP_TAC [GSYM int_of_num;GSYM int_of_num_th;GSYM int_neg]
 )
-let ABS_EQ_ONE = prove(
+let ABS_EQ_ONE = PROVE(
     `!(x:real) .((abs x) = &1) ==> ((x = &1) \/ (x = -- &1))`,
     ARITH_TAC
 )
-let POW_NEG_1 = prove(
+let POW_NEG_1 = PROVE(
    `!(x:num). (((-- (&1 :real)) pow x) = -- &1) \/  (((-- (&1 : real)) pow x) = &1)`,
     let lem00 = ONCE_REWRITE_RULE [TAUT `x \/ y <=> y \/ x`] ABS_EQ_ONE in
     let lem01 = (SPEC `(-- (&1 :real)) pow x` lem00) in
@@ -2007,11 +2021,11 @@ let POW_NEG_1 = prove(
     let lem03 = MP lem01 lem02 in
     STRIP_TAC THEN (ACCEPT_TAC lem03)
 )
-let NUM_DIVIDES_INT_DIVIDES = prove(
+let NUM_DIVIDES_INT_DIVIDES = PROVE(
     `!(x:num) (y:num).(x divides y) <=> ((&x):int divides ((&y):int))`,
     (ONCE_REWRITE_TAC [num_divides])  THEN (SIMP_TAC [])
 )
-let SON_OF_A_GUN = prove(
+let SON_OF_A_GUN = PROVE(
     `! (p:num) (n:num) .
      p > n
      ==> (prime p)
@@ -2036,12 +2050,12 @@ let SON_OF_A_GUN = prove(
        (ACCEPT_TAC lem0011)
      ]
 )
-let MAY_LEMMA = prove(
+let MAY_LEMMA = PROVE(
     `(p:num) > (n:num)
       ==> (prime p)
       ==> ~(int_divides (& p) ((int_of_num (FACT n)) pow p * -- &1 pow (n * p) + &p * K0))`,
       let lem00 = BRW `(x /\ y ==> z) <=> (x ==> ~z ==> ~y)` INT_DIVIDES_ADD_REVR in
-      let lem0 = prove(`int_divides ((&p):int) (&p * K0)`,INTEGER_TAC) in
+      let lem0 = PROVE(`int_divides ((&p):int) (&p * K0)`,INTEGER_TAC) in
       let lem1 = (UNDISCH_ALL o SPEC_ALL) SON_OF_A_GUN in
       let lem2 = SPECL [`(&p):int`;`((&p):int) * K0`; `(&(FACT n) pow p):int *
       -- &1 pow (n * p)` ] lem00 in
@@ -2050,7 +2064,7 @@ let MAY_LEMMA = prove(
       let lem5 = ONCE_REWRITE_RULE [ARITH_RULE `(x:int) + y = y + x`] lem4 in
       (ACCEPT_TAC lem5)
 )
-let PLANET_MATH_alpha_1 = prove(
+let PLANET_MATH_alpha_1 = PROVE(
     `n > 0 ==> p > n ==> prime p ==> (integer (poly (SOD (g n p )) (&0)))`,
     let a1 = UNDISCH (UNDISCH (ARITH_RULE `n > 0 ==> p > n ==> p > 1`)) in
     let a2 = UNDISCH (SIMP_RULE [] (DISCH `n > 0` (MP PLANETMATH_EQN_5_2 a1))) in
@@ -2061,7 +2075,7 @@ let PLANET_MATH_alpha_1 = prove(
     (SPLIT_CONJOINED_ASSUMPT_TAC t1) THEN (ASM_REWRITE_TAC[]) THEN
     (ASM_SIMP_TAC [N_IS_INT;INTEGER_ADD;NEG_N_IS_INT;INTEGER_POW;INTEGER_MUL])
 )
-let PLANET_MATH_alpha_2 = prove(
+let PLANET_MATH_alpha_2 = PROVE(
     `n > 0 ==> p > n ==> prime p ==>
      ( ~((&p) divides (int_of_real (poly (SOD (g n p )) (&0)))))`,
     let t1 = `integer K0 /\
@@ -2077,14 +2091,14 @@ let PLANET_MATH_alpha_2 = prove(
     STRIP_TAC THEN STRIP_TAC THEN STRIP_TAC THEN (CHOOSE_TAC a2) THEN
     (SPLIT_CONJOINED_ASSUMPT_TAC t1) THEN (ASM_SIMP_TAC [a5])
 )
-let INT_OF_REAL_NEG_INT_OF_NUM = prove(
+let INT_OF_REAL_NEG_INT_OF_NUM = PROVE(
     `!n. int_of_real(-- (real_of_num n)) = -- int_of_num n`,
     SIMP_TAC [int_of_num;INT_OF_REAL_NEG_NUM]
 )
-let PLANET_MATH_alpha_3 = prove(
+let PLANET_MATH_alpha_3 = PROVE(
      `n > 0 ==> p > n ==> prime p ==>
       (~((poly (SOD (g n p)) (&0)) = &0))`,
-      let lem0 = prove(
+      let lem0 = PROVE(
             `!(x:num) (y:real).
                (x > 0) ==>
                (integer y) ==>
@@ -2094,20 +2108,20 @@ let PLANET_MATH_alpha_3 = prove(
       let lem1 = ARITH_RULE `n > 0 ==> p > n ==> p > 0` in
       MESON_TAC [lem0;lem1; PLANET_MATH_alpha_1; PLANET_MATH_alpha_2]
 )
-let PLANET_MATH_alpha = prove(
+let PLANET_MATH_alpha = PROVE(
     `n > 0 ==> p > n ==> prime p ==>
      (     (integer (poly (SOD (g n p )) (&0)))
        /\ ~((&p) divides (int_of_real (poly (SOD (g n p )) (&0))))
        /\ ~((poly (SOD (g n p)) (&0)) = &0))`,
      SIMP_TAC [PLANET_MATH_alpha_1; PLANET_MATH_alpha_2; PLANET_MATH_alpha_3]
 )
-let REAL_FACT_NZ = prove(
+let REAL_FACT_NZ = PROVE(
     `~((&(FACT n)) = (real_of_num 0))`,
     let l0 = GSYM (SPECL [`FACT n`;`0`] REAL_OF_NUM_EQ) in
     ACCEPT_TAC (SPEC_ALL (ONCE_REWRITE_RULE [l0] FACT_NZ))
 )
 
-let IS_INT_FACT_DIV_FACT_DIV_FACT = prove(
+let IS_INT_FACT_DIV_FACT_DIV_FACT = PROVE(
     `! i k.integer ((&(FACT (i+k)))/(&(FACT i))/(&(FACT k)))`,
     let l0 = MATCH_MP (ARITH_RULE `(~(x=0)) ==> 0 < x`) (SPEC `k:num` FACT_NZ) in
     let l1 = ONCE_REWRITE_RULE [GSYM REAL_OF_NUM_LT] l0 in
@@ -2120,7 +2134,7 @@ let IS_INT_FACT_DIV_FACT_DIV_FACT = prove(
 (*  if you replace the second SIMP_TAC with MESON_TAC, it fails!!
  *  (i alwasy thought MESON_TAC was strictly stronger than SIMP_TAC
  *)
-let POLY_CMUL_EL = prove(
+let POLY_CMUL_EL = PROVE(
     `!p c i.(i < (LENGTH p)) ==> (EL i (c ## p)) = c * (EL i p)`,
     let l0 = ARITH_RULE `(SUC i) < (SUC j) <=> i < j` in
     LIST_INDUCT_TAC THENL
@@ -2131,7 +2145,7 @@ let POLY_CMUL_EL = prove(
       ]
     ]
 )
-let PDI_COEFF_FACT = prove(
+let PDI_COEFF_FACT = PROVE(
     `! k q i.(i < LENGTH (poly_diff_iter q k)) ==>
             (EL i (poly_diff_iter q k)) = ((&(FACT (i+k)))/(&(FACT i))) * (EL (i+k) q)`,
     let t0 = `!q i.  i < LENGTH (poly_diff_iter q k)
@@ -2161,7 +2175,7 @@ let PDI_COEFF_FACT = prove(
  * however the existing ORDER* theorems would not be sufficient to prove it and
  * I don't feel like putting in the effort right now
  *)
-let POLY_DIVIDES_POLY_DIFF = prove(
+let POLY_DIVIDES_POLY_DIFF = PROVE(
     `!p n a.
          (poly_divides (poly_exp [--a;&1] (SUC n)) p)
          ==> (poly_divides (poly_exp [--a;&1] n) (poly_diff p))`,
@@ -2169,20 +2183,20 @@ let POLY_DIVIDES_POLY_DIFF = prove(
     let l1 = ARITH_RULE `(SUC n <= m ) ==> ~(m = 0)` in
     MESON_TAC [l0;l1;POLY_DIFF_ZERO;ORDER_DIVIDES;ORDER_DIFF]
 )
-let POLY_DIVIDES_MUL = prove(
+let POLY_DIVIDES_MUL = PROVE(
     `!p1 p2 p3.poly_divides p1 p2 ==> poly_divides p1 (p2 ** p3)`,
     (ONCE_REWRITE_TAC [divides]) THEN (REPEAT STRIP_TAC) THEN
     (EXISTS_TAC `q ** p3`) THEN
     (ASM_MESON_TAC [FUN_EQ_THM;POLY_MUL;POLY_MUL_ASSOC])
 )
-let POLY_DIVIDES_MUL3 = prove(
+let POLY_DIVIDES_MUL3 = PROVE(
     `!p1 p2 p3.(poly_divides p1 p2) ==> (poly_divides p1 (p3 ** p2))`,
     (ONCE_REWRITE_TAC [divides]) THEN (REPEAT STRIP_TAC) THEN
     (EXISTS_TAC `p3 ** q`) THEN (UNDISCH_TAC `poly (p2) = poly (p1 ** q)`) THEN
     (ONCE_REWRITE_TAC [FUN_EQ_THM]) THEN (REWRITE_TAC [POLY_MUL]) THEN
     (MESON_TAC [REAL_MUL_ASSOC;REAL_MUL_SYM])
 )
-let POLY_DIVIDES_POLY_MUL_ITER = prove(
+let POLY_DIVIDES_POLY_MUL_ITER = PROVE(
     `!f n v. 1 <= v ==> v <= n ==> poly_divides (f v) (poly_mul_iter f n)`,
     let l1 = ARITH_RULE `~(v <= n) ==> (v <= SUC n) ==> v = SUC n` in
     let l2 = UNDISCH (UNDISCH l1) in
@@ -2198,14 +2212,14 @@ let POLY_DIVIDES_POLY_MUL_ITER = prove(
 (*
  *  This one was suprisingly tricky to prove...
  *)
-let POLY_DIVIDES_POLY_EXP2 = prove(
+let POLY_DIVIDES_POLY_EXP2 = PROVE(
     `!n p1 p2.(poly_divides p1 p2) ==> poly_divides (poly_exp p1 n) (poly_exp p2 n)`,
     let t0 = `!p1 p2.
                 (?q. poly p2 = poly (p1 ** q))
                 ==> (?q. poly (poly_exp p2 n) = poly (poly_exp p1 n ** q))` in
     let l0 = ASSUME t0 in
     let l1 = UNDISCH (REWRITE_RULE [divides] (SPEC_ALL l0)) in
-    let l3 = prove(
+    let l3 = PROVE(
         `(x2 = x5 * x6 /\ x1 = x4 * x7) ==> (x1:real) * x2 = (x4 * x5) * x6 * x7`,
          MESON_TAC [REAL_MUL_SYM;REAL_MUL_ASSOC]) in
    (ONCE_REWRITE_TAC [divides]) THEN INDUCT_TAC THENL
@@ -2217,17 +2231,17 @@ let POLY_DIVIDES_POLY_EXP2 = prove(
      (ASM_MESON_TAC [l3;FUN_EQ_THM;POLY_MUL])
    ]
 )
-let POLY_EXP_ONE = prove(
+let POLY_EXP_ONE = PROVE(
     `!p .p = poly_exp p 1`,
     MESON_TAC [poly_exp;ARITH_RULE `1 = SUC 0`;POLY_MUL_RID]
 )
-let POLY_DIVIDES_ROOT = prove(
+let POLY_DIVIDES_ROOT = PROVE(
     `!p a.poly_divides [--a;&1] p ==> (poly p a) = &0`,
     MESON_TAC [ORDER_ROOT;ORDER_DIVIDES;POLY_EXP_ONE;
                ARITH_RULE `1 <= ord ==> ~(ord = 0)`]
 )
 
-let POLY_DIVIDES_PDI = prove(
+let POLY_DIVIDES_PDI = PROVE(
     `!n p a.
          (poly_divides (poly_exp [--a;&1] (SUC n)) p)
          ==> (poly_divides [--a;&1] (poly_diff_iter p n))`,
@@ -2243,7 +2257,7 @@ let POLY_DIVIDES_PDI = prove(
       (REPEAT STRIP_TAC) THEN (ASM_MESON_TAC [l4;Pm_lemma1.PDI_DEF;PDI_POLY_DIFF_COMM])
     ]
 )
-let POLY_DIVIDES_PDI2 = prove(
+let POLY_DIVIDES_PDI2 = PROVE(
      `!n m p a.
           m > n
           ==> (poly_divides (poly_exp [--a;&1] m) p)
@@ -2251,7 +2265,7 @@ let POLY_DIVIDES_PDI2 = prove(
      MESON_TAC [POLY_EXP_DIVIDES;POLY_DIVIDES_PDI;
                 ARITH_RULE `m > n <=> (SUC n) <= m`]
 )
-let TAIL_GUNNER = prove(
+let TAIL_GUNNER = PROVE(
     ` x < p ==> 1 <= v ==> v <= n ==>
       poly (poly_diff_iter
            (poly_exp [&0; &1] (p - 1) **
@@ -2264,7 +2278,7 @@ let TAIL_GUNNER = prove(
                 POLY_DIVIDES_POLY_MUL_ITER]
 )
 
-let IS_INT_POLY = prove(
+let IS_INT_POLY = PROVE(
     `!p x.(integer x) ==> (ALL integer p) ==> integer (poly p x)`,
     LIST_INDUCT_TAC THEN
     (ASM_MESON_TAC [N_IS_INT;ALL;poly;INTEGER_ADD;INTEGER_MUL])
@@ -2272,7 +2286,7 @@ let IS_INT_POLY = prove(
 (*  surprising the MESON needs so much help with the rewrites here
  *  (i.e. i though i could just hit it with ASM_MESON_TAC with all four thms
  *)
-let INV_POLY_CMUL = prove(
+let INV_POLY_CMUL = PROVE(
     `!y x . (~(x = &0)) ==> (x) ## (inv x) ## y = y`,
     LIST_INDUCT_TAC THENL
     [ ASM_MESON_TAC [poly_cmul];
@@ -2281,12 +2295,12 @@ let INV_POLY_CMUL = prove(
       (ASM_MESON_TAC [REAL_MUL_RINV;REAL_MUL_LID])
     ]
 )
-let INV_POLY_CMUL2 = prove(
+let INV_POLY_CMUL2 = PROVE(
     `!y x . (~(x = &0)) ==> (inv x) ## (x) ## y = y`,
     MESON_TAC [INV_POLY_CMUL;REAL_INV_INV;REAL_INV_EQ_0]
 )
 (* the final ASM_MESON_TAC fails if poly_cmul is rolled into the thm list *)
-let POLY_CMUL_EQUALS = prove(
+let POLY_CMUL_EQUALS = PROVE(
     `!z x y. (~(z = &0)) ==> ((x = y) <=> (z ## x = z ## y))`,
     (REPEAT STRIP_TAC) THEN EQ_TAC THENL
     [ (SIMP_TAC[]);
@@ -2303,14 +2317,14 @@ let POLY_CMUL_EQUALS = prove(
       ]
     ]
 )
-let PDI_LENGTH_THM = prove(
+let PDI_LENGTH_THM = PROVE(
     `!f n. LENGTH(poly_diff_iter f n) = (LENGTH f) - n`,
     STRIP_TAC THEN INDUCT_TAC THENL
     [ (SIMP_TAC [Pm_lemma1.PDI_DEF;ARITH_RULE `(x:num) - 0 = x`]);
       (ONCE_REWRITE_TAC [Pm_lemma1.PDI_DEF]) THEN
       (ONCE_REWRITE_TAC [LENGTH_POLY_DIFF]) THEN ASM_ARITH_TAC ]
 )
-let CAPTAINS_CLOTHES = prove(
+let CAPTAINS_CLOTHES = PROVE(
     `! k q.
      (ALL integer q) ==>
      ? r .(ALL integer r) /\ r = (inv (&(FACT k))) ## (poly_diff_iter q k)`
@@ -2319,7 +2333,7 @@ let CAPTAINS_CLOTHES = prove(
     let l1 = ONCE_REWRITE_RULE [GSYM (SPEC `inv (&(FACT k))` POLY_CMUL_LENGTH)]
                                PDI_COEFF_FACT in
     let l2 = UNDISCH (SPEC_ALL l1) in
-    let l3 = prove(`i < LENGTH( inv (&(FACT k)) ## poly_diff_iter q k)
+    let l3 = PROVE(`i < LENGTH( inv (&(FACT k)) ## poly_diff_iter q k)
                      ==> (i + k) < LENGTH q`,
                     MESON_TAC [PDI_LENGTH_THM;POLY_CMUL_LENGTH;
                                ARITH_RULE `(i:num) < f -k ==> (i+k) < f`]) in
@@ -2332,7 +2346,7 @@ let CAPTAINS_CLOTHES = prove(
     [ (MESON_TAC [IS_INT_FACT_DIV_FACT_DIV_FACT;REAL_MUL_SYM;real_div;REAL_MUL_ASSOC]);
       (ASM_MESON_TAC  [l3;ALL_IMP_EL]) ]
 )
-let MESSY_JESSE2 = prove(
+let MESSY_JESSE2 = PROVE(
   `n > 0 ==> p > n ==>
      (? (Bs:num->num->real). ! v .
          (1 <= v) ==> (v <= n) ==>
@@ -2353,11 +2367,11 @@ let MESSY_JESSE2 = prove(
                         x))
                        (&v))
                else (&0)` in
-    let l0 = prove(`ALL integer [&0;&1]`,MESON_TAC [ALL;N_IS_INT]) in
+    let l0 = PROVE(`ALL integer [&0;&1]`,MESON_TAC [ALL;N_IS_INT]) in
     let t0 = `(poly_exp [&0; &1] (p - 1) **
               poly_exp (poly_mul_iter (\i. [-- &i; &1]) n) p)` in
     let l2 = SPECL [`i:num`;t0] CAPTAINS_CLOTHES in
-    let l3 = prove(`ALL integer (poly_exp [&0; &1] (p - 1) ** poly_exp (poly_mul_iter (\i. [-- &i; &1]) n) p)`,MESON_TAC[l0;ALL_IS_INT_POLY_MUL;ALL_IS_INT_POLY_EXP;ALL_IS_INT_POLY_MUL_ITER]) in
+    let l3 = PROVE(`ALL integer (poly_exp [&0; &1] (p - 1) ** poly_exp (poly_mul_iter (\i. [-- &i; &1]) n) p)`,MESON_TAC[l0;ALL_IS_INT_POLY_MUL;ALL_IS_INT_POLY_EXP;ALL_IS_INT_POLY_MUL_ITER]) in
     let l4 = MP l2 l3 in
     let l7 = ONCE_REWRITE_RULE [GSYM REAL_OF_NUM_EQ] FACT_NZ in
     let l8 = (SIMP_RULE [l7]) (SPEC `(&(FACT i)):real` POLY_CMUL_EQUALS) in
@@ -2368,7 +2382,7 @@ let MESSY_JESSE2 = prove(
     let l12 = SIMP_RULE [REAL_FACT_NZ] l12_0 in
     let l9 = ONCE_REWRITE_RULE [l8] l4 in
     let l11 = GSYM (ONCE_REWRITE_RULE [l10] l9) in
-    let l133 = prove(`
+    let l133 = PROVE(`
       (psum (0,m) (\i.(x i) * (if i <= m then (y i) else c))) =
       (psum (0,m) (\i.(x i) * (y i)))`,
       MESON_TAC [SUM_EQ;ARITH_RULE `(0 <= i /\ i < (m:num) + 0) ==> i <= m`]) in
@@ -2407,7 +2421,7 @@ let MESSY_JESSE2 = prove(
       BETA_TAC THEN (ASM_MESON_TAC [TAIL_GUNNER;POLY_CMUL;root_canal])
     ]
 )
-let INTEGER_PSUM = prove(
+let INTEGER_PSUM = PROVE(
     `!f m.(! i . i < m ==> integer (f i)) ==> (integer (psum (0,m) f))`,
     let l0 = ASSUME `!i. i < SUC m ==> integer (f i)` in
     let l1 = SPEC `m:num` l0 in
@@ -2419,7 +2433,7 @@ let INTEGER_PSUM = prove(
       (ASM_MESON_TAC[l2;ARITH_RULE `(i:num) < m ==> i < SUC m`])
     ]
 )
-let INT_DIVIDES_PSUM = prove(
+let INT_DIVIDES_PSUM = PROVE(
     `!f m p.(! i . i < m ==>
              ((integer (f i)) /\ (int_divides p (int_of_real (f i)))))
                 ==> (int_divides p (int_of_real (psum (0,m) f)))`,
@@ -2429,7 +2443,7 @@ let INT_DIVIDES_PSUM = prove(
     let l3 = ASSUME `(!i. i < m ==> integer (f i)) ==> integer (psum (0,m) f)` in
     let l4 = SPEC `i:num` l0 in
     let l5 = DISCH `i < SUC m` ((CONJUNCT1 (UNDISCH l4))) in
-    let l8 = prove(`(!i.i < SUC m
+    let l8 = PROVE(`(!i.i < SUC m
                          ==> (integer (f i))) ==> (!i.i < m ==> (integer (f i)))`,
                    MESON_TAC [ARITH_RULE `i < m ==> i < SUC m`]) in
     let ll1 = MP l8 (GEN_ALL l5) in
@@ -2449,7 +2463,7 @@ let INT_DIVIDES_PSUM = prove(
       ]
     ]
 )
-let PLANET_MATH_beta = prove(
+let PLANET_MATH_beta = PROVE(
     `p > n ==>
      n > 0 ==>
      (! v.
@@ -2461,7 +2475,7 @@ let PLANET_MATH_beta = prove(
     let l2 = GSYM (ONCE_REWRITE_RULE [REAL_MUL_SYM] real_div) in
     let ll3 = ARITH_RULE `(int_of_num p) * &0 = &0` in
     let l7 = UNDISCH (SPECL [`i:num`;`p:num`] IS_INT_FACT_DIV) in
-    let l11 = prove(`p > 0 ==> FACT p = p * (FACT (p-1))`,
+    let l11 = PROVE(`p > 0 ==> FACT p = p * (FACT (p-1))`,
                     MESON_TAC [FACT; ARITH_RULE `p > 0 ==> SUC (p -1) = p `]) in
     let l12 = UNDISCH (UNDISCH (ARITH_RULE `(p:num) > n ==> n > 0 ==> p > 0`)) in
     let l13 = MP l11 l12 in
@@ -2476,7 +2490,7 @@ let PLANET_MATH_beta = prove(
                   psum (0,LENGTH (g n p)) (\i. &(FACT i) * Bs v i) /\
                   (!i. i < p ==> Bs v i = &0)) ==>
         (integer (Bs v i))` in
-    let lll0 = UNDISCH (UNDISCH (UNDISCH (prove(t9,MESON_TAC[])))) in
+    let lll0 = UNDISCH (UNDISCH (UNDISCH (PROVE(t9,MESON_TAC[])))) in
     let l8 = REWRITE_RULE [l13;real_div;REAL_INV_MUL] l7 in
     let l9 = REWRITE_RULE [N_IS_INT;GSYM REAL_OF_NUM_MUL] l8 in
     let l10 = REWRITE_RULE [REAL_INV_MUL] l9 in
@@ -2487,10 +2501,10 @@ let PLANET_MATH_beta = prove(
     let lll9 = ONCE_REWRITE_RULE [GSYM REAL_OF_NUM_EQ] lll8 in
     let lll10 = UNDISCH (UNDISCH lll9) in
 
-    let sc1 = prove (`(~((x:real) = &0)) ==> (x * y * inv x) = y`,
+    let sc1 = PROVE (`(~((x:real) = &0)) ==> (x * y * inv x) = y`,
                       MESON_TAC [REAL_MUL_RID;REAL_MUL_ASSOC;
                                  REAL_MUL_SYM;REAL_MUL_LINV;REAL_MUL_LID]) in
-    let sc2 = prove (`(~((x:real) = &0)) ==> (x * y * (inv x) * z) = y * z`,
+    let sc2 = PROVE (`(~((x:real) = &0)) ==> (x * y * (inv x) * z) = y * z`,
                       MESON_TAC [sc1;REAL_MUL_ASSOC]) in
     (REPEAT STRIP_TAC) THENL
       [ (CHOOSE_TAC (UNDISCH (UNDISCH MESSY_JESSE2))) THEN
@@ -2539,7 +2553,7 @@ let PLANET_MATH_beta = prove(
       ]
 )
 
-let JUNE_LEMMA = prove(
+let JUNE_LEMMA = PROVE(
     `n > 0 ==> p > n ==> v <= n ==> integer (poly (SOD (g n p)) (&v))`,
     let lem0 = CONJUNCT1 (UNDISCH_ALL PLANET_MATH_alpha) in
     let lem1 = UNDISCH_ALL (SPEC_ALL (UNDISCH_ALL PLANET_MATH_beta)) in
@@ -2550,7 +2564,7 @@ let JUNE_LEMMA = prove(
     (SPEC_TAC (`v:num`,`v:num`)) THEN
     (INDUCT_TAC THENL [(SIMP_TAC [lem0]);(ACCEPT_TAC lem4)])
 )
-let DIVIDES_SUM_NOT_ZERO = prove(
+let DIVIDES_SUM_NOT_ZERO = PROVE(
     `!(x:int) (y:int) (z:int).
          (~(z divides x)) /\  (z divides y) ==> ~(x + y = &0)`,
     let l0 = ASSUME `(x:int) + y = &0` in
@@ -2559,17 +2573,17 @@ let DIVIDES_SUM_NOT_ZERO = prove(
     (REWRITE_TAC [l1]) THEN (UNDISCH_TAC `((z:int) divides y)`) THEN
     (INTEGER_TAC)
 )
-let NUM_OF_INT_ABS = prove(
+let NUM_OF_INT_ABS = PROVE(
     `!(x:num) (y:int).num_of_int (abs y)  = x <=> abs y = &x`,
 (* stupid... *)
-    let j0 = UNDISCH (prove(`(num_of_int (abs y) = x) ==> x = num_of_int (abs y)`,MESON_TAC [])) in
+    let j0 = UNDISCH (PROVE(`(num_of_int (abs y) = x) ==> x = num_of_int (abs y)`,MESON_TAC [])) in
     let j1 = ARITH_RULE `&0 <= ((abs y):int)` in
     let j2 = MATCH_MP INT_OF_NUM_OF_INT j1 in
     (REPEAT STRIP_TAC) THEN EQ_TAC THENL
     [ (STRIP_TAC THEN SIMP_TAC [j0;j2]);
       (ASM_SIMP_TAC [NUM_OF_INT_OF_NUM])]
 )
-let INT_DIVIDES_IMP_ABS_NUM_DIVIDES = prove(
+let INT_DIVIDES_IMP_ABS_NUM_DIVIDES = PROVE(
     `! (x:int) (y:num).
        (x divides (&y)) ==> ((num_of_int (abs x)) divides y)`,
     let w0 = ARITH_RULE `((&0):int) <= abs x` in
@@ -2586,7 +2600,7 @@ let INT_DIVIDES_IMP_ABS_NUM_DIVIDES = prove(
       (EXISTS_TAC `--x':int`) THEN (ARITH_TAC)
     ]
 )
-let INT_PRIME_NUM_PRIME = prove(
+let INT_PRIME_NUM_PRIME = PROVE(
     `!p. int_prime (&p) <=> prime p`,
     (ONCE_REWRITE_TAC [int_prime;prime]) THEN
     (MESON_TAC [divides;num_divides;
@@ -2596,7 +2610,7 @@ let INT_PRIME_NUM_PRIME = prove(
                 prime;int_prime ])
 )
 
-let DIVIDES_INT_OF_REAL_ADD = prove(
+let DIVIDES_INT_OF_REAL_ADD = PROVE(
          `!x y p.integer x /\
                  integer y /\
                  p divides (int_of_real x) /\
@@ -2604,7 +2618,7 @@ let DIVIDES_INT_OF_REAL_ADD = prove(
                  ==> p divides (int_of_real (x + y))`,
          SIMP_TAC [INT_OF_REAL_ADD;INT_DIVIDES_ADD]
 )
-let ITCHY_LEMMA = prove(
+let ITCHY_LEMMA = PROVE(
     `! f p n.
        (!v.1<= v /\ v <=  n ==>
         integer (f v) /\
@@ -2615,10 +2629,10 @@ let ITCHY_LEMMA = prove(
     let l2 = SPEC `0` (GEN_ALL int_of_num) in
     let l3 = ONCE_REWRITE_RULE [l2] l1 in
     let l4 = SPECL [`f:num->real`;`n:num`;`1`] IS_INT_SUM in
-    let l5 = prove(`(!v. 1 <= v /\ v <= SUC n ==> integer (f v)) ==> (!i. 1 <= i /\ i <= n ==> integer (f i))`,MESON_TAC [ARITH_RULE `v <= n ==> v <= SUC n`]) in
+    let l5 = PROVE(`(!v. 1 <= v /\ v <= SUC n ==> integer (f v)) ==> (!i. 1 <= i /\ i <= n ==> integer (f i))`,MESON_TAC [ARITH_RULE `v <= n ==> v <= SUC n`]) in
     let l6 = IMP_TRANS l5 l4 in
-    let l7 = prove(`(!v. 1 <= v /\ v <= SUC n ==> (integer (f v)) /\  (&p) divides int_of_real (f v)) ==> (&p) divides int_of_real (f (SUC n))`,MESON_TAC [ARITH_RULE `1 <= (SUC n) /\ SUC n <= SUC n`]) in
-    let l9 = prove(`(!v. 1 <= v /\ v <= SUC n ==> integer (f v)) ==> integer (f (SUC n))`,MESON_TAC [ARITH_RULE `1 <= SUC n /\ SUC n <= SUC n`]) in
+    let l7 = PROVE(`(!v. 1 <= v /\ v <= SUC n ==> (integer (f v)) /\  (&p) divides int_of_real (f v)) ==> (&p) divides int_of_real (f (SUC n))`,MESON_TAC [ARITH_RULE `1 <= (SUC n) /\ SUC n <= SUC n`]) in
+    let l9 = PROVE(`(!v. 1 <= v /\ v <= SUC n ==> integer (f v)) ==> integer (f (SUC n))`,MESON_TAC [ARITH_RULE `1 <= SUC n /\ SUC n <= SUC n`]) in
     let tm = `\(v:num).integer (f v) /\ (&p) divides int_of_real (f v)` in
     let l10 = BETA_RULE (SPEC tm SHRIVER) in
     let l11 = UNDISCH (SPEC `1` (GEN `m:num` l10)) in
@@ -2634,7 +2648,7 @@ let ITCHY_LEMMA = prove(
            [ ASM_SIMP_TAC [l11];
              ASM_SIMP_TAC [l7] ]]]]
 )
-let GOTTA_DO_DISHES_LEMMA = prove(
+let GOTTA_DO_DISHES_LEMMA = PROVE(
     `!(x:real) (y:real).
        (integer x) /\ (integer y) ==>
        (?(z:int).(~(z divides (int_of_real x)))
@@ -2660,7 +2674,7 @@ let GOTTA_DO_DISHES_LEMMA = prove(
      ]
 )
 
-let RAINY_DAY = prove(
+let RAINY_DAY = PROVE(
     `! p x y.
        prime p ==>
        (&p) > x ==>
@@ -2671,7 +2685,7 @@ let RAINY_DAY = prove(
         <=> ((&p) divides int_of_real y))`,
     let ss3 = SPECL [`int_of_num n`;`(&p):int`] INT_PRIME_COPRIME_LT in
     let ss4 = ONCE_REWRITE_RULE [ARITH_RULE `abs ((&x):int) = &x`] ss3 in
-    let ss40 = prove(`!(x:num) (y:num).  (int_of_num x) < (int_of_num y) <=> (real_of_num x) < (real_of_num y)`,SIMP_TAC [INT_OF_NUM_LT;REAL_OF_NUM_LT]) in
+    let ss40 = PROVE(`!(x:num) (y:num).  (int_of_num x) < (int_of_num y) <=> (real_of_num x) < (real_of_num y)`,SIMP_TAC [INT_OF_NUM_LT;REAL_OF_NUM_LT]) in
     let ss5 = ONCE_REWRITE_RULE [ss40;INT_COPRIME_SYM;INT_PRIME_NUM_PRIME] ss4 in
     let ss6 = SPECL [`(&p):int`;`(&n):int`;`int_of_real y`] INT_COPRIME_DIVPROD in
     let ss7 = ONCE_REWRITE_RULE [TAUT `(X /\ Y ==> Z) <=> (Y ==> X ==> Z)`] ss6 in
@@ -2696,7 +2710,7 @@ let RAINY_DAY = prove(
       (SIMP_TAC [INT_DIVIDES_LMUL])
     ]
 )
-let PLANET_MATH_gamma = prove(
+let PLANET_MATH_gamma = PROVE(
     `n > 0 ==>
      p > n ==>
      prime p ==>
@@ -2791,7 +2805,7 @@ end;;
 
 module Finale = struct
 
-let IS_INT_NZ_ABS_GE_1 = prove (
+let IS_INT_NZ_ABS_GE_1 = PROVE (
     `!x. ((integer x) /\ ~(x = &0)) ==> ~(abs x < &1)`,
     let lemmy0 = REAL_ARITH `(x:real) < y <=> ~(y <= x)` in
     let lemmy1 = ONCE_REWRITE_RULE [lemmy0] REAL_NZ_IMP_LT in
@@ -2810,18 +2824,18 @@ let IS_INT_NZ_ABS_GE_1 = prove (
       (ONCE_REWRITE_TAC [REAL_OF_NUM_LT]) THEN (ARITH_TAC)
     ]
 )
-let PBR_LEMMA = prove(
+let PBR_LEMMA = PROVE(
     `!n1 n2 n3 p. p > MAX n1 (MAX n2 n3) ==> (p > n1 /\ p > n2 /\ p > n3)`,
     (REWRITE_TAC [MAX]) THEN ARITH_TAC
 
 )
-let BIGGER_PRIME_EXISTS = prove(
+let BIGGER_PRIME_EXISTS = PROVE(
   `!(n:num). ?p. prime p /\ p > n`,
-   let lem0 = prove(`{x | prime x} = prime`,SET_TAC[]) in
+   let lem0 = PROVE(`{x | prime x} = prime`,SET_TAC[]) in
    let lem1 = ARITH_RULE `p > n <=> ~(p <= (n:num))` in
    MESON_TAC [PRIMES_INFINITE;lem0;lem1;IN_ELIM_THM;num_FINITE;INFINITE]
 )
-let BUD_LEMMA = prove(
+let BUD_LEMMA = PROVE(
     `!(f:num->bool) (n1:num) (n2:num).((?(N:num) . !(p:num).p > N ==> f p)
       ==> (? (p0:num).prime p0 /\ p0 > n1 /\ p0 > n2 /\ f p0))`,
     let amigo3 = SPECL [`N:num`;`n1:num`;`n2:num`;`p:num`] PBR_LEMMA in
@@ -2835,12 +2849,12 @@ let BUD_LEMMA = prove(
     (ASM_SIMP_TAC [amigo4])
 )
 
-let ALL_IMP_EL = prove(
+let ALL_IMP_EL = PROVE(
     `! (l:(a)list) i P. (ALL P l) ==> (i < LENGTH l) ==> P (EL i l)`,
     SIMP_TAC[GSYM ALL_EL]
 )
 
-let HAMMS_LEMMA = prove(
+let HAMMS_LEMMA = PROVE(
      `~(?c. ALL integer c /\
             LENGTH c > 1 /\
             EL 0 c > &0 /\
@@ -2858,7 +2872,7 @@ let HAMMS_LEMMA = prove(
      let erica11 = MP erica10 erica9 in
      let erica12 = ONCE_REWRITE_RULE [is_int] erica11 in
      let erica13 = ARITH_RULE `!n. ~(( -- (real_of_num n)) > &0)` in
-     let erica14 = prove(
+     let erica14 = PROVE(
          `n = PRE (LENGTH c) ==>
           n > 0 ==>
           ALL integer c ==>
@@ -2886,7 +2900,7 @@ let HAMMS_LEMMA = prove(
       (ASM_MESON_TAC [DISCH_ALL erica29;DISCH_ALL erica30])
 )
 
-let TRANSCENDENTAL_E = prove(
+let TRANSCENDENTAL_E = PROVE(
     `transcendental (exp (&1))`,
     MESON_TAC [HAMMS_LEMMA;Pm_eqn4.PLANETMATH_EQN_4]
 )

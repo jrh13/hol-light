@@ -858,8 +858,9 @@ let (TAC_PROOF : goal * tactic -> thm) =
 
 let prove(t,tac) =
   let th = TAC_PROOF(([],t),tac) in
-  let t' = concl th in
-  if t' = t then th else
+  let asl,t' = dest_thm th in
+  if asl <> [] then failwith "prove: additional assumptions in result"
+  else if t' = t then th else
   try EQ_MP (ALPHA t' t) th
   with Failure _ -> failwith "prove: justification generated wrong theorem";;
 

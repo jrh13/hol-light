@@ -1,0 +1,40 @@
+\DOC SUBLET_CONV
+
+\TYPE {SUBLET_CONV : conv -> term -> thm}
+
+\SYNOPSIS
+Applies subconversion to RHSs of toplevel let-term
+
+\KEYWORDS
+conversion.
+
+\DESCRIBE
+Given a basic conversion {conv}, the conversion {SUBLET_CONV conv} applies that
+conversion to the right-hand sides of a toplevel let-term of the form
+{
+   let v1 = t1 and ... and vn = tn in t
+}
+\noindent resulting in the following theorem:
+{
+   |- (let v1 = t1 and ... and vn = tn in t) =
+      (let v1 = t1' and ... and vn = tn' in t)
+\noindent where applying {conv} to {ti} results in the theorem {|- ti = ti'}.
+
+\FAILURE
+{SUBLET_CONV conv tm} fails if {tm} is not a {let}-term, or if the conversion
+{conv} fails on any of its RHSs.
+
+\EXAMPLE
+This applies it to perform numeric addition on the {let}-term:
+{
+  # SUBLET_CONV NUM_ADD_CONV
+     `let x = 5 + 2 and y = 8 + 17 and z = 3 + 7 in x + y + z`;;
+  val it : thm =
+    |- (let x = 5 + 2 and y = 8 + 17 and z = 3 + 7 in x + y + z) =
+       (let x = 7 and y = 25 and z = 10 in x + y + z)
+}
+
+\SEEALSO
+BETA_CONV, GEN_BETA_CONV, let_CONV.
+
+\ENDDOC

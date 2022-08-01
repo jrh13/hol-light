@@ -1830,6 +1830,12 @@ let VAL_WORD_OR_AND_XOR = prove
   ONCE_REWRITE_TAC[ARITH_RULE `a = b + c <=> b + a = 2 * b + c`] THEN
   MESON_TAC[VAL_WORD_ADD_AND_XOR; VAL_WORD_ADD_AND_OR]);;
 
+let REAL_VAL_WORD_XOR = prove
+ (`!x y:N word. &(val(word_xor x y)):real =
+                (&(val x) + &(val y)) - &2 * &(val(word_and x y))`,
+  REWRITE_TAC[REAL_OF_NUM_CLAUSES; VAL_WORD_ADD_AND_XOR] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_CLAUSES] THEN REAL_ARITH_TAC);;
+
 let word_add = new_definition
  `word_add = modular (+)`;;
 
