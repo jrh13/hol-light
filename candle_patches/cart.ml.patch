@@ -1,0 +1,8 @@
+404c404
+< let DIMINDEX_CONV : conv =
+---
+> let (DIMINDEX_CONV : conv) =
+451c451
+< let DIMINDEX_TAC : tactic =
+---
+> let (DIMINDEX_TAC : tactic) =

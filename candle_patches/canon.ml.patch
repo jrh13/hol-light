@@ -1,0 +1,28 @@
+42,43c42,43
+<     let th = use_fun (mk_fun (ASSUME p) undefined) p'
+<     and th' = use_fun (mk_fun (ASSUME p') undefined) p in
+---
+>     let th = use_fun (mk_fun (ASSUME p) (undefined Term.compare)) p'
+>     and th' = use_fun (mk_fun (ASSUME p') (undefined Term.compare)) p in
+73,74c73,74
+<     let th = use_fun (mk_fun (ASSUME(mk_neg p)) undefined) p'
+<     and th' = use_fun (mk_fun (ASSUME(mk_neg p')) undefined) p in
+---
+>     let th = use_fun (mk_fun (ASSUME(mk_neg p)) (undefined Term.compare)) p'
+>     and th' = use_fun (mk_fun (ASSUME(mk_neg p')) (undefined Term.compare)) p in
+83c83
+<   let tm' = list_mk_conj(setify(conjuncts tm)) in
+---
+>   let tm' = list_mk_conj(setify Term.(<) (conjuncts tm)) in
+87c87
+<   let tm' = list_mk_disj(setify(disjuncts tm)) in
+---
+>   let tm' = list_mk_disj(setify Term.(<) (disjuncts tm)) in
+705c705
+<         let hops = setify (map fst cheads) in
+---
+>         let hops = setify Term.(<) (map fst cheads) in
+714c714
+<             (setify (map fst (vheads @ cheads))) in
+---
+>             (setify Term.(<) (map fst (vheads @ cheads))) in

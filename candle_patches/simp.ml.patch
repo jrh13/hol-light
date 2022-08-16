@@ -1,0 +1,19 @@
+79c79
+<       else f1 > f2 in
+---
+>       else Term.(<) f2 f1 in
+216a217
+> type 'a strat = 'a -> int -> term -> thm;;
+218,223c219,223
+<   Simpset of gconv net                          (* Rewrites & congruences *)
+<            * (strategy -> strategy)             (* Prover for conditions  *)
+<            * prover list                        (* Subprovers for prover  *)
+<            * (thm -> thm list -> thm list)      (* Rewrite maker          *)
+< 
+< and strategy = simpset -> int -> term -> thm;;
+---
+>   Simpset of gconv net                              (* Rewrites & congruences *)
+>            * (simpset strat -> simpset strat)       (* Prover for conditions  *)
+>            * prover list                            (* Subprovers for prover  *)
+>            * (thm -> thm list -> thm list)          (* Rewrite maker          *)
+> type strategy = simpset strat;;

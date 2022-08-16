@@ -1,0 +1,30 @@
+405c405
+<     let preds = setify (map (repeat rator) concs) in
+---
+>     let preds = setify Term.(<) (map (repeat rator) concs) in
+407c407
+<       let dunnit = setify(map (fst o strip_comb o concl) sofar) in
+---
+>       let dunnit = setify Term.(<) (map (fst o strip_comb o concl) sofar) in
+1017c1017
+< let basic_rectype_net = ref empty_net;;
+---
+> let basic_rectype_net = ref (empty_net: (int * conv) net);;
+1019c1019
+< let injectivity_store = ref [];;
+---
+> let injectivity_store = ref ([]: (string * thm) list);;
+1162c1162,1164
+<     let tyal0 = setify (zip (map grab_type pcjs1) (map grab_type pcjs0)) in
+---
+>     let tyal0 =
+>       setify (fun x y -> Pair.compare Type.compare Type.compare x y = Less)
+>              (zip (map grab_type pcjs1) (map grab_type pcjs0)) in
+1398c1400
+<       if not(length(setify newtypes) = length newtypes)
+---
+>       if not(length(setify Type.(<) newtypes) = length newtypes)
+1400c1402
+<       else if not(length(setify constructors) = length constructors)
+---
+>       else if not(length(setify String.(<) constructors) = length constructors)

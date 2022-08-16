@@ -1,0 +1,12 @@
+10c10
+< needs "compute.ml";;
+---
+> needs "pair.ml";;
+254c254
+< let the_specifications = ref [];;
+---
+> let the_specifications = ref ([]: ((string list * thm) * thm) list);;
+257c257
+<   let code c = mk_small_numeral (Char.code (c.[0])) in
+---
+>   let code c = mk_small_numeral (Char.ord (String.sub c 0)) in

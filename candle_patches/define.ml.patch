@@ -1,0 +1,8 @@
+842c842
+<       let th2 = TAC_PROOF(([],bod),SIMP_ADMISS_TAC) in
+---
+>       let th2 = prove(bod,SIMP_ADMISS_TAC) in
+964c964
+<     if length (setify fs) <> 1
+---
+>     if length (setify Term.(<) fs) <> 1

@@ -1,0 +1,13 @@
+304c304
+< let the_inductive_definitions = ref [];;
+---
+> let the_inductive_definitions = ref ([]: (thm * thm * thm) list);;
+342c342
+<       let schems = setify schem in
+---
+>       let schems = setify Term.(<) schem in
+344c344,345
+<       if not (length(setify (map (snd o strip_comb) schems)) = 1)
+---
+>       if not (length(setify (fun x y -> List.compare Term.compare x y = Less)
+>                             (map (snd o strip_comb) schems)) = 1)

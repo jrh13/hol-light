@@ -1,0 +1,8 @@
+1628c1628
+<   ASM_METIS_TAC[FINITE_IMAGE_INJ_EQ]);;
+---
+>   ASM_MESON_TAC[FINITE_IMAGE_INJ_EQ]);; (* OA: METIS *)
+5066c5066
+<   let find_pvars = setify o map rule_head o binops `(/\)` in
+---
+>   let find_pvars = setify Term.(<) o map rule_head o binops `(/\)` in

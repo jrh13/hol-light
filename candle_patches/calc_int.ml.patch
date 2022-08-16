@@ -1,0 +1,4 @@
+20c20
+<       is_numeral n && not(dest_numeral n = num_0)
+---
+>       is_numeral n && not(dest_numeral n =/ num_0)

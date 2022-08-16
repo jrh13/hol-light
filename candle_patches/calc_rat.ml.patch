@@ -1,0 +1,12 @@
+10c10
+< needs "real.ml";;
+---
+> loads "real.ml";;
+421c421
+<    (<);;
+---
+>    Term.(<);;
+594c594
+<     let itms = setify(map rand (find_terms is_freeinv tm)) in
+---
+>     let itms = setify Term.(<) (map rand (find_terms is_freeinv tm)) in
