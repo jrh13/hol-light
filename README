@@ -10,6 +10,9 @@ files have been patched to work with the Candle theorem prover. It also contains
 some custom ML source files required to run Candle (these carry the prefix
 candle_ in their filenames). The patches are stored under candle_patches/.
 
+The CakeML project homepage: www.cakeml.org
+The Candle homepage:         www.cakeml.org/candle
+
                         REQUIREMENTS AND INSTALLATION
 
 Candle requires the CakeML compiler. At the time of writing, the latest release
