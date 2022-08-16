@@ -474,7 +474,7 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC =
     and star = possibly (a (Ident "*") >> K ()) in
     vars ++ star >> function tac,[] -> tac | tac,_ -> tac THEN REPEAT GEN_TAC
   and destruct_tac =
-    let OBTAINL_THEN : string list -> thm_tactical =
+    let (OBTAINL_THEN : string list -> thm_tactical) =
       EVERY_TCL o map OBTAIN_THEN in
     let rec destruct inp = disj inp
     and disj inp =

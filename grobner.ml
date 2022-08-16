@@ -180,7 +180,8 @@ let RING_AND_IDEAL_CONV =
     | [],q -> true
     | (c1,m1)::o1,(c2,m2)::o2 ->
           c1 </ c2 ||
-          c1 =/ c2 && (m1 < m2 || m1 = m2 && poly_lt o1 o2) in
+          c1 =/ c2 && (List.compare Int.compare m1 m2 = Less ||
+                       m1 = m2 && poly_lt o1 o2) in
 
   let align ((p,hp),(q,hq)) =
     if poly_lt p q then ((p,hp),(q,hq)) else ((q,hq),(p,hp)) in
@@ -214,9 +215,9 @@ let RING_AND_IDEAL_CONV =
   (* ----------------------------------------------------------------------- *)
 
   let rec grobner_basis basis pairs =
-    Format.print_string(string_of_int(length basis)^" basis elements and "^
-                        string_of_int(length pairs)^" critical pairs");
-    Format.print_newline();
+    print(string_of_int(length basis)^" basis elements and "^
+          string_of_int(length pairs)^" critical pairs");
+    print "\n";
     match pairs with
       [] -> basis
     | (l,(p1,p2))::opairs ->
@@ -274,15 +275,14 @@ let RING_AND_IDEAL_CONV =
 
   let rec resolve_proof vars prf =
     match prf with
-      Start(-1) -> []
-    | Start m -> [m,[num_1,map (K 0) vars]]
+      Start m -> if m = -1 then [] else [m,[num_1,map (K 0) vars]]
     | Mmul(pol,lin) ->
           let lis = resolve_proof vars lin in
           map (fun (n,p) -> n,grob_cmul pol p) lis
     | Add(lin1,lin2) ->
           let lis1 = resolve_proof vars lin1
           and lis2 = resolve_proof vars lin2 in
-          let dom = setify(union (map fst lis1) (map fst lis2)) in
+          let dom = setify (<) (union (map fst lis1) (map fst lis2)) in
           map (fun n -> let a = try assoc n lis1 with Failure _ -> []
                         and b = try assoc n lis2 with Failure _ -> [] in
                         n,grob_add a b) dom in
@@ -445,7 +445,7 @@ let RING_AND_IDEAL_CONV =
       let rawvars =
         itlist (fun eq a -> grobvars (lhand eq) (grobvars (rand eq) a))
                cjs [] in
-      let vars = sort (fun x y -> x < y) (setify rawvars) in
+      let vars = sort Term.(<) (setify Term.(<) rawvars) in
       vars,map (grobify_equation vars) cjs in
     let holify_polynomial =
       let holify_varpow (v,n) =
@@ -480,18 +480,21 @@ let RING_AND_IDEAL_CONV =
          CONV_RULE (BINOP_CONV RING_NORMALIZE_CONV)
                    (AP_TERM (mk_comb(ring_mul_tm,holify_polynomial vars [m]))
                             th) in
-      let rec assoceq a l =
+      (* OA Lack of pointer equality makes this useless in Candle,
+            and lack of let polymorphism gets type checking to fail
+            on this definition. *)
+      (* let rec assoceq a l =
         match l with
          [] -> failwith "assoceq"
-        | (x,y)::t -> if x==a then y else assoceq a t in
+        | (x,y)::t -> if x==a then y else assoceq a t in *)
       let run_proof =
         if is_iff(snd(strip_forall(concl RABINOWITSCH_THM))) then
-         (Format.print_string("Generating HOL version of proof");
-          Format.print_newline();
+         (print "Generating HOL version of proof";
+          print "\n";
           let execache = ref [] in
           let memoize prf x = (execache := (prf,x)::(!execache)); x in
           let rec run_proof vars prf =
-            try assoceq prf (!execache) with Failure _ ->
+            (* try assoceq prf (!execache) with Failure _ -> *)
             (match prf with
                Start m -> el m initpols
              | Add(p1,p2) ->
@@ -502,13 +505,13 @@ let RING_AND_IDEAL_CONV =
             let ans = run_proof vars prf in
             (execache := []; ans))
         else
-         (Format.print_string("Generating HOL version of scaled proof");
-          Format.print_newline();
+         (print "Generating HOL version of scaled proof";
+          print "\n";
           let km = map (fun x -> 0) vars in
           let execache = ref [] in
           let memoize prf x = (execache := (prf,x)::(!execache)); x in
           let rec run_scaled_proof vars prf =
-            try assoceq prf (!execache) with Failure _ ->
+            (* try assoceq prf (!execache) with Failure _ -> *)
             (match prf with
                Start m -> (num_1,el m initpols)
              | Add(p1,p2) ->
@@ -556,8 +559,8 @@ let RING_AND_IDEAL_CONV =
             CONV_RULE(RAND_CONV(BINOP_CONV RING_NORMALIZE_CONV)) nth in
           let th2 = funpow deg (IDOM_RULE o CONJ th1) NOT_EQ_01 in
           vars,l,cert,th2 in
-      Format.print_string("Translating certificate to HOL inferences");
-      Format.print_newline();
+      print "Translating certificate to HOL inferences";
+      print "\n";
       let cert_pos = map
         (fun (i,p) -> i,filter (fun (c,m) -> c >/ num_0) p) cert
       and cert_neg = map
@@ -601,7 +604,7 @@ let RING_AND_IDEAL_CONV =
     SPECL avs (MATCH_MP (FINAL_RULE (DISCH finbod th3)) th1)
   and ideal tms tm =
     let rawvars = itlist grobvars (tm::tms) [] in
-    let vars = sort (fun x y -> x < y) (setify rawvars) in
+    let vars = sort Term.(<) (setify Term.(<) rawvars) in
     let pols = map (grobify_term vars) tms and pol = grobify_term vars tm in
     let cert = grobner_ideal vars pols pol in
     map (fun n -> let p = assocd n cert [] in holify_polynomial vars p)

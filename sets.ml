@@ -1625,7 +1625,7 @@ let FINITE_IMAGE_EQ_INJ = prove
   MP_TAC(ISPECL [`f:A->B`; `IMAGE (f:A->B) s`; `s:A->bool`]
         SUBSET_IMAGE_INJ) THEN
   REWRITE_TAC[SUBSET_REFL] THEN MATCH_MP_TAC MONO_EXISTS THEN
-  ASM_METIS_TAC[FINITE_IMAGE_INJ_EQ]);;
+  ASM_MESON_TAC[FINITE_IMAGE_INJ_EQ]);; (* OA: METIS *)
 
 let FINITE_DIFF = prove
  (`!s t. FINITE s ==> FINITE(s DIFF t)`,
@@ -5063,7 +5063,7 @@ let new_inductive_set =
     let tm = snd(splitlist(dest_binop `(==>)`) tm) in
     let tm = snd(dest_binary "IN" tm) in
     fst(strip_comb tm) in
-  let find_pvars = setify o map rule_head o binops `(/\)` in
+  let find_pvars = setify Term.(<) o map rule_head o binops `(/\)` in
   fun tm ->
     let pvars = find_pvars tm in
     let dtm = remove_in_transf pvars tm in

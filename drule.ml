@@ -162,35 +162,36 @@ let (INSTANTIATE_ALL : instantiation->thm->thm) =
 (* the term after abstracting out the pattern instances) but it'd be slower. *)
 (* ------------------------------------------------------------------------- *)
 
-let (term_match:term list -> term -> term -> instantiation) =
+(* OA: could not get this to type check as one declaration; don't know why *)
+
   let safe_inserta ((y,x) as n) l =
     try let z = rev_assoc x l in
         if aconv y z then l else failwith "safe_inserta"
-    with Failure "find" -> n::l in
+    with Failure "find" -> n::l ;;
 
   let safe_insert ((y,x) as n) l =
     try let z = rev_assoc x l in
-        if Pervasives.compare y z = 0 then l else failwith "safe_insert"
-    with Failure "find" -> n::l in
+        if y = z then l else failwith "safe_insert"
+    with Failure "find" -> n::l ;;
 
   let mk_dummy =
     let name = fst(dest_var(genvar aty)) in
-    fun ty -> mk_var(name,ty) in
+    fun ty -> mk_var(name,ty) ;;
 
   let rec term_pmatch lconsts env vtm ctm ((insts,homs) as sofar) =
     match (vtm,ctm) with
       Var(_,_),_ ->
        (try let ctm' = rev_assoc vtm env in
-            if Pervasives.compare ctm' ctm = 0 then sofar
+            if ctm' = ctm then sofar
             else failwith "term_pmatch"
         with Failure "find" ->
             if mem vtm lconsts then
-              if Pervasives.compare ctm vtm = 0 then sofar
+              if ctm = vtm then sofar
               else failwith "term_pmatch: can't instantiate local constant"
             else safe_inserta (ctm,vtm) insts,homs)
     | Const(vname,vty),Const(cname,cty) ->
-        if Pervasives.compare vname cname = 0 then
-          if Pervasives.compare vty cty = 0 then sofar
+        if vname = cname then
+          if vty = cty then sofar
           else safe_insert (mk_dummy cty,mk_dummy vty) insts,homs
         else failwith "term_pmatch"
     | Abs(vv,vbod),Abs(cv,cbod) ->
@@ -203,17 +204,17 @@ let (term_match:term list -> term -> term -> instantiation) =
                        not (can (rev_assoc vhop) env) then
         let vty = type_of vtm and cty = type_of ctm in
         let insts' =
-          if Pervasives.compare vty cty = 0 then insts
+          if vty = cty then insts
           else safe_insert (mk_dummy cty,mk_dummy vty) insts in
         (insts',(env,ctm,vtm)::homs)
       else
         let lv,rv = dest_comb vtm
         and lc,rc = dest_comb ctm in
         let sofar' = term_pmatch lconsts env lv lc sofar in
-        term_pmatch lconsts env rv rc sofar' in
+        term_pmatch lconsts env rv rc sofar' ;;
 
   let get_type_insts insts =
-    itlist (fun (t,x) -> type_match (snd(dest_var x)) (type_of t)) insts in
+    itlist (fun (t,x) -> type_match (snd(dest_var x)) (type_of t)) insts ;;
 
   let separate_insts insts =
       let realinsts,patterns = partition (is_var o snd) insts in
@@ -230,14 +231,14 @@ let (term_match:term list -> term -> term -> instantiation) =
       mapfilter (fun (t,x) ->
         let x' = let xn,xty = dest_var x in
                  mk_var(xn,type_subst tyins xty) in
-        if Pervasives.compare t x' = 0 then fail() else (t,x')) realinsts,
-      tyins in
+        if t = x' then fail() else (t,x')) realinsts,
+      tyins ;;
 
   let rec term_homatch lconsts tyins (insts,homs) =
     if homs = [] then insts else
     let (env,ctm,vtm) = hd homs in
     if is_var vtm then
-      if Pervasives.compare ctm vtm = 0
+      if ctm = vtm
        then term_homatch lconsts tyins (insts,tl homs) else
       let newtyins = safe_insert (type_of ctm,snd(dest_var vtm)) tyins
       and newinsts = (ctm,vtm)::insts in
@@ -255,8 +256,8 @@ let (term_match:term list -> term -> term -> instantiation) =
         let vhop' = inst_fn vhop in
         let ni =
           let chop,cargs = strip_comb ctm in
-          if Pervasives.compare cargs pats = 0 then
-            if Pervasives.compare chop vhop = 0
+          if cargs = pats then
+            if chop = vhop
             then insts else safe_inserta (chop,vhop) insts else
           let ginsts = map
             (fun p -> (if is_var p then p else genvar(type_of p)),p) pats in
@@ -273,8 +274,9 @@ let (term_match:term list -> term -> term -> instantiation) =
         let pinsts_homs' =
           term_pmatch lconsts env rv rc (insts,(env,lc,lv)::(tl homs)) in
         let tyins' = get_type_insts (fst pinsts_homs') [] in
-        term_homatch lconsts tyins' pinsts_homs' in
+        term_homatch lconsts tyins' pinsts_homs' ;;
 
+let (term_match:term list -> term -> term -> instantiation) =
   fun lconsts vtm ctm ->
     let pinsts_homs = term_pmatch lconsts [] vtm ctm ([],[]) in
     let tyins = get_type_insts (fst pinsts_homs) [] in
@@ -323,8 +325,8 @@ let (term_unify:term list -> term -> term -> instantiation) =
 (* Unification of types.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
-let type_unify : hol_type -> hol_type -> (hol_type * hol_type) list
-                 -> (hol_type * hol_type) list =
+let (type_unify : hol_type -> hol_type -> (hol_type * hol_type) list
+                 -> (hol_type * hol_type) list) =
   let augment1 sofar (s,x) =
     let s' = type_subst sofar s in
     if occurs_in x s' && not (s = x) then failwith "type_unify: augment1"
@@ -359,7 +361,7 @@ let type_unify : hol_type -> hol_type -> (hol_type * hol_type) list
 (* Unification of terms and their types together.                            *)
 (* ------------------------------------------------------------------------- *)
 
-let term_type_unify : term -> term -> instantiation -> instantiation =
+let (term_type_unify : term -> term -> instantiation -> instantiation) =
   let augment_tyinsts (s, t) tyinsts =
     let sty = type_of (inst tyinsts s)
     and tty = type_of (inst tyinsts t) in
@@ -379,7 +381,7 @@ let term_type_unify : term -> term -> instantiation -> instantiation =
     if t' = v' then sofar'
     else if vfree_in v' t' then failwith "term_unify: augment_insts"
     else raw_augment_insts (t',v') sofar' in
-  let rec unify tm1 tm2 (tminsts, tyinsts as sofar) =
+  let rec unify tm1 tm2 ((tminsts, tyinsts) as sofar) =
     if tm1 = tm2 then sofar
     else if is_var tm1 then
       try let tm1' = rev_assoc tm1 tminsts in
@@ -463,7 +465,7 @@ let PART_MATCH,GEN_PART_MATCH =
       let fth = INSTANTIATE insts ath in
       if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
       let tm' = partfn (concl fth) in
-      if Pervasives.compare tm' tm = 0 then fth else
+      if tm' = tm then fth else
       try SUBS[ALPHA tm' tm] fth
       with Failure _ -> failwith "PART_MATCH: Sanity check failure"
   and GEN_PART_MATCH partfn th =
@@ -481,7 +483,7 @@ let PART_MATCH,GEN_PART_MATCH =
       let fth = itlist (fun v th -> snd(SPEC_VAR th)) fvs eth in
       if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
       let tm' = partfn (concl fth) in
-      if Pervasives.compare tm' tm = 0 then fth else
+      if tm' = tm then fth else
       try SUBS[ALPHA tm' tm] fth
       with Failure _ -> failwith "PART_MATCH: Sanity check failure" in
   PART_MATCH,GEN_PART_MATCH;;

@@ -98,7 +98,7 @@ let REAL_ENTIRE = prove
   REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
   ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_RZERO] THEN
   ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[] THEN
-  FIRST_ASSUM(MP_TAC o AP_TERM `(*) (inv x)`) THEN
+  FIRST_ASSUM(MP_TAC o AP_TERM `( *) (inv x)`) THEN
   REWRITE_TAC[REAL_MUL_ASSOC] THEN
   FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP REAL_MUL_LINV th]) THEN
   REWRITE_TAC[REAL_MUL_LID; REAL_MUL_RZERO]);;
@@ -429,21 +429,22 @@ let REAL_LINEAR_PROVER =
     and les = map2 (fun p n -> p,Axiom_le n) le (0--(length le-1))
     and lts = map2 (fun p n -> p,Axiom_lt n) lt (0--(length lt-1)) in
     linear_eqs(eqs,les,lts) in
+  let (|=>) x y = (x |=> y) Term.compare in
   let lin_of_hol =
     let one_tm = `&1`
     and zero_tm = `&0`
     and add_tm = `(+):real->real->real`
-    and mul_tm = `(*):real->real->real` in
+    and mul_tm = `( *):real->real->real` in
     let rec lin_of_hol tm =
-      if tm = zero_tm then undefined
-      else if not (is_comb tm) then (tm |=> Int 1)
-      else if is_ratconst tm then (one_tm |=> rat_of_term tm) else
+      if tm = zero_tm then (undefined Term.compare : (term, num) func)
+      else if not (is_comb tm) then tm |=> Int 1
+      else if is_ratconst tm then one_tm |=> rat_of_term tm else
       let lop,r = dest_comb tm in
-      if not (is_comb lop) then (tm |=> Int 1) else
+      if not (is_comb lop) then tm |=> Int 1 else
       let op,l = dest_comb lop in
       if op = add_tm then linear_add (lin_of_hol l) (lin_of_hol r)
-      else if op = mul_tm && is_ratconst l then (r |=> rat_of_term l)
-      else (tm |=> Int 1) in
+      else if op = mul_tm && is_ratconst l
+      then r |=> rat_of_term l else tm |=> Int 1 in
     lin_of_hol in
   let is_alien tm =
     match tm with
@@ -457,10 +458,10 @@ let REAL_LINEAR_PROVER =
     and lt_pols = map (lin_of_hol o lhand o concl) lt in
     let aliens =  filter is_alien
       (itlist (union o dom) (eq_pols @ le_pols @ lt_pols) []) in
-    let le_pols' = le_pols @ map (fun v -> (v |=> Int 1)) aliens in
+    let le_pols' = le_pols @ map (fun v -> v |=> Int 1) aliens in
     let _,proof = linear_prover(eq_pols,le_pols',lt_pols) in
     let le' = le @ map (fun a -> INST [rand a,n_tm] pth) aliens in
-    translator (eq,le',lt) proof;;
+    (translator (eq,le',lt) proof : thm) ;; (* OA: Value restriction *)
 
 (* ------------------------------------------------------------------------- *)
 (* Bootstrapping REAL_ARITH: trivial abs-elim and only integer constants.    *)
@@ -472,7 +473,7 @@ let REAL_ARITH =
   SEMIRING_NORMALIZERS_CONV REAL_POLY_CLAUSES REAL_POLY_NEG_CLAUSES
    (is_realintconst,
     REAL_INT_ADD_CONV,REAL_INT_MUL_CONV,REAL_INT_POW_CONV)
-   (<) in
+   Term.(<) in
   let rule =
    GEN_REAL_ARITH
    (mk_realintconst,
@@ -629,7 +630,7 @@ let REAL_ARITH =
   SEMIRING_NORMALIZERS_CONV REAL_POLY_CLAUSES REAL_POLY_NEG_CLAUSES
    (is_realintconst,
     REAL_INT_ADD_CONV,REAL_INT_MUL_CONV,REAL_INT_POW_CONV)
-   (<) in
+   Term.(<) in
   GEN_REAL_ARITH
    (mk_realintconst,
     REAL_INT_EQ_CONV,REAL_INT_GE_CONV,REAL_INT_GT_CONV,

@@ -42,6 +42,7 @@ let ITAUT_TAC =
     (CONJUNCTS_THEN' MP_TAC o uncurry CONJ  o EQ_IMP_RULE)]       (* iff    *)
   in
   let rec ITAUT_TAC mvs n gl =
+    Interrupt.poll();
     if n <= 0 then failwith "ITAUT_TAC: Too deep" else
     ((FIRST_ASSUM (UNIFY_ACCEPT_TAC mvs)) ORELSE
      (ACCEPT_TAC TRUTH) ORELSE

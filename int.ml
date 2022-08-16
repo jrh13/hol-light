@@ -1086,7 +1086,7 @@ let INT_POLY_CONV =
     SEMIRING_NORMALIZERS_CONV sth rth
      (is_semiring_constant,
       SEMIRING_ADD_CONV,SEMIRING_MUL_CONV,SEMIRING_POW_CONV)
-     (<) in
+     Term.(<) in
   INT_POLY_CONV;;
 
 (* ------------------------------------------------------------------------- *)
@@ -1816,43 +1816,11 @@ let INT_REM_DOWN_CONV =
    ((addmul_conv THENC LAND_CONV downconv) ORELSEC
     (mod_conv THENC downconv) ORELSEC
     SUB_CONV downconv) tm
-  and upconv =
+  and upconv tm =
     GEN_REWRITE_CONV DEPTH_CONV
      [INT_NEG_REM; INT_ADD_REM; INT_SUB_REM; INT_MUL_REM;
-      INT_POW_REM; INT_REM_REM] in
+      INT_POW_REM; INT_REM_REM] tm in
   downconv THENC upconv;;
-
-(* ------------------------------------------------------------------------- *)
-(* Reduction of (a pow k) rem n keeping intermediates reduced.               *)
-(* ------------------------------------------------------------------------- *)
-
-let INT_POW_REM_CONV =
-  let pth_0,pth_1 = (CONJ_PAIR o prove)
-   (`((&m pow k) rem &n = &(m EXP k MOD n) /\
-      (&m pow k) rem (-- &n) = &(m EXP k MOD n)) /\
-     ((-- &m pow k) rem &n =
-      if EVEN k then &(m EXP k MOD n) else (-- &(m EXP k MOD n)) rem &n) /\
-     ((-- &m pow k) rem (-- &n) =
-      if EVEN k then &(m EXP k MOD n) else (-- &(m EXP k MOD n)) rem &n)`,
-    REWRITE_TAC[INT_REM_RNEG; INT_POW_NEG] THEN
-    COND_CASES_TAC THEN
-    ASM_REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES; GSYM INT_OF_NUM_REM] THEN
-    CONV_TAC INT_REM_DOWN_CONV THEN REFL_TAC) in
-  let conv =
-    (GEN_REWRITE_CONV I [pth_0] THENC RAND_CONV EXP_MOD_CONV) ORELSEC
-    (GEN_REWRITE_CONV I [pth_1] THENC
-     RATOR_CONV(LAND_CONV NUM_EVEN_CONV) THENC
-     GEN_REWRITE_CONV I [COND_CLAUSES] THENC
-     (RAND_CONV EXP_MOD_CONV ORELSEC
-      (LAND_CONV
-       (RAND_CONV(RAND_CONV EXP_MOD_CONV THENC TRY_CONV INT_NEG_CONV)) THENC
-        INT_REM_CONV))) in
-  fun tm ->
-    match tm with
-      Comb(Comb(Const("rem",_),
-                Comb(Comb(Const("int_pow",_),m),k)),n)
-      when is_intconst m && is_numeral k && is_intconst n -> conv tm
-  | _ -> failwith "INT_POW_REM_CONV";;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of integer gcd, and the Bezout identity.                        *)
@@ -2097,7 +2065,7 @@ let ARITH_RULE =
     let th1 = init_conv tm in
     let tm1 = rand(concl th1) in
     let avs,bod = strip_forall tm1 in
-    let nim = setify(find_terms is_numimage bod) in
+    let nim = setify Term.(<) (find_terms is_numimage bod) in
     let gvs = map (genvar o type_of) nim in
     let pths = map (fun v -> SPEC (rand v) INT_POS) nim in
     let ibod = itlist (curry mk_imp o concl) pths bod in

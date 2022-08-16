@@ -22,6 +22,11 @@ parse_as_infix (",",(14,"right"));;
 
 exception Noparse;;
 
+let pp_exn e =
+  match e with
+  | Noparse -> Pretty_printer.token "Noparse"
+  | _ -> pp_exn e;;
+
 let (|||) parser1 parser2 input =
   try parser1 input
   with Noparse -> parser2 input;;
@@ -122,9 +127,9 @@ let lex =
     | "b"::rst -> "\b",rst
     | " "::rst -> " ",rst
     | "x"::h::l::rst ->
-         String.make 1 (Char.chr(int_of_string("0x"^h^l))),rst
+         String.str (Char.chr(int_of_string("0x"^h^l))),rst
     | a::b::c::rst when forall isnum [a;b;c] ->
-         String.make 1 (Char.chr(int_of_string(a^b^c))),rst
+         String.str (Char.chr(int_of_string(a^b^c))),rst
     | _ -> failwith "lex:unrecognized OCaml-style escape in string" in
   let stringchar =
       some (fun i -> i <> "\\" && i <> "\"")
@@ -179,7 +184,7 @@ let lex =
 (* ------------------------------------------------------------------------- *)
 
 let parse_pretype =
-  let mk_prefinty:num->pretype =
+  let (mk_prefinty:num->pretype) =
     let rec prefinty n =
       if n =/ num_1 then Ptycon("1",[]) else
       let c = if Num.mod_num n num_2 =/ num_0 then "tybit0" else "tybit1" in
@@ -285,7 +290,9 @@ let parse_preterm =
     | Combp(p1,p2) -> union (pfrees p1) (pfrees p2)
     | Absp(p1,p2) -> subtract (pfrees p2) (pfrees p1)
     | Typing(p,_) -> pfrees p in
-  let pdest_eq (Combp(Combp(Varp(("="|"<=>"),_),l),r)) = l,r in
+  let pdest_eq t =
+    match t with
+    | Combp(Combp(Varp(("="|"<=>"),_),l),r) -> l,r in
   let pmk_let (letbindings,body) =
     let vars,tms = unzip (map pdest_eq letbindings) in
     let _ = warn(not
@@ -319,8 +326,8 @@ let parse_preterm =
     let lis = map (fun i -> pmk_bool((c / (1 lsl i)) mod 2 = 1)) (0--7) in
     itlist (fun x y -> Combp(y,x)) lis (Varp("ASCII",dpty)) in
   let pmk_string s =
-    let ns = map (fun i -> Char.code(String.get s i))
-                 (0--(String.length s - 1)) in
+    let ns = map (fun i -> Char.ord (String.sub s i))
+                 (0--(String.size s - 1)) in
     pmk_list(map pmk_char ns) in
   let pmk_setcompr (fabs,bvs,babs) =
     let v = pgenvar() in
@@ -361,10 +368,10 @@ let parse_preterm =
   let pretype = parse_pretype
   and string inp =
     match inp with
-      Ident s::rst when String.length s >= 2 &&
-                        String.sub s 0 1 = "\"" &&
-                        String.sub s (String.length s - 1) 1 = "\""
-       -> String.sub s 1 (String.length s - 2),rst
+      Ident s::rst when String.size s >= 2 &&
+                        String.sub s 0 = '"' &&
+                        String.sub s (String.size s - 1) = '"'
+       -> String.substring s 1 (String.size s - 2),rst
     | _ -> raise Noparse
   and singleton1 x = [x]
   and lmk_ite (((((_,b),_),l),_),r) =
@@ -382,7 +389,7 @@ let parse_preterm =
               let r0 = hd ropt in
               let n_l = num_of_string l0
               and n_r = num_of_string r0 in
-              let n_d = power_num (Int 10) (Int (String.length r0)) in
+              let n_d = power_num (Int 10) (Int (String.size r0)) in
               let n_n = n_l */ n_d +/ n_r in
               string_of_num n_n,string_of_num n_d in
      Combp(Combp(Varp("DECIMAL",dpty),Varp(l,dpty)),Varp(r,dpty))
@@ -512,9 +519,9 @@ let parse_preterm =
   (fun inp ->
     match inp with
       [Ident s] when
-        not(String.length s >= 2 &&
-            String.sub s 0 1 = "\"" &&
-            String.sub s (String.length s - 1) 1 = "\"")
+        not(String.size s >= 2 &&
+            String.sub s 0 = '"' &&
+            String.sub s (String.size s - 1) = '"')
       -> Varp(s,dpty),[]
     | _ -> preterm inp);;
 

@@ -39,8 +39,8 @@ let CONJ_ACI_RULE =
   fun fm ->
     let p,p' = dest_eq fm in
     if p = p' then REFL p else
-    let th = use_fun (mk_fun (ASSUME p) undefined) p'
-    and th' = use_fun (mk_fun (ASSUME p') undefined) p in
+    let th = use_fun (mk_fun (ASSUME p) (undefined Term.compare)) p'
+    and th' = use_fun (mk_fun (ASSUME p') (undefined Term.compare)) p in
     IMP_ANTISYM_RULE (DISCH_ALL th) (DISCH_ALL th');;
 
 let DISJ_ACI_RULE =
@@ -70,8 +70,8 @@ let DISJ_ACI_RULE =
   fun fm ->
     let p,p' = dest_eq fm in
     if p = p' then REFL p else
-    let th = use_fun (mk_fun (ASSUME(mk_neg p)) undefined) p'
-    and th' = use_fun (mk_fun (ASSUME(mk_neg p')) undefined) p in
+    let th = use_fun (mk_fun (ASSUME(mk_neg p)) (undefined Term.compare)) p'
+    and th' = use_fun (mk_fun (ASSUME(mk_neg p')) (undefined Term.compare)) p in
     let th1 = IMP_ANTISYM_RULE (DISCH_ALL th) (DISCH_ALL th') in
     PROVE_HYP th1 (INST [p,a_tm; p',b_tm] pth_neg);;
 
@@ -80,11 +80,11 @@ let DISJ_ACI_RULE =
 (* ------------------------------------------------------------------------- *)
 
 let CONJ_CANON_CONV tm =
-  let tm' = list_mk_conj(setify(conjuncts tm)) in
+  let tm' = list_mk_conj(setify Term.(<) (conjuncts tm)) in
   CONJ_ACI_RULE(mk_eq(tm,tm'));;
 
 let DISJ_CANON_CONV tm =
-  let tm' = list_mk_disj(setify(disjuncts tm)) in
+  let tm' = list_mk_disj(setify Term.(<) (disjuncts tm)) in
   DISJ_ACI_RULE(mk_eq(tm,tm'));;
 
 (* ------------------------------------------------------------------------- *)
@@ -702,7 +702,7 @@ let ASM_FOL_TAC =
   let GEN_FOL_CONV (cheads,vheads) =
     let hddata =
       if vheads = [] then
-        let hops = setify (map fst cheads) in
+        let hops = setify Term.(<) (map fst cheads) in
         let getmin h =
           let ns = mapfilter
             (fun (k,n) -> if k = h then n else fail()) cheads in
@@ -711,7 +711,7 @@ let ASM_FOL_TAC =
       else
         map (fun t -> if is_const t && fst(dest_const t) = "="
                       then t,2 else t,0)
-            (setify (map fst (vheads @ cheads))) in
+            (setify Term.(<) (map fst (vheads @ cheads))) in
     FOL_CONV hddata in
   fun (asl,w as gl) ->
     let headsp = itlist (get_thm_heads o snd) asl ([],[]) in

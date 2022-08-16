@@ -7,7 +7,7 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-needs "compute.ml";;
+needs "pair.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Declare a new type "ind" of individuals.                                  *)
@@ -251,10 +251,10 @@ let is_numeral = can dest_numeral;;
 (* want for some applications.                                               *)
 (* ------------------------------------------------------------------------- *)
 
-let the_specifications = ref [];;
+let the_specifications = ref ([]: ((string list * thm) * thm) list);;
 
 let new_specification =
-  let code c = mk_small_numeral (Char.code (c.[0])) in
+  let code c = mk_small_numeral (Char.ord (String.sub c 0)) in
   let mk_code name =
       end_itlist (curry mk_pair) (map code (explode name)) in
   let check_distinct l =

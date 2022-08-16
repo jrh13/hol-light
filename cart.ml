@@ -401,7 +401,7 @@ let FINITE_CLAUSES = prove
 (* Computing dimindex of fintypes.                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let DIMINDEX_CONV : conv =
+let (DIMINDEX_CONV : conv) =
   let [pth_num;pth0;pth1;pth_one] = (CONJUNCTS o prove)
    (`(dimindex(:A) = n <=> dimindex(s:A->bool) = NUMERAL n) /\
      (dimindex(:A) = n <=> dimindex(:A tybit0) = BIT0 n) /\
@@ -448,7 +448,7 @@ let HAS_SIZE_DIMINDEX_RULE =
           (CONJ (rule (lhand(rand(concl th1))))
                 (DIMINDEX_CONV (lhand(rand(rand(concl th1))))));;
 
-let DIMINDEX_TAC : tactic =
+let (DIMINDEX_TAC : tactic) =
   CONV_TAC (ONCE_DEPTH_CONV DIMINDEX_CONV);;
 
 (* ------------------------------------------------------------------------- *)

@@ -301,7 +301,7 @@ let prove_monotonicity_hyps =
 (* Part 3: The final user wrapper, with schematic variables added.           *)
 (* ========================================================================= *)
 
-let the_inductive_definitions = ref [];;
+let the_inductive_definitions = ref ([]: (thm * thm * thm) list);;
 
 let prove_inductive_relations_exist,new_inductive_definition =
   let rec pare_comb qvs tm =
@@ -339,9 +339,10 @@ let prove_inductive_relations_exist,new_inductive_definition =
     let schem = map (fun cls -> let avs,bod = strip_forall cls in
                   pare_comb avs (try snd(dest_imp bod) with Failure _ -> bod))
                             clauses in
-      let schems = setify schem in
+      let schems = setify Term.(<) schem in
       if is_var(hd schem) then (clauses,[]) else
-      if not (length(setify (map (snd o strip_comb) schems)) = 1)
+      if not (length(setify (fun x y -> List.compare Term.compare x y = Less)
+                            (map (snd o strip_comb) schems)) = 1)
       then failwith "Schematic variables not used consistently" else
       let avoids = variables (list_mk_conj clauses) in
       let hack_fn tm = mk_var(fst(dest_var(repeat rator tm)),type_of tm) in

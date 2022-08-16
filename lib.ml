@@ -67,12 +67,11 @@ let rec butlast l =
 let rec el n l =
   if n = 0 then hd l else el (n - 1) (tl l);;
 
-let rev =
-  let rec rev_append acc l =
-    match l with
-      [] -> acc
-    | h::t -> rev_append (h::acc) t in
-  fun l -> rev_append [] l;;
+let rec rev acc l =
+  match l with
+    [] -> acc
+  | h::t -> rev (h::acc) t;;
+let rev l = rev [] l;;
 
 let rec map2 f l1 l2 =
   match (l1,l2) with
@@ -104,6 +103,11 @@ let rec repeat f x =
 (* ------------------------------------------------------------------------- *)
 
 exception Unchanged;;
+
+let pp_exn e =
+  match e with
+  | Unchanged -> Pretty_printer.token "Unchanged"
+  | _ -> pp_exn e;;
 
 (* ------------------------------------------------------------------------- *)
 (* Various versions of list iteration.                                       *)
@@ -179,7 +183,7 @@ let rec replicate x n =
     if n < 1 then []
     else x::(replicate x (n - 1));;
 
-let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
+let rec (--) m n = if m > n then [] else m::((m + 1) -- n);;
 
 (* ------------------------------------------------------------------------- *)
 (* Various useful list operations.                                           *)
@@ -201,10 +205,9 @@ let rec exists p l =
     [] -> false
   | h::t -> p(h) || exists p t;;
 
-let length =
-  let rec len k l =
-    if l = [] then k else len (k + 1) (tl l) in
-  fun l -> len 0 l;;
+let rec length k l =
+  if l = [] then k else length (k + 1) (tl l);;
+let length l = length 0 l;;
 
 let rec filter p l =
   match l with
@@ -253,7 +256,7 @@ let index x =
   let rec ind n l =
     match l with
       [] -> failwith "index"
-    | (h::t) -> if Pervasives.compare x h = 0 then n else ind (n + 1) t in
+    | (h::t) -> if x = h then n else ind (n + 1) t in
   ind 0;;
 
 (* ------------------------------------------------------------------------- *)
@@ -263,7 +266,7 @@ let index x =
 let rec mem x lis =
   match lis with
     [] -> false
-  | (h::t) -> Pervasives.compare x h = 0 || mem x t;;
+  | (h::t) -> x = h || mem x t;;
 
 let insert x l =
   if mem x l then l else x::l;;
@@ -286,12 +289,12 @@ let set_eq l1 l2 = subset l1 l2 && subset l2 l1;;
 
 let rec assoc a l =
   match l with
-    (x,y)::t -> if Pervasives.compare x a = 0 then y else assoc a t
+    (x,y)::t -> if x = a then y else assoc a t
   | [] -> failwith "find";;
 
 let rec rev_assoc a l =
   match l with
-    (x,y)::t -> if Pervasives.compare y a = 0 then x else rev_assoc a t
+    (x,y)::t -> if y = a then x else rev_assoc a t
   | [] -> failwith "find";;
 
 (* ------------------------------------------------------------------------- *)
@@ -304,10 +307,11 @@ let rec zip l1 l2 =
       | (h1::t1,h2::t2) -> (h1,h2)::(zip t1 t2)
       | _ -> failwith "zip";;
 
-let rec unzip =
-  function [] -> [],[]
-         | ((a,b)::rest) -> let alist,blist = unzip rest in
-                            (a::alist,b::blist);;
+let rec unzip xs =
+  match xs with
+  | [] -> [],[]
+  | ((a,b)::rest) -> let alist,blist = unzip rest in
+                     (a::alist,b::blist);;
 
 (* ------------------------------------------------------------------------- *)
 (* Sharing out a list according to pattern in list-of-lists.                 *)
@@ -345,7 +349,7 @@ let rec sort cmp lis =
 let rec uniq l =
   match l with
     x::(y::_ as t) -> let t' = uniq t in
-                      if Pervasives.compare x y = 0 then t' else
+                      if x = y then t' else
                       if t'==t then l else x::t'
  | _ -> l;;
 
@@ -353,29 +357,35 @@ let rec uniq l =
 (* Convert list into set by eliminating duplicates.                          *)
 (* ------------------------------------------------------------------------- *)
 
-let setify s = uniq (sort (fun x y -> Pervasives.compare x y <= 0) s);;
+let setify (<=) s = uniq (sort (fun x y -> x <= y) s);;
 
 (* ------------------------------------------------------------------------- *)
 (* String operations (surely there is a better way...)                       *)
 (* ------------------------------------------------------------------------- *)
 
-let implode l = itlist (^) l "";;
+let implode  = String.concat;;
+  (* Woah: *)
+  (* itlist (^) l "";; *)
 
 let explode s =
   let rec exap n l =
       if n < 0 then l else
-      exap (n - 1) ((String.sub s n 1)::l) in
-  exap (String.length s - 1) [];;
+      exap (n - 1) ((String.substring s n 1)::l) in
+  exap (String.size s - 1) [];;
 
 (* ------------------------------------------------------------------------- *)
 (* Greatest common divisor.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
+let gcd = Int.gcd;;
+
+(*
 let gcd =
   let rec gxd x y =
     if y = 0 then x else gxd y (x mod y) in
   fun x y -> let x' = abs x and y' = abs y in
               if x' < y' then gxd y' x' else gxd x' y';;
+*)
 
 (* ------------------------------------------------------------------------- *)
 (* Some useful functions on "num" type.                                      *)
@@ -389,16 +399,7 @@ and num_10 = Int 10;;
 let pow2 n = power_num num_2 (Int n);;
 let pow10 n = power_num num_10 (Int n);;
 
-let numdom r =
-  let r' = Ratio.normalize_ratio (ratio_of_num r) in
-  num_of_big_int(Ratio.numerator_ratio r'),
-  num_of_big_int(Ratio.denominator_ratio r');;
-
-let numerator = fst o numdom
-and denominator = snd o numdom;;
-
-let gcd_num n1 n2 =
-  num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
+let numdom r = (Num.numerator r, Num.denominator r);;
 
 let lcm_num x y =
   if x =/ num_0 && y =/ num_0 then num_0
@@ -418,7 +419,7 @@ let rec allpairs f l1 l2 =
 (* ------------------------------------------------------------------------- *)
 
 let report s =
-  Format.print_string s; Format.print_newline();;
+  print s; print "\n";;
 
 (* ------------------------------------------------------------------------- *)
 (* Convenient function for issuing a warning.                                *)
@@ -447,15 +448,15 @@ let remark s =
 
 let time f x =
   if not (!report_timing) then f x else
-  let start_time = Sys.time() in
+  let start_time = (* Sys.time() *) Double.fromString "0.0" in
   try let result = f x in
-      let finish_time = Sys.time() in
+      let finish_time = (* Sys.time()*) Double.fromString "0.0" in
       report("CPU time (user): "^(string_of_float(finish_time -. start_time)));
       result
   with e ->
-      let finish_time = Sys.time() in
-      Format.print_string("Failed after (user) CPU time of "^
-                          (string_of_float(finish_time -. start_time))^": ");
+      let finish_time = Double.fromString "0.0" (* Sys.time() *) in
+      print("Failed after (user) CPU time of "^
+            (string_of_float(finish_time -. start_time))^": ");
       raise e;;
 
 (* ------------------------------------------------------------------------- *)
@@ -465,12 +466,12 @@ let time f x =
 let rec assocd a l d =
   match l with
     [] -> d
-  | (x,y)::t -> if Pervasives.compare x a = 0 then y else assocd a t d;;
+  | (x,y)::t -> if x = a then y else assocd a t d;;
 
 let rec rev_assocd a l d =
   match l with
     [] -> d
-  | (x,y)::t -> if Pervasives.compare y a = 0 then x else rev_assocd a t d;;
+  | (x,y)::t -> if y = a then x else rev_assocd a t d;;
 
 (* ------------------------------------------------------------------------- *)
 (* Version of map that avoids rebuilding unchanged subterms.                 *)
@@ -507,9 +508,11 @@ let mergesort ord =
 (* Common measure predicates to use with "sort".                             *)
 (* ------------------------------------------------------------------------- *)
 
-let increasing f x y = Pervasives.compare (f x) (f y) < 0;;
+(* TODO These seem like they're not in use *)
 
-let decreasing f x y = Pervasives.compare (f x) (f y) > 0;;
+let increasing (<) f x y = f x < f y;;
+
+let decreasing (>) f x y = f x > f y;;
 
 (* ------------------------------------------------------------------------- *)
 (* Polymorphic finite partial functions via Patricia trees.                  *)
@@ -520,99 +523,82 @@ let decreasing f x y = Pervasives.compare (f x) (f y) > 0;;
 (* Idea due to Diego Olivier Fernandez Pons (OCaml list, 2003/11/10).        *)
 (* ------------------------------------------------------------------------- *)
 
-type ('a,'b)func =
-   Empty
- | Leaf of int * ('a*'b)list
- | Branch of int * int * ('a,'b)func * ('a,'b)func;;
+(* OA:
+     I can't map anything I want into an integer, but I can attach a comparison
+     function to the tree. You loose the canonicity property described above
+     but you'll probably always use the same comparison functions for the same
+     types, anyway, if you need to compare functions.
+ *)
+
+type ('a,'b) func = Func of ('a -> 'a -> ordering) * ('a * 'b) list;;
+
+let pp_func pk pv (Func (cmp, f)) =
+  Pretty_printer.app_block "func"
+    [Pretty_printer.pp_list (fun (k, v) ->
+      Pretty_printer.tuple [pk k; pv v]) f];;
 
 (* ------------------------------------------------------------------------- *)
 (* Undefined function.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
-let undefined = Empty;;
+let undefined cmp = Func (cmp, []);;
 
 (* ------------------------------------------------------------------------- *)
 (* In case of equality comparison worries, better use this.                  *)
 (* ------------------------------------------------------------------------- *)
 
-let is_undefined f =
+let is_undefined (Func (_, f)) =
   match f with
-    Empty -> true
+    [] -> true
   | _ -> false;;
 
 (* ------------------------------------------------------------------------- *)
 (* Operation analagous to "map" for lists.                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let mapf =
-  let rec map_list f l =
-    match l with
-      [] -> []
-    | (x,y)::t -> (x,f(y))::(map_list f t) in
-  let rec mapf f t =
-    match t with
-      Empty -> Empty
-    | Leaf(h,l) -> Leaf(h,map_list f l)
-    | Branch(p,b,l,r) -> Branch(p,b,mapf f l,mapf f r) in
-  mapf;;
+let mapf f (Func (cmp, t)) = Func (cmp, map (I F_F f) t);;
 
 (* ------------------------------------------------------------------------- *)
 (* Operations analogous to "fold" for lists.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let foldl =
-  let rec foldl_list f a l =
-    match l with
-      [] -> a
-    | (x,y)::t -> foldl_list f (f a x y) t in
-  let rec foldl f a t =
-    match t with
-      Empty -> a
-    | Leaf(h,l) -> foldl_list f a l
-    | Branch(p,b,l,r) -> foldl f (foldl f a l) r in
-  foldl;;
+let rec foldl f a =
+  function [] -> a
+         | (x,y)::xs -> foldl f (f a x y) xs;;
+let foldl f a (Func (_, t)) = foldl f a t;;
 
-let foldr =
-  let rec foldr_list f l a =
-    match l with
-      [] -> a
-    | (x,y)::t -> f x y (foldr_list f t a) in
-  let rec foldr f t a =
-    match t with
-      Empty -> a
-    | Leaf(h,l) -> foldr_list f l a
-    | Branch(p,b,l,r) -> foldr f l (foldr f r a) in
-  foldr;;
+let rec foldr f a =
+  function [] -> a
+         | (x,y)::xs -> f x y (foldr f a xs);;
+let foldr f (Func (_, t)) a = foldr f a t;;
 
 (* ------------------------------------------------------------------------- *)
 (* Mapping to sorted-list representation of the graph, domain and range.     *)
 (* ------------------------------------------------------------------------- *)
 
-let graph f = setify (foldl (fun a x y -> (x,y)::a) [] f);;
+let graph (Func (cmp, t)) vcmp =
+  setify (fun x y -> Pair.compare cmp vcmp x y <> Greater) t;;
 
-let dom f = setify(foldl (fun a x y -> x::a) [] f);;
+let dom (Func (cmp, t)) =
+  setify (fun x y -> cmp x y <> Greater) (map fst t);;
 
-let ran f = setify(foldl (fun a x y -> y::a) [] f);;
+let ran (Func (cmp, t)) vcmp =
+  setify (fun x y -> vcmp x y <> Greater) (map snd t);;
 
 (* ------------------------------------------------------------------------- *)
 (* Application.                                                              *)
 (* ------------------------------------------------------------------------- *)
 
-let applyd =
-  let rec apply_listd l d x =
-    match l with
-      (a,b)::t -> let c = Pervasives.compare x a in
-                  if c = 0 then b else if c > 0 then apply_listd t d x else d x
-    | [] -> d x in
-  fun f d x ->
-    let k = Hashtbl.hash x in
-    let rec look t =
-      match t with
-        Leaf(h,l) when h = k -> apply_listd l d x
-      | Branch(p,b,l,r) when (k lxor p) land (b - 1) = 0
-                -> look (if k land b = 0 then l else r)
-      | _ -> d x in
-    look f;;
+let applyd (Func (cmp, f)) d x' =
+  let rec look t =
+    match t with
+    | [] -> d x'
+    | (x,y)::xs ->
+        match cmp x' x with
+        | Less -> d x'
+        | Greater -> look xs
+        | Equal -> y in
+  look f;;
 
 let apply f = applyd f (fun x -> failwith "apply");;
 
@@ -624,157 +610,66 @@ let defined f x = try apply f x; true with Failure _ -> false;;
 (* Undefinition.                                                             *)
 (* ------------------------------------------------------------------------- *)
 
-let undefine =
-  let rec undefine_list x l =
-    match l with
-      (a,b as ab)::t ->
-          let c = Pervasives.compare x a in
-          if c = 0 then t
-          else if c < 0 then l else
-          let t' = undefine_list x t in
-          if t' == t then l else ab::t'
-    | [] -> [] in
-  fun x ->
-    let k = Hashtbl.hash x in
-    let rec und t =
-      match t with
-        Leaf(h,l) when h = k ->
-          let l' = undefine_list x l in
-          if l' == l then t
-          else if l' = [] then Empty
-          else Leaf(h,l')
-      | Branch(p,b,l,r) when k land (b - 1) = p ->
-          if k land b = 0 then
-            let l' = und l in
-            if l' == l then t
-            else (match l' with Empty -> r | _ -> Branch(p,b,l',r))
-          else
-            let r' = und r in
-            if r' == r then t
-            else (match r' with Empty -> l | _ -> Branch(p,b,l,r'))
-      | _ -> t in
-    und;;
+let rec undefine x' cmp t =
+  match t with
+  | [] -> t
+  | (x,y)::xs ->
+      match cmp x' x with
+      | Equal -> xs
+      | Less -> t
+      | Greater -> (x,y)::undefine x' cmp xs;;
+let undefine x' (Func (cmp, t)) = Func (cmp, undefine x' cmp t);;
 
 (* ------------------------------------------------------------------------- *)
 (* Redefinition and combination.                                             *)
 (* ------------------------------------------------------------------------- *)
 
-let (|->),combine =
-  let newbranch p1 t1 p2 t2 =
-    let zp = p1 lxor p2 in
-    let b = zp land (-zp) in
-    let p = p1 land (b - 1) in
-    if p1 land b = 0 then Branch(p,b,t1,t2)
-    else Branch(p,b,t2,t1) in
-  let rec define_list (x,y as xy) l =
-    match l with
-      (a,b as ab)::t ->
-          let c = Pervasives.compare x a in
-          if c = 0 then xy::t
-          else if c < 0 then xy::l
-          else ab::(define_list xy t)
-    | [] -> [xy]
-  and combine_list op z l1 l2 =
-    match (l1,l2) with
-      [],_ -> l2
-    | _,[] -> l1
-    | ((x1,y1 as xy1)::t1,(x2,y2 as xy2)::t2) ->
-          let c = Pervasives.compare x1 x2 in
-          if c < 0 then xy1::(combine_list op z t1 l2)
-          else if c > 0 then xy2::(combine_list op z l1 t2) else
-          let y = op y1 y2 and l = combine_list op z t1 t2 in
-          if z(y) then l else (x1,y)::l in
-  let (|->) x y =
-    let k = Hashtbl.hash x in
-    let rec upd t =
-      match t with
-        Empty -> Leaf (k,[x,y])
-      | Leaf(h,l) ->
-           if h = k then Leaf(h,define_list (x,y) l)
-           else newbranch h t k (Leaf(k,[x,y]))
-      | Branch(p,b,l,r) ->
-          if k land (b - 1) <> p then newbranch p t k (Leaf(k,[x,y]))
-          else if k land b = 0 then Branch(p,b,upd l,r)
-          else Branch(p,b,l,upd r) in
-    upd in
-  let rec combine op z t1 t2 =
-    match (t1,t2) with
-      Empty,_ -> t2
-    | _,Empty -> t1
-    | Leaf(h1,l1),Leaf(h2,l2) ->
-          if h1 = h2 then
-            let l = combine_list op z l1 l2 in
-            if l = [] then Empty else Leaf(h1,l)
-          else newbranch h1 t1 h2 t2
-    | (Leaf(k,lis) as lf),(Branch(p,b,l,r) as br) ->
-          if k land (b - 1) = p then
-            if k land b = 0 then
-              (match combine op z lf l with
-                 Empty -> r | l' -> Branch(p,b,l',r))
-            else
-              (match combine op z lf r with
-                 Empty -> l | r' -> Branch(p,b,l,r'))
-          else
-            newbranch k lf p br
-    | (Branch(p,b,l,r) as br),(Leaf(k,lis) as lf) ->
-          if k land (b - 1) = p then
-            if k land b = 0 then
-              (match combine op z l lf with
-                Empty -> r | l' -> Branch(p,b,l',r))
-            else
-              (match combine op z r lf with
-                 Empty -> l | r' -> Branch(p,b,l,r'))
-          else
-            newbranch p br k lf
-    | Branch(p1,b1,l1,r1),Branch(p2,b2,l2,r2) ->
-          if b1 < b2 then
-            if p2 land (b1 - 1) <> p1 then newbranch p1 t1 p2 t2
-            else if p2 land b1 = 0 then
-              (match combine op z l1 t2 with
-                 Empty -> r1 | l -> Branch(p1,b1,l,r1))
-            else
-              (match combine op z r1 t2 with
-                 Empty -> l1 | r -> Branch(p1,b1,l1,r))
-          else if b2 < b1 then
-            if p1 land (b2 - 1) <> p2 then newbranch p1 t1 p2 t2
-            else if p1 land b2 = 0 then
-              (match combine op z t1 l2 with
-                 Empty -> r2 | l -> Branch(p2,b2,l,r2))
-            else
-              (match combine op z t1 r2 with
-                 Empty -> l2 | r -> Branch(p2,b2,l2,r))
-          else if p1 = p2 then
-           (match (combine op z l1 l2,combine op z r1 r2) with
-              (Empty,r) -> r | (l,Empty) -> l | (l,r) -> Branch(p1,b1,l,r))
-          else
-            newbranch p1 t1 p2 t2 in
-  (|->),combine;;
+let (|->) x y (Func (cmp, t)) =
+  let rec ins x y t =
+    match t with
+    | [] -> [(x,y)]
+    | (x',y')::xs ->
+        match cmp x x' with
+        | Less -> (x,y)::t
+        | Greater -> (x',y')::ins x y xs
+        | Equal -> (x,y)::xs in
+  Func (cmp, ins x y t);;
+
+let combine op z (Func (cmp, t1)) (Func (_, t2)) =
+  let rec combine l1 l2 =
+    match l1, l2 with
+    | [], _ -> l2
+    | _, [] -> l1
+    | (x1,y1)::t1, (x2,y2)::t2 ->
+        match cmp x1 x2 with
+        | Less -> (x1,y1)::combine t1 l2
+        | Greater -> (x2,y2)::combine l1 t2
+        | Equal ->
+            let y = op y1 y2 in
+            let t = combine t1 t2 in
+            if z y then t else (x1,y)::t in
+  Func (cmp, combine t1 t2);;
 
 (* ------------------------------------------------------------------------- *)
 (* Special case of point function.                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let (|=>) = fun x y -> (x |-> y) undefined;;
+let (|=>) = fun x y cmp -> (x |-> y) (undefined cmp);;
 
 (* ------------------------------------------------------------------------- *)
 (* Grab an arbitrary element.                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let rec choose t =
-  match t with
-    Empty -> failwith "choose: completely undefined function"
-  | Leaf(h,l) -> hd l
-  | Branch(b,p,t1,t2) -> choose t1;;
+let choose (Func (_, t)) =
+  try hd t
+  with Failure _ ->
+    failwith "choose: completely undefined function";;
 
 (* ------------------------------------------------------------------------- *)
 (* Install a trivial printer for the general polymorphic case.               *)
 (* ------------------------------------------------------------------------- *)
 
-let pp_print_fpf fmt (f:('a,'b)func) = Format.pp_print_string fmt "<func>";;
-
-let print_fpf = pp_print_fpf Format.std_formatter;;
-
-#install_printer pp_print_fpf;;
+(* Can't do it. *)
 
 (* ------------------------------------------------------------------------- *)
 (* Set operations parametrized by equality (from Steven Obua).               *)
@@ -829,19 +724,19 @@ let num_of_string =
 (* ------------------------------------------------------------------------- *)
 
 let strings_of_file filename =
-  let fd = try Pervasives.open_in filename
-           with Sys_error _ ->
+  let fd = try Text_io.b_openIn filename
+           with Text_io.Bad_file_name ->
              failwith("strings_of_file: can't open "^filename) in
   let rec suck_lines acc =
-    try let l = Pervasives.input_line fd in
-        suck_lines (l::acc)
-    with End_of_file -> rev acc in
+    match Text_io.b_inputLine fd with
+    | Some l -> suck_lines (l::acc)
+    | None -> rev acc in
   let data = suck_lines [] in
-  (Pervasives.close_in fd; data);;
+  Text_io.b_closeIn fd; data;;
 
 let string_of_file filename =
   end_itlist (fun s t -> s^"\n"^t) (strings_of_file filename);;
 
 let file_of_string filename s =
-  let fd = Pervasives.open_out filename in
-  output_string fd s; close_out fd;;
+  let fd = Text_io.openOut filename in
+  Text_io.output fd s; Text_io.closeOut fd;;

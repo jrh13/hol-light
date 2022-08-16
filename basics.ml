@@ -8,7 +8,7 @@
 (*     (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018              *)
 (* ========================================================================= *)
 
-needs "fusion.ml";;
+needs "candle_kernel.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Create probably-fresh variable                                            *)
@@ -120,7 +120,7 @@ let subst =
           mk_abs(v,ssubst ilist' bod)
     | _ -> tm in
   fun ilist ->
-    let theta = filter (fun (s,t) -> Pervasives.compare s t <> 0) ilist in
+    let theta = filter (fun (s,t) -> s <> t) ilist in
     if theta = [] then (fun tm -> tm) else
     let ts,xs = unzip theta in
     fun tm ->
@@ -395,7 +395,7 @@ let mk_let(assigs,bod) =
 (* Constructors and destructors for finite types.                            *)
 (* ------------------------------------------------------------------------- *)
 
-let mk_finty:num->hol_type =
+let (mk_finty:num->hol_type) =
   let rec finty n =
     if n =/ num_1 then mk_type("1",[]) else
     mk_type((if Num.mod_num n num_2 =/ num_0 then "tybit0" else "tybit1"),
@@ -404,8 +404,8 @@ let mk_finty:num->hol_type =
     if not(is_integer_num n) || n </ num_1 then failwith "mk_finty" else
     finty n;;
 
-let rec dest_finty:hol_type->num =
-  function
+let rec dest_finty (t: hol_type): num =
+  match t with
     Tyapp("1",_) -> num_1
   | Tyapp("tybit0",[ty]) -> dest_finty ty */ num_2
   | Tyapp("tybit1",[ty]) -> succ_num (dest_finty ty */ num_2)

@@ -561,5 +561,5 @@ let NUM_NORMALIZE_CONV =
     SEMIRING_NORMALIZERS_CONV sth rth
      (is_semiring_constant,
       SEMIRING_ADD_CONV,SEMIRING_MUL_CONV,SEMIRING_POW_CONV)
-     (<) in
+     Term.(<) in
   NUM_NORMALIZE_CONV;;

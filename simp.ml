@@ -76,7 +76,7 @@ let term_order =
     else
       if f2 = top then false
       else if f1 = top then true
-      else f1 > f2 in
+      else Term.(<) f2 f1 in
   dyn_order `T`;;
 
 (* ------------------------------------------------------------------------- *)
@@ -214,13 +214,13 @@ let apply_prover(Prover(conv,_)) tm = conv tm;;
 (* We also have a type of (traversal) strategy, following Konrad.            *)
 (* ------------------------------------------------------------------------- *)
 
+type 'a strat = 'a -> int -> term -> thm;;
 type simpset =
-  Simpset of gconv net                          (* Rewrites & congruences *)
-           * (strategy -> strategy)             (* Prover for conditions  *)
-           * prover list                        (* Subprovers for prover  *)
-           * (thm -> thm list -> thm list)      (* Rewrite maker          *)
-
-and strategy = simpset -> int -> term -> thm;;
+  Simpset of gconv net                              (* Rewrites & congruences *)
+           * (simpset strat -> simpset strat)       (* Prover for conditions  *)
+           * prover list                            (* Subprovers for prover  *)
+           * (thm -> thm list -> thm list)          (* Rewrite maker          *)
+type strategy = simpset strat;;
 
 (* ------------------------------------------------------------------------- *)
 (* Very simple prover: recursively simplify then try provers.                *)

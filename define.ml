@@ -839,7 +839,7 @@ let instantiate_casewise_recursion,
         W(fun (asl,w) -> MAP_EVERY (fun t -> SPEC_TAC(t,t))
                                    (subtract (frees w) [ord])) THEN
         W(fun (asl,w) -> ACCEPT_TAC(ASSUME w)) in
-      let th2 = TAC_PROOF(([],bod),SIMP_ADMISS_TAC) in
+      let th2 = prove(bod,SIMP_ADMISS_TAC) in
       let th3 = SIMPLE_EXISTS ord th2 in
       let allasms = hyp th3 and wfasm = lhand(concl th2) in
       let th4 = ASSUME(list_mk_conj(wfasm::subtract allasms [wfasm])) in
@@ -961,7 +961,7 @@ let define =
     let fs =
       try map (repeat rator o lhs o snd o strip_forall) cjs
       with Failure _ -> failwith "close_definition_clauses: non-equation" in
-    if length (setify fs) <> 1
+    if length (setify Term.(<) fs) <> 1
     then failwith "close_definition_clauses: defining multiple functions" else
     let f = hd fs in
     if mem f avs then failwith "close_definition_clauses: fn quantified" else

@@ -199,6 +199,7 @@ let (ONCE_DEPTH_CONV: conv->conv),
     (TOP_DEPTH_CONV: conv->conv),
     (TOP_SWEEP_CONV: conv->conv) =
   let THENQC conv1 conv2 tm =
+    Interrupt.poll ();
     try let th1 = conv1 tm in
         try let th2 = conv2(rand(concl th1)) in TRANS th1 th2
         with Failure _ -> th1
@@ -247,7 +248,7 @@ let (ONCE_DEPTH_CONV: conv->conv),
 
 let rec DEPTH_BINOP_CONV op conv tm =
   match tm with
-    Comb(Comb(op',l),r) when Pervasives.compare op' op = 0 ->
+    Comb(Comb(op',l),r) when op' = op ->
       let l,r = dest_binop op tm in
       let lth = DEPTH_BINOP_CONV op conv l
       and rth = DEPTH_BINOP_CONV op conv r in

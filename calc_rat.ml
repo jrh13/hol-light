@@ -7,7 +7,7 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-needs "real.ml";;
+loads "real.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Constant for decimal fractions written #xxx.yyy                           *)
@@ -418,7 +418,7 @@ let REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_SUB_CONV,
   SEMIRING_NORMALIZERS_CONV REAL_POLY_CLAUSES REAL_POLY_NEG_CLAUSES
    (is_ratconst,
     REAL_RAT_ADD_CONV,REAL_RAT_MUL_CONV,REAL_RAT_POW_CONV)
-   (<);;
+   Term.(<);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extend normalizer to handle "inv" and division by rational constants, and *)
@@ -591,7 +591,7 @@ let REAL_FIELD =
               not(is_ratconst(rand tm)) in
   let BASIC_REAL_FIELD tm =
     let is_freeinv t = is_inv t && free_in t tm in
-    let itms = setify(map rand (find_terms is_freeinv tm)) in
+    let itms = setify Term.(<) (map rand (find_terms is_freeinv tm)) in
     let hyps = map
      (fun t -> CONV_RULE easy_nz_conv (SPEC t REAL_MUL_RINV)) itms in
     let tm' = itlist (fun th t -> mk_imp(concl th,t)) hyps tm in

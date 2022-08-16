@@ -162,6 +162,7 @@ let (THEN),(THENL) =
       if gls = [] then tacsequence gstate []
       else tacsequence gstate tac2l in
   then_,thenl_;;
+let then_, thenl_ = (THEN), (THENL);;
 
 let ((ORELSE): tactic -> tactic -> tactic) =
   fun tac1 tac2 g ->
@@ -747,43 +748,43 @@ let ANTS_TAC =
 (* A printer for goals etc.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let (pp_print_goal:Format.formatter->goal->unit) =
+let (pp_print_goal: formatter->goal->unit) =
   let string_of_int3 n =
     if n < 10 then "  "^string_of_int n
     else if n < 100 then " "^string_of_int n
     else string_of_int n in
   let print_hyp fmt n (s,th) =
     pp_open_hbox fmt ();
-    Format.pp_print_string fmt (string_of_int3 n);
-    Format.pp_print_string fmt " [";
+    pp_print_string fmt (string_of_int3 n);
+    pp_print_string fmt " [";
     pp_open_hvbox fmt 0;
     pp_print_qterm fmt (concl th);
     pp_close_box fmt ();
-    Format.pp_print_string fmt "]";
-    (if not (s = "") then (Format.pp_print_string fmt (" ("^s^")")) else ());
+    pp_print_string fmt "]";
+    (if not (s = "") then (pp_print_string fmt (" ("^s^")")) else ());
     pp_close_box fmt ();
-    Format.pp_print_newline fmt () in
+    pp_print_newline fmt () in
   let rec print_hyps fmt n asl =
     if asl = [] then () else
     (print_hyp fmt n (hd asl);
      print_hyps fmt (n + 1) (tl asl)) in
   fun fmt (asl,w) ->
-    Format.pp_print_newline fmt ();
-    if asl <> [] then (print_hyps fmt 0 (rev asl); Format.pp_print_newline fmt ()) else ();
-    pp_print_qterm fmt w; Format.pp_print_newline fmt ();;
+    pp_print_newline fmt ();
+    if asl <> [] then (print_hyps fmt 0 (rev asl); pp_print_newline fmt ());
+    pp_print_qterm fmt w; pp_print_newline fmt ();;
 
-let (pp_print_goalstack:Format.formatter->goalstack->unit) =
+let (pp_print_goalstack: formatter->goalstack->unit) =
   let print_goalstate fmt k gs =
     let (_,gl,_) = gs in
     let n = length gl in
     let s = if n = 0 then "No subgoals" else
               (string_of_int k)^" subgoal"^(if k > 1 then "s" else "")
            ^" ("^(string_of_int n)^" total)" in
-    Format.pp_print_string fmt s; Format.pp_print_newline fmt ();
+    pp_print_string fmt s; pp_print_newline fmt ();
     if gl = [] then () else
     do_list (pp_print_goal fmt o C el gl) (rev(0--(k-1))) in
   fun fmt l ->
-    if l = [] then Format.pp_print_string fmt "Empty goalstack"
+    if l = [] then pp_print_string fmt "Empty goalstack"
     else if tl l = [] then
       let (_,gl,_ as gs) = hd l in
       print_goalstate fmt 1 gs
@@ -794,8 +795,8 @@ let (pp_print_goalstack:Format.formatter->goalstack->unit) =
       let p' = if p < 1 then 1 else p + 1 in
       print_goalstate fmt p' gs;;
 
-let print_goal = pp_print_goal Format.std_formatter;;
-let print_goalstack = pp_print_goalstack Format.std_formatter;;
+let print_goal = Pretty.print_stdout pp_print_goal;;
+let print_goalstack = Pretty.print_stdout pp_print_goalstack;;
 
 (* ------------------------------------------------------------------------- *)
 (* Convert a tactic into a refinement on head subgoal in current state.      *)
@@ -858,9 +859,8 @@ let (TAC_PROOF : goal * tactic -> thm) =
 
 let prove(t,tac) =
   let th = TAC_PROOF(([],t),tac) in
-  let asl,t' = dest_thm th in
-  if asl <> [] then failwith "prove: additional assumptions in result"
-  else if t' = t then th else
+  let t' = concl th in
+  if t' = t then th else
   try EQ_MP (ALPHA t' t) th
   with Failure _ -> failwith "prove: justification generated wrong theorem";;
 
@@ -870,14 +870,14 @@ let prove(t,tac) =
 
 let current_goalstack = ref ([] :goalstack);;
 
-let (refine:refinement->goalstack) =
+let (refine:refinement->unit) =
   fun r ->
     let l = !current_goalstack in
     if l = [] then failwith "No current goal" else
     let h = hd l in
     let res = r h :: l in
     current_goalstack := res;
-    !current_goalstack;;
+    print_goalstack (!current_goalstack);;
 
 let flush_goalstack() =
   let l = !current_goalstack in
@@ -890,10 +890,10 @@ let r n = refine(rotate n);;
 let set_goal(asl,w) =
   current_goalstack :=
     [mk_goalstate(map (fun t -> "",ASSUME t) asl,w)];
-  !current_goalstack;;
+  print_goalstack (!current_goalstack);;
 
 let g t =
-  let fvs = sort (<) (map (fst o dest_var) (frees t)) in
+  let fvs = sort String.(<) (map (fst o dest_var) (frees t)) in
   (if fvs <> [] then
      let errmsg = end_itlist (fun s t -> s^", "^t) fvs in
      warn true ("Free variables in goal: "^errmsg)
@@ -904,10 +904,10 @@ let b() =
   let l = !current_goalstack in
   if length l = 1 then failwith "Can't back up any more" else
   current_goalstack := tl l;
-  !current_goalstack;;
+  print_goalstack (!current_goalstack);;
 
 let p() =
-  !current_goalstack;;
+  print_goalstack (!current_goalstack);;
 
 let top_realgoal() =
   let (_,((asl,w)::_),_)::_ = !current_goalstack in
@@ -925,5 +925,9 @@ let top_thm() =
 (* Install the goal-related printers.                                        *)
 (* ------------------------------------------------------------------------- *)
 
-#install_printer pp_print_goal;;
-#install_printer pp_print_goalstack;;
+let pp_goal =
+  Pretty_printer.token o Pretty.print_to_string pp_print_goal;;
+
+let pp_goalstack =
+  Pretty_printer.token o Pretty.print_to_string pp_print_goalstack;;
+

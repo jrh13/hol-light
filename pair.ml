@@ -487,16 +487,3 @@ let (LET_TAC:tactic) =
      W(fun (asl',w') ->
         let tm' = follow_path path w' in
         CONV_TAC(PATH_CONV path (K(let_CONV tm'))))) gl;;
-
-(* ------------------------------------------------------------------------- *)
-(* Apply conversion "conv" to RHS of toplevel let-term                       *)
-(* ------------------------------------------------------------------------- *)
-
-let SUBLET_CONV conv =
-  let rec largconv tm =
-    match tm with
-      Comb(Const("LET",_),_) -> REFL tm
-    | Comb(l,r) -> (COMB2_CONV largconv conv) tm
-    | _ -> failwith "SUBLET_CONV" in
-  fun tm -> if is_let tm then largconv tm
-            else failwith "SUBLET_CONV";;

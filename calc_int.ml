@@ -17,7 +17,7 @@ let is_realintconst tm =
   match tm with
     Comb(Const("real_of_num",_),n) -> is_numeral n
   | Comb(Const("real_neg",_),Comb(Const("real_of_num",_),n)) ->
-      is_numeral n && not(dest_numeral n = num_0)
+      is_numeral n && not(dest_numeral n =/ num_0)
   | _ -> false;;
 
 let dest_realintconst tm =

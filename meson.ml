@@ -33,6 +33,11 @@ let meson_chatty = ref false;;  (* Old-style verbose MESON output            *)
 
 exception Cut;;
 
+let pp_exn e =
+  match e with
+  | Cut -> Pretty_printer.token "Cut"
+  | _ -> pp_exn e;;
+
 (* ------------------------------------------------------------------------- *)
 (* Shadow syntax for FOL terms in NNF. Functions and predicates have         *)
 (* numeric codes, and negation is done by negating the predicate code.       *)
@@ -390,6 +395,7 @@ module Meson = struct
 
   let expand_goal rules =
     let rec expand_goal depth ((g,_),(insts,offset,size) as state) cont =
+      Interrupt.poll ();
       if depth < 0 then failwith "expand_goal: too deep" else
       meson_expand rules state
         (fun apprule (_,(pinsts,_,_) as newstate) ->
@@ -443,27 +449,27 @@ module Meson = struct
 
   let solve_goal rules incdepth min max incsize =
     let rec solve n g =
+      Interrupt.poll ();
       if n > max then failwith "solve_goal: Too deep" else
       (if !meson_chatty && !verbose then
-        (Format.print_string
+        (print
           ((string_of_int (!inferences))^" inferences so far. "^
               "Searching with maximum size "^(string_of_int n)^".");
-         Format.print_newline())
+         print"\n")
        else if !verbose then
-        (Format.print_string(string_of_int (!inferences)^"..");
-         Format.print_flush())
+        print(string_of_int (!inferences)^"..")
        else ());
       try let gi =
             if incdepth then expand_goal rules g n 100000 (fun x -> x)
             else expand_goal rules g 100000 n (fun x -> x) in
           (if !meson_chatty && !verbose then
-            (Format.print_string
+            (print
               ("Goal solved with "^(string_of_int (!inferences))^
                " inferences.");
-             Format.print_newline())
+             print"\n")
            else if !verbose then
-            (Format.print_string("solved at "^string_of_int (!inferences));
-             Format.print_newline())
+            (print("solved at "^string_of_int (!inferences));
+             print"\n")
            else ());
           gi
       with Failure _ -> solve (n + incsize) g in
@@ -494,7 +500,7 @@ module Meson = struct
       else basics in
     fun thms ->
       let rawrules = itlist (union' eqt o fol_of_hol_clause) thms [] in
-      let prs = setify (map (fst o snd o fst) rawrules) in
+      let prs = setify Int.(<) (map (fst o snd o fst) rawrules) in
       let prules =
         map (fun t -> t,filter ((=) t o fst o snd o fst) rawrules) prs in
       let srules = sort (fun (p,_) (q,_) -> abs(p) <= abs(q)) prules in
@@ -504,10 +510,10 @@ module Meson = struct
   (* Optimize set of clauses; changing literal order complicates HOL stuff.  *)
   (* ----------------------------------------------------------------------- *)
 
-  let optimize_rules =
+  let optimize_rules xs =
     let optimize_clause_order cls =
       sort (fun ((l1,_),_) ((l2,_),_) -> length l1 <= length l2) cls in
-    map (fun (a,b) -> a,optimize_clause_order b)
+    map (fun (a,b) -> a,optimize_clause_order b) xs
 
   (* ----------------------------------------------------------------------- *)
   (* Create a HOL contrapositive on demand, with a cache.                    *)
@@ -750,8 +756,7 @@ module Meson = struct
       let tyins = mapfilter match_consts
         (allpairs (fun x y -> x,y) pconsts mconsts) in
       let ths' =
-        setify' (fun th th' -> dest_thm th <= dest_thm th')
-                equals_thm (mapfilter (C INST_TYPE th) tyins) in
+        setify' Thm.(<) equals_thm (mapfilter (C INST_TYPE th) tyins) in
       if ths' = [] then
         (warn true "No useful-looking instantiations of lemma"; [th])
       else ths' in
@@ -841,14 +846,7 @@ let ASM_MESON_TAC = GEN_MESON_TAC 0 50 1;;
 let MESON_TAC ths = POP_ASSUM_LIST(K ALL_TAC) THEN ASM_MESON_TAC ths;;
 
 (* ------------------------------------------------------------------------- *)
-(* Also introduce a rule.                                                    *)
+(* Also introduce a rule.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let MESON ths tm =
-  let th = TAC_PROOF(([],tm),MESON_TAC ths) in
-  let asl,tm' = dest_thm th in
-  if asl <> [] && not(subset asl (unions (map hyp ths)))
-  then failwith "MESON: too many assumptions in result"
-  else if tm' = tm then th else
-  try EQ_MP (ALPHA tm' tm) th
-  with Failure _ -> failwith "MESON: the wrong result";;
+let MESON ths tm = prove(tm,MESON_TAC ths);;

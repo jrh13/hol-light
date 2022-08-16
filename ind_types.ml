@@ -402,9 +402,9 @@ let define_type_raw =
     let srules = map SPEC_ALL (CONJUNCTS rth) in
     let imps,bases = partition (is_imp o concl) srules in
     let concs = map concl bases @ map (rand o concl) imps in
-    let preds = setify (map (repeat rator) concs) in
+    let preds = setify Term.(<) (map (repeat rator) concs) in
     let rec exhaust_inhabitations ths sofar =
-      let dunnit = setify(map (fst o strip_comb o concl) sofar) in
+      let dunnit = setify Term.(<) (map (fst o strip_comb o concl) sofar) in
       let useful = filter
         (fun th -> not (mem (fst(strip_comb(rand(concl th)))) dunnit)) ths in
       if useful = [] then sofar else
@@ -1014,9 +1014,9 @@ inductive_type_store :=
 (* preferable to have a conversion, but this seems OK up 100 constructors.   *)
 (* ------------------------------------------------------------------------- *)
 
-let basic_rectype_net = ref empty_net;;
+let basic_rectype_net = ref (empty_net: (int * conv) net);;
 let distinctness_store = ref ["bool",TAUT `(T <=> F) <=> F`];;
-let injectivity_store = ref [];;
+let injectivity_store = ref ([]: (string * thm) list);;
 
 let extend_rectype_net (tyname,(_,_,rth)) =
   let ths1 = try [prove_constructors_distinct rth] with Failure _ -> []
@@ -1159,7 +1159,9 @@ let define_type_raw =
     and pevs1,pbod1 = strip_exists (concl sth1) in
     let pcjs0,qcjs0 = chop_list k (conjuncts pbod0)
     and pcjs1,qcjs1 = chop_list k (snd(chop_list n (conjuncts pbod1))) in
-    let tyal0 = setify (zip (map grab_type pcjs1) (map grab_type pcjs0)) in
+    let tyal0 =
+      setify (fun x y -> Pair.compare Type.compare Type.compare x y = Less)
+             (zip (map grab_type pcjs1) (map grab_type pcjs0)) in
     let tyal1 = map (fun (a,b) -> (b,a)) tyal0 in
     let tyins0 = map
      (fun f -> let domty,ranty = dest_fun_ty (type_of f) in
@@ -1395,9 +1397,9 @@ let define_type s =
       let defspec = parse_inductive_type_specification s in
       let newtypes = map fst defspec
       and constructors = itlist ((@) o map fst) (map snd defspec) [] in
-      if not(length(setify newtypes) = length newtypes)
+      if not(length(setify Type.(<) newtypes) = length newtypes)
       then failwith "define_type: multiple definitions of a type"
-      else if not(length(setify constructors) = length constructors)
+      else if not(length(setify String.(<) constructors) = length constructors)
       then failwith "define_type: multiple instances of a constructor"
       else if exists (can get_type_arity o dest_vartype) newtypes
       then let t = find (can get_type_arity) (map dest_vartype newtypes) in
