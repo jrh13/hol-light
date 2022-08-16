@@ -1,3 +1,27 @@
+                              CANDLE
+
+This repository contains the Candle theorem prover sources. The repository is a
+fork of John Harrison's HOL Light sources at this address:
+
+        https://github.com/jrh13/hol-light
+
+This repository differs from the original HOL Light repository in that some
+files have been patched to work with the Candle theorem prover. It also contains
+some custom ML source files required to run Candle (these carry the prefix
+candle_ in their filenames). The patches are stored under candle_patches/.
+
+Candle requires the CakeML compiler. At the time of writing, the latest release
+of the CakeML compiler is v1960, found here:
+
+       https://github.com/CakeML/cakeml/releases/tag/v1960
+
+The CakeML compiler assembly stubs need to be modified to work with Candle.
+Please see build.sh for instructions.
+
+<<<<<<<<<<<<<<<< Below is the original HOL Light README file: >>>>>>>>>>>>>>>>
+
+        *       *       *       *       *       *       *       *
+
                              HOL LIGHT
 
 HOL Light is an interactive theorem prover / proof checker. It is
