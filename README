@@ -1,4 +1,4 @@
-                              CANDLE
+                                  CANDLE
 
 This repository contains the Candle theorem prover sources. The repository is a
 fork of John Harrison's HOL Light sources at this address:
@@ -9,6 +9,8 @@ This repository differs from the original HOL Light repository in that some
 files have been patched to work with the Candle theorem prover. It also contains
 some custom ML source files required to run Candle (these carry the prefix
 candle_ in their filenames). The patches are stored under candle_patches/.
+
+                        REQUIREMENTS AND INSTALLATION
 
 Candle requires the CakeML compiler. At the time of writing, the latest release
 of the CakeML compiler is v1960, found here:
@@ -35,9 +37,31 @@ at your prompt. Then, load the HOL Light sources by writing:
 
 (without the > but otherwise verbatim) at the REPL.
 
-<<<<<<<<<<<<<<<< Below is the original HOL Light README file: >>>>>>>>>>>>>>>>
+                    COMPATIBILITY AND PORTING
 
-        *       *       *       *       *       *       *       *
+Candle supports much (but not all) of the HOL Light 'base' theories and scripts.
+See hol.ml for a list of the files that are loaded by Candle. Notable omissions
+are:
+
+- the help system
+- the theorem database
+- metis and compute
+
+Most proof scripts that contain tactic proofs will be accepted by Candle with no
+changes. However, because Candle runs on CakeML (not OCaml), there are some
+things that Candle does differently, notably:
+
+- CakeML does not support let-polymorphism.
+- There is no polymorphic comparison (Pervasives.compare). However, most types
+  can be compared for equality using the standard operator (=). Other uses
+  require changing your code to use type-specific comparison functions. See e.g.
+  setify in lib.ml.
+- Pointer equality does not work. There is a stub for (==) in Candle that always
+  evaluates to false.
+- Expression-level modules and functors are not supported, nor is the 'open'
+  declaration.
+
+<<<<<<<<<<<<<<<< Below is the original HOL Light README file: >>>>>>>>>>>>>>>>
 
                              HOL LIGHT
 
