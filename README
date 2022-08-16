@@ -16,7 +16,24 @@ of the CakeML compiler is v1960, found here:
        https://github.com/CakeML/cakeml/releases/tag/v1960
 
 The CakeML compiler assembly stubs need to be modified to work with Candle.
-Please see build.sh for instructions.
+Please see build.sh for instructions. You can also run
+
+  $ ./build.sh
+
+at your prompt, which will download the CakeML compiler using curl, and patch
+it. After this, you can run Candle by writing either:
+
+  $ ./cake --candle
+
+or:
+
+  $ ./candle
+
+at your prompt. Then, load the HOL Light sources by writing:
+
+  > #use "hol.ml";;
+
+(without the > but otherwise verbatim) at the REPL.
 
 <<<<<<<<<<<<<<<< Below is the original HOL Light README file: >>>>>>>>>>>>>>>>
 

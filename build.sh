@@ -18,6 +18,8 @@ cp cake-x64-64/cake cake-x64-64/config_enc_str.txt .
 
 # You can now run Candle by writing:
 #   $ ./cake --candle
+# or:
+#   $ ./candle
 # (without the $) at your prompt. Load the HOL Light sources by writing:
 #   > #use "hol.ml";;
 # (without > and with double semicolons) in the REPL.
