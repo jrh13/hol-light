@@ -16,6 +16,12 @@ let montgomery_xz = define
         X IN ring_carrier f /\ Z IN ring_carrier f /\
         ~(Z = ring_0 f) /\ ring_div f X Z = x)`;;
 
+let MONTGOMERY_XZ_IN_CARRIER = prove
+ (`!P X Z.
+        montgomery_xz f P (X,Z)
+        ==> X IN ring_carrier f /\ Z IN ring_carrier f`,
+  SIMP_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; montgomery_xz]);;
+
 (* ------------------------------------------------------------------------- *)
 (* However, doubling and *differential* addition are calculable.             *)
 (* ------------------------------------------------------------------------- *)
@@ -85,6 +91,48 @@ let MONTGOMERY_XZDIFFADD = prove
                    LET_DEF; LET_END_DEF; montgomery_xz]) THEN
   REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
   FIELD_TAC THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let MONTGOMERY_XZDOUBLE_GROUP = prove
+ (`!f (a:A) b p n q.
+        field f /\ ~(ring_char f = 2) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        montgomery_nonsingular(f,a,b) /\
+        p IN group_carrier (montgomery_group(f,a,b)) /\
+        montgomery_xz f (group_pow (montgomery_group(f,a,b)) p n) q
+        ==> montgomery_xz f (group_pow (montgomery_group(f,a,b)) p (2 * n))
+                            (montgomery_xzdouble(f,a,b) q)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[MULT_2; GROUP_POW_ADD] THEN
+  ASM_SIMP_TAC[MONTGOMERY_GROUP] THEN
+  MATCH_MP_TAC MONTGOMERY_XZDOUBLE THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MP_TAC o SPEC `n:num` o MATCH_MP GROUP_POW) THEN
+  ASM_SIMP_TAC[MONTGOMERY_GROUP] THEN REWRITE_TAC[IN]);;
+
+let MONTGOMERY_XZDIFFADD_GROUP = prove
+ (`!f (a:A) b p n q qm qn.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        montgomery_nonsingular(f,a,b) /\
+        ~(FST q = ring_0 f) /\ ~(SND q = ring_0 f) /\
+        p IN group_carrier (montgomery_group(f,a,b)) /\
+        montgomery_xz f p q /\
+        montgomery_xz f (group_pow (montgomery_group(f,a,b)) p (n + 1)) qm /\
+        montgomery_xz f (group_pow (montgomery_group(f,a,b)) p n) qn
+        ==> montgomery_xz f (group_pow (montgomery_group(f,a,b)) p (2 * n + 1))
+                            (montgomery_xzdiffadd(f,a,b) q qm qn)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ARITH_RULE `2 * n + 1 = SUC n + n`] THEN
+  ASM_SIMP_TAC[GROUP_POW_ADD] THEN
+  MP_TAC(SPECL [`f:A ring`; `a:A`; `b:A`] MONTGOMERY_GROUP) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o last o CONJUNCTS) THEN
+  MATCH_MP_TAC MONTGOMERY_XZDIFFADD THEN EXISTS_TAC `p:(A#A)option` THEN
+  ASM_REWRITE_TAC[ADD1] THEN
+  MP_TAC(SPECL [`f:A ring`; `a:A`; `b:A`] MONTGOMERY_GROUP) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(fun th -> REWRITE_TAC[GSYM th])THEN
+  ONCE_REWRITE_TAC[SET_RULE `group_carrier G x <=> x IN group_carrier G`] THEN
+  ONCE_REWRITE_TAC[ARITH_RULE `n + 1 = 1 + n`] THEN
+  ASM_SIMP_TAC[GROUP_POW; GROUP_POW_ADD; GROUP_POW_1] THEN
+  MATCH_MP_TAC(GROUP_RULE
+   `group_mul G (group_mul G x y) (group_inv G y) = x`) THEN
+  ASM_SIMP_TAC[GROUP_POW]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The y coordinate can be recovered from any nondegenerate addition (e.g.   *)

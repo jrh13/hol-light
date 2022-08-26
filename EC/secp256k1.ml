@@ -19,6 +19,9 @@ let p_256k1 = define `p_256k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 let n_256k1 = define `n_256k1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141`;;
 let G_256K1 = define `G_256K1 = SOME(&0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798:int,&0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8:int)`;;
 
+let secp256k1 = define
+ `secp256k1 = (integer_mod_ring p_256k1,&0:int,&7:int)`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Also parameters beta and lambda for an endomorphism.                      *)
 (* ------------------------------------------------------------------------- *)

@@ -22,6 +22,12 @@ let c_384 = new_definition `c_384 = 0x79d1e655f868f02fff48dcdee14151ddb80643c140
 let b_384 = new_definition `b_384 = 0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef`;;
 let G_384 = new_definition `G_384 = SOME(&0xaa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7:int,&0x3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f:int)`;;
 
+let nistp384 = define
+ `nistp384 =
+    (integer_mod_ring p_384,
+     ring_neg (integer_mod_ring p_384) (&3),
+     &b_384:int)`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Primality of the field characteristic and group order.                    *)
 (* ------------------------------------------------------------------------- *)

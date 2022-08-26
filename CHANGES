@@ -8,6 +8,73 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 23rd Aug 2022               EC/passim
+
+Added a few short names for the package of parameters defining some
+common elliptic curves:
+
+  curve25519 =
+    |- curve25519 = integer_mod_ring p_25519,&A_25519,&1
+
+  nistp256 =
+    |- nistp256 =
+       integer_mod_ring p_256,ring_neg (integer_mod_ring p_256) (&3),&b_256
+
+  nistp384 =
+    |- nistp384 =
+       integer_mod_ring p_384,ring_neg (integer_mod_ring p_384) (&3),&b_384
+
+  nistp521 =
+    |- nistp521 =
+       integer_mod_ring p_521,ring_neg (integer_mod_ring p_521) (&3),&b_521
+
+  secp256k1 =
+    |- secp256k1 =
+       integer_mod_ring p_256k1,&0,&7
+
+and a few additional Montgomery curve lemmas:
+
+  MONTGOMERY_NONSINGULAR_CURVE25519 =
+    |- montgomery_nonsingular curve25519
+
+  MONTGOMERY_STRONGLY_NONSINGULAR_CURVE25519 =
+    |- montgomery_strongly_nonsingular curve25519
+
+  MONTGOMERY_XZ_IN_CARRIER =
+    |- !P X Z.
+         montgomery_xz f P (X,Z)
+         ==> X IN ring_carrier f /\ Z IN ring_carrier f
+
+  MONTGOMERY_XZDOUBLE_GROUP =
+    |- !f a b p n q.
+         field f /\
+         ~(ring_char f = 2) /\
+         a IN ring_carrier f /\
+         b IN ring_carrier f /\
+         montgomery_nonsingular (f,a,b) /\
+         p IN group_carrier (montgomery_group (f,a,b)) /\
+         montgomery_xz f (group_pow (montgomery_group (f,a,b)) p n) q
+         ==> montgomery_xz f (group_pow (montgomery_group (f,a,b)) p (2 * n))
+             (montgomery_xzdouble (f,a,b) q)
+
+  MONTGOMERY_XZDIFFADD_GROUP =
+    |- !f a b p n q qm qn.
+         field f /\
+         ~(ring_char f = 2) /\
+         ~(ring_char f = 3) /\
+         a IN ring_carrier f /\
+         b IN ring_carrier f /\
+         montgomery_nonsingular (f,a,b) /\
+         ~(FST q = ring_0 f) /\
+         ~(SND q = ring_0 f) /\
+         p IN group_carrier (montgomery_group (f,a,b)) /\
+         montgomery_xz f p q /\
+         montgomery_xz f (group_pow (montgomery_group (f,a,b)) p (n + 1)) qm /\
+         montgomery_xz f (group_pow (montgomery_group (f,a,b)) p n) qn
+         ==> montgomery_xz f
+             (group_pow (montgomery_group (f,a,b)) p (2 * n + 1))
+             (montgomery_xzdiffadd (f,a,b) q qm qn)
+
 Mon  1st Aug 2022               Library/words.ml
 
 Added a straightforward variant of existing word lemmas:

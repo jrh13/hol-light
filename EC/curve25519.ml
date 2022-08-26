@@ -24,6 +24,9 @@ let B_25519 = define `B_25519 = 1`;;
 let C_25519 = define `C_25519 = SOME(&0x09:int,&0x20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9:int)`;;
 let CC_25519 = define `CC_25519 = SOME(&6911272784993971428141625084124731891523734454433518466500745240824540625972:int,&35197529511187359173101698576797651179158701633820552795916138355302448607023:int)`;;
 
+let curve25519 = define
+ `curve25519 = (integer_mod_ring p_25519,&A_25519:int,&1:int)`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Primality of the field characteristic and (sub)group order.               *)
 (* ------------------------------------------------------------------------- *)
@@ -62,6 +65,30 @@ let PRIME_N25519 = prove
    "19757330305831588566944191468367130476339";
    "276602624281642239937218680557139826668747";
    "7237005577332262213973186563042994240857116359379907606001950938285454250989"]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Strong nonsingularity.                                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let MONTGOMERY_STRONGLY_NONSINGULAR_CURVE25519 = prove
+ (`montgomery_strongly_nonsingular curve25519`,
+  REWRITE_TAC[montgomery_strongly_nonsingular; curve25519] THEN
+  REWRITE_TAC[A_25519; p_25519] THEN
+  CONV_TAC(DEPTH_CONV INTEGER_MOD_RING_RED_CONV) THEN
+  REWRITE_TAC[INTEGER_MOD_RING_ROOT_EXISTS] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  SIMP_TAC[EULER_CRITERION; REWRITE_RULE[p_25519] PRIME_P25519] THEN
+  CONV_TAC(DEPTH_CONV
+   (NUM_SUB_CONV ORELSEC NUM_DIV_CONV ORELSEC DIVIDES_CONV)) THEN
+  REWRITE_TAC[CONG] THEN CONV_TAC(ONCE_DEPTH_CONV EXP_MOD_CONV) THEN
+  CONV_TAC NUM_REDUCE_CONV);;
+
+let MONTGOMERY_NONSINGULAR_CURVE25519 = prove
+ (`montgomery_nonsingular curve25519`,
+  REWRITE_TAC[montgomery_nonsingular; curve25519; p_25519] THEN
+  REWRITE_TAC[A_25519; p_25519; IN_INTEGER_MOD_RING_CARRIER] THEN
+  CONV_TAC(DEPTH_CONV
+   (INTEGER_MOD_RING_RED_CONV ORELSEC INT_RED_CONV)));;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition of the curve group and proof of its key properties.            *)
