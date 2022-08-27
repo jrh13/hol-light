@@ -109,6 +109,12 @@ loads "cart.ml";;       (* Finite Cartesian products                         *)
 loads "define.ml";;     (* Support for general recursive definitions         *)
 
 (* ------------------------------------------------------------------------- *)
+(* In-logic computation function.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+loads "candle_compute.ml";; (* Definitions of cval primitives                *)
+
+(* ------------------------------------------------------------------------- *)
 (* The help system.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
