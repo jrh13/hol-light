@@ -146,6 +146,19 @@ let REAL_POS = prove
  (`!n. &0 <= &n`,
   REWRITE_TAC[REAL_OF_NUM_LE; LE_0]);;
 
+let REAL_LT_NZ = prove
+ (`!n. ~(&n = &0) <=> (&0 < &n)`,
+  GEN_TAC THEN REWRITE_TAC[REAL_LT_LE] THEN
+  CONV_TAC(RAND_CONV(ONCE_DEPTH_CONV SYM_CONV)) THEN
+  ASM_CASES_TAC `&n = &0` THEN
+  ASM_REWRITE_TAC[REAL_LE_REFL; REAL_POS]);;
+
+let REAL_POS_LT = prove
+ (`!n. &0 < &(SUC n)`,
+  GEN_TAC THEN REWRITE_TAC [SPEC `SUC n` (GSYM REAL_LT_NZ);
+                            REAL_OF_NUM_EQ] THEN
+  REWRITE_TAC[GSYM LT_NZ; LT_0]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Data structure for Positivstellensatz refutations.                        *)
 (* ------------------------------------------------------------------------- *)
@@ -449,18 +462,30 @@ let REAL_LINEAR_PROVER =
     match tm with
       Comb(Const("real_of_num",_),n) when not(is_numeral n) -> true
     | _ -> false in
+  let is_suc_alien tm =
+    match tm with
+      Comb(Const("real_of_num",_),Comb(Const("SUC",_),_)) -> true
+    | _ -> false in
+  let dest_suc_alien tm =
+    match tm with
+      Comb(Const("real_of_num",_),Comb(Const("SUC",_),n)) -> n
+    | _ -> failwith "" in
   let n_tm = `n:num` in
   let pth = REWRITE_RULE[GSYM real_ge] (SPEC n_tm REAL_POS) in
+  let pth_suc = REWRITE_RULE[GSYM real_gt] (SPEC n_tm REAL_POS_LT) in
   fun translator (eq,le,lt) ->
     let eq_pols = map (lin_of_hol o lhand o concl) eq
     and le_pols = map (lin_of_hol o lhand o concl) le
     and lt_pols = map (lin_of_hol o lhand o concl) lt in
-    let aliens =  filter is_alien
+    let all_aliens = filter is_alien
       (itlist (union o dom) (eq_pols @ le_pols @ lt_pols) []) in
+    let suc_aliens,aliens = partition is_suc_alien all_aliens in
     let le_pols' = le_pols @ map (fun v -> (v |=> Int 1)) aliens in
-    let _,proof = linear_prover(eq_pols,le_pols',lt_pols) in
+    let lt_pols' = lt_pols @ map (fun v -> (v |=> Int 1)) suc_aliens in
+    let _,proof = linear_prover(eq_pols,le_pols',lt_pols') in
     let le' = le @ map (fun a -> INST [rand a,n_tm] pth) aliens in
-    translator (eq,le',lt) proof;;
+    let lt' = lt @ map (fun a -> INST [dest_suc_alien a,n_tm] pth_suc) suc_aliens in
+    translator (eq,le',lt') proof;;
 
 (* ------------------------------------------------------------------------- *)
 (* Bootstrapping REAL_ARITH: trivial abs-elim and only integer constants.    *)
