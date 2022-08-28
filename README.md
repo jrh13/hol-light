@@ -28,25 +28,25 @@ candle_ in their filenames). The patches are stored under
 Candle requires the CakeML compiler. The latest release of the compiler can be
 found [here](https://github.com/CakeML/cakeml/releases).
 
-The CakeML compiler requires a x64_64 Linux machine with a C compiler and make.
+The CakeML compiler requires a x86_64 Linux machine with a C compiler and make.
 The CakeML compiler assembly stubs need to be modified to work with Candle.
 Please see [build-instructions.sh](build-instructions.sh) for instructions on
 how to do this. You can also run
 
-  > $ ./build-instructions.sh
+    $ ./build-instructions.sh
 
 from the shell, which will download the CakeML compiler using curl, and patch
 it. After this, you can run Candle by writing either:
 
-  > $ ./cake --candle
+    $ ./cake --candle
 
 or:
 
-  > $ ./candle
+    $ ./candle
 
 from the shell. Then, load the HOL Light sources by writing:
 
-  > #use "hol.ml";;
+    #use "hol.ml";;
 
 into the REPL.
 
