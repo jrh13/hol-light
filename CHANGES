@@ -8,6 +8,374 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 15th Sep 2022               EC/x25519.ml [new file]
+
+Added a definition of x25519, the curve25519 x-coordinate mapping that
+allows the y coordinate to live in an extension field, following
+Bernstein's original paper and RFC-7748. This development includes the
+auxiliary concept of a quadratic extension field, which is only used
+to construct the special case (Z/(2^255-19))[sqrt(2)]). There are
+two variants "purex25519" and "rfcx25519", with the latter adding the
+specific prenormalization from the RFC (considering the inputs as
+numbers).
+
+  curve25519x =
+    |- curve25519x f = f,ring_of_num f A_25519,ring_of_num f 1
+
+  curve25519x_curve25519 =
+    |- curve25519x (integer_mod_ring p_25519) = curve25519
+
+  curve25519x_group =
+    |- curve25519x_group f = montgomery_group (curve25519x f)
+
+  purex25519 =
+    |- !n q.
+           purex25519 (n,q) =
+           (@s. s < p_25519 /\
+                (!Q. Q IN group_carrier (curve25519x_group sqintmod_field) /\
+                     montgomery_xmap sqintmod_field Q =
+                     ring_of_num sqintmod_field q
+                     ==> montgomery_xmap sqintmod_field
+                         (group_pow (curve25519x_group sqintmod_field) Q n) =
+                         ring_of_num sqintmod_field s))
+
+  purex25519_def =
+    |- purex25519 (n,q) =
+       (if q MOD p_25519 = 0
+        then 0
+        else let X,Z = FST (x25519_ladder n (&q,&1)) in
+             let x = num_of_int (X rem &p_25519)
+             and z = num_of_int (Z rem &p_25519) in
+             if z = 0 then 0 else (x * inverse_mod p_25519 z) MOD p_25519)
+
+  quadratic_extension =
+    |- !a r.
+           quadratic_extension r a =
+           ring
+           (ring_carrier r CROSS ring_carrier r,
+            (ring_0 r,ring_0 r),
+            (ring_1 r,ring_0 r),
+            (\(x,y). ring_neg r x,ring_neg r y),
+            (\(x1,y1) (x2,y2). ring_add r x1 x2,ring_add r y1 y2),
+            (\(x1,y1) (x2,y2).
+                 ring_add r (ring_mul r x1 x2)
+                 (ring_mul r (ring_of_num r a) (ring_mul r y1 y2)),
+                 ring_add r (ring_mul r x1 y2) (ring_mul r x2 y1)))
+
+  rfcx25519 =
+    |- rfcx25519 (n,q) =
+       purex25519 (2 EXP 254 + n MOD 2 EXP 254 - n MOD 8,q MOD 2 EXP 255)
+
+  sqintmod_field =
+    |- sqintmod_field = quadratic_extension (integer_mod_ring p_25519) 2
+
+  x25519_ladder =
+    |- x25519_ladder n P =
+       (if n = 0
+        then (&1,&0),P
+        else x25519_ladderstep (n MOD 2 = 1) P (x25519_ladder (n DIV 2) P))
+
+  x25519_ladderstep =
+    |- x25519_ladderstep b P (P0,P1) =
+       (if b
+        then montgomery_xzdiffadd curve25519 P P1 P0,
+             montgomery_xzdouble curve25519 P1
+        else montgomery_xzdouble curve25519 P0,
+             montgomery_xzdiffadd curve25519 P P1 P0)
+
+  CURVE25519X_CURVE25519_GROUP =
+    |- curve25519x_group (integer_mod_ring p_25519) = curve25519_group
+
+  CURVE25519X_GROUP =
+    |- !f. field f /\ ring_char f = p_25519
+           ==> group_carrier (curve25519x_group f) =
+               montgomery_curve (curve25519x f) /\
+               group_id (curve25519x_group f) = NONE /\
+               group_inv (curve25519x_group f) = montgomery_neg (curve25519x f) /\
+               group_mul (curve25519x_group f) = montgomery_add (curve25519x f)
+
+  CURVE25519X_GROUP_GEN =
+    |- !f. field f /\ ~(ring_char f divides 14802493890)
+           ==> group_carrier (curve25519x_group f) =
+               montgomery_curve (curve25519x f) /\
+               group_id (curve25519x_group f) = NONE /\
+               group_inv (curve25519x_group f) = montgomery_neg (curve25519x f) /\
+               group_mul (curve25519x_group f) = montgomery_add (curve25519x f)
+
+  FIELD_QUADRATIC_EXTENSION =
+    |- !r a.
+           field r /\
+           (!d. d IN ring_carrier r ==> ~(ring_pow r d 2 = ring_of_num r a))
+           ==> field (quadratic_extension r a)
+
+  FIELD_SQINTMOD_FIELD =
+    |- field sqintmod_field
+
+  GROUP_POW_CURVE25519X_TORSION =
+    |- !f n.
+           field f /\ ring_char f = p_25519
+           ==> group_pow (curve25519x_group f) (SOME (ring_0 f,ring_0 f)) n =
+               (if EVEN n then NONE else SOME (ring_0 f,ring_0 f))
+
+  MONTGOMERY_NONSINGULAR_CURVE25519X =
+    |- !f. field f /\ ring_char f = p_25519
+           ==> montgomery_nonsingular (curve25519x f)
+
+  MONTGOMERY_NONSINGULAR_CURVE25519X_GEN =
+    |- !f. field f /\ ~(ring_char f divides 14802493890)
+           ==> montgomery_nonsingular (curve25519x f)
+
+  PUREX25519 =
+    |- !f n q Q.
+           field f /\
+           ring_char f = p_25519 /\
+           Q IN group_carrier (curve25519x_group f) /\
+           montgomery_xmap f Q = ring_of_num f q
+           ==> montgomery_xmap f (group_pow (curve25519x_group f) Q n) =
+               ring_of_num f (purex25519 (n,q))
+
+  PUREX25519_BOUND =
+    |- !n q. purex25519 (n,q) < p_25519
+
+  PUREX25519_LADDER =
+    |- !f x y n.
+           field f /\
+           ring_char f = p_25519 /\
+           SOME (ring_of_num f x,y) IN group_carrier (curve25519x_group f) /\
+           ~(ring_of_num f x = ring_0 f)
+           ==> (let (X,Z),X',Z' = x25519_ladder n (&x,&1) in
+                montgomery_xz f
+                (group_pow (curve25519x_group f) (SOME (ring_of_num f x,y)) n)
+                (ring_of_int f X,ring_of_int f Z) /\
+                montgomery_xz f
+                (group_pow (curve25519x_group f) (SOME (ring_of_num f x,y))
+                (n + 1))
+                (ring_of_int f X',ring_of_int f Z'))
+
+  PUREX25519_MOD =
+    |- !n q. purex25519 (n,q MOD p_25519) = purex25519 (n,q)
+
+  PUREX25519_UNIQUE =
+    |- !n q s.
+           purex25519 (n,q) = s <=>
+           s < p_25519 /\
+           (!Q. Q IN group_carrier (curve25519x_group sqintmod_field) /\
+                montgomery_xmap sqintmod_field Q = ring_of_num sqintmod_field q
+                ==> montgomery_xmap sqintmod_field
+                    (group_pow (curve25519x_group sqintmod_field) Q n) =
+                    ring_of_num sqintmod_field s)
+
+  PUREX25519_UNIQUE_IMP =
+    |- !n q s.
+           s < p_25519 /\
+           (!f Q.
+                field f /\
+                ring_char f = p_25519 /\
+                Q IN group_carrier (curve25519x_group f) /\
+                montgomery_xmap f Q = ring_of_num f q
+                ==> montgomery_xmap f (group_pow (curve25519x_group f) Q n) =
+                    ring_of_num f s)
+           ==> purex25519 (n,q) = s
+
+  QUADRATIC_EXTENSION =
+    |- (!r a.
+            ring_carrier (quadratic_extension r a) =
+            ring_carrier r CROSS ring_carrier r) /\
+       (!r a. ring_0 (quadratic_extension r a) = ring_0 r,ring_0 r) /\
+       (!r a. ring_1 (quadratic_extension r a) = ring_1 r,ring_0 r) /\
+       (!r a.
+            ring_neg (quadratic_extension r a) =
+            (\(x,y). ring_neg r x,ring_neg r y)) /\
+       (!r a.
+            ring_add (quadratic_extension r a) =
+            (\(x1,y1) (x2,y2). ring_add r x1 x2,ring_add r y1 y2)) /\
+       (!r a.
+            ring_mul (quadratic_extension r a) =
+            (\(x1,y1) (x2,y2).
+                 ring_add r (ring_mul r x1 x2)
+                 (ring_mul r (ring_of_num r a) (ring_mul r y1 y2)),
+                 ring_add r (ring_mul r x1 y2) (ring_mul r x2 y1)))
+
+  RFCX25519_PUREX25519 =
+    |- !n q.
+           n IN {2 EXP 254 + 8 * i | i < 2 EXP 251} /\ q < 2 EXP 255
+           ==> rfcx25519 (n,q) = purex25519 (n,q)
+
+  RING_CHAR_QUADRATIC_EXTENSION =
+    |- !r a. ring_char (quadratic_extension r a) = ring_char r
+
+  RING_CHAR_SQINTMOD_FIELD =
+    |- ring_char sqintmod_field = p_25519
+
+  RING_HOMOMORPHISM_INTO_QUADRATIC_EXTENSION =
+    |- !r a. ring_homomorphism (r,quadratic_extension r a) (\x. x,ring_0 r)
+
+  RING_MONOMORPHISM_INTO_QUADRATIC_EXTENSION =
+    |- !r a. ring_monomorphism (r,quadratic_extension r a) (\x. x,ring_0 r)
+
+  RING_OF_INT_QUADRATIC_EXTENSION =
+    |- !r a n.
+           ring_of_int (quadratic_extension r a) n = ring_of_int r n,ring_0 r
+
+  RING_OF_NUM_QUADRATIC_EXTENSION =
+    |- !r a n.
+           ring_of_num (quadratic_extension r a) n = ring_of_num r n,ring_0 r
+
+  SPECIALLY_NONSINGULAR_CURVE25519X =
+    |- !f X y.
+           field f /\
+           ring_char f = p_25519 /\
+           montgomery_curve (curve25519x f) (SOME (ring_of_num f X,y))
+           ==> (y = ring_0 f <=> ring_of_num f X = ring_0 f)
+
+  SQUARE_ROOTS_SQINTMOD_FIELD =
+    |- !n. ?x. x IN ring_carrier sqintmod_field /\
+               ring_pow sqintmod_field x 2 = ring_of_num sqintmod_field n
+
+Thu 15th Sep 2022               EC/montgomery.ml, EC/xzprojective.ml
+
+Added a definition of the X coordinate mapping for Montgomery curves
+(with zero default for the point at infinity) as used in the definition
+of curve25519-related functions, and a few lemmas, mainly about that.
+
+  montgomery_xmap
+    |- montgomery_xmap f NONE = ring_0 f /\ montgomery_xmap f (SOME (x,y)) = x
+
+  GROUP_POW_MONTGOMERY_TORSION =
+    |- !f a b P n.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           b IN ring_carrier f /\
+           montgomery_nonsingular (f,a,b)
+           ==> group_pow (montgomery_group (f,a,b)) (SOME (ring_0 f,ring_0 f))
+               n =
+               (if EVEN n then NONE else SOME (ring_0 f,ring_0 f))
+
+  MONTGOMERY_XMAP_EQ_0
+    |- !f a b P.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           b IN ring_carrier f /\
+           montgomery_nonsingular (f,a,b) /\
+           P IN group_carrier (montgomery_group (f,a,b))
+           ==> (montgomery_xmap f P = ring_0 f <=>
+                P = NONE \/ P = SOME (ring_0 f,ring_0 f))
+
+  MONTGOMERY_XMAP_EQ_0_POW
+    |- !f a b P n.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           b IN ring_carrier f /\
+           montgomery_nonsingular (f,a,b) /\
+           P IN group_carrier (montgomery_group (f,a,b)) /\
+           montgomery_xmap f P = ring_0 f
+           ==> montgomery_xmap f (group_pow (montgomery_group (f,a,b)) P n) =
+               ring_0 f
+
+  MONTGOMERY_XZ_XMAP
+    |- !f P X.
+           field f /\ X IN ring_carrier f /\ ~(X = ring_0 f)
+           ==> (montgomery_xz f P (X,ring_1 f) <=> montgomery_xmap f P = X)
+
+Tue 13th Sep 2022               Library/ringtheory.ml
+
+Added a miscellany of straightforward ring theory lemmas:
+
+  FIELD_NONTRIVIAL =
+   |- !f. field f ==> ~(ring_1 f = ring_0 f)
+
+  INTEGRAL_DOMAIN_NONTRIVIAL =
+   |- !r. integral_domain r ==> ~(ring_1 r = ring_0 r)
+
+  RING_CHAR_HOMOMORPHIC_IMAGE =
+    |- !r r' f. ring_homomorphism (r,r') f ==> ring_char r' divides ring_char r
+
+  RING_HOMOMORPHISM_FROM_INTEGER_MOD_RING =
+    |- !r p.
+           (?f. ring_homomorphism (integer_mod_ring p,r) f) <=>
+           ring_char r divides p
+
+  RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT =
+    |- !r p.
+           ring_homomorphism (integer_mod_ring p,r) (ring_of_int r) <=>
+           ring_char r divides p
+
+  RING_MONOMORPHISM_FROM_INTEGER_MOD_RING =
+    |- !r p.
+           (?f. ring_monomorphism (integer_mod_ring p,r) f) <=> ring_char r = p
+
+  RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT =
+    |- !r p.
+           ring_monomorphism (integer_mod_ring p,r) (ring_of_int r) <=>
+           ring_char r = p
+
+  RING_OF_INT_CLAUSES =
+    |- (!r. ring_0 r = ring_of_int r (&0)) /\
+       (!r. ring_1 r = ring_of_int r (&1)) /\
+       (!r n. ring_neg r (ring_of_int r n) = ring_of_int r (--n)) /\
+       (!r m n.
+            ring_add r (ring_of_int r m) (ring_of_int r n) =
+            ring_of_int r (m + n)) /\
+       (!r m n.
+            ring_sub r (ring_of_int r m) (ring_of_int r n) =
+            ring_of_int r (m - n)) /\
+       (!r m n.
+            ring_mul r (ring_of_int r m) (ring_of_int r n) =
+            ring_of_int r (m * n)) /\
+       (!r m n. ring_pow r (ring_of_int r m) n = ring_of_int r (m pow n))
+
+  RING_OF_INT_REM =
+    |- !f n. ring_of_int f (n rem &(ring_char f)) = ring_of_int f n
+
+  RING_OF_NUM_CHAR =
+   |- !r. ring_of_num r (ring_char r) = ring_0 r
+
+  RING_OF_NUM_CLAUSES =
+    |- (!r. ring_0 r = ring_of_num r 0) /\
+       (!r. ring_1 r = ring_of_num r 1) /\
+       (!r m n.
+            ring_add r (ring_of_num r m) (ring_of_num r n) =
+            ring_of_num r (m + n)) /\
+       (!r m n.
+            ring_mul r (ring_of_num r m) (ring_of_num r n) =
+            ring_of_num r (m * n)) /\
+       (!r m n. ring_pow r (ring_of_num r m) n = ring_of_num r (m EXP n))
+
+  RING_OF_NUM_MOD =
+   |- !f n. ring_of_num f (n MOD ring_char f) = ring_of_num f n
+
+as well as renaming the old RING_OF_INT_CLAUSES -> RING_OF_INT_CASES,
+with the above theorem taking the name RING_OF_INT_CLAUSES.
+
+Mon 12th Sep 2022               ind_types.ml
+
+Added a natural dual to FORALL_OPTION_THM:
+
+  EXISTS_OPTION_THM =
+    |- !P. (?x. P x) <=> P NONE \/ ?a. P(SOME a)
+
+Wed  7th Sep 2022               Library/ringtheory.ml
+
+Fixed a trivial bug in RING_TAC that could make it fail on trivial
+goals having no domain variables, e.g.
+
+  prove(`ring_0 r = ring_add r (ring_0 r) (ring_0 r)`,RING_TAC);;
+
+Fri 26th Aug 2022               realarith.ml
+
+Added an improvement from Chun Tian to REAL_LINEAR_PROVER, making
+it automatically recognize strict positivity of "successor" terms
+cast to reals, of the form `&(SUC n)`.
+
+  REAL_LT_NZ =
+    |- !n. ~(&n = &0) <=> (&0 < &n)
+
+  REAL_POS_LT =
+    |- !n. &0 < &(SUC n)
+
 Tue 23rd Aug 2022               EC/passim
 
 Added a few short names for the package of parameters defining some

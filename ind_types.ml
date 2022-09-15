@@ -890,6 +890,11 @@ let FORALL_OPTION_THM = prove
  (`!P. (!x. P x) <=> P NONE /\ !a. P(SOME a)`,
   GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[option_INDUCT] THEN SIMP_TAC[]);;
 
+let EXISTS_OPTION_THM = prove
+ (`!P:A option->bool. (?x. P x) <=> P NONE \/ ?a. P(SOME a)`,
+  GEN_TAC THEN REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[FORALL_OPTION_THM] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Tools for proving injectivity and distinctness of constructors.           *)
 (* ------------------------------------------------------------------------- *)

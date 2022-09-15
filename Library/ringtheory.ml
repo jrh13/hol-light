@@ -535,7 +535,7 @@ let RING_OF_INT_1 = prove
  (`!r:A ring. ring_of_int r (&1) = ring_1 r`,
   REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_1]);;
 
-let RING_OF_INT_CLAUSES = prove
+let RING_OF_INT_CASES = prove
  (`(!(r:A ring) n. ring_of_int r (&n) = ring_of_num r n) /\
    (!(r:A ring) n. ring_of_int r (-- &n) = ring_neg r (ring_of_num r n))`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[RING_OF_INT_OF_NUM] THEN
@@ -545,7 +545,7 @@ let RING_OF_INT_CLAUSES = prove
 
 let RING_OF_INT_NEG = prove
  (`!(r:A ring) n. ring_of_int r (--n) = ring_neg r (ring_of_int r n)`,
-  SIMP_TAC[FORALL_INT_CASES; RING_OF_INT_CLAUSES; INT_NEG_NEG;
+  SIMP_TAC[FORALL_INT_CASES; RING_OF_INT_CASES; INT_NEG_NEG;
            RING_NEG_NEG; RING_OF_NUM]);;
 
 let RING_OF_INT_ADD = prove
@@ -556,7 +556,7 @@ let RING_OF_INT_ADD = prove
         m + n = p ==>
       ring_of_int r p = ring_add r (ring_of_int r m) (ring_of_int r n)`
    (fun th -> MESON_TAC[th]) THEN
-  GEN_TAC THEN REWRITE_TAC[FORALL_INT_CASES; RING_OF_INT_CLAUSES] THEN
+  GEN_TAC THEN REWRITE_TAC[FORALL_INT_CASES; RING_OF_INT_CASES] THEN
   ONCE_REWRITE_TAC[INT_ARITH `--b + a:int = a + --b`] THEN
   REWRITE_TAC[GSYM INT_NEG_ADD; INT_NEG_EQ; INT_NEG_NEG] THEN
   REWRITE_TAC[INT_ARITH
@@ -587,7 +587,7 @@ let RING_OF_INT_MUL = prove
  (`!(r:A ring) m n.
       ring_of_int r (m * n) = ring_mul r (ring_of_int r m) (ring_of_int r n)`,
   REWRITE_TAC[FORALL_INT_CASES; INT_MUL_LNEG; INT_MUL_RNEG; INT_NEG_NEG] THEN
-  REWRITE_TAC[RING_OF_INT_CLAUSES; INT_OF_NUM_MUL; RING_OF_NUM_MUL] THEN
+  REWRITE_TAC[RING_OF_INT_CASES; INT_OF_NUM_MUL; RING_OF_NUM_MUL] THEN
   SIMP_TAC[RING_MUL_LNEG; RING_MUL_RNEG; RING_OF_NUM; RING_NEG;
            RING_NEG_NEG; RING_MUL]);;
 
@@ -635,7 +635,7 @@ let RING_CHAR_EQ_1 = prove
 let RING_OF_INT_EQ_0 = prove
  (`!(r:A ring) n.
         ring_of_int r n = ring_0 r <=> &(ring_char r) divides n`,
-  REWRITE_TAC[FORALL_INT_CASES; RING_OF_INT_CLAUSES] THEN
+  REWRITE_TAC[FORALL_INT_CASES; RING_OF_INT_CASES] THEN
   SIMP_TAC[RING_NEG_EQ_0; RING_OF_NUM; RING_OF_NUM_EQ_0] THEN
   REWRITE_TAC[num_divides] THEN REPEAT STRIP_TAC THEN
   CONV_TAC INTEGER_RULE);;
@@ -653,6 +653,20 @@ let RING_OF_NUM_EQ = prove
  (`!(r:A ring) m n.
         ring_of_num r m = ring_of_num r n <=> (m == n) (mod (ring_char r))`,
   REWRITE_TAC[GSYM RING_OF_INT_OF_NUM; RING_OF_INT_EQ; num_congruent]);;
+
+let RING_OF_INT_REM = prove
+ (`!(f:A ring) n. ring_of_int f (n rem &(ring_char f)) = ring_of_int f n`,
+  REWRITE_TAC[RING_OF_INT_EQ; GSYM INT_REM_EQ] THEN
+  CONV_TAC(ONCE_DEPTH_CONV INT_REM_DOWN_CONV) THEN REWRITE_TAC[]);;
+
+let RING_OF_NUM_MOD = prove
+ (`!(f:A ring) n. ring_of_num f (n MOD ring_char f) = ring_of_num f n`,
+  REWRITE_TAC[RING_OF_NUM_EQ; CONG] THEN
+  CONV_TAC(ONCE_DEPTH_CONV MOD_DOWN_CONV) THEN REWRITE_TAC[]);;
+
+let RING_OF_NUM_CHAR = prove
+ (`!r:A ring. ring_of_num r (ring_char r) = ring_0 r`,
+  REWRITE_TAC[RING_OF_NUM_EQ_0; DIVIDES_REFL]);;
 
 let RING_CHAR_INFINITE = prove
  (`!r:A ring. ring_char r = 0 ==> INFINITE(ring_carrier r)`,
@@ -783,6 +797,38 @@ let RING_POW_IDEMPOTENT = prove
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   INDUCT_TAC THEN ASM_REWRITE_TAC[ring_pow; NOT_SUC] THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC[RING_MUL_RID]);;
+
+let RING_OF_NUM_CLAUSES = prove
+ (`(!(r:A ring).
+     ring_0 r = ring_of_num r 0) /\
+   (!(r:A ring).
+     ring_1 r = ring_of_num r 1) /\
+   (!(r:A ring) m n.
+     ring_add r (ring_of_num r m) (ring_of_num r n) = ring_of_num r (m + n)) /\
+   (!(r:A ring) m n.
+     ring_mul r (ring_of_num r m) (ring_of_num r n) = ring_of_num r (m * n)) /\
+   (!(r:A ring) m n.
+     ring_pow r (ring_of_num r m) n = ring_of_num r (m EXP n))`,
+  REWRITE_TAC[RING_OF_NUM_0; RING_OF_NUM_1; RING_OF_NUM_ADD;
+              RING_OF_NUM_MUL; RING_OF_NUM_EXP]);;
+
+let RING_OF_INT_CLAUSES = prove
+ (`(!(r:A ring).
+     ring_0 r = ring_of_int r (&0)) /\
+   (!(r:A ring).
+     ring_1 r = ring_of_int r (&1)) /\
+   (!(r:A ring) n.
+     ring_neg r (ring_of_int r n) = ring_of_int r (--n)) /\
+   (!(r:A ring) m n.
+     ring_add r (ring_of_int r m) (ring_of_int r n) = ring_of_int r (m + n)) /\
+   (!(r:A ring) m n.
+     ring_sub r (ring_of_int r m) (ring_of_int r n) = ring_of_int r (m - n)) /\
+   (!(r:A ring) m n.
+     ring_mul r (ring_of_int r m) (ring_of_int r n) = ring_of_int r (m * n)) /\
+   (!(r:A ring) m n.
+     ring_pow r (ring_of_int r m) n = ring_of_int r (m pow n))`,
+  REWRITE_TAC[RING_OF_INT_0; RING_OF_INT_1; RING_OF_INT_NEG; RING_OF_INT_ADD;
+              RING_OF_INT_SUB; RING_OF_INT_MUL; RING_OF_INT_POW]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Sum in a ring. The instantiation required is a little ugly since all      *)
@@ -3999,6 +4045,14 @@ let FIELD_IMP_NONTRIVIAL_RING = prove
  (`!r:A ring. field r ==> ~(trivial_ring r)`,
   SIMP_TAC[field; TRIVIAL_RING_10]);;
 
+let INTEGRAL_DOMAIN_NONTRIVIAL = prove
+ (`!r:A ring. integral_domain r ==> ~(ring_1 r = ring_0 r)`,
+  SIMP_TAC[integral_domain]);;
+
+let FIELD_NONTRIVIAL = prove
+ (`!f:A ring. field f ==> ~(ring_1 f = ring_0 f)`,
+  SIMP_TAC[field]);;
+
 let INTEGRAL_DOMAIN_EQ_NO_ZERODIVISORS = prove
  (`!r:A ring.
         integral_domain r <=>
@@ -4859,11 +4913,18 @@ let RING_HOMOMORPHISM_RING_OF_INT = prove
         ring_homomorphism(r,r') f
         ==> !n. f(ring_of_int r n) = ring_of_int r' n`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN
-  REWRITE_TAC[FORALL_INT_CASES; RING_OF_INT_CLAUSES] THEN
+  REWRITE_TAC[FORALL_INT_CASES; RING_OF_INT_CASES] THEN
   FIRST_ASSUM(fun th -> ASM_SIMP_TAC
    [RING_NEG; RING_OF_NUM; MATCH_MP RING_HOMOMORPHISM_NEG th]) THEN
   FIRST_ASSUM(fun th ->
    ASM_SIMP_TAC[MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM th]));;
+
+let RING_CHAR_HOMOMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_homomorphism(r,r') f ==> ring_char r' divides ring_char r`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM RING_OF_NUM_EQ_0] THEN
+  ASM_MESON_TAC[RING_HOMOMORPHISM_RING_OF_NUM; RING_OF_NUM_CHAR;
+                ring_homomorphism]);;
 
 let RING_HOMOMORPHISM_SUM = prove
  (`!r r' (f:A->B).
@@ -7628,7 +7689,7 @@ let RING_TAC =
   W(fun (asl,w) ->
         let th = RING_RULE w in
         (MATCH_ACCEPT_TAC th ORELSE
-         (MATCH_MP_TAC th THEN ASM_REWRITE_TAC[])));;
+         ((fun g -> MATCH_MP_TAC th g) THEN ASM_REWRITE_TAC[])));;
 
 (* ------------------------------------------------------------------------- *)
 (* Cosets in a ring.                                                         *)
@@ -13812,7 +13873,7 @@ let INTEGER_RING_OF_NUM = prove
 let INTEGER_RING_OF_INT = prove
  (`ring_of_int integer_ring = I`,
   REWRITE_TAC[FUN_EQ_THM; I_THM] THEN
-  REWRITE_TAC[RING_OF_INT_CLAUSES; FORALL_INT_CASES] THEN
+  REWRITE_TAC[RING_OF_INT_CASES; FORALL_INT_CASES] THEN
   REWRITE_TAC[INTEGER_RING_OF_NUM; INTEGER_RING]);;
 
 let INTEGER_RING_CHAR = prove
@@ -13939,7 +14000,7 @@ let INTEGER_MOD_RING_OF_NUM = prove
 
 let INTEGER_MOD_RING_OF_INT = prove
  (`!n x. ring_of_int (integer_mod_ring n) x = x rem &n`,
-  REWRITE_TAC[RING_OF_INT_CLAUSES; FORALL_INT_CASES] THEN
+  REWRITE_TAC[RING_OF_INT_CASES; FORALL_INT_CASES] THEN
   REWRITE_TAC[INTEGER_MOD_RING_OF_NUM; INTEGER_MOD_RING; INT_NEG_REM]);;
 
 let INTEGER_MOD_RING_CLAUSES = prove
@@ -14083,6 +14144,58 @@ let INTEGRAL_DOMAIN_INTEGER_MOD_RING = prove
     ASM_SIMP_TAC[FINITE_INTEGRAL_DOMAIN_EQ_FIELD;
                  FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING]]);;
 
+let RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT = prove
+ (`!(r:A ring) p.
+        ring_homomorphism (integer_mod_ring p,r) (ring_of_int r) <=>
+        ring_char r divides p`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[RING_CHAR_HOMOMORPHIC_IMAGE; INTEGER_MOD_RING_CHAR];
+    DISCH_TAC] THEN
+  REWRITE_TAC[RING_HOMOMORPHISM; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[GSYM RING_OF_INT_ADD; GSYM RING_OF_INT_MUL] THEN
+  REWRITE_TAC[GSYM RING_OF_INT_1; RING_OF_INT] THEN
+  REWRITE_TAC[RING_OF_INT_EQ] THEN
+  REWRITE_TAC[INTEGER_MOD_RING; INTEGER_MOD_RING_OF_INT] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(INTEGER_RULE
+   `!p:int. q divides p /\ (x == y) (mod p) ==> (x == y) (mod q)`) THEN
+  EXISTS_TAC `&p:int` THEN ASM_REWRITE_TAC[GSYM num_divides] THEN
+  REWRITE_TAC[INT_CONG_LREM; INTEGER_RULE `(x:int == x) (mod p)`]);;
+
+let RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT = prove
+ (`!(r:A ring) p.
+        ring_monomorphism (integer_mod_ring p,r) (ring_of_int r) <=>
+        ring_char r = p`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[RING_CHAR_MONOMORPHIC_IMAGE; INTEGER_MOD_RING_CHAR];
+    DISCH_TAC] THEN
+  REWRITE_TAC[RING_MONOMORPHISM_ALT] THEN
+  ASM_REWRITE_TAC[RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT] THEN
+  ASM_REWRITE_TAC[DIVIDES_REFL; RING_OF_INT_EQ_0; INTEGER_MOD_RING] THEN
+  ASM_CASES_TAC `p = 0` THEN
+  ASM_SIMP_TAC[INTEGER_MOD_RING; LE_1; INTEGER_RULE
+    `&0 divides x <=> x:int = &0`] THEN
+  REWRITE_TAC[IN_ELIM_THM; IMP_CONJ; GSYM INT_FORALL_POS] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; GSYM num_divides] THEN
+  MESON_TAC[DIVIDES_LE; NOT_LE]);;
+
+let RING_HOMOMORPHISM_FROM_INTEGER_MOD_RING = prove
+ (`!(r:A ring) p.
+        (?f. ring_homomorphism(integer_mod_ring p,r) f) <=>
+        ring_char r divides p`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[RING_CHAR_HOMOMORPHIC_IMAGE; INTEGER_MOD_RING_CHAR];
+    DISCH_TAC THEN EXISTS_TAC `ring_of_int (r:A ring)` THEN
+    ASM_REWRITE_TAC[RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT]]);;
+
+let RING_MONOMORPHISM_FROM_INTEGER_MOD_RING = prove
+ (`!(r:A ring) p.
+        (?f. ring_monomorphism(integer_mod_ring p,r) f) <=>
+        ring_char r = p`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[RING_CHAR_MONOMORPHIC_IMAGE; INTEGER_MOD_RING_CHAR];
+    DISCH_TAC THEN EXISTS_TAC `ring_of_int (r:A ring)` THEN
+    ASM_REWRITE_TAC[RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Conversion for explicit calculation over integer_mod_ring n (nonzero n)   *)
 (* ------------------------------------------------------------------------- *)
@@ -14204,7 +14317,7 @@ let REAL_RING_OF_NUM = prove
 let REAL_RING_OF_INT = prove
  (`ring_of_int real_ring = real_of_int`,
   REWRITE_TAC[FUN_EQ_THM; I_THM] THEN
-  REWRITE_TAC[RING_OF_INT_CLAUSES; FORALL_INT_CASES] THEN
+  REWRITE_TAC[RING_OF_INT_CASES; FORALL_INT_CASES] THEN
   REWRITE_TAC[int_neg_th; int_of_num_th; REAL_RING_OF_NUM] THEN
   REWRITE_TAC[REAL_RING_CLAUSES]);;
 

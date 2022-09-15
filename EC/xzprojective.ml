@@ -135,6 +135,62 @@ let MONTGOMERY_XZDIFFADD_GROUP = prove
   ASM_SIMP_TAC[GROUP_POW]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A functional X coordinate mapping as used in the x25519 functions.        *)
+(* ------------------------------------------------------------------------- *)
+
+let montgomery_xmap = define
+ `montgomery_xmap (f:A ring) NONE = ring_0 f /\
+  montgomery_xmap f (SOME(x:A,y:A)) = x`;;
+
+let MONTGOMERY_XZ_XMAP = prove
+ (`!(f:A ring) P X.
+        field f /\ X IN ring_carrier f /\ ~(X = ring_0 f)
+        ==> (montgomery_xz f P (X,ring_1 f) <=> montgomery_xmap f P = X)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  SIMP_TAC[montgomery_xz; montgomery_xmap; FIELD_NONTRIVIAL; RING_1] THEN
+  SIMP_TAC[ring_div; RING_INV_1; RING_MUL_RID] THEN MESON_TAC[]);;
+
+let MONTGOMERY_XMAP_EQ_0 = prove
+ (`!(f:A ring) a b P.
+      field f /\ ~(ring_char f = 2) /\
+      a IN ring_carrier f /\ b IN ring_carrier f /\
+      montgomery_nonsingular (f,a,b) /\
+      P IN group_carrier(montgomery_group(f,a,b))
+      ==> (montgomery_xmap f P = ring_0 f <=>
+           P = NONE \/ P = SOME(ring_0 f,ring_0 f))`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; montgomery_xmap] THEN
+  REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
+  SIMP_TAC[IMP_CONJ; MONTGOMERY_GROUP] THEN
+  MAP_EVERY X_GEN_TAC [`f:A ring`; `a:A`; `b:A`; `x:A`; `y:A`] THEN
+  REPLICATE_TAC 5 DISCH_TAC THEN REWRITE_TAC[IN] THEN
+  ASM_CASES_TAC `x:A = ring_0 f` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[montgomery_curve] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  FIRST_X_ASSUM(MP_TAC o CONJUNCT1 o GEN_REWRITE_RULE I
+    [montgomery_nonsingular]) THEN
+  ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(K ALL_TAC o check (is_neg o concl)) THEN FIELD_TAC);;
+
+let MONTGOMERY_XMAP_EQ_0_POW = prove
+ (`!(f:A ring) a b P n.
+        field f /\ ~(ring_char f = 2) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        montgomery_nonsingular (f,a,b) /\
+        P IN group_carrier(montgomery_group(f,a,b)) /\
+        montgomery_xmap f P = ring_0 f
+        ==> montgomery_xmap f (group_pow (montgomery_group(f,a,b)) P n) =
+            ring_0 f`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MP_TAC(ISPECL [`f:A ring`; `a:A`; `b:A`] MONTGOMERY_XMAP_EQ_0) THEN
+  ASM_SIMP_TAC[GROUP_POW] THEN DISCH_THEN(K ALL_TAC) THEN
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[GROUP_POW_MONTGOMERY_TORSION] THENL
+   [DISJ1_TAC; MESON_TAC[]] THEN
+  W(MP_TAC o PART_MATCH (rator o rator o lhand) GROUP_POW_ID o
+    rator o rator o lhand o snd) THEN
+  ASM_SIMP_TAC[MONTGOMERY_GROUP]);;
+
+(* ------------------------------------------------------------------------- *)
 (* The y coordinate can be recovered from any nondegenerate addition (e.g.   *)
 (* differential) where we know the y coordinate of one of the addends. This  *)
 (* formula is from Okeya and Sakurai's paper in CHES 2001 (LNCS 2162, p129). *)
