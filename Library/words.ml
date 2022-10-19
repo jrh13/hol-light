@@ -4737,6 +4737,37 @@ let WORD_CLZ_MONO = prove
   REWRITE_TAC[WORD_LE_CLZ_VAL] THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Byte reversal, with type constrained to multiple of 8.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let word_bytereverse = new_definition
+ `(word_bytereverse
+    :((((N)tybit0)tybit0)tybit0)word->((((N)tybit0)tybit0)tybit0)word) x =
+  word_of_bits { i | i < 8 * dimindex(:N) /\
+                     bit (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8) x}`;;
+
+let BIT_WORD_BYTEREVERSE = prove
+ (`!(x:((((N)tybit0)tybit0)tybit0)word) i.
+        bit i (word_bytereverse x) <=>
+        i < 8 * dimindex(:N) /\
+        bit (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8) x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[word_bytereverse; BIT_WORD_OF_BITS] THEN
+  REWRITE_TAC[DIMINDEX_TYBIT0; ARITH_RULE `2 * 2 * 2 * n = 8 * n`] THEN
+  SET_TAC[]);;
+
+let WORD_BYTEREVERSE_BYTEREVERSE = prove
+ (`!(x:((((N)tybit0)tybit0)tybit0)word).
+        word_bytereverse(word_bytereverse x) = x`,
+  ONCE_REWRITE_TAC[WORD_EQ_BITS_ALT] THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[BIT_WORD_BYTEREVERSE] THEN
+  REWRITE_TAC[DIMINDEX_TYBIT0; ARITH_RULE `2 * 2 * 2 * n = 8 * n`] THEN
+  DISCH_TAC THEN ASM_SIMP_TAC[ARITH_RULE
+   `i < 8 * n ==> 8 * (n - 1 - i DIV 8) + i MOD 8 < 8 * n`] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  SIMP_TAC[MOD_MULT_ADD; MOD_MOD_REFL; DIV_MULT_ADD; ARITH_EQ] THEN
+  SIMP_TAC[DIV_LT; MOD_LT_EQ; ARITH_EQ] THEN ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* Alignment. The definition rolls in the assumption that the value is a     *)
 (* power of 2 no more than the wordsize, which seems intuitively natural.    *)
 (* ------------------------------------------------------------------------- *)
@@ -5298,6 +5329,13 @@ let BIT_WORD_CONV =
           ((conv_and_t THENC
              LAND_CONV NUM_ADD_CONV) ORELSEC
             conv_and_f)) tm
+
+    | Comb(Comb(Const("bit",_),n),Comb(Const("word_bytereverse",_),_))
+      when is_numeral n ->
+       (GEN_REWRITE_CONV I [BIT_WORD_BYTEREVERSE] THENC
+        BINOP2_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))
+         (LAND_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))) THENC
+        (conv_and_t ORELSEC conv_and_f)) tm
     | _ -> failwith "BIT_WORD_CONV";;
 
 (* ------------------------------------------------------------------------- *)
@@ -6243,6 +6281,29 @@ let WORD_CLZ_CONV =
           MP th5 (EQT_ELIM(NUM_REDUCE_CONV(lhand(concl th5))))
   | _ -> failwith "WORD_CLZ_CONV";;
 
+let WORD_BYTEREVERSE_CONV =
+  let pth = prove
+   (`!n. word_bytereverse(word (NUMERAL n):((((N)tybit0)tybit0)tybit0)word) =
+         word(nsum (0..8*dimindex(:N)-1)
+               (\i. 2 EXP i *
+                    bitval(ODD(NUMERAL n DIV
+                        2 EXP (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8)))))`,
+    GEN_TAC THEN GEN_REWRITE_TAC I [WORD_EQ_BITS_ALT] THEN
+    REWRITE_TAC[BIT_WORD_BYTEREVERSE; BIT_WORD] THEN
+    REWRITE_TAC[DIMINDEX_TYBIT0; ARITH_RULE `2 * 2 * 2 * n = 8 * n`] THEN
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(TAUT `p /\ (q <=> q') ==> (p /\ q <=> q')`) THEN
+    CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    GEN_REWRITE_TAC RAND_CONV [ODD_MOD] THEN
+    SIMP_TAC[DIGITSUM_DIV_MOD; FINITE_NUMSEG; BITVAL_BOUND_ALT] THEN
+    ASM_SIMP_TAC[IN_NUMSEG; LE_0; ARITH_RULE `i < n ==> i <= n - 1`] THEN
+    REWRITE_TAC[BITVAL_EQ_1]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  DEPTH_CONV
+   ((!word_SIZE_CONV) ORELSEC NUM_MULT_CONV ORELSEC NUM_SUB_CONV) THENC
+  RAND_CONV EXPAND_NSUM_CONV THENC
+  DEPTH_CONV(GEN_REWRITE_CONV I [BITVAL_CLAUSES] ORELSEC NUM_RED_CONV);;
+
 let WORD_JSHL_CONV =
   let pth = prove
    (`word_jshl (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
@@ -6367,6 +6428,8 @@ let WORD_RED_CONV =
     `word_oddparity (word(NUMERAL n):N word)`,WORD_ODDPARITY_CONV;
     `word_ctz (word(NUMERAL n):N word)`,WORD_CTZ_CONV;
     `word_clz (word(NUMERAL n):N word)`,WORD_CLZ_CONV;
+    `word_bytereverse (word(NUMERAL n):((((N)tybit0)tybit0)tybit0)word)`,
+                WORD_BYTEREVERSE_CONV;
     `word_jshl (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHL_CONV;
     `word_jshr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHR_CONV;
     `word_jushr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JUSHR_CONV;

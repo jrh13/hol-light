@@ -47,7 +47,7 @@ let edwards_group = define
               edwards_neg(f,a,d),
               edwards_add(f,a,d))`;;
 
-let EDWARD_NONSINGULAR_ALT = prove
+let EDWARDS_NONSINGULAR_ALT = prove
  (`!f a (d:A).
     field f /\ a IN ring_carrier f /\ d IN ring_carrier f
     ==> (edwards_nonsingular (f,a,d) <=>
@@ -115,7 +115,7 @@ let EDWARDS_NONSINGULAR_DENOMINATORS = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[edwards_curve; GSYM DE_MORGAN_THM] THEN
   DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN DISCH_TAC THEN
   UNDISCH_TAC `edwards_nonsingular(f,a:A,d)` THEN
-  ASM_SIMP_TAC[EDWARD_NONSINGULAR_ALT] THEN
+  ASM_SIMP_TAC[EDWARDS_NONSINGULAR_ALT] THEN
   REWRITE_TAC[TAUT `~(p /\ ~q) <=> p ==> q`; LEFT_IMP_EXISTS_THM] THEN
   X_GEN_TAC `e:A` THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (SUBST_ALL_TAC o SYM)) THEN

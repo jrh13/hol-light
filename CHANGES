@@ -8,6 +8,180 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 17th Oct 2022               EC/exprojective.ml [new file], passim
+
+Added a new file with some basic material on extended projective coordinates
+for Edwards curves, with several variants of the basic extended projective
+addition with different scale factors and their core relationships with the
+affine representation:
+
+  edwards_excurve =
+    |- edwards_excurve (f,a,d) (X,Y,Z,W) <=>
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       W IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_add f (ring_mul f a (ring_pow f X 2)) (ring_pow f Y 2) =
+       ring_add f (ring_pow f Z 2) (ring_mul f d (ring_pow f W 2))
+
+  edwards_exprojadd =
+    |- edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) =
+       ring_mul f (ring_add f (ring_mul f X1 Y2) (ring_mul f Y1 X2))
+       (ring_sub f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2))),
+       ring_mul f
+       (ring_sub f (ring_mul f Y1 Y2) (ring_mul f a (ring_mul f X1 X2)))
+       (ring_add f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2))),
+       ring_mul f
+       (ring_sub f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2)))
+       (ring_add f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2))),
+       ring_mul f
+       (ring_sub f (ring_mul f Y1 Y2) (ring_mul f a (ring_mul f X1 X2)))
+       (ring_add f (ring_mul f X1 Y2) (ring_mul f Y1 X2))
+
+  edwards_exprojadd4 =
+    |- edwards_exprojadd4 (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) =
+       (let X3,Y3,Z3,T3 =
+          edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) in
+        ring_mul f (ring_of_num f 4) X3,
+        ring_mul f (ring_of_num f 4) Y3,
+        ring_mul f (ring_of_num f 4) Z3,
+        ring_mul f (ring_of_num f 4) T3)
+
+  edwards_exprojaddn =
+    |- edwards_exprojaddn (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) =
+       (let X3,Y3,Z3,T3 =
+          edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) in
+        ring_neg f X3,ring_neg f Y3,ring_neg f Z3,ring_neg f T3)
+
+  exprojective =
+    |- exprojective f (x,y) (X,Y,Z,W) <=>
+       x IN ring_carrier f /\
+       y IN ring_carrier f /\
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       W IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_div f X Z = x /\
+       ring_div f Y Z = y /\
+       ring_div f W Z = ring_mul f x y
+
+  EDWARDS_EXCURVE =
+    |- !f a d p Q.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           exprojective f p Q
+           ==> (edwards_curve (f,a,d) p <=> edwards_excurve (f,a,d) Q)
+
+  EDWARDS_EXPROJADD =
+    |- !f a d x1 y1 X1 Y1 Z1 T1 x2 y2 X2 Y2 Z2 T2.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           edwards_curve (f,a,d) (x2,y2) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1) /\
+           exprojective f (x2,y2) (X2,Y2,Z2,T2)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x2,y2))
+               (edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2))
+
+  EDWARDS_EXPROJADD4 =
+    |- !f a d x1 y1 X1 Y1 Z1 T1 x2 y2 X2 Y2 Z2 T2.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           edwards_curve (f,a,d) (x2,y2) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1) /\
+           exprojective f (x2,y2) (X2,Y2,Z2,T2)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x2,y2))
+               (edwards_exprojadd4 (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2))
+
+  EDWARDS_EXPROJADDN =
+    |- !f a d x1 y1 X1 Y1 Z1 T1 x2 y2 X2 Y2 Z2 T2.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           edwards_curve (f,a,d) (x2,y2) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1) /\
+           exprojective f (x2,y2) (X2,Y2,Z2,T2)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x2,y2))
+               (edwards_exprojaddn (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2))
+
+  EDWARDS_EXPROJADD_DOUBLE =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1) =
+               ring_mul f (ring_of_num f 2)
+               (ring_mul f X1
+               (ring_mul f Y1
+               (ring_sub f
+                (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+                (ring_pow f Y1 2))
+               (ring_mul f a (ring_pow f X1 2))))),
+               ring_mul f
+               (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+               (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2))),
+               ring_mul f
+               (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+               (ring_sub f
+                (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+                (ring_pow f Y1 2))
+               (ring_mul f a (ring_pow f X1 2))),
+               ring_mul f (ring_of_num f 2)
+               (ring_mul f X1
+               (ring_mul f Y1
+               (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))))
+
+  EXPROJECTIVE_ALT =
+    |- !f x y X Y Z W.
+           field f
+           ==> (exprojective f (x,y) (X,Y,Z,W) <=>
+                x IN ring_carrier f /\
+                y IN ring_carrier f /\
+                X IN ring_carrier f /\
+                Y IN ring_carrier f /\
+                W IN ring_carrier f /\
+                Z IN ring_carrier f /\
+                ~(Z = ring_0 f) /\
+                ring_mul f x Z = X /\
+                ring_mul f y Z = Y /\
+                ring_mul f W Z = ring_mul f X Y)
+
+Also fixed some fumbled theorem names "EDWARD_..." to "EDWARDS_..." in the
+existing material.
+
+Mon 19th Sep 2022               Library/words.ml
+
+Added a definition of the byte reversal operation to the word library,
+including the following definition and basic lemmas as well as adding
+its reduction to the usual conversions like WORD_RED_CONV. The type
+is constrained so that the indexing type has to be effectively a
+multiple of 8 (i.e. of the form :(((N)tybit0)tybit0)tybit0).
+
+  word_bytereverse =
+   |- word_bytereverse x =
+      word_of_bits { i | i < 8 * dimindex(:N) /\
+                         bit (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8) x}
+
+  BIT_WORD_BYTEREVERSE =
+   |- !x i. bit i (word_bytereverse x) <=>
+            i < 8 * dimindex(:N) /\
+            bit (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8) x
+
+  WORD_BYTEREVERSE_BYTEREVERSE =
+   |- !x. word_bytereverse(word_bytereverse x) = x
+
 Thu 15th Sep 2022               EC/x25519.ml [new file]
 
 Added a definition of x25519, the curve25519 x-coordinate mapping that

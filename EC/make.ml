@@ -22,12 +22,13 @@ loadt "EC/montgomery.ml";;
 loadt "EC/edwards.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Projective, Jacobian and projective-without-y coordinates.                *)
+(* Projective, Jacobian, projective-without-y, extended projective coords.   *)
 (* ------------------------------------------------------------------------- *)
 
 loadt "EC/projective.ml";;
 loadt "EC/jacobian.ml";;
 loadt "EC/xzprojective.ml";;
+loadt "EC/exprojective.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Some traditional formulas for evaluation in these coordinate systems.     *)
