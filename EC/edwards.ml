@@ -319,7 +319,7 @@ let ABELIAN_EDWARDS_GROUP = prove
 (* Characterizing low-order points on an Edwards curve.                      *)
 (* ------------------------------------------------------------------------- *)
 
-let EDWARDS_GROUP_ORDER_EQ_2 = prove
+let EDWARDS_GROUP_ELEMENT_ORDER_EQ_2 = prove
  (`!f (a:A) d p.
         field f /\ ~(ring_char f = 2) /\
         a IN ring_carrier f /\ d IN ring_carrier f /\
@@ -334,7 +334,7 @@ let EDWARDS_GROUP_ORDER_EQ_2 = prove
   REWRITE_TAC[FORALL_PAIR_THM; edwards_0; edwards_neg; PAIR_EQ; IN] THEN
   REWRITE_TAC[edwards_curve] THEN FIELD_TAC);;
 
-let EDWARDS_GROUP_ORDER_EQ_4_EQUIV = prove
+let EDWARDS_GROUP_ELEMENT_ORDER_EQ_4_EQUIV = prove
  (`!f (a:A) d x y.
         field f /\ ~(ring_char f = 2) /\
         a IN ring_carrier f /\ d IN ring_carrier f /\
@@ -344,7 +344,7 @@ let EDWARDS_GROUP_ORDER_EQ_4_EQUIV = prove
              ring_mul f a (ring_pow f x 2) = ring_1 f /\ y = ring_0 f)`,
   REWRITE_TAC[ARITH_RULE `4 = 2 * 2`] THEN
   SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_MUL; DIVIDES_2; ARITH_EQ; ARITH_EVEN] THEN
-  SIMP_TAC[EDWARDS_GROUP_ORDER_EQ_2; GROUP_POW] THEN
+  SIMP_TAC[EDWARDS_GROUP_ELEMENT_ORDER_EQ_2; GROUP_POW] THEN
   REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[FIELD_CHAR_NOT2] THEN
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN REPEAT DISCH_TAC THEN
   ASM_SIMP_TAC[GROUP_POW_2; FORALL_PAIR_THM] THEN
@@ -355,7 +355,7 @@ let EDWARDS_GROUP_ORDER_EQ_4_EQUIV = prove
     EDWARDS_NONSINGULAR_DENOMINATORS) THEN
   ASM_REWRITE_TAC[edwards_curve] THEN FIELD_TAC);;
 
-let EDWARDS_GROUP_ORDER_EQ_4 = prove
+let EDWARDS_GROUP_ELEMENT_ORDER_EQ_4 = prove
  (`!f (a:A) d a' p.
         field f /\ ~(ring_char f = 2) /\
         a IN ring_carrier f /\ d IN ring_carrier f /\
@@ -366,7 +366,7 @@ let EDWARDS_GROUP_ORDER_EQ_4 = prove
              p = (a',ring_0 f) \/ p = (ring_neg f a',ring_0 f))`,
   REWRITE_TAC[ARITH_RULE `4 = 2 * 2`] THEN
   SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_MUL; DIVIDES_2; ARITH_EQ; ARITH_EVEN] THEN
-  SIMP_TAC[EDWARDS_GROUP_ORDER_EQ_2; GROUP_POW] THEN
+  SIMP_TAC[EDWARDS_GROUP_ELEMENT_ORDER_EQ_2; GROUP_POW] THEN
   REPLICATE_TAC 4 GEN_TAC THEN REWRITE_TAC[FIELD_CHAR_NOT2] THEN
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN REPEAT DISCH_TAC THEN
   ASM_SIMP_TAC[GROUP_POW_2; FORALL_PAIR_THM] THEN
@@ -377,7 +377,7 @@ let EDWARDS_GROUP_ORDER_EQ_4 = prove
     EDWARDS_NONSINGULAR_DENOMINATORS) THEN
   ASM_REWRITE_TAC[edwards_curve] THEN FIELD_TAC);;
 
-let EDWARDS_GROUP_ORDER_EQ_8_EQUIV = prove
+let EDWARDS_GROUP_ELEMENT_ORDER_EQ_8_EQUIV = prove
  (`!f (a:A) d x y.
         field f /\ ~(ring_char f = 2) /\
         a IN ring_carrier f /\ d IN ring_carrier f /\
@@ -393,7 +393,7 @@ let EDWARDS_GROUP_ORDER_EQ_8_EQUIV = prove
   SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_MUL; DIVIDES_2; ARITH_EQ; ARITH_EVEN] THEN
   SIMP_TAC[GROUP_POW; REWRITE_RULE[PAIR]
      (GEN_REWRITE_RULE (funpow 3 BINDER_CONV) [FORALL_UNPAIR_THM]
-     EDWARDS_GROUP_ORDER_EQ_4_EQUIV)] THEN
+     EDWARDS_GROUP_ELEMENT_ORDER_EQ_4_EQUIV)] THEN
   REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[FIELD_CHAR_NOT2] THEN
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN REPEAT DISCH_TAC THEN
   ASM_SIMP_TAC[GROUP_POW_2; FORALL_PAIR_THM] THEN

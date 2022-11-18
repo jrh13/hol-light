@@ -8,6 +8,251 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 17th Nov 2022               EC/exprojective.ml
+
+Added more to the Edwards extended projective coordinates material,
+notably defining a pure projective relational analog "projective"
+and various formulations of the doubling formula using both this
+and extended projective. New definitions:
+
+  edwards_exprojdouble =
+    |- edwards_exprojdouble (f,a,d) (X1,Y1,Z1,T1) =
+       edwards_prexprojdouble (f,a,d) (X1,Y1,Z1)
+
+  edwards_pcurve =
+    |- edwards_pcurve (f,a,d) (X,Y,Z) <=>
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_mul f (ring_pow f Z 2)
+       (ring_add f (ring_mul f a (ring_pow f X 2)) (ring_pow f Y 2)) =
+       ring_add f (ring_pow f Z 4)
+       (ring_mul f d (ring_mul f (ring_pow f X 2) (ring_pow f Y 2)))
+
+  edwards_prexprojdouble =
+    |- edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) =
+       ring_mul f (ring_of_num f 2)
+       (ring_mul f X1
+       (ring_mul f Y1
+       (ring_sub f
+        (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+        (ring_pow f Y1 2))
+       (ring_mul f a (ring_pow f X1 2))))),
+       ring_mul f
+       (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+       (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2))),
+       ring_mul f
+       (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+       (ring_sub f
+        (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+        (ring_pow f Y1 2))
+       (ring_mul f a (ring_pow f X1 2))),
+       ring_mul f (ring_of_num f 2)
+       (ring_mul f X1
+       (ring_mul f Y1
+       (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))))
+
+  edwards_prexprojdoublen =
+    |- edwards_prexprojdoublen (f,a,d) (X1,Y1,Z1) =
+       (let X3,Y3,Z3,T3 = edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) in
+        ring_neg f X3,ring_neg f Y3,ring_neg f Z3,ring_neg f T3)
+
+  edwards_projdouble =
+    |- edwards_projdouble (f,a,d) (X1,Y1,Z1) =
+       (let X2,Y2,Z2,T2 = edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) in
+        X2,Y2,Z2)
+
+  projective =
+    |- projective f (x,y) (X,Y,Z) <=>
+       x IN ring_carrier f /\
+       y IN ring_carrier f /\
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_div f X Z = x /\
+       ring_div f Y Z = y
+
+and theorems:
+
+  EDWARDS_EXPROJDOUBLE =
+    |- !f a d x1 y1 X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_exprojdouble (f,a,d) (X1,Y1,Z1,T1))
+
+  EDWARDS_EXPROJDOUBLE_EXPROJADD =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_exprojdouble (f,a,d) (X1,Y1,Z1,T1) =
+               edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1)
+
+  EDWARDS_PCURVE =
+    |- !f a d p Q.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           projective f p Q
+           ==> (edwards_curve (f,a,d) p <=> edwards_pcurve (f,a,d) Q)
+
+  EDWARDS_PREXPROJDOUBLE =
+    |- !f a d x1 y1 X1 Y1 Z1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           projective f (x1,y1) (X1,Y1,Z1)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_prexprojdouble (f,a,d) (X1,Y1,Z1))
+
+  EDWARDS_PREXPROJDOUBLEN =
+    |- !f a d x1 y1 X1 Y1 Z1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           projective f (x1,y1) (X1,Y1,Z1)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_prexprojdoublen (f,a,d) (X1,Y1,Z1))
+
+  EDWARDS_PREXPROJDOUBLEN_EXPROJADDN =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_prexprojdoublen (f,a,d) (X1,Y1,Z1) =
+               edwards_exprojaddn (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1)
+
+  EDWARDS_PREXPROJDOUBLE_EXPROJADD =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) =
+               edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1)
+
+  EDWARDS_PROJDOUBLE =
+    |- !f a d x1 y1 X1 Y1 Z1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           projective f (x1,y1) (X1,Y1,Z1)
+           ==> projective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_projdouble (f,a,d) (X1,Y1,Z1))
+
+  EXPROJECTIVE_PROJECTIVE =
+    |- !f x y X Y Z W.
+           field f
+           ==> (exprojective f (x,y) (X,Y,Z,W) <=>
+                projective f (x,y) (X,Y,Z) /\ ring_div f (ring_mul f X Y) Z = W)
+
+  EXPROJECTIVE_PROJECTIVE_ALT =
+    |- !f x y X Y Z W.
+           field f
+           ==> (exprojective f (x,y) (X,Y,Z,W) <=>
+                projective f (x,y) (X,Y,Z) /\
+                W IN ring_carrier f /\
+                ring_mul f X Y = ring_mul f W Z)
+
+  PROJECTIVE_ALT =
+    |- !f x y X Y Z.
+           field f
+           ==> (projective f (x,y) (X,Y,Z) <=>
+                x IN ring_carrier f /\
+                y IN ring_carrier f /\
+                X IN ring_carrier f /\
+                Y IN ring_carrier f /\
+                Z IN ring_carrier f /\
+                ~(Z = ring_0 f) /\
+                ring_mul f x Z = X /\
+                ring_mul f y Z = Y)
+
+  PROJECTIVE_EXPROJECTIVE =
+    |- !f x y X Y Z.
+           field f
+           ==> (projective f (x,y) (X,Y,Z) <=>
+                exprojective f (x,y) (X,Y,Z,ring_div f (ring_mul f X Y) Z))
+
+while removing the former EDWARDS_EXPROJADD_DOUBLE (which is effectively
+just EDWARDS_EXPROJDOUBLE_EXPROJADD reversed and with the new definition
+expanded).
+
+Wed  9th Nov 2022               Library/words.ml
+
+Added some natural notations for n-fold SIMD-style repetition of unary and
+binary operations on machine words, following the index type to decompose:
+
+  simd2 =
+    |- !f x y.
+           simd2 f x y =
+           word_join
+           (f (word_subword x (dimindex (:N),dimindex (:N)))
+           (word_subword y (dimindex (:N),dimindex (:N))))
+           (f (word_subword x (0,dimindex (:N)))
+           (word_subword y (0,dimindex (:N))))
+
+  simd4 =
+    |- !f. simd4 f = simd2 (simd2 f)
+
+  simd8 =
+    |- !f. simd8 f = simd2 (simd4 f)
+
+  simd16 =
+    |- !f. simd16 f = simd2 (simd8 f)
+
+  usimd2 =
+    |- !f x.
+           usimd2 f x =
+           word_join (f (word_subword x (dimindex (:N),dimindex (:N))))
+           (f (word_subword x (0,dimindex (:N))))
+  usimd4 =
+    |- !f. usimd4 f = usimd2 (usimd2 f)
+
+  usimd8 =
+    |- !f. usimd8 f = usimd2 (usimd4 f)
+
+  usimd16 =
+    |- !f. usimd16 f = usimd2 (usimd8 f)
+
+  SIMD2 =
+    |- !f xhi xlo yhi ylo.
+           simd2 f (word_join xhi xlo) (word_join yhi ylo) =
+           word_join (f xhi yhi) (f xlo ylo)
+
+  USIMD2 =
+    |- !f xhi xlo. usimd2 f (word_join xhi xlo) = word_join (f xhi) (f xlo)
+
+Mon  7th Nov 2022               EC/x25519.ml, EC/edwards.ml, EC/edwards448.ml
+
+Added the nonzeroness of the X25519 function on the standard basepoint X = 9:
+
+  RFCX25519_BASE_NONZERO =
+    |- !n. ~(rfcx25519(n,9) = 0)
+
+as well as systematically renaming these theorems to be more intuitive,
+albeit even more verbose:
+
+  EDWARDS_GROUP_ORDER_EQ_2        -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_2
+  EDWARDS_GROUP_ORDER_EQ_4        -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_4
+  EDWARDS_GROUP_ORDER_EQ_4_EQUIV  -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_4_EQUIV
+  EDWARDS_GROUP_ORDER_EQ_8        -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_8
+  EDWARDS_GROUP_ORDER_EQ_8_EQUIV  -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_8_EQUIV
+
 Mon 17th Oct 2022               EC/exprojective.ml [new file], passim
 
 Added a new file with some basic material on extended projective coordinates

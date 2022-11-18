@@ -6454,3 +6454,59 @@ let WORD_TO_IWORD_CONV =
 
 let WORD_IREDUCE_CONV =
   WORD_REDUCE_CONV THENC ONCE_DEPTH_CONV WORD_TO_IWORD_CONV;;
+
+(* ------------------------------------------------------------------------- *)
+(* SIMD repetition of a unary (usimd) or binary (simd) function.             *)
+(* ------------------------------------------------------------------------- *)
+
+let usimd2 = new_definition
+ `(usimd2:(N word->N word)->((N)tybit0)word->((N)tybit0) word) f x =
+    word_join (f (word_subword x (dimindex(:N),dimindex(:N))))
+              (f (word_subword x (0,dimindex(:N))))`;;
+
+let simd2 = new_definition
+ `(simd2:(N word->N word->N word)->
+        ((N)tybit0)word->((N)tybit0) word->((N)tybit0) word) f x y =
+    word_join (f (word_subword x (dimindex(:N),dimindex(:N)))
+                 (word_subword y (dimindex(:N),dimindex(:N))))
+              (f (word_subword x (0,dimindex(:N)))
+                 (word_subword y (0,dimindex(:N))))`;;
+
+let usimd4 = new_definition
+ `usimd4 (f:N word->N word) = usimd2 (usimd2 f)`;;
+
+let simd4 = new_definition
+ `simd4 (f:N word->N word->N word) = simd2 (simd2 f)`;;
+
+let usimd8 = new_definition
+ `usimd8 (f:N word->N word) = usimd2 (usimd4 f)`;;
+
+let simd8 = new_definition
+ `simd8 (f:N word->N word->N word) = simd2 (simd4 f)`;;
+
+let usimd16 = new_definition
+ `usimd16 (f:N word->N word) = usimd2 (usimd8 f)`;;
+
+let simd16 = new_definition
+ `simd16 (f:N word->N word->N word) = simd2 (simd8 f)`;;
+
+let USIMD2 = prove
+ (`!(f:N word->N word) xhi xlo.
+        usimd2 f (word_join xhi xlo) = word_join (f xhi) (f xlo)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[usimd2] THEN BINOP_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_JOIN] THEN
+  SIMP_TAC[ADD_CLAUSES; DIMINDEX_TYBIT0; ARITH_RULE `MIN x x = x`;
+           ADD_SUB2; ARITH_RULE `i < n ==> i < 2 * n`;
+           ARITH_RULE `n + i < 2 * n <=> i < n`;
+           ARITH_RULE `~(n + i:num < n)`]);;
+
+let SIMD2 = prove
+ (`!(f:N word->N word->N word) xhi xlo yhi ylo.
+        simd2 f (word_join xhi xlo) (word_join yhi ylo) =
+        word_join (f xhi yhi) (f xlo ylo)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[simd2] THEN BINOP_TAC THEN BINOP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_JOIN] THEN
+  SIMP_TAC[ADD_CLAUSES; DIMINDEX_TYBIT0; ARITH_RULE `MIN x x = x`;
+           ADD_SUB2; ARITH_RULE `i < n ==> i < 2 * n`;
+           ARITH_RULE `n + i < 2 * n <=> i < n`;
+           ARITH_RULE `~(n + i:num < n)`]);;
