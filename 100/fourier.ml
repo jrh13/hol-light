@@ -467,6 +467,32 @@ let SQUARE_INTEGRABLE_APPROXIMATE_CONTINUOUS = prove
      `x < e ==> x = y ==> y < e`)) THEN
     REWRITE_TAC[o_DEF; LIFT_DROP; LIFT_SUB]]);;
 
+let SCHWARZ_BOUND = prove
+ (`!f s. real_measurable s /\ f square_integrable_on s
+         ==> f absolutely_real_integrable_on s /\
+             (real_integral s f) pow 2
+             <= real_measure s * real_integral s (\x. f x pow 2)`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(fun th -> STRIP_ASSUME_TAC th THEN MP_TAC th) THEN
+  REWRITE_TAC[SQUARE_INTEGRABLE_LSPACE; REAL_MEASURABLE_MEASURABLE] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ_ALT] HOELDER_BOUND)) THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  REWRITE_TAC[GSYM ABSOLUTELY_REAL_INTEGRABLE_ON; RPOW_POW] THEN
+  FIRST_X_ASSUM(STRIP_ASSUME_TAC o
+    GEN_REWRITE_RULE I [square_integrable_on]) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_SIMP_TAC[REAL_INTEGRAL; ABSOLUTELY_REAL_INTEGRABLE_IMP_INTEGRABLE] THEN
+  REWRITE_TAC[REAL_POW_1; o_DEF; NORM_1; LIFT_DROP; REAL_POW2_ABS] THEN
+  REWRITE_TAC[GSYM REAL_MEASURE_MEASURE] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  MATCH_MP_TAC REAL_LE_LMUL THEN ASM_SIMP_TAC[REAL_MEASURE_POS_LE] THEN
+  REWRITE_TAC[REAL_ARITH `abs x <= x <=> &0 <= x`] THEN
+  MATCH_MP_TAC INTEGRAL_DROP_POS THEN
+  REWRITE_TAC[LIFT_DROP; REAL_LE_POW_2] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [REAL_INTEGRABLE_ON]) THEN
+  REWRITE_TAC[o_DEF]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Orthonormal system of L2 functions and their Fourier coefficients.        *)
 (* ------------------------------------------------------------------------- *)

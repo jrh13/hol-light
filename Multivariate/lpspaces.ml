@@ -552,6 +552,56 @@ let VSUM_LNORM = prove
   ASM_SIMP_TAC[ETA_AX; LSPACE_VSUM; REAL_ARITH `&1 <= p ==> &0 < p`]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A Hoelder-based bound on integral, theorem 222 in Hardy-Littlewood-Polya  *)
+(* ------------------------------------------------------------------------- *)
+
+let HOELDER_BOUND = prove
+ (`!(f:real^M->real^N) s p.
+        &1 <= p /\ measurable s /\ f IN lspace s p
+        ==> f absolutely_integrable_on s /\
+            norm(integral s f) rpow p
+            <= measure s rpow (p - &1) *
+               norm(integral s (\x. lift(norm(f x) rpow p)))`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_ARITH `&1 <= p <=> p = &1 \/ &1 < p`] THEN
+  ASM_CASES_TAC `p = &1` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[LSPACE_1; RPOW_POW; REAL_POW_1; REAL_SUB_REFL] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[real_pow; REAL_MUL_LID] THEN
+    REWRITE_TAC[NORM_1] THEN
+    MATCH_MP_TAC(REAL_ARITH `x <= a ==> x <= abs a`) THEN
+    MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_LE THEN ASM_REWRITE_TAC[];
+    STRIP_TAC] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[GSYM LSPACE_1] THEN
+    MATCH_MP_TAC LSPACE_MONO THEN EXISTS_TAC `p:real` THEN
+    ASM_SIMP_TAC[] THEN ASM_REAL_ARITH_TAC;
+    DISCH_TAC] THEN
+  MP_TAC(ISPECL [`s:real^M->bool`; `p / (p - &1)`; `p:real`;
+                 `(\x. basis 1):real^M->real^N`; `f:real^M->real^N`]
+        HOELDER_INEQUALITY_FULL) THEN
+  ASM_SIMP_TAC[LSPACE_CONST; LNORM_CONST; REAL_ARITH `&1 < p ==> &0 < p`] THEN
+  ANTS_TAC THENL
+   [CONJ_TAC THENL [MATCH_MP_TAC REAL_LT_DIV; ALL_TAC] THEN
+    UNDISCH_TAC `&1 < p` THEN CONV_TAC REAL_FIELD;
+    REWRITE_TAC[NORM_BASIS_1; REAL_MUL_RID; REAL_MUL_LID]] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(MP_TAC o SPEC `p:real` o MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> q ==> p /\ r ==> s`] RPOW_LE2)) THEN
+  ASM_SIMP_TAC[RPOW_MUL; RPOW_RPOW; MEASURE_POS_LE;
+               LNORM_RPOW; REAL_ARITH `&1 < p ==> &0 <= p /\ ~(p = &0)`;
+               REAL_FIELD `&1 < p ==> inv(p / (p - &1)) * p = p - &1`;
+               INTEGRAL_DROP_POS; LIFT_DROP; NORM_POS_LE] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `a':real <= a /\ b <= b' ==> a <= b ==> a' <= b'`) THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC RPOW_LE2 THEN
+    ASM_SIMP_TAC[NORM_POS_LE; REAL_ARITH `&1 < p ==> &0 <= p`] THEN
+    ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_LE];
+    MATCH_MP_TAC REAL_LE_LMUL THEN
+    ASM_SIMP_TAC[MEASURE_POS_LE; RPOW_POS_LE] THEN
+    REWRITE_TAC[NORM_1; REAL_ABS_LE]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Completeness (Riesz-Fischer).                                             *)
 (* ------------------------------------------------------------------------- *)
 

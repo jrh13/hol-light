@@ -137,6 +137,7 @@ GREAT_100_THEOREMS:= \
 	100/fta \
 	100/gcd \
 	100/heron \
+	100/isoperimetric \
 	100/inclusion_exclusion \
 	100/independence \
 	100/isosceles \

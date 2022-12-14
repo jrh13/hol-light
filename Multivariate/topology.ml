@@ -15045,6 +15045,12 @@ let IS_INTERVAL_SING = prove
  (`!a:real^N. is_interval {a}`,
   SIMP_TAC[is_interval; IN_SING; IMP_CONJ; CART_EQ; REAL_LE_ANTISYM]);;
 
+let INTERVAL_EQ_SING = prove
+ (`(!a b x:real^N. interval[a,b] = {x} <=> a = x /\ b = x) /\
+   (!a b x:real^N. ~(interval(a,b) = {x}))`,
+  REWRITE_TAC[GSYM(CONJUNCT1 INTERVAL_SING); EQ_INTERVAL] THEN
+  REWRITE_TAC[INTERVAL_SING; NOT_INSERT_EMPTY]);;
+
 let IS_INTERVAL_SCALING = prove
  (`!s:real^N->bool c. is_interval s ==> is_interval(IMAGE (\x. c % x) s)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THENL

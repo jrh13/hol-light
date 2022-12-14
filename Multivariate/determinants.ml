@@ -2958,6 +2958,11 @@ let ORTHOGONAL_TRANSFORMATION_I = prove
  (`orthogonal_transformation I`,
   REWRITE_TAC[I_DEF; ORTHOGONAL_TRANSFORMATION_ID]);;
 
+let ORTHOGONAL_TRANSFORMATION_NEGATION = prove
+ (`orthogonal_transformation(--)`,
+  REWRITE_TAC[orthogonal_transformation; LINEAR_NEGATION; DOT_LNEG; DOT_RNEG;
+              REAL_NEG_NEG]);;
+
 let ORTHOGONAL_TRANSFORMATION_1_GEN = prove
  (`!f:real^N->real^N.
         dimindex(:N) = 1

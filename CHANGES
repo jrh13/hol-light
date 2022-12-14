@@ -8,6 +8,27 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 13th Dec 2022               100/isoperimetric.ml [new file], Multivariate/passim
+
+Added a proof of the isoperimetric theorem to the "100 greatest
+theorems" subdirectory. The proof roughly follows the sketch in
+Osserman's "The Isoperimetric Inequality" (Bulletin of the AMS,
+1978), straightforwardly generalized to avoid any smoothness
+assumption, and with the proof of Wirtinger's inequality taken from
+Hardy, Littlewood and Polya's "Inequalities". The Green's theorem
+line integral for area is done in a very limited ad hoc way just
+for this single application.
+
+As part of this added quite a few general supporting Multivariate
+theorems, notably a Hoelder-based bound (Hardy-Littlewood-Polya
+theorem 222) and a fairly general form of integration by
+substitution following Serrin and Varberg's paper "A general
+chain rule...". Their Theorem 1 on critical values is called
+CONVERSE_SARD_1 following their observation that it is very
+much like a converse to BABY_SARD. Our proof is via a more
+general CONVERSE_SARD simply using the existing theorem
+NEGLIGIBLE_DIFFERENTIABLE_PREIMAGE.
+
 Thu 17th Nov 2022               EC/exprojective.ml
 
 Added more to the Edwards extended projective coordinates material,
@@ -241,8 +262,8 @@ Mon  7th Nov 2022               EC/x25519.ml, EC/edwards.ml, EC/edwards448.ml
 
 Added the nonzeroness of the X25519 function on the standard basepoint X = 9:
 
-  RFCX25519_BASE_NONZERO =
-    |- !n. ~(rfcx25519(n,9) = 0)
+ RFCX25519_BASE_NONZERO =
+   |- !n. ~(rfcx25519(n,9) = 0)
 
 as well as systematically renaming these theorems to be more intuitive,
 albeit even more verbose:

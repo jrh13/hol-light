@@ -9691,6 +9691,13 @@ let ABSOLUTELY_INTEGRABLE_RESTRICT_INTER = prove
   REWRITE_TAC[absolutely_integrable_on; GSYM INTEGRABLE_RESTRICT_INTER] THEN
   REWRITE_TAC[COND_RAND; NORM_0; LIFT_NUM]);;
 
+let HAS_ABSOLUTE_INTEGRAL = prove
+ (`!(f:real^M->real^N) s y.
+        f absolutely_integrable_on s /\ integral s f = y <=>
+        f absolutely_integrable_on s /\ (f has_integral y) s`,
+  MESON_TAC[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE;
+            HAS_INTEGRAL_INTEGRABLE_INTEGRAL]);;
+
 let ABSOLUTELY_INTEGRABLE_LE = prove
  (`!f:real^M->real^N s.
         f absolutely_integrable_on s
@@ -9752,6 +9759,15 @@ let ABSOLUTELY_INTEGRABLE_ON_SUBINTERVAL = prove
         ==> f absolutely_integrable_on interval[a,b]`,
   REWRITE_TAC[absolutely_integrable_on] THEN
   MESON_TAC[INTEGRABLE_ON_SUBINTERVAL]);;
+
+let ABSOLUTELY_INTEGRABLE_COMBINE = prove
+ (`!f a b c.
+        drop a <= drop c /\ drop c <= drop b /\
+        f absolutely_integrable_on interval[a,c] /\
+        f absolutely_integrable_on interval[c,b]
+        ==> f absolutely_integrable_on interval[a,b]`,
+  REWRITE_TAC[absolutely_integrable_on] THEN
+  MESON_TAC[INTEGRABLE_COMBINE]);;
 
 let ABSOLUTELY_INTEGRABLE_ON_NEGLIGIBLE = prove
  (`!f:real^M->real^N s. negligible s ==> f absolutely_integrable_on s`,
@@ -11248,6 +11264,13 @@ let INTEGRABLE_COMPONENTWISE = prove
     [HAS_INTEGRAL_COMPONENTWISE] THEN
    REWRITE_TAC[GSYM LAMBDA_SKOLEM; GSYM EXISTS_LIFT]);;
 
+let INTEGRABLE_LIFT_COMPONENT = prove
+ (`!(f:real^M->real^N) s.
+        f integrable_on s /\
+        1 <= i /\ i <= dimindex(:N)
+        ==> (\x. lift(f x$i)) integrable_on s`,
+  MESON_TAC[INTEGRABLE_COMPONENTWISE]);;
+
 let LIFT_INTEGRAL_COMPONENT = prove
  (`!f:real^M->real^N.
         f integrable_on s
@@ -11295,6 +11318,13 @@ let ABSOLUTELY_INTEGRABLE_COMPONENTWISE = prove
     ASM_SIMP_TAC[INTEGRABLE_VSUM; IN_NUMSEG; FINITE_NUMSEG] THEN
     SIMP_TAC[DROP_VSUM; FINITE_NUMSEG; o_DEF; LIFT_DROP] THEN
     REWRITE_TAC[NORM_LIFT; NORM_LE_L1]]);;
+
+let ABSOLUTELY_INTEGRABLE_LIFT_COMPONENT = prove
+ (`!(f:real^M->real^N) s.
+        f absolutely_integrable_on s /\
+        1 <= i /\ i <= dimindex(:N)
+        ==> (\x. lift(f x$i)) absolutely_integrable_on s`,
+  MESON_TAC[ABSOLUTELY_INTEGRABLE_COMPONENTWISE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Dominated convergence.                                                    *)
@@ -23071,6 +23101,13 @@ let ABSOLUTELY_CONTINUOUS_ON_COMPONENTWISE = prove
   GEN_REWRITE_TAC LAND_CONV [ABSOLUTELY_SETCONTINUOUS_ON_COMPONENTWISE] THEN
   REWRITE_TAC[VECTOR_SUB_COMPONENT; LIFT_SUB]);;
 
+let ABSOLUTELY_CONTINUOUS_ON_LIFT_COMPONENT = prove
+ (`!(f:real^1->real^N) s.
+        f absolutely_continuous_on s /\
+        1 <= i /\ i <= dimindex(:N)
+        ==> (\x. lift(f x$i)) absolutely_continuous_on s`,
+  MESON_TAC[ABSOLUTELY_CONTINUOUS_ON_COMPONENTWISE]);;
+
 let ABSOLUTELY_CONTINUOUS_COMPARISON = prove
  (`!f:real^1->real^M g:real^1->real^N s.
         f absolutely_continuous_on s /\
@@ -24133,6 +24170,17 @@ let PATH_LENGTH_EQ_0 = prove
              ?c. !t. t IN interval[vec 0,vec 1] ==> g t = c)`,
   SIMP_TAC[VECTOR_VARIATION_CONST_EQ; rectifiable_path; path_length;
            IS_INTERVAL_INTERVAL]);;
+
+let SIMPLE_PATH_LENGTH_POS_LT = prove
+ (`!g:real^1->real^N.
+        rectifiable_path g /\ simple_path g ==> &0 < path_length g`,
+  GEN_TAC THEN REWRITE_TAC[REAL_ARITH `&0 < l <=> &0 <= l /\ ~(l = &0)`] THEN
+  SIMP_TAC[PATH_LENGTH_POS_LE; PATH_LENGTH_EQ_0; simple_path] THEN
+  MATCH_MP_TAC(TAUT `(s ==> ~r) ==> p /\ q /\ r ==> ~s`) THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[IMP_CONJ] THEN
+  DISCH_THEN(MP_TAC o SPECL [`lift(&1 / &3)`; `lift(&1/ &2)`]) THEN
+  REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; GSYM LIFT_NUM; LIFT_EQ] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
 
 let PATH_LENGTH_JOIN = prove
  (`!g1 g2:real^1->real^N.

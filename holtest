@@ -184,6 +184,7 @@ echo '### Loading 100/friendship.ml'; echo 'loadt "100/friendship.ml";;' | (time
 echo '### Loading 100/fta.ml'; echo 'loadt "100/fta.ml";;' | (time $hollight)
 echo '### Loading 100/gcd.ml'; echo 'loadt "100/gcd.ml";;' | (time $hollight)
 echo '### Loading 100/heron.ml'; echo 'loadt "100/heron.ml";;' | (time $hollight)
+echo '### Loading 100/isoperimetric.ml'; echo 'loadt "100/isoperimetric.ml";;' | (time $hollight)
 echo '### Loading 100/inclusion_exclusion.ml'; echo 'loadt "100/inclusion_exclusion.ml";;' | (time $hollight)
 echo '### Loading 100/independence.ml'; echo 'loadt "100/independence.ml";;' | (time $hollight)
 echo '### Loading 100/isosceles.ml'; echo 'loadt "100/isosceles.ml";;' | (time $hollight)
