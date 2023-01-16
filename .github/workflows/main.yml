@@ -34,4 +34,6 @@ jobs:
           eval $(opam env)
           make
       - name: run test ...
-        run: echo "#use \"hol.ml\";;" | ocaml -I `camlp5 -where` camlp5o.cma
+        run: |
+          eval $(opam env)
+          echo "#use \"hol.ml\";;" | ocaml -I `camlp5 -where` camlp5o.cma
