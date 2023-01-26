@@ -25,19 +25,6 @@ let hol_dir = ref
 let temp_path = ref "/tmp";;
 
 (* ------------------------------------------------------------------------- *)
-(* Load in parsing extensions.                                               *)
-(* For Ocaml < 3.10, use the built-in camlp4                                 *)
-(* and for Ocaml >= 3.10, use camlp5 instead.                                *)
-(* ------------------------------------------------------------------------- *)
-
-if let v = String.sub Sys.ocaml_version 0 4 in v >= "3.10"
-then (Topdirs.dir_directory "+camlp5";
-      Topdirs.dir_load Format.std_formatter "camlp5o.cma")
-else (Topdirs.dir_load Format.std_formatter "camlp4o.cma");;
-
-Topdirs.dir_load Format.std_formatter (Filename.concat (!hol_dir) "pa_j.cmo");;
-
-(* ------------------------------------------------------------------------- *)
 (* Load files from system and/or user-settable directories.                  *)
 (* Paths map initial "$/" to !hol_dir dynamically; use $$ to get the actual  *)
 (* $ character at the start of a directory.                                  *)
@@ -81,6 +68,25 @@ let needs s =
   let fileid = (Filename.basename s',Digest.file s') in
   if List.mem fileid (!loaded_files)
   then Format.print_string("File \""^s^"\" already loaded\n") else loadt s;;
+
+(* ------------------------------------------------------------------------- *)
+(* Load in parsing extensions.                                               *)
+(* For Ocaml < 3.10, use the built-in camlp4                                 *)
+(* and for Ocaml >= 3.10, use camlp5 instead.                                *)
+(* For Ocaml >= 4.14, use ocamlfind to locate camlp5.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let ocaml_version = String.sub Sys.ocaml_version 0 4;;
+let version_ge_3_10 = ocaml_version >= "3.10";;
+let version_ge_4_14 = ocaml_version >= "4.14";;
+
+if version_ge_4_14
+then loads "load_camlp5_topfind.ml"
+else if version_ge_3_10
+then loads "load_camlp5.ml"
+else loads "load_camlp4.ml";;
+
+Topdirs.dir_load Format.std_formatter (Filename.concat (!hol_dir) "pa_j.cmo");;
 
 (* ------------------------------------------------------------------------- *)
 (* Various tweaks to OCaml and general library functions.                    *)
