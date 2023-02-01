@@ -589,7 +589,9 @@ module Hol : Hol_kernel = struct
   let new_basic_definition tm =
     match tm with
       Comb(Comb(Const("=",_),Var(cname,ty)),r) ->
-        if not(freesin [] r) then failwith "new_definition: term not closed"
+        if not(freesin [] r) then
+          failwith ("new_definition: term not closed: " ^
+              (String.concat ", " (map (fun (Var (name,_)) -> name) (frees r))))
         else if not (subset (type_vars_in_term r) (tyvars ty))
         then failwith "new_definition: Type variables not reflected in constant"
         else let c = new_constant(cname,ty); Const(cname,ty) in
