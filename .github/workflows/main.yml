@@ -14,11 +14,9 @@ jobs:
     steps:
       - name: check out hol-light ...
         uses: actions/checkout@v2
-      - name: set up cache ...
-        uses: actions/cache@v2
-        with:
-          path: ~/.opam
-          key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-version }}
+    # necessary for ocaml 4.14.1 and camlp5.8.00.03
+      - name: install libipc-system-simple-perl and libstring-shellquote ...
+        run: sudo apt-get install -y libipc-system-simple-perl libstring-shellquote
       - name: set up opam ...
         uses: avsm/setup-ocaml@v1
         with:
@@ -36,4 +34,4 @@ jobs:
       - name: run test ...
         run: |
           eval $(opam env)
-          echo "#use \"hol.ml\";;" | ocaml -I `camlp5 -where` camlp5o.cma
+          cat ci.ml | ocaml
