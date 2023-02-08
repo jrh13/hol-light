@@ -20,7 +20,7 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-version }}
       - name: install hol-light dependencies ...
         run: |
-          sudo apt-get install -y libipc-system-simple-perl libstring-shellquote # necessary for ocaml 4.14.1 and camlp5.8.00.03
+          sudo apt-get install -y libipc-system-simple-perl libstring-shellquote-perl # necessary for ocaml 4.14.1 and camlp5.8.00.03
           opam install num ocamlfind camlp5.${{ matrix.camlp5-version }}
       - name: check hol.ml ...
         run: |
