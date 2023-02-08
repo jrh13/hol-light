@@ -1,0 +1,34 @@
+camlp5.6.04 depends      "ocaml" {= "3.12.1"}
+camlp5.6.06 depends      "ocaml" {<= "4.00.0"}
+camlp5.6.07 depends      "ocaml" {< "4.01.0"}
+camlp5.6.11 depends      "ocaml" {< "4.02.0"}
+camlp5.6.12 depends      "ocaml" {< "4.02.2"}
+camlp5.6.13 depends      "ocaml" {< "4.02.3"}
+camlp5.6.14 depends      "ocaml" {< "4.02.4"}
+camlp5.6.15 depends      "ocaml" {>= "4.02.0" & <= "4.03.0"}
+camlp5.6.16 depends      "ocaml" {>= "1.07" & <= "4.03.0"}
+camlp5.6.17 depends      "ocaml" {>= "1.07" & <= "4.04.1"}
+camlp5.7.00 depends      "ocaml" {>= "4.02" & <= "4.06"}
+camlp5.7.01 depends      "ocaml" {>= "4.02" & <= "4.05.0"}
+camlp5.7.03 depends      "ocaml" {>= "4.02" & < "4.06.1"}
+camlp5.7.05 depends      "ocaml" {>= "4.02" & < "4.06.3"}
+camlp5.7.06 depends      "ocaml" {>= "4.02" & <= "4.07.0"}
+camlp5.7.06.10-g84ce6cc4 depends      "ocaml" {>= "4.02" & <= "4.07.1"}
+camlp5.7.08 depends      "ocaml" {>= "4.02" & <= "4.08.0"}
+camlp5.7.09 depends      "ocaml" {>= "4.08" & < "4.10.0" & != "4.09.1"}
+camlp5.7.10 depends      "ocaml" {>= "4.02" & < "4.10.0" & != "4.09.1"}
+camlp5.7.11 depends      "ocaml" {>= "4.02" & <= "4.10.0"}
+camlp5.7.12 depends      "ocaml" {>= "4.02" & <= "4.11.0" & != "4.10.2"}
+camlp5.7.13 depends      "ocaml" {>= "4.02" & <= "4.11.1" & != "4.10.2"}
+camlp5.7.14 depends      "ocaml" {>= "4.02" & < "4.13.0"} "conf-perl"
+camlp5.8.00~alpha01 depends      "ocaml" {>= "4.02" & <= "4.11.0" & != "4.10.1" & != "4.10.2"}
+camlp5.8.00~alpha02 depends      "ocaml" {>= "4.02" & <= "4.11.0" & != "4.10.1" & != "4.10.2"}
+camlp5.8.00~alpha03 depends      "ocaml" {>= "4.02" & <= "4.11.0" & != "4.10.2"}
+camlp5.8.00~alpha04 depends      "ocaml" {>= "4.02" & < "4.12.0"}
+camlp5.8.00~alpha05 depends      "ocaml" {>= "4.02" & < "4.12.0"}
+camlp5.8.00~alpha06 depends      "ocaml" {>= "4.02" & < "4.12.0"}
+camlp5.8.00 depends      "ocaml" {>= "4.02" & < "4.13.0"}
+camlp5.8.00.01 depends      "ocaml" {>= "4.02" & < "4.13.0"}
+camlp5.8.00.02 depends      "ocaml" {>= "4.02" & < "4.14.0"}
+camlp5.8.00.03 depends      "ocaml" {>= "4.05" & < "4.15.0"}
+camlp5.8.00.04 depends      "ocaml" {>= "4.05" & < "5.01.0"}
