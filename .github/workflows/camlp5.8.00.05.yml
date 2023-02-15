@@ -8,8 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: # limited to 256 jobs
-        ocaml-version: [4.05.0, 4.06.1, 4.07.1, 4.08.1, 4.09.1, 4.10.2, 4.11.2, 4.12.1, 4.13.1, 4.14.1] # 10 versions
-        camlp5-version: [8.00.03]
+        ocaml-version: [4.10.2, 4.11.2, 4.12.1, 4.13.1, 4.14.1] # 5 versions
+        camlp5-version: [8.00.05]
     runs-on: ubuntu-latest
     steps:
       - name: check out hol-light ...
