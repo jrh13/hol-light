@@ -1,8 +1,7 @@
 #!/bin/sh
 
-# Get the latest version of the 64-bit CakeML compiler from our Github releases
-# page:
-curl -OL https://github.com/CakeML/cakeml/releases/download/v1985/cake-x64-64.tar.gz
+# Get the latest version of the 64-bit CakeML compiler from here:
+curl -OL https://www.cse.chalmers.se/~myreen/cake-x64-64.tar.gz
 tar xvzf cake-x64-64.tar.gz
 
 # By default, the CakeML compiler reserves a few kilobytes for constants and

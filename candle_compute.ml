@@ -14,8 +14,8 @@ needs "define.ml";;
 (* Definition of cexps (compute expressions) and operations on cexps.         *)
 (* -------------------------------------------------------------------------- *)
 
-let cexp_INDUCT, cexp_RECURSION = define_type
-  "cexp = Cexp_num num | Cexp_pair cexp cexp";;
+let cval_INDUCT, cval_RECURSION = define_type
+  "cval = Cexp_num num | Cexp_pair cval cval";;
 
 let cexp_add_def = define
   `(Cexp_add (Cexp_num m) (Cexp_num n) = Cexp_num (m + n)) /\
@@ -55,7 +55,7 @@ let cexp_less_def = define
    (Cexp_less (Cexp_pair p1 q1) (Cexp_pair p2 q2) = Cexp_num 0)`;;
 
 let cexp_if_def = define
-  `(Cexp_if (Cexp_num (SUC m)) (p1: cexp) (q1: cexp) = p1) /\
+  `(Cexp_if (Cexp_num (SUC m)) (p1: cval) (q1: cval) = p1) /\
    (Cexp_if (Cexp_pair p2 q2) p1 q1 = p1) /\
    (Cexp_if (Cexp_num 0) p1 q1 = q1)`;;
 
@@ -72,7 +72,7 @@ let cexp_ispair_def = define
    (Cexp_ispair (Cexp_num m) = Cexp_num 0)`;;
 
 let cexp_eq_def = define
-  `Cexp_eq (p1:cexp) q1 = Cexp_num (if p1 = q1 then SUC 0 else 0)`;;
+  `Cexp_eq (p1: cval) q1 = Cexp_num (if p1 = q1 then SUC 0 else 0)`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Prepare the list of characteristic equations in the way compute wants it.  *)
@@ -155,10 +155,10 @@ let COMPUTE_INIT_THMS =
     (Cexp_num m = Cexp_num n <=> m = n) /\
     (Cexp_num m = Cexp_pair p1 q1 <=> F) /\
     (Cexp_pair p1 q1 = Cexp_num n <=> F)`,
-    REWRITE_TAC [injectivity "cexp"; distinctness "cexp"] THEN
+    REWRITE_TAC [injectivity "cval"; distinctness "cval"] THEN
     COND_CASES_TAC THEN REWRITE_TAC []) in
   let LET_EQ = prove (
-    `LET (f:cexp->cexp) (p1:cexp) = f p1`,
+    `LET (f:cval->cval) (p1:cval) = f p1`,
     REWRITE_TAC [LET_DEF]) in
   [COND_TRUE; COND_FALSE; IF_TRUE; IF_FALSE; NUMERAL_EQ; BIT0_EQ; BIT1_EQ;
    ADD_EQ1; ADD_EQ2; SUB_EQ1; SUB_EQ2; SUB_EQ3; MUL_EQ1; MUL_EQ2; DIV_RECURSIVE;
@@ -179,17 +179,19 @@ let COMPUTE_INIT_THMS =
 
 (* -------------------------------------------------------------------------- *)
 (* compute takes a list defn_eqs of _compute equations_ and a term tm of type *)
-(* :cexp, and returns a theorem |- tm = tm' where tm' is a fully reduced      *)
+(* :cval, and returns a theorem |- tm = tm' where tm' is a fully reduced      *)
 (* version of tm.                                                             *)
 (*                                                                            *)
 (* A _compute equation_ is an equation c x1 ... xN = e, where c is a constant,*)
-(* and x1 ... xN are variables of type :cexp, and e is closed under x1 ... xN.*)
+(* and x1 ... xN are variables of type :cval, and e is closed under x1 ... xN.*)
 (*                                                                            *)
 (* The equations in defn_eqs and the term tm may only contain constants that  *)
 (* have compute equations associated with them in the list.                   *)
 (* -------------------------------------------------------------------------- *)
 
-let compute defn_eqs tm = Kernel.compute (COMPUTE_INIT_THMS, defn_eqs) tm;;
+let compute defn_eqs tm =
+  Kernel.compute (COMPUTE_INIT_THMS,
+                  map (REWRITE_CONV [LET_END_DEF]) defn_eqs) tm;;
 
 (* -------------------------------------------------------------------------- *)
 (* We'll install some overloads to make it easier to build cexps.             *)
@@ -235,15 +237,15 @@ let cexp_if = prove (
   `Cexp_if n p q = if ~(n = numc 0) then p else q`,
   COND_CASES_TAC THEN ASM_REWRITE_TAC [cexp_if_def; ONE] THEN
   POP_ASSUM MP_TAC THEN
-  STRUCT_CASES_TAC (SPEC `n:cexp` (cases "cexp")) THEN
-  SIMP_TAC [injectivity "cexp"; ONE] THEN
+  STRUCT_CASES_TAC (SPEC `n:cval` (cases "cval")) THEN
+  SIMP_TAC [injectivity "cval"; ONE] THEN
   STRUCT_CASES_TAC (SPEC `a:num` num_CASES) THEN
   REWRITE_TAC [NOT_SUC; SUC_INJ; cexp_if_def]);;
 
-let cexp_size_def = define
-  `(cexp_size (numc n) = 1) /\
-   (cexp_size (pairc p q) = 1 + cexp_size p + cexp_size q)`;;
+let cval_size_def = define
+  `(cval_size (numc n) = 1) /\
+   (cval_size (pairc p q) = 1 + cval_size p + cval_size q)`;;
 
-let cexp_sum_size_def = define
-  `(cexp_sum_size (numc n) = n) /\
-   (cexp_sum_size (pairc p q) = 1 + cexp_sum_size p + cexp_sum_size q)`;;
+let cval_sum_size_def = define
+  `(cval_sum_size (numc n) = n) /\
+   (cval_sum_size (pairc p q) = 1 + cval_sum_size p + cval_sum_size q)`;;
