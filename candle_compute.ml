@@ -191,7 +191,7 @@ let COMPUTE_INIT_THMS =
 
 let compute defn_eqs tm =
   Kernel.compute (COMPUTE_INIT_THMS,
-                  map (REWRITE_CONV [LET_END_DEF]) defn_eqs) tm;;
+                  map (REWRITE_RULE [LET_END_DEF]) defn_eqs) tm;;
 
 (* -------------------------------------------------------------------------- *)
 (* We'll install some overloads to make it easier to build cexps.             *)
