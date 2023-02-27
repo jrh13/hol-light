@@ -1369,11 +1369,15 @@ let NUM_SUB_CONV =
 
 let NUM_DIV_CONV,NUM_MOD_CONV =
   let pth = prove
-   (`(q * n + r = m) ==> r < n ==> (m DIV n = q) /\ (m MOD n = r)`,
+   (`q * n + r = m ==> r < n ==> m DIV n = q /\ m MOD n = r`,
     MESON_TAC[DIVMOD_UNIQ])
+  and pth0 = prove
+   (`!m. m DIV 0 = 0 /\ m MOD 0 = m`,
+    REWRITE_TAC[DIV_ZERO; MOD_ZERO])
   and m = `m:num` and n = `n:num` and q = `q:num` and r = `r:num`
   and dtm = `(DIV)` and mtm = `(MOD)` in
   let NUM_DIVMOD_CONV x y =
+    if y =/ num_0 then SPEC (mk_numeral x) pth0 else
     let k = quo_num x y
     and l = mod_num x y in
     let th0 = INST [mk_numeral x,m; mk_numeral y,n;

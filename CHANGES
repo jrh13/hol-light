@@ -8,6 +8,97 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 27th Feb 2023               Library/words.ml
+
+Added a general "reverse b-bit fields" operation generalizing the
+existing "word_bytereverse", based on material from Juneyoung Lee.
+The operation also works on inputs where the word size is not an
+exact multiple of the field width, mapping bits in the upper overspill
+from b * N DIV b upwards to themselves, for definiteness.
+
+  word_reversefields =
+    |- !b w.
+           word_reversefields b w =
+           word_of_bits
+           {i | i < dimindex(:N) /\
+                bit
+                (if i < b * dimindex(:N) DIV b
+                 then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+                 else i)
+                w}
+
+This is supported by an extension of BIT_WORD_CONV and WORD_RED_CONV
+as well as a custom conversion WORD_REVERSEFIELDS_CONV. Added a few
+more basic lemmas about this and other word concepts:
+
+  BIT_WORD_REVERSEFIELDS =
+    |- !x b i.
+           bit i (word_reversefields b x) <=>
+           i < dimindex(:N) /\
+           bit
+           (if i < b * dimindex(:N) DIV b
+            then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+            else i)
+           x
+
+  VAL_WORD_AND_POW2_BITVAL =
+    |- (!x k b.
+            val (word_and x (word (2 EXP k * bitval b))) =
+            2 EXP k * bitval (bit k x /\ b)) /\
+       (!x k b.
+            val (word_and (word (2 EXP k * bitval b)) x) =
+            2 EXP k * bitval (b /\ bit k x))
+
+  WORD_AND_POW2_BITVAL =
+    |- (!x k b.
+            word_and x (word (2 EXP k * bitval b)) =
+            word (2 EXP k * bitval (bit k x /\ b))) /\
+       (!x k b.
+            word_and (word (2 EXP k * bitval b)) x =
+            word (2 EXP k * bitval (b /\ bit k x)))
+
+  WORD_BYTEREVERSE_REVERSEFIELDS =
+    |- word_bytereverse = word_reversefields 8
+
+  WORD_REVERSEFIELDS_REVERSEFIELDS =
+    |- !x b. word_reversefields b (word_reversefields b x) = x
+
+  WORD_SHL_LSB =
+    |- !x. word_shl x (dimindex(:N) - 1) =
+           word (2 EXP (dimindex(:N) - 1) * bitval (bit 0 x))
+
+  WORD_SHL_LSB_ALT =
+    |- !x. word_shl x (dimindex(:N) - 1) =
+           (if bit 0 x then word (2 EXP (dimindex(:N) - 1)) else word 0)
+
+Mon 27th Feb 2023               calc_num.ml
+
+Updated NUM_DIV_CONV and NUM_MOD_CONV to handle the degenerate cases
+of the form `m DIV 0` and `m MOD 0` (where m is a numeral), which
+are fixed by definition to convenient values, 0 and m respectively.
+
+Fri 27th Jan 2023               Makefile, update_database_4.14.ml [new file], pa_j_4.xx_8.00.ml [renamed pa_j_8.xx.ml]
+
+Added an update from Juneyoung Lee based on work by Chet Murthy
+to make the "update_database" functionality work in OCaml 4.14.
+
+Wed 25th Jan 2023               fusion.ml
+
+Added an update from Juneyoung Lee that provides better feedback
+when definitions are disallowed because of free variables by
+listing those free variables in the failure string.
+
+Wed 25th Jan 2023               Makefile, pa_j_8.xx.ml [new file]
+
+Added an update from Quentin Carbonneaux with support for newer
+OCaml (4.14) and camlp5 (8.00) versions.
+
+Thu 19th Jan 2023               Library/words.ml
+
+Made a change from Juneyoung Lee generalizing the types of the "usimdN"
+constructors so that the source and destination types can differ:
+usimd2, usimd4 and usimd8.
+
 Tue 13th Dec 2022               100/isoperimetric.ml [new file], Multivariate/passim
 
 Added a proof of the isoperimetric theorem to the "100 greatest
@@ -222,10 +313,10 @@ binary operations on machine words, following the index type to decompose:
     |- !f x y.
            simd2 f x y =
            word_join
-           (f (word_subword x (dimindex (:N),dimindex (:N)))
-           (word_subword y (dimindex (:N),dimindex (:N))))
-           (f (word_subword x (0,dimindex (:N)))
-           (word_subword y (0,dimindex (:N))))
+           (f (word_subword x (dimindex(:N),dimindex(:N)))
+           (word_subword y (dimindex(:N),dimindex(:N))))
+           (f (word_subword x (0,dimindex(:N)))
+           (word_subword y (0,dimindex(:N))))
 
   simd4 =
     |- !f. simd4 f = simd2 (simd2 f)
@@ -239,8 +330,8 @@ binary operations on machine words, following the index type to decompose:
   usimd2 =
     |- !f x.
            usimd2 f x =
-           word_join (f (word_subword x (dimindex (:N),dimindex (:N))))
-           (f (word_subword x (0,dimindex (:N))))
+           word_join (f (word_subword x (dimindex(:N),dimindex(:N))))
+           (f (word_subword x (0,dimindex(:N))))
   usimd4 =
     |- !f. usimd4 f = usimd2 (usimd2 f)
 
@@ -1359,7 +1450,7 @@ based on the intuition that the bit patterns are not overlapping
     |- !x. bits_of_num(val x) = bits_of_word x
 
   BITS_OF_WORD_WORD =
-    |- !n. bits_of_word (word n) = {i | i < dimindex (:N)} INTER bits_of_num n
+    |- !n. bits_of_word (word n) = {i | i < dimindex(:N)} INTER bits_of_num n
 
   DISJOINT_BITS_CLAUSES =
     |- (!k h l.

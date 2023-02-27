@@ -1742,6 +1742,30 @@ let VAL_WORD_AND_POW2 = prove
   COND_CASES_TAC THEN REWRITE_TAC[MULT_CLAUSES; LT_EXP; EXP_LT_0] THEN
   CONV_TAC NUM_REDUCE_CONV THEN ASM_MESON_TAC[BIT_TRIVIAL; NOT_LE]);;
 
+let WORD_AND_POW2_BITVAL = prove
+ (`(!(x:N word) k b.
+        word_and x (word(2 EXP k * bitval b)) =
+        word(2 EXP k * bitval(bit k x /\ b))) /\
+   (!(x:N word) k b.
+        word_and (word(2 EXP k * bitval b)) x =
+        word(2 EXP k * bitval(b /\ bit k x)))`,
+  REPEAT STRIP_TAC THEN BOOL_CASES_TAC `b:bool` THEN
+  ASM_REWRITE_TAC[BITVAL_CLAUSES; MULT_CLAUSES] THEN
+  REWRITE_TAC[WORD_AND_POW2; WORD_AND_EQ_0; BITS_OF_WORD_0] THEN
+  REWRITE_TAC[DISJOINT_EMPTY]);;
+
+let VAL_WORD_AND_POW2_BITVAL = prove
+ (`(!(x:N word) k b.
+        val(word_and x (word(2 EXP k * bitval b))) =
+        2 EXP k * bitval(bit k x /\ b)) /\
+   (!(x:N word) k b.
+        val(word_and (word(2 EXP k * bitval b)) x) =
+        2 EXP k * bitval(b /\ bit k x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_AND_POW2_BITVAL] THEN
+  MATCH_MP_TAC VAL_WORD_EQ THEN REWRITE_TAC[bitval] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[MULT_CLAUSES; LT_EXP; EXP_LT_0] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN ASM_MESON_TAC[BIT_TRIVIAL; NOT_LE]);;
+
 let VAL_WORD_AND_LE = prove
  (`(!x y:N word. val(word_and x y) <= val x) /\
    (!x y:N word. val(word_and x y) <= val y)`,
@@ -2339,6 +2363,22 @@ let WORD_SHL_COMPOSE = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[word_shl; VAL_WORD; EXP_ADD] THEN
   REWRITE_TAC[WORD_EQ; CONG] THEN CONV_TAC MOD_DOWN_CONV THEN
   REWRITE_TAC[MULT_ASSOC]);;
+
+let WORD_SHL_LSB_ALT = prove
+ (`!x:N word.
+        word_shl x (dimindex(:N) - 1) =
+        if bit 0 x then word(2 EXP (dimindex(:N) - 1)) else word 0`,
+  GEN_TAC THEN COND_CASES_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_0; BIT_WORD_POW2; BIT_WORD_SHL] THEN
+  X_GEN_TAC `i:num` THEN ASM_CASES_TAC `i = dimindex(:N) - 1` THEN
+  ASM_REWRITE_TAC[SUB_REFL] THEN ASM_ARITH_TAC);;
+
+let WORD_SHL_LSB = prove
+ (`!x:N word.
+        word_shl x (dimindex(:N) - 1) =
+        word(2 EXP (dimindex(:N) - 1) * bitval(bit 0 x))`,
+  GEN_TAC THEN REWRITE_TAC[WORD_SHL_LSB_ALT; bitval] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[MULT_CLAUSES]);;
 
 let word_ushr = new_definition
   `word_ushr (x:(N)word) n =
@@ -4737,6 +4777,58 @@ let WORD_CLZ_MONO = prove
   REWRITE_TAC[WORD_LE_CLZ_VAL] THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Reversal of the b-bit fields in an N-bit word. If N isn't a multiple      *)
+(* of b, this leaves bits above the highest b multiple unchanged.            *)
+(* ------------------------------------------------------------------------- *)
+
+let word_reversefields = new_definition
+ `(word_reversefields:num->(N)word->(N)word) (b:num) w =
+  word_of_bits
+    { i | i < dimindex(:N) /\
+          bit (if i < b * dimindex(:N) DIV b
+               then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+               else i) w}`;;
+
+let BIT_WORD_REVERSEFIELDS = prove
+ (`!(x:(N)word) b i.
+        bit i (word_reversefields b x) <=>
+        i < dimindex(:N) /\
+        bit (if i < b * dimindex(:N) DIV b
+             then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+             else i) x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[word_reversefields; BIT_WORD_OF_BITS] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let WORD_REVERSEFIELDS_REVERSEFIELDS = prove
+ (`!(x:(N)word) b. word_reversefields b (word_reversefields b x) = x`,
+  ONCE_REWRITE_TAC[WORD_EQ_BITS_ALT] THEN
+  REWRITE_TAC[BIT_WORD_REVERSEFIELDS] THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  DISJ_CASES_TAC(ARITH_RULE `b = 0 \/ 0 < b`) THEN
+  ASM_REWRITE_TAC[MOD_ZERO; DIV_ZERO; MULT_CLAUSES; ADD_CLAUSES; LT] THEN
+  ABBREV_TAC `q = dimindex (:N) DIV b` THEN
+  ASM_CASES_TAC `i:num < b * q` THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC[ONCE_REWRITE_RULE[MULT_SYM] DIV_MULT; LE_1; DIV_MULT_ADD;
+    MOD_MULT_ADD; MOD_MOD_REFL; DIV_LT; MOD_LT_EQ_LT; ADD_CLAUSES] THEN
+  SUBGOAL_THEN `b * (q - 1 - i DIV b) + i MOD b < b * q` ASSUME_TAC THENL
+   [MATCH_MP_TAC(ARITH_RULE
+     `m < n /\ n * (x + 1) <= n * q ==> n * x + m < n * q`) THEN
+    ASM_REWRITE_TAC[MOD_LT_EQ_LT; LE_MULT_LCANCEL] THEN
+    UNDISCH_TAC `i < b * q` THEN
+    ASM_CASES_TAC `q = 0` THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC;
+    ASM_REWRITE_TAC[]] THEN
+  MATCH_MP_TAC(TAUT `p /\ (q <=> q') ==> (p /\ q <=> q')`) THEN CONJ_TAC THENL
+   [TRANS_TAC LTE_TRANS `b * q:num` THEN ASM_REWRITE_TAC[] THEN
+    MP_TAC(SPECL [`dimindex(:N)`; `b:num`] DIVISION) THEN
+    ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC;
+    AP_THM_TAC THEN AP_TERM_TAC THEN
+    TRANS_TAC EQ_TRANS `b * i DIV b + i MOD b` THEN
+    CONJ_TAC THENL [ALL_TAC; REWRITE_TAC[DIVISION_SIMP]] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+    MATCH_MP_TAC(ARITH_RULE `x < n ==> n - 1 - (n - 1 - x) = x`) THEN
+    ASM_SIMP_TAC[RDIV_LT_EQ; LE_1] THEN ASM_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Byte reversal, with type constrained to multiple of 8.                    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -4766,6 +4858,14 @@ let WORD_BYTEREVERSE_BYTEREVERSE = prove
   AP_THM_TAC THEN AP_TERM_TAC THEN
   SIMP_TAC[MOD_MULT_ADD; MOD_MOD_REFL; DIV_MULT_ADD; ARITH_EQ] THEN
   SIMP_TAC[DIV_LT; MOD_LT_EQ; ARITH_EQ] THEN ASM_ARITH_TAC);;
+
+let WORD_BYTEREVERSE_REVERSEFIELDS = prove
+ (`word_bytereverse = word_reversefields 8`,
+  REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+  GEN_REWRITE_TAC I [WORD_EQ_BITS_ALT] THEN
+  REWRITE_TAC[BIT_WORD_BYTEREVERSE; BIT_WORD_REVERSEFIELDS] THEN
+  REWRITE_TAC[DIMINDEX_TYBIT0; MULT_ASSOC] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN SIMP_TAC[DIV_MULT; ARITH_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Alignment. The definition rolls in the assumption that the value is a     *)
@@ -5336,6 +5436,15 @@ let BIT_WORD_CONV =
         BINOP2_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))
          (LAND_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))) THENC
         (conv_and_t ORELSEC conv_and_f)) tm
+
+    | Comb(Comb(Const("bit",_),n),
+           Comb(Comb(Const("word_reversefields",_),b),_))
+      when is_numeral n && is_numeral b ->
+       (GEN_REWRITE_CONV I [BIT_WORD_REVERSEFIELDS] THENC
+        BINOP2_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))
+         (LAND_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))) THENC
+        (conv_and_t ORELSEC conv_and_f)) tm
+
     | _ -> failwith "BIT_WORD_CONV";;
 
 (* ------------------------------------------------------------------------- *)
@@ -6304,6 +6413,38 @@ let WORD_BYTEREVERSE_CONV =
   RAND_CONV EXPAND_NSUM_CONV THENC
   DEPTH_CONV(GEN_REWRITE_CONV I [BITVAL_CLAUSES] ORELSEC NUM_RED_CONV);;
 
+let WORD_REVERSEFIELDS_CONV =
+  let pth = (SPECL [`NUMERAL b`; `NUMERAL n`] o prove)
+   (`!b n.
+        word_reversefields b (word n:N word) =
+        word(nsum (0..dimindex(:N)-1)
+          (\i. 2 EXP i *
+               bitval(ODD(n DIV
+               2 EXP (if i < b * dimindex(:N) DIV b
+                      then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+                      else i)))))`,
+    REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [WORD_EQ_BITS_ALT] THEN
+    REWRITE_TAC[BIT_WORD_REVERSEFIELDS; BIT_WORD] THEN
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(TAUT `p /\ (q <=> q') ==> (p /\ q <=> q')`) THEN
+    CONJ_TAC THENL
+     [ASM_CASES_TAC `b = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES; LT] THEN
+      ASM_CASES_TAC `dimindex (:N) DIV b = 0` THEN
+      ASM_REWRITE_TAC[MULT_CLAUSES; LT] THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC(ARITH_RULE
+       `b * (x + 1) <= n /\ m < b ==> b * x + m < n`) THEN
+      ASM_SIMP_TAC[MOD_LT_EQ; GSYM LDIV_LT_EQ] THEN ASM_ARITH_TAC;
+      GEN_REWRITE_TAC RAND_CONV [ODD_MOD] THEN
+      SIMP_TAC[DIGITSUM_DIV_MOD; FINITE_NUMSEG; BITVAL_BOUND_ALT] THEN
+      ASM_SIMP_TAC[IN_NUMSEG; LE_0; ARITH_RULE `i < n ==> i <= n - 1`] THEN
+      REWRITE_TAC[BITVAL_EQ_1]]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  DEPTH_CONV
+   ((!word_SIZE_CONV) ORELSEC NUM_MULT_CONV ORELSEC NUM_SUB_CONV) THENC
+  RAND_CONV EXPAND_NSUM_CONV THENC
+  DEPTH_CONV(GEN_REWRITE_CONV I [BITVAL_CLAUSES] ORELSEC NUM_RED_CONV);;
+
 let WORD_JSHL_CONV =
   let pth = prove
    (`word_jshl (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
@@ -6430,6 +6571,8 @@ let WORD_RED_CONV =
     `word_clz (word(NUMERAL n):N word)`,WORD_CLZ_CONV;
     `word_bytereverse (word(NUMERAL n):((((N)tybit0)tybit0)tybit0)word)`,
                 WORD_BYTEREVERSE_CONV;
+    `word_reversefields (NUMERAL b) (word(NUMERAL n):N word)`,
+                WORD_REVERSEFIELDS_CONV;
     `word_jshl (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHL_CONV;
     `word_jshr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHR_CONV;
     `word_jushr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JUSHR_CONV;
