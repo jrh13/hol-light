@@ -4814,7 +4814,7 @@ let WORD_REVERSEFIELDS_REVERSEFIELDS = prove
    [MATCH_MP_TAC(ARITH_RULE
      `m < n /\ n * (x + 1) <= n * q ==> n * x + m < n * q`) THEN
     ASM_REWRITE_TAC[MOD_LT_EQ_LT; LE_MULT_LCANCEL] THEN
-    UNDISCH_TAC `i < b * q` THEN
+    UNDISCH_TAC `i:num < b * q` THEN
     ASM_CASES_TAC `q = 0` THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC;
     ASM_REWRITE_TAC[]] THEN
   MATCH_MP_TAC(TAUT `p /\ (q <=> q') ==> (p /\ q <=> q')`) THEN CONJ_TAC THENL
