@@ -71,6 +71,12 @@ loadt "EC/secp224k1.ml";;
 loadt "EC/secp256k1.ml";;
 
 (* ------------------------------------------------------------------------- *)
+(* The Commercial Cryptography SM2 curve                                     *)
+(* ------------------------------------------------------------------------- *)
+
+loadt "EC/ccsm2.ml";;
+
+(* ------------------------------------------------------------------------- *)
 (* The curve25519 family in Edwards, Montgomery and Weierstrass forms.       *)
 (* The first three files are independent, the fourth giving the connections. *)
 (* ------------------------------------------------------------------------- *)

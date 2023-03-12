@@ -8,6 +8,14 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 10th Mar 2023               EC/ccsm2.ml [new file]
+
+Added one more specific elliptic curve to the collection, the
+SM2 curve. For more info see "https://www.cryptopp.com/wiki/SM2".
+The parameters are taken from Table 11 (SM2_P256) here:
+
+https://trustedcomputinggroup.org/wp-content/uploads/TCGAlgorithmRegistry_Rev01.15.pdf
+
 Mon 27th Feb 2023               Library/words.ml
 
 Added a general "reverse b-bit fields" operation generalizing the
