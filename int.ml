@@ -185,6 +185,32 @@ let int_pow_th = prove
     ASM_REWRITE_TAC[GSYM int_mul; int_mul_th]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* All collected into a single rewrite                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_OF_INT_CLAUSES = prove
+ (`(!x y. real_of_int x = real_of_int y <=> x = y) /\
+   (!x y. real_of_int x >= real_of_int y <=> x >= y) /\
+   (!x y. real_of_int x > real_of_int y <=> x > y) /\
+   (!x y. real_of_int x <= real_of_int y <=> x <= y) /\
+   (!x y. real_of_int x < real_of_int y <=> x < y) /\
+   (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+   (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+   (!n. &n = real_of_int(&n)) /\
+   (!x. --real_of_int x = real_of_int(--x)) /\
+   (!x. abs(real_of_int x) = real_of_int(abs x)) /\
+   (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+   (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+   (!x. real_sgn (real_of_int x) = real_of_int(int_sgn x)) /\
+   (!x y. real_of_int x + real_of_int y = real_of_int(x + y)) /\
+   (!x y. real_of_int x - real_of_int y = real_of_int(x - y)) /\
+   (!x y. real_of_int x * real_of_int y = real_of_int(x * y)) /\
+   (!x n. real_of_int x pow n = real_of_int(x pow n))`,
+  REWRITE_TAC[int_eq; int_ge; int_gt; int_le; int_lt; int_max_th; int_min_th;
+              int_of_num_th; int_neg_th; int_abs_th; int_max_th; int_min_th;
+              int_sgn_th;  int_add_th; int_sub_th; int_mul_th; int_pow_th]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A few convenient theorems about the integer type.                         *)
 (* ------------------------------------------------------------------------- *)
 

@@ -549,8 +549,8 @@ value add_string buf s =
 ;
 
 (*
- * This predicate checks that the stream contains a valid raw-string starter.  
- * The definition of "valid raw string starter" depends on the value of 
+ * This predicate checks that the stream contains a valid raw-string starter.
+ * The definition of "valid raw string starter" depends on the value of
  * the variable [simplest_raw_strings]: if it is [False], then a valid
  * raw-string starter is "[:alpha:]+|"; if it is [True], a valid raw-string
  * starter is "[:alpha:]*|".  [simplest_raw_strings] is set to True in
@@ -1152,7 +1152,7 @@ value mklistpat loc last =
 
 value operator_rparen_f strm =
   let id x = x in
-  let app suff s = s^suff in 
+  let app suff s = s^suff in
   let trials = [
     (1, Right (fun [ [(("LIDENT"|"UIDENT"),_) :: _] -> True | _ -> False ]))
   ; (2, Left (is_operator, id, [[("",")")]]))
@@ -1903,13 +1903,13 @@ EXTEND
       <:attribute_body< $_attrid:id$ $_structure:st$ >>
     | id = V attribute_id "attrid" ->
       <:attribute_body< $_attrid:id$ >>
-    | id = V attribute_id "attrid" ; ":" ; si = attribute_signature -> 
+    | id = V attribute_id "attrid" ; ":" ; si = attribute_signature ->
       <:attribute_body< $_attrid:id$ : $_signature:si$ >>
-    | id = V attribute_id "attrid" ; ":" ; ty = V ctyp "type" -> 
+    | id = V attribute_id "attrid" ; ":" ; ty = V ctyp "type" ->
       <:attribute_body< $_attrid:id$ : $_type:ty$ >>
-    | id = V attribute_id "attrid" ; "?" ;  p = V patt "patt" -> 
+    | id = V attribute_id "attrid" ; "?" ;  p = V patt "patt" ->
       <:attribute_body< $_attrid:id$ ? $_patt:p$ >>
-    | id = V attribute_id "attrid" ; "?" ;  p = V patt "patt"; "when"; e = V expr "expr" -> 
+    | id = V attribute_id "attrid" ; "?" ;  p = V patt "patt"; "when"; e = V expr "expr" ->
       <:attribute_body< $_attrid:id$ ? $_patt:p$ when $_expr:e$ >>
     ] ]
   ;
@@ -2421,7 +2421,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
               | _ -> <:expr< $e1$ $e2$ >> ] ]
       | "assert"; (ext,attrs) = ext_attributes; e = SELF ->
           expr_to_inline <:expr< assert $e$ >> ext attrs
-      | "lazy"; (ext,attrs) = ext_attributes; e = SELF -> 
+      | "lazy"; (ext,attrs) = ext_attributes; e = SELF ->
           expr_to_inline <:expr< lazy ($e$) >> ext attrs ]
     | "." LEFTA
       [ e1 = SELF; "."; lili = V longident_lident "lilongid" ->
@@ -2496,9 +2496,9 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
       | "("; el = V e_phony "list"; ")" -> <:expr< ($_list:el$) >>
       | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
       | "("; e = SELF; ")" -> concat_comm loc <:expr< $e$ >>
-      | "begin"; (ext,attrs) = ext_attributes; e = SELF; "end" -> 
+      | "begin"; (ext,attrs) = ext_attributes; e = SELF; "end" ->
           expr_to_inline (concat_comm loc <:expr< $e$ >>) ext attrs
-      | "begin"; (ext,attrs) = ext_attributes; "end" -> 
+      | "begin"; (ext,attrs) = ext_attributes; "end" ->
           expr_to_inline <:expr< $uid:"()"$ >> ext attrs
       | x = QUOTATION ->
           let con = quotation_content x in
@@ -2595,7 +2595,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
   ;
   fun_binding:
     [ RIGHTA
-      [ 
+      [
         check_new_type_extended ; "("; "type"; l = LIST1 LIDENT ; ")" ; e = SELF ->
         List.fold_right (fun id e ->
             <:expr< fun [(type $lid:id$) -> $e$] >>)
@@ -2635,7 +2635,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
         let rhs = match tycon with [
           None -> rhs
         | Some ty -> <:expr< ($rhs$ : $ty$) >>
-        ] in 
+        ] in
         (i, rhs)
       ] ]
   ;
@@ -2675,7 +2675,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
   patt_ident: [
     [ s = V LIDENT → <:patt< $_lid:s$ >>
     | s = V GIDENT → <:patt< $_lid:s$ >>
-    | li = longident ; "." ; p = patt LEVEL "simple" → 
+    | li = longident ; "." ; p = patt LEVEL "simple" →
       match p with [
         <:patt< $uid:i$ >> ->
         let i = uident_True_True_ i in
@@ -2732,7 +2732,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
               [ <:patt< ( $list:pl$ ) >> ->
                   List.fold_left (fun p1 p2 -> <:patt< $p1$ $p2$ >>) p1 pl
               | _ -> <:patt< $p1$ $p2$ >> ] ]
-      | "lazy"; (ext,attrs) = ext_attributes; p = SELF -> 
+      | "lazy"; (ext,attrs) = ext_attributes; p = SELF ->
           patt_to_inline <:patt< lazy $p$ >> ext attrs ]
     | "simple"
       [ p = patt_ident -> p
@@ -2763,7 +2763,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
       | "{"; lpl = V lbl_patt_list "list"; "}" ->
           <:patt< { $_list:lpl$ } >>
       | "("; ")" -> <:patt< $uid:"()"$ >>
-      | "("; op = operator_rparen -> 
+      | "("; op = operator_rparen ->
           if op = "::" then
             <:patt< $uid:op$ >>
           else
@@ -2800,11 +2800,11 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
         ] in
         let rhs = match p with [
           None -> <:patt< $lid:last$ >>
-        | Some p -> p ] in 
+        | Some p -> p ] in
          let rhs = match tycon with [
           None -> rhs
         | Some ty -> <:patt< ( $rhs$ : $ty$ ) >>
-        ] in 
+        ] in
         (i, rhs)
       | "_" -> (<:patt< _ >>, <:patt< _ >>) ] ]
   ;
@@ -3010,15 +3010,15 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
   ;
   ctyp_ident:
     [ LEFTA
-      [ me1 = extended_longident ; "." ; i = V LIDENT "lid" → 
+      [ me1 = extended_longident ; "." ; i = V LIDENT "lid" →
           <:ctyp< $longid:me1$ . $_lid:i$ >>
-      | i = V LIDENT "lid" → 
+      | i = V LIDENT "lid" →
           <:ctyp< $_lid:i$ >>
-      ] 
+      ]
     ]
   ;
   ctyp:
-    [ 
+    [
       "alg_attribute" LEFTA
       [ ct = SELF ; "[@" ; attr = V attribute_body "attribute"; "]" ->
         <:ctyp< $ct$ [@ $_attribute:attr$ ] >>
@@ -3039,7 +3039,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
       [ "'"; i = V ident "" -> <:ctyp< '$_:i$ >>
       | "_" -> <:ctyp< _ >>
       | e = alg_extension -> <:ctyp< [% $_extension:e$ ] >>
-      | "("; "module"; (ext,attrs) = ext_attributes; mt = module_type; ")" -> 
+      | "("; "module"; (ext,attrs) = ext_attributes; mt = module_type; ")" ->
           let mt = module_type_wrap_attrs mt attrs in
           let ct = <:ctyp< ( module $mt$ ) >> in
           ctyp_to_inline ct ext []
@@ -3133,7 +3133,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
 
       | "["; ct = ctyp; "]"; cli = V longident_lident "lilongid" ->
           <:class_expr< [ $ct$ ] $_lilongid:cli$ >>
-      | cli = V longident_lident "lilongid" -> 
+      | cli = V longident_lident "lilongid" ->
           <:class_expr< $_lilongid:cli$ >>
       | "object"; alg_attrs = alg_attributes_no_anti; cspo = V (OPT class_self_patt);
         cf = V class_structure "list"; "end" ->
@@ -3299,7 +3299,7 @@ MLast.SgMtyAlias loc <:vala< i >> <:vala< li >> attrs
   (* Expressions *)
   expr: LEVEL "simple"
     [ LEFTA
-      [ "new"; (ext,attrs) = ext_attributes; cli = V longident_lident "lilongid" -> 
+      [ "new"; (ext,attrs) = ext_attributes; cli = V longident_lident "lilongid" ->
           expr_to_inline <:expr< new $_lilongid:cli$ >> ext attrs
       | "object"; (ext,attrs) = ext_attributes; cspo = V (OPT class_self_patt);
         cf = V class_structure "list"; "end" ->
@@ -3545,4 +3545,13 @@ EXTEND
     | f = expr; "THEN_TCL"; g = expr -> <:expr< ((then_tcl_ $f$) $g$) >>
     | f = expr; "ORELSE_TCL"; g = expr -> <:expr< ((orelse_tcl_ $f$) $g$) >>
 ]];
+END;
+
+EXTEND
+  top_phrase:
+   [ [ sti = str_item; ";;" ->
+         match sti with
+         [ <:str_item< $exp:e$ >> -> Some <:str_item< value it = $e$ >>
+         | x -> Some x ] ] ]
+  ;
 END;

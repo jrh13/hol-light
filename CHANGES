@@ -8,6 +8,108 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon  3rd Apr 2023               Library/words.ml
+
+Improved the ability of WORD_RULE to handle some arithmetic-bitwise
+combinations (mainly arithmetic over bitwise rather than the reverse, so
+still not a full solution the general case):
+
+  WORD_RULE 
+    `word_add x y = word_add (word_xor x y) (word_shl (word_and x y) 1)`;;
+
+Also added a fourth distinct words decision procedure, this one expanding
+word expressions for specific sizes in terms of bits then using arithmetic
+(not SAT as with full bit-blasting), e.g.
+
+  WORD_BLAST
+    `!x:int32. val(word_shl x 2) + 2 EXP 32 * val(word_ushr x 30) =
+              4 * val x`;;
+
+  WORD_BLAST
+    `word_add (word_and x (word 0x0F)) (word_and x (word 0xF0)):byte = x`;;
+
+These use a refactoring via new conversions:
+
+ - BINT_POLY_CONV: like INT_POLY_CONV but exploiting the fact that
+   higher powers of bit values b collapse as b^k = b (k >= 1)
+
+ - WORD_VAL_CONG_CONV: converts word equation into integer congruence
+   in terms of numeric values
+ 
+ - VAL_EXPAND_CONV: expand "val x" (as well as, for a numeral k,
+   "val x DIV 2 EXP k" and "val x MOD 2 EXP k") bitwise for words
+   of a specific size.
+
+Also added a few new lemmas:
+
+  BITVAL_EXP =
+    |- !b k. bitval b EXP k = (if k = 0 then 1 else bitval b)
+  
+  INT_BITVAL_AND =
+    |- !b c. &(bitval(b /\ c)) = &(bitval b) * &(bitval c)
+  
+  INT_BITVAL_IFF =
+    |- !b c.
+           &(bitval(b <=> c)) =
+           &1 - ((&(bitval b) + &(bitval c)) - &2 * &(bitval b) * &(bitval c))
+  
+  INT_BITVAL_IMP =
+     |- !b c.
+           &(bitval(b ==> c)) =
+           (&1 - &(bitval b) + &(bitval c)) - (&1 - &(bitval b)) * &(bitval c)
+  
+  INT_BITVAL_OR =
+     |- !b c.
+           &(bitval(b \/ c)) =
+           (&(bitval b) + &(bitval c)) - &(bitval b) * &(bitval c)
+  
+  INT_BITVAL_POW =
+     |- !b k. &(bitval b) pow k = (if k = 0 then &1 else &(bitval b))
+  
+  VAL =
+    |- !x. val x = nsum (0..dimindex (:N) - 1) (\i. 2 EXP i * bitval(bit i x))
+
+
+Mon  3rd Apr 2023               int.ml
+
+Added a collected clausal rewrite of all the "real_of_int" mapping
+properties
+
+  REAL_OF_INT_CLAUSES =
+    |- (!x y. real_of_int x = real_of_int y <=> x = y) /\
+       (!x y. real_of_int x >= real_of_int y <=> x >= y) /\
+       (!x y. real_of_int x > real_of_int y <=> x > y) /\
+       (!x y. real_of_int x <= real_of_int y <=> x <= y) /\
+       (!x y. real_of_int x < real_of_int y <=> x < y) /\
+       (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+       (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+       (!n. &n = real_of_int(&n)) /\
+       (!x. --real_of_int x = real_of_int(--x)) /\
+       (!x. abs(real_of_int x) = real_of_int(abs x)) /\
+       (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+       (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+       (!x. real_sgn (real_of_int x) = real_of_int(int_sgn x)) /\
+       (!x y. real_of_int x + real_of_int y = real_of_int(x + y)) /\
+       (!x y. real_of_int x - real_of_int y = real_of_int(x - y)) /\
+       (!x y. real_of_int x * real_of_int y = real_of_int(x * y)) /\
+       (!x n. real_of_int x pow n = real_of_int(x pow n))
+
+Thu 30th Mar 2023               Library/words.ml
+
+Tweaked BIT_WORD_CONV to rewrite bits beyond the end of a word to "F" when
+there are otherwise no applicable recursions, for example, on a variable:
+
+  # BIT_WORD_CONV `bit 40 (x:int32)`;;
+  val it : thm = |- bit 40 x <=> F
+
+Thu 30th Mar 2023               pa_j_4.xx_8.00.ml
+
+Restored to the latest version of the pa_j file the special "it" identifier
+automatically assigned to otherwise nameless toplevel expressions:
+
+  # 42;;
+  val it : int = 42
+
 Fri 10th Mar 2023               EC/ccsm2.ml [new file]
 
 Added one more specific elliptic curve to the collection, the

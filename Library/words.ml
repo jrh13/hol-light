@@ -7,7 +7,7 @@
 (*                                                                           *)
 (* Mappings `val:N word->num` and `word:num->N word` for unsigned values,    *)
 (* and similar 2s-complement `ival:N word->int` and `iword:int->word`, cast  *)
-(* (reducing modulo word in one direction) between words and numbers.        *)
+(* (reducing modulo wordsize in one direction) between words and numbers.    *)
 (* The `bit` function gives a specific bit as a Boolean.                     *)
 (*                                                                           *)
 (* The usual operations are provided like `word_add`, `word_xor`; currently  *)
@@ -27,6 +27,7 @@
 (*  - WORD_RULE for simple algebraic properties                              *)
 (*  - WORD_BITWISE_RULE for bitwise-type properties of logical operations    *)
 (*  - WORD_ARITH for things involving numerical values                       *)
+(*  - WORD_BLAST for fixed-size bitwise expansions followed by arithmetic    *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 2019-2020                       *)
 (*                (c) Copyright, Mario Carneiro 2020                         *)
@@ -261,9 +262,45 @@ let BITVAL_XOR = prove
  (`!b c. bitval(~(b <=> c)) = (bitval b + bitval c) - 2 * bitval b * bitval c`,
   REWRITE_TAC[FORALL_BOOL_THM; BITVAL_CLAUSES] THEN CONV_TAC NUM_REDUCE_CONV);;
 
+let BITVAL_EXP = prove
+ (`!b k. bitval b EXP k = if k = 0 then 1 else bitval b`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[EXP] THEN
+  REWRITE_TAC[bitval] THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[EXP_ZERO; EXP_ONE]);;
+
 let INT_BITVAL_NOT = prove
  (`!b. &(bitval(~b)):int = &1 - &(bitval b)`,
   SIMP_TAC[BITVAL_NOT; GSYM INT_OF_NUM_SUB; BITVAL_BOUND]);;
+
+let INT_BITVAL_AND = prove
+ (`!b c. &(bitval(b /\ c)):int = &(bitval b) * &(bitval c)`,
+  REWRITE_TAC[BITVAL_AND; INT_OF_NUM_CLAUSES]);;
+
+let INT_BITVAL_OR = prove
+ (`!b c. &(bitval(b \/ c)):int =
+         (&(bitval b) + &(bitval c)) - &(bitval b) * &(bitval c)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[bitval] THEN
+  MAP_EVERY ASM_CASES_TAC [`b:bool`; `c:bool`] THEN
+  ASM_REWRITE_TAC[BITVAL_CLAUSES] THEN INT_ARITH_TAC);;
+
+let INT_BITVAL_IMP = prove
+ (`!b c. &(bitval(b ==> c)):int =
+         (&1 - &(bitval b) + &(bitval c)) - (&1 - &(bitval b)) * &(bitval c)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[bitval] THEN
+  MAP_EVERY ASM_CASES_TAC [`b:bool`; `c:bool`] THEN
+  ASM_REWRITE_TAC[BITVAL_CLAUSES] THEN INT_ARITH_TAC);;
+
+let INT_BITVAL_IFF = prove
+ (`!b c. &(bitval(b <=> c)):int =
+         &1 - ((&(bitval b) + &(bitval c)) - &2 * &(bitval b) * &(bitval c))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[bitval] THEN
+  MAP_EVERY ASM_CASES_TAC [`b:bool`; `c:bool`] THEN
+  ASM_REWRITE_TAC[BITVAL_CLAUSES] THEN INT_ARITH_TAC);;
+
+let INT_BITVAL_POW = prove
+ (`!b k. &(bitval b) pow k = if k = 0 then &1:int else &(bitval b)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[INT_OF_NUM_CLAUSES; BITVAL_EXP] THEN
+  MESON_TAC[]);;
 
 let REAL_BITVAL_NOT = prove
  (`!b. &(bitval(~b)):real = &1 - &(bitval b)`,
@@ -298,6 +335,15 @@ let INT_EQ_BITVAL = prove
 let REAL_EQ_BITVAL = prove
  (`!b c. &(bitval b):real = &(bitval c) <=> (b <=> c)`,
   REWRITE_TAC[REAL_OF_NUM_EQ; EQ_BITVAL]);;
+
+let BINT_POLY_CONV =
+  let bitpow_conv =
+    GEN_REWRITE_CONV I [INT_BITVAL_POW] THENC
+    RATOR_CONV(LAND_CONV NUM_EQ_CONV) THENC
+    GEN_REWRITE_CONV I [COND_CLAUSES] in
+  INT_POLY_CONV THENC
+  ONCE_DEPTH_CONV bitpow_conv THENC
+  INT_POLY_CONV;;
 
 (* ------------------------------------------------------------------------- *)
 (* Some more binary-specific lemmas.                                         *)
@@ -452,6 +498,11 @@ let FINITE_BITS_OF_WORD = prove
 let val_def = new_definition
  `val (w:N word) =
     nsum {i | i < dimindex(:N)} (\i. 2 EXP i * bitval(bit i w))`;;
+
+let VAL = prove
+ (`!x:N word.
+       val(x) = nsum(0..dimindex(:N)-1) (\i. 2 EXP i * bitval(bit i x))`,
+  REWRITE_TAC[val_def; NUMSEG_LT; DIMINDEX_NONZERO]);;
 
 let word = new_definition
  `(word:num->N word) n =
@@ -2802,47 +2853,63 @@ let WORD_IGE = prove
   REWRITE_TAC[word_ige; irelational2]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Simple "propagate signed value modulo" decision procedure.                *)
+(* Simple "propagate value modulo" decision procedure.                       *)
 (* ------------------------------------------------------------------------- *)
 
-let WORD_RULE =
-  let IVAL_WORD_ADD_REM = prove
+let WORD_VAL_CONG_CONV =
+  let VAL_WORD_ADD_REM = prove
    (`!x y:N word.
-          ival(word_add x y) rem (&2 pow dimindex(:N)) =
-          ((ival x rem (&2 pow dimindex(:N))) +
-           (ival y rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[INT_ADD_REM] THEN REWRITE_TAC[INT_REM_EQ; ICONG_WORD_ADD])
-  and IVAL_WORD_SUB_REM = prove
+          &(val(word_add x y)) rem (&2 pow dimindex(:N)) =
+          ((&(val x) rem (&2 pow dimindex(:N))) +
+           (&(val y) rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
+    REWRITE_TAC[REWRITE_RULE[GSYM INT_REM_EQ] INT_CONG_WORD_ADD] THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
+  and VAL_WORD_SUB_REM = prove
    (`!x y:N word.
-          ival(word_sub x y) rem (&2 pow dimindex(:N)) =
-          ((ival x rem (&2 pow dimindex(:N))) -
-           (ival y rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[INT_SUB_REM] THEN REWRITE_TAC[INT_REM_EQ; ICONG_WORD_SUB])
-  and IVAL_WORD_NEG_REM = prove
+          &(val(word_sub x y)) rem (&2 pow dimindex(:N)) =
+          ((&(val x) rem (&2 pow dimindex(:N))) -
+           (&(val y) rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
+    REWRITE_TAC[REWRITE_RULE[GSYM INT_REM_EQ] INT_CONG_WORD_SUB] THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
+  and VAL_WORD_NEG_REM = prove
    (`!x:N word.
-          ival(word_neg x) rem (&2 pow dimindex(:N)) =
-          (--(ival x rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[INT_NEG_REM] THEN REWRITE_TAC[INT_REM_EQ; ICONG_WORD_NEG])
-  and IVAL_WORD_MUL_REM = prove
+          &(val(word_neg x)) rem (&2 pow dimindex(:N)) =
+          (--(&(val x) rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
+    REWRITE_TAC[REWRITE_RULE[GSYM INT_REM_EQ] INT_CONG_WORD_NEG] THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
+  and VAL_WORD_NOT_REM = prove
+   (`!x:N word.
+          &(val(word_not x)) rem (&2 pow dimindex(:N)) =
+          (--(&(val x) rem (&2 pow dimindex(:N)) + &1))
+          rem (&2 pow dimindex(:N))`,
+    REWRITE_TAC[INT_VAL_WORD_NOT] THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN
+    REWRITE_TAC[INT_REM_EQ] THEN CONV_TAC INTEGER_RULE)
+  and VAL_WORD_MUL_REM = prove
    (`!x y:N word.
-          ival(word_mul x y) rem (&2 pow dimindex(:N)) =
-          ((ival x rem (&2 pow dimindex(:N))) *
-           (ival y rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[INT_MUL_REM] THEN REWRITE_TAC[INT_REM_EQ; ICONG_WORD_MUL])
-  and IVAL_IWORD_REM = prove
-   (`!x. ival(iword x:N word) rem (&2 pow dimindex(:N)) =
+          &(val(word_mul x y)) rem (&2 pow dimindex(:N)) =
+          ((&(val x) rem (&2 pow dimindex(:N))) *
+           (&(val y) rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
+    REWRITE_TAC[REWRITE_RULE[GSYM INT_REM_EQ] INT_CONG_WORD_MUL] THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
+  and VAL_IWORD_REM = prove
+   (`!x. &(val(iword x:N word)) rem (&2 pow dimindex(:N)) =
          x rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[INT_REM_EQ; IVAL_IWORD_CONG])
-  and IVAL_WORD_REM = prove
-   (`!n. ival(word n:N word) rem (&2 pow dimindex(:N)) =
+    REWRITE_TAC[INT_REM_EQ; VAL_IWORD_CONG])
+  and VAL_WORD_REM = prove
+   (`!n. &(val(word n:N word)) rem (&2 pow dimindex(:N)) =
          &n rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[WORD_IWORD; INT_REM_EQ; IVAL_IWORD_CONG])
-  and IVAL_WORD_SHL_REM = prove
+    REWRITE_TAC[VAL_WORD; INT_OF_NUM_REM; INT_OF_NUM_POW] THEN
+    REWRITE_TAC[MOD_MOD_REFL])
+  and VAL_WORD_SHL_REM = prove
    (`!(x:N word) n.
-      ival(word_shl x n) rem (&2 pow dimindex(:N)) =
-      (&2 pow n * ival x rem (&2 pow dimindex(:N))) rem (&2 pow dimindex(:N))`,
-    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[INT_REM_EQ; ICONG_WORD_SHL])
-  and INT_OF_NUM_REM = prove
+      &(val(word_shl x n)) rem (&2 pow dimindex(:N)) =
+      (&2 pow n * &(val x) rem (&2 pow dimindex(:N)))
+      rem (&2 pow dimindex(:N))`,
+    REWRITE_TAC[INT_OF_NUM_CLAUSES; INT_OF_NUM_REM] THEN
+    REWRITE_TAC[VAL_WORD_SHL] THEN CONV_TAC MOD_DOWN_CONV THEN
+    REWRITE_TAC[])
+  and INT_OF_NUMOP_REM = prove
    (`&(x + y) rem (&2 pow dimindex(:N)) =
      (&x rem (&2 pow dimindex(:N)) +
       &y rem (&2 pow dimindex(:N))) rem (&2 pow dimindex(:N)) /\
@@ -2851,28 +2918,143 @@ let WORD_RULE =
       &y rem (&2 pow dimindex(:N))) rem (&2 pow dimindex(:N))`,
     REWRITE_TAC[GSYM INT_OF_NUM_ADD; GSYM INT_OF_NUM_MUL] THEN
     CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
-  and INT_OF_NUM_VAL_REM = prove
-   (`!x:N word. &(val x) rem (&2 pow dimindex(:N)) =
-                ival x rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[REWRITE_RULE[GSYM INT_REM_EQ] IVAL_VAL_CONG])
-  and pth = prove
-   (`!v w:N word.
+  and INT_OF_INTOP_REM = prove
+   (`(x + y) rem (&2 pow dimindex(:N)) =
+     (x rem (&2 pow dimindex(:N)) +
+      y rem (&2 pow dimindex(:N))) rem (&2 pow dimindex(:N)) /\
+     (x - y) rem (&2 pow dimindex(:N)) =
+     (x rem (&2 pow dimindex(:N)) -
+      y rem (&2 pow dimindex(:N))) rem (&2 pow dimindex(:N)) /\
+     (x * y) rem (&2 pow dimindex(:N)) =
+     (x rem (&2 pow dimindex(:N)) *
+      y rem (&2 pow dimindex(:N))) rem (&2 pow dimindex(:N))`,
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
+  and INT_OF_NEG_REM = prove
+   (`(--x) rem (&2 pow dimindex(:N)) =
+     (--(x rem (&2 pow dimindex(:N)))) rem (&2 pow dimindex(:N))`,
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
+  and INT_REM_REM_REFL = prove
+   (`(x rem (&2 pow dimindex(:N))) rem (&2 pow dimindex(:N)) =
+     x rem (&2 pow dimindex(:N))`,
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[])
+  and IVAL_VAL_REM = prove
+   (`!x:N word. ival x rem (&2 pow dimindex(:N)) =
+                &(val x) rem (&2 pow dimindex(:N))`,
+    REWRITE_TAC[INT_REM_EQ; IVAL_VAL_CONG])
+  and topth = prove
+   (`(!v w:N word.
           v = w <=>
-          ival v rem (&2 pow dimindex(:N)) = ival w rem (&2 pow dimindex(:N))`,
-    REWRITE_TAC[INT_REM_EQ; IVAL_CONG]) in
-  let WORD_VAL_EQ_CONV =
-    GEN_REWRITE_CONV I [pth] THENC
-    GEN_REWRITE_CONV TOP_DEPTH_CONV [WORD_NOT_AS_SUB] THENC
-    GEN_REWRITE_CONV (BINOP_CONV o TOP_DEPTH_CONV)
-     [IVAL_WORD_NEG_REM; IVAL_WORD_ADD_REM; IVAL_WORD_SUB_REM;
-      IVAL_WORD_MUL_REM; IVAL_IWORD_REM; IVAL_WORD_REM;
-      IVAL_WORD_SHL_REM; INT_OF_NUM_REM; INT_OF_NUM_VAL_REM] THENC
-    INT_REM_DOWN_CONV THENC
-    GEN_REWRITE_CONV I [INT_REM_EQ] in
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          val v = val w <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          val v MOD 2 EXP dimindex(:N) = val w MOD 2 EXP dimindex(:N) <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          (val v == val w) (mod (2 EXP dimindex(:N))) <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          &(val v):int = &(val w) <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N)) <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          (&(val v):int == &(val w)) (mod (&2 pow dimindex(:N))) <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          ival v = ival w <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          ival v rem (&2 pow dimindex(:N)) =
+          ival w rem (&2 pow dimindex(:N)) <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N))) /\
+     (!(v:N word) (w:N word).
+          (ival v == ival w) (mod (&2 pow dimindex(:N))) <=>
+          &(val v) rem (&2 pow dimindex(:N)) =
+          &(val w) rem (&2 pow dimindex(:N)))`,
+    REWRITE_TAC[IVAL_EQ; IVAL_CONG;
+                REWRITE_RULE[GSYM INT_REM_EQ] IVAL_CONG] THEN
+    REWRITE_TAC[CONG; GSYM INT_REM_EQ; GSYM VAL_EQ] THEN
+    ONCE_REWRITE_TAC[GSYM VAL_MOD_REFL] THEN
+    REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES; GSYM INT_OF_NUM_REM] THEN
+    CONV_TAC INT_REM_DOWN_CONV THEN REWRITE_TAC[]) in
+  let conv_special = GEN_REWRITE_CONV I [VAL_WORD_NOT_REM]
+  and conv_unary = GEN_REWRITE_CONV I
+   [VAL_WORD_NEG_REM; INT_OF_NEG_REM; VAL_WORD_SHL_REM]
+  and conv_binary = GEN_REWRITE_CONV I
+   [VAL_WORD_ADD_REM; VAL_WORD_SUB_REM; VAL_WORD_MUL_REM;
+    INT_OF_NUMOP_REM; INT_OF_INTOP_REM]
+  and conv_self = GEN_REWRITE_CONV I
+   [VAL_IWORD_REM; VAL_WORD_REM; IVAL_VAL_REM; INT_REM_REM_REFL] in
+  let rec conv tm =
+    ((conv_special THENC LAND_CONV (RAND_CONV(LAND_CONV conv))) ORELSEC
+     (conv_unary THENC LAND_CONV (RAND_CONV conv)) ORELSEC
+     (conv_binary THENC LAND_CONV (BINOP_CONV conv)) ORELSEC
+     (conv_self THENC conv) ORELSEC
+     SUB_CONV conv ORELSEC REFL) tm in
+  GEN_REWRITE_CONV I [topth] THENC
+  conv THENC
+  INT_REM_DOWN_CONV THENC
+  GEN_REWRITE_CONV I [INT_REM_EQ];;
+
+let WORD_RULE =
+  let soppify = striplist (dest_binop `(+):int->int->int`)
+  and pth = prove
+   (`!k. (x == &0) (mod (&2 pow dimindex(:N))) <=>
+         (--k * &(val(word_not(word 0:N word))) + (x - k):int == &0)
+         (mod (&2 pow dimindex(:N)))`,
+    REWRITE_TAC[INT_VAL_WORD_NOT; VAL_WORD_0] THEN
+    CONV_TAC INTEGER_RULE) in
+  let WORD_UNBLAST_TAC =
+    REPEAT STRIP_TAC THEN
+    REWRITE_TAC[REAL_OF_INT_CLAUSES] THEN
+    REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES] THEN
+    TRY(GEN_REWRITE_TAC I
+         [INTEGER_RULE `(x:int == y) (mod n) <=> (x - y == &0) (mod n)`] THEN
+        CONV_TAC(RATOR_CONV(LAND_CONV INT_POLY_CONV)) THEN
+        W(fun (asl,w) ->
+          match filter is_intconst (soppify(lhand(rator w)))
+          with [c] -> GEN_REWRITE_TAC I [SPEC c pth] THEN
+                      CONV_TAC(RATOR_CONV(LAND_CONV INT_POLY_CONV))
+             | _ -> ALL_TAC) THEN
+        GEN_REWRITE_TAC I [GSYM INT_REM_EQ] THEN
+        AP_THM_TAC THEN AP_TERM_TAC) THEN
+    REWRITE_TAC[GSYM REAL_OF_INT_CLAUSES] THEN
+    ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
+    CONV_TAC(LAND_CONV REAL_POLY_CONV) THEN
+    REWRITE_TAC[VAL; REAL_OF_NUM_SUM_NUMSEG] THEN
+    REWRITE_TAC[GSYM SUM_ADD_NUMSEG; GSYM SUM_SUB_NUMSEG;
+                GSYM SUM_LMUL; GSYM SUM_RMUL; GSYM SUM_NEG] THEN
+    REWRITE_TAC[GSYM REAL_OF_NUM_CLAUSES; REAL_SUB_RZERO] THEN
+    MATCH_MP_TAC SUM_EQ_0_NUMSEG THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_OF_INT_CLAUSES] THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP (ARITH_RULE
+     `i <= n - 1 ==> ~(n = 0) ==> i < n`)) THEN
+    REWRITE_TAC[DIMINDEX_NONZERO] THEN DISCH_TAC THEN
+    ASM_REWRITE_TAC[BIT_WORD_AND_ALT; BIT_WORD_XOR_ALT; BIT_WORD_OR_ALT;
+                    BIT_WORD_NOT; BIT_WORD_0] THEN
+    REWRITE_TAC[INT_BITVAL_AND; INT_BITVAL_OR; INT_BITVAL_NOT;
+                INT_BITVAL_IMP; INT_BITVAL_IFF; BITVAL_CLAUSES] THEN
+    GEN_REWRITE_TAC I [GSYM INT_SUB_0] THEN
+    CONV_TAC(LAND_CONV BINT_POLY_CONV) THEN REWRITE_TAC[] THEN NO_TAC in
+  let wordprover tm =
+    try NUMBER_RULE tm with Failure _ -> prove(tm,WORD_UNBLAST_TAC) in
   fun tm ->
     let avs,bod = strip_forall tm in
-    let th = ONCE_DEPTH_CONV WORD_VAL_EQ_CONV bod in
-    GENL avs (EQT_ELIM(TRANS th (EQT_INTRO(NUMBER_RULE (rand(concl th))))));;
+    let th = ONCE_DEPTH_CONV WORD_VAL_CONG_CONV bod in
+    GENL avs (EQT_ELIM(TRANS th (EQT_INTRO(wordprover (rand(concl th))))));;
 
 (* ------------------------------------------------------------------------- *)
 (* A somewhat complementary purely bitwise decision procedure.               *)
@@ -2933,6 +3115,62 @@ let WORD_ARITH_TAC =
   REWRITE_TAC[CONJUNCT2 TWICE_MSB] THEN INT_ARITH_TAC;;
 
 let WORD_ARITH tm = prove(tm,WORD_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Expand "val x" or "val x DIV 2 EXP k" or "val x MOD 2 EXP k"              *)
+(* into a sum over individual bits.                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let VAL_EXPAND_CONV =
+  let rec blog k n =
+    if n =/ num_1 then k
+    else if n </ num_1 then failwith "blog"
+    else blog (k + 1) (n // num_2) in
+  let exp2 = `(EXP) 2` in
+  let exponentiate_conv tm =
+    match tm with
+      Comb(l,r) when l = exp2 && is_numeral r -> REFL tm
+    | _ -> let th = NUM_REDUCE_CONV tm in
+           let k = blog 0 (dest_numeral(rand(concl th))) in
+           let tm' = mk_comb(exp2,mk_small_numeral k) in
+           TRANS th (SYM(NUM_REDUCE_CONV tm')) in
+  let pth_mod = prove
+   (`!(x:N word) k.
+           val x MOD 2 EXP k =
+           if k = 0 then 0
+           else nsum (0..k-1) (\i. 2 EXP i * bitval(bit i x))`,
+    REPEAT GEN_TAC THEN REWRITE_TAC[VAL_MOD; NUMSEG_LT] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[NSUM_CLAUSES])
+  and pth_div = prove
+   (`!(x:N word) k.
+           val x DIV 2 EXP k =
+           nsum (k..dimindex(:N)-1) (\i. 2 EXP (i - k) * bitval(bit i x))`,
+    REPEAT GEN_TAC THEN REWRITE_TAC[VAL_DIV] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_NUMSEG] THEN
+    SIMP_TAC[DIMINDEX_NONZERO; ARITH_RULE
+     `~(d = 0) ==> (x <= d - 1 <=> x < d)`]) in
+  let base_rule =
+   PART_MATCH lhand VAL THENC
+   LAND_CONV(RAND_CONV(LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV))
+  and div_rule =
+    RAND_CONV exponentiate_conv THENC
+    PART_MATCH lhand pth_div THENC
+    LAND_CONV(RAND_CONV(LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV))
+  and mod_rule =
+    RAND_CONV exponentiate_conv THENC
+    PART_MATCH lhand pth_mod THENC
+    RATOR_CONV(LAND_CONV NUM_EQ_CONV) THENC
+    GEN_REWRITE_CONV I [COND_CLAUSES] THENC
+    TRY_CONV(LAND_CONV(RAND_CONV(NUM_SUB_CONV))) in
+  let coreconv tm =
+    match tm with
+      Comb(Const("val",_),t) -> base_rule tm
+    | Comb(Comb(Const("DIV",_),Comb(Const("val",_),t)),n) -> div_rule tm
+    | Comb(Comb(Const("MOD",_),Comb(Const("val",_),t)),n) -> mod_rule t
+    | _ -> failwith "VAL_EXPAND_CONV: not of expected form" in
+  coreconv THENC
+  EXPAND_NSUM_CONV THENC ONCE_DEPTH_CONV NUM_SUB_CONV;;
 
 (* ------------------------------------------------------------------------- *)
 (* Zero extension and sign extension (also works for shortening modulo).     *)
@@ -5429,14 +5667,12 @@ let BIT_WORD_CONV =
           ((conv_and_t THENC
              LAND_CONV NUM_ADD_CONV) ORELSEC
             conv_and_f)) tm
-
     | Comb(Comb(Const("bit",_),n),Comb(Const("word_bytereverse",_),_))
       when is_numeral n ->
        (GEN_REWRITE_CONV I [BIT_WORD_BYTEREVERSE] THENC
         BINOP2_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))
          (LAND_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))) THENC
         (conv_and_t ORELSEC conv_and_f)) tm
-
     | Comb(Comb(Const("bit",_),n),
            Comb(Comb(Const("word_reversefields",_),b),_))
       when is_numeral n && is_numeral b ->
@@ -5444,8 +5680,52 @@ let BIT_WORD_CONV =
         BINOP2_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))
          (LAND_CONV (DEPTH_CONV((!word_SIZE_CONV) ORELSEC NUM_RED_CONV))) THENC
         (conv_and_t ORELSEC conv_and_f)) tm
+    | Comb(Comb(Const("bit",_),n),x) ->
+        let th = ISPECL [x;n] BIT_TRIVIAL in
+        let tm = lhand(concl th) in
+        let ath = (LAND_CONV(!word_SIZE_CONV) THENC NUM_LE_CONV) tm in
+        (try MP th (EQT_ELIM ath)
+         with Failure _ -> failwith "BIT_WORD_CONV: no change")
+    | _ -> failwith "BIT_WORD_CONV: not of expected form";;
 
-    | _ -> failwith "BIT_WORD_CONV";;
+(* ------------------------------------------------------------------------- *)
+(* A kind of bit-blasting, but with just arithmetic not SAT at the base.     *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_BLAST =
+  let icong_lemma = INTEGER_RULE
+    `(x:int == y) (mod n) <=> (x - y == &0) (mod n)`
+  and idiv_lemma = INTEGER_RULE
+    `!d. d * n = x ==> (x:int == &0) (mod n)`
+  and conv =
+    ONCE_DEPTH_CONV VAL_EXPAND_CONV THENC
+    TOP_DEPTH_CONV BIT_WORD_CONV THENC
+    REWRITE_CONV[BITVAL_CLAUSES] THENC
+    REWRITE_CONV[GSYM INT_OF_NUM_CLAUSES; GSYM INT_OF_NUM_REM] THENC
+    REWRITE_CONV[INT_BITVAL_AND; INT_BITVAL_OR; INT_BITVAL_NOT;
+                 INT_BITVAL_IMP; INT_BITVAL_IFF] THENC
+    BINT_POLY_CONV in
+  let tac_word =
+    CONV_TAC WORD_VAL_CONG_CONV THEN
+    TRY(CONV_TAC(RAND_CONV(RAND_CONV
+     (GEN_REWRITE_CONV I [INT_OF_NUM_POW] THENC
+      RAND_CONV(!word_POW2SIZE_CONV))))) THEN
+    GEN_REWRITE_TAC I [icong_lemma] THEN
+    CONV_TAC(RATOR_CONV(LAND_CONV conv)) THEN
+    MATCH_MP_TAC idiv_lemma THEN
+    W(fun (asl,w) ->
+        let l,r = dest_eq(snd(dest_exists w)) in
+        EXISTS_TAC (mk_intconst
+         (dest_intconst r // dest_intconst(rand l)))) THEN
+    CONV_TAC INT_REDUCE_CONV THEN NO_TAC
+  and tac_num =
+    REWRITE_TAC[REAL_OF_INT_CLAUSES] THEN
+    REWRITE_TAC[REAL_OF_NUM_CLAUSES] THEN
+    GEN_REWRITE_TAC TRY_CONV [GSYM INT_OF_NUM_EQ] THEN
+    GEN_REWRITE_TAC TRY_CONV [GSYM INT_SUB_0] THEN
+    CONV_TAC(LAND_CONV conv) THEN INT_ARITH_TAC in
+  fun tm ->
+    prove(tm,REPEAT STRIP_TAC THEN (tac_word ORELSE tac_num));;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversions for explicit calculations with terms of the form "word n"     *)
