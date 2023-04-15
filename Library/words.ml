@@ -3124,7 +3124,7 @@ let WORD_ARITH tm = prove(tm,WORD_ARITH_TAC);;
 let VAL_EXPAND_CONV =
   let rec blog k n =
     if n =/ num_1 then k
-    else if n </ num_1 then failwith "blog"
+    else if n </ num_1 then failwith "Not a power of 2"
     else blog (k + 1) (n // num_2) in
   let exp2 = `(EXP) 2` in
   let exponentiate_conv tm =
@@ -3166,8 +3166,8 @@ let VAL_EXPAND_CONV =
   let coreconv tm =
     match tm with
       Comb(Const("val",_),t) -> base_rule tm
-    | Comb(Comb(Const("DIV",_),Comb(Const("val",_),t)),n) -> div_rule tm
-    | Comb(Comb(Const("MOD",_),Comb(Const("val",_),t)),n) -> mod_rule t
+    | Comb(Comb(Const("DIV",_),Comb(Const("val",_),_)),n) -> div_rule tm
+    | Comb(Comb(Const("MOD",_),Comb(Const("val",_),_)),n) -> mod_rule tm
     | _ -> failwith "VAL_EXPAND_CONV: not of expected form" in
   coreconv THENC
   EXPAND_NSUM_CONV THENC ONCE_DEPTH_CONV NUM_SUB_CONV;;
@@ -5693,25 +5693,38 @@ let BIT_WORD_CONV =
 (* ------------------------------------------------------------------------- *)
 
 let WORD_BLAST =
-  let icong_lemma = INTEGER_RULE
+  let pth_lt = prove
+   (`~(n = 0) ==> (val x < n <=> val x DIV n = 0)`,
+    SIMP_TAC[DIV_EQ_0])
+  and pth_le = prove
+   (`val x <= n <=> val x DIV (n + 1) = 0`,
+    REWRITE_TAC[ARITH_RULE `x <= n <=> x < n + 1`] THEN
+    SIMP_TAC[DIV_EQ_0; ADD_EQ_0; ARITH])
+  and icong_lemma = INTEGER_RULE
     `(x:int == y) (mod n) <=> (x - y == &0) (mod n)`
   and idiv_lemma = INTEGER_RULE
-    `!d. d * n = x ==> (x:int == &0) (mod n)`
-  and conv =
+    `!d. d * n = x ==> (x:int == &0) (mod n)` in
+  let conv =
     ONCE_DEPTH_CONV VAL_EXPAND_CONV THENC
     TOP_DEPTH_CONV BIT_WORD_CONV THENC
     REWRITE_CONV[BITVAL_CLAUSES] THENC
     REWRITE_CONV[GSYM INT_OF_NUM_CLAUSES; GSYM INT_OF_NUM_REM] THENC
     REWRITE_CONV[INT_BITVAL_AND; INT_BITVAL_OR; INT_BITVAL_NOT;
                  INT_BITVAL_IMP; INT_BITVAL_IFF] THENC
-    BINT_POLY_CONV in
+    ONCE_DEPTH_CONV
+     ((GEN_REWRITE_CONV I [GSYM INT_SUB_0] THENC
+       LAND_CONV BINT_POLY_CONV) ORELSEC
+      (GEN_REWRITE_CONV I [icong_lemma] THENC
+       RATOR_CONV(LAND_CONV BINT_POLY_CONV)))
+  and conv_lt tm =
+    let th = PART_MATCH (lhand o rand) pth_lt tm in
+    MP th (EQT_ELIM(NUM_REDUCE_CONV(lhand(concl th)))) in
   let tac_word =
     CONV_TAC WORD_VAL_CONG_CONV THEN
     TRY(CONV_TAC(RAND_CONV(RAND_CONV
      (GEN_REWRITE_CONV I [INT_OF_NUM_POW] THENC
       RAND_CONV(!word_POW2SIZE_CONV))))) THEN
-    GEN_REWRITE_TAC I [icong_lemma] THEN
-    CONV_TAC(RATOR_CONV(LAND_CONV conv)) THEN
+    CONV_TAC conv THEN
     MATCH_MP_TAC idiv_lemma THEN
     W(fun (asl,w) ->
         let l,r = dest_eq(snd(dest_exists w)) in
@@ -5719,13 +5732,16 @@ let WORD_BLAST =
          (dest_intconst r // dest_intconst(rand l)))) THEN
     CONV_TAC INT_REDUCE_CONV THEN NO_TAC
   and tac_num =
+    REWRITE_TAC[GSYM VAL_EQ] THEN
     REWRITE_TAC[REAL_OF_INT_CLAUSES] THEN
     REWRITE_TAC[REAL_OF_NUM_CLAUSES] THEN
-    GEN_REWRITE_TAC TRY_CONV [GSYM INT_OF_NUM_EQ] THEN
-    GEN_REWRITE_TAC TRY_CONV [GSYM INT_SUB_0] THEN
-    CONV_TAC(LAND_CONV conv) THEN INT_ARITH_TAC in
+    REWRITE_TAC[CONG; DIVIDES_MOD; pth_le] THEN
+    CONV_TAC(ONCE_DEPTH_CONV conv_lt) THEN
+    CONV_TAC conv THEN
+    (INT_ARITH_TAC ORELSE CONV_TAC INT_RING) in
   fun tm ->
-    prove(tm,REPEAT STRIP_TAC THEN (tac_word ORELSE tac_num));;
+    prove(tm,REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN
+             (tac_word ORELSE tac_num));;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversions for explicit calculations with terms of the form "word n"     *)

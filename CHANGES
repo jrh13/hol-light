@@ -8,13 +8,24 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 14th Apr 2023               Library/words.ml
+
+Made a few additional enhancements and cleanups to WORD_BLAST, in particular
+making it try to use hypotheses of the form "val x < 2 EXP n" as well as
+explicit equations. This includes fixing a bug in the VAL_EXPAND_CONV
+expansion of "val x MOD 2 EXP n". For example, WORD_BLAST can now handle
+
+  WORD_BLAST
+   `val (x:int16) <= 255
+    ==> word_add (word_and x (word 0x000F)) (word_and x (word 0x00F0)) = x`;;
+
 Mon  3rd Apr 2023               Library/words.ml
 
 Improved the ability of WORD_RULE to handle some arithmetic-bitwise
 combinations (mainly arithmetic over bitwise rather than the reverse, so
 still not a full solution the general case):
 
-  WORD_RULE 
+  WORD_RULE
     `word_add x y = word_add (word_xor x y) (word_shl (word_and x y) 1)`;;
 
 Also added a fourth distinct words decision procedure, this one expanding
@@ -35,7 +46,7 @@ These use a refactoring via new conversions:
 
  - WORD_VAL_CONG_CONV: converts word equation into integer congruence
    in terms of numeric values
- 
+
  - VAL_EXPAND_CONV: expand "val x" (as well as, for a numeral k,
    "val x DIV 2 EXP k" and "val x MOD 2 EXP k") bitwise for words
    of a specific size.
@@ -44,28 +55,28 @@ Also added a few new lemmas:
 
   BITVAL_EXP =
     |- !b k. bitval b EXP k = (if k = 0 then 1 else bitval b)
-  
+
   INT_BITVAL_AND =
     |- !b c. &(bitval(b /\ c)) = &(bitval b) * &(bitval c)
-  
+
   INT_BITVAL_IFF =
     |- !b c.
            &(bitval(b <=> c)) =
            &1 - ((&(bitval b) + &(bitval c)) - &2 * &(bitval b) * &(bitval c))
-  
+
   INT_BITVAL_IMP =
      |- !b c.
            &(bitval(b ==> c)) =
            (&1 - &(bitval b) + &(bitval c)) - (&1 - &(bitval b)) * &(bitval c)
-  
+
   INT_BITVAL_OR =
      |- !b c.
            &(bitval(b \/ c)) =
            (&(bitval b) + &(bitval c)) - &(bitval b) * &(bitval c)
-  
+
   INT_BITVAL_POW =
      |- !b k. &(bitval b) pow k = (if k = 0 then &1 else &(bitval b))
-  
+
   VAL =
     |- !x. val x = nsum (0..dimindex (:N) - 1) (\i. 2 EXP i * bitval(bit i x))
 
