@@ -8,7 +8,47 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Thu 14th Apr 2023               Library/words.ml
+Mon 24th Apr 2023               Divstep/* [new directory]
+
+Added a formalization, with an iteration bound proof from Dan Bernstein,
+of the Bernstein-Yang "divstep" algorithm as described in the paper:
+
+  Daniel J. Bernstein and Bo-Yin Yang
+  "Fast constant-time gcd computation and modular inversion"
+  https://gcd.cr.yp.to/safegcd-20190413.pdf
+
+Wed 19th Apr 2023               Library/words.ml
+
+Added a few more basic word lemmas about sign extension and related things:
+
+  BIT_WORD_SX =
+    |- !x i.
+         bit i (word_sx x) <=>
+         i < dimindex (:N) /\ bit (MIN i (dimindex (:M) - 1)) x
+
+  WORD_SHL_TRIVIAL =
+    |- !x n. dimindex (:N) <= n ==> word_shl x n = word 0
+
+  WORD_SX_ZX =
+    |- !x. dimindex (:N) <= dimindex (:M) ==> word_sx x = word_zx x
+
+  WORD_SX_ZX_GEN =
+    |- !x. word_sx x =
+           word_or
+           (word_shl (word_neg (word (bitval (bit (dimindex (:M) - 1) x))))
+                     (dimindex (:M)))
+           (word_zx x)
+
+Fixed BIT_WORD_CONV to handle both zero and sign extension (word_zx and
+word_sx) and made one further small improvement to WORD_BLAST, which among
+other things means it can get this formula from "Hacker's Delight" 2-5:
+
+  WORD_BLAST
+   `word_sub (word_xor ((word_zx:byte->int16) x) (word 0x80))
+             (word 0x80) =
+    word_sx x`;;
+
+Thu 13th Apr 2023               Library/words.ml
 
 Made a few additional enhancements and cleanups to WORD_BLAST, in particular
 making it try to use hypotheses of the form "val x < 2 EXP n" as well as
