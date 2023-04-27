@@ -1166,3 +1166,67 @@ let BITMATCH_SEQ_CONV = function
 | Comb(Comb(Const("_BITMATCH",_), Comb(Const("word",_),n)),_) as tm ->
   snd (bm_seq_numeral tm (dest_numeral n))
 | _ -> failwith "BITMATCH_CONV";;
+
+
+(* Given a bitmatch term 'tm', 'bm_check_disjointness tm' checks whether there
+   exist two bit patterns that overlap. Two bit patterns overlap if there
+   exists at least one bitvector that can be matched to both of them. If there
+   exists such overlapping patterns, 'bm_check_disjointness' throws
+   Invalid_argument. This function is useful when you want to ensure that
+   the bitmatch can be successfully handled by BITMATCH_CONV. *)
+let bm_check_disjointness =
+  let rec first_n l n = if n = 0 then [] else
+    match l with | h::t -> h::(first_n t (n-1)) | [] -> [] in
+  (* Do two patterns overlap? *)
+  let overlaps (pat0: bool option array) pat1 sz =
+    begin let overlaps_i idx =
+      match pat0.(idx), pat1.(idx) with
+      | Some b0, Some b1 -> b0 = b1
+      | _, _ -> true (* always can assign bit(s) that make them equal *) in
+    let rec overlaps_all idx =
+      if idx = sz then true
+      else (overlaps_i idx) && overlaps_all (idx+1) in
+    overlaps_all 0 end in
+  (* Given term tm, do the main check. *)
+  fun tm -> match tm with
+  | Comb(Comb(Const("_BITMATCH",_),bitval),patterns) ->
+    let valty = type_of bitval in
+    begin match valty with
+    | Tyapp("word", [N]) ->
+      let bitwidth = Num.int_of_num (dest_finty N) in
+      let pattern_arrs = bm_analyze_clauses bitwidth patterns in
+
+      List.iteri (fun idx0 pattern0 ->
+        List.iteri (fun idx1 pattern1 ->
+            if overlaps pattern0 pattern1 bitwidth then
+              let idx0_str = string_of_int idx0 in
+              let idx1_str = string_of_int idx1 in
+              invalid_arg ("Pattern number " ^ idx0_str ^
+                           " and pattern number " ^ idx1_str ^ " overlap")
+            else ())
+          (first_n pattern_arrs idx0))
+        pattern_arrs
+    | _ -> invalid_arg "bm_check_disjointness: word's bitwidth is unknown"
+    end
+  | _ -> invalid_arg "bm_check_disjointness: not bitmatch";;
+
+(* Unit tests for bm_check_disjointness *)
+let _ = bm_check_disjointness
+    `bitmatch (x:(2)word) with | [0b00:2] -> T | [0b10:2] -> T`;;
+let _ = bm_check_disjointness
+    `bitmatch (x:(2)word) with | [T; x] -> T | [F; y] -> T`;;
+let _ = try
+    bm_check_disjointness
+        `bitmatch (x:(2)word) with | [0b00:2] -> T | [0b00:2] -> T`;
+    failwith "Must fail"
+  with Invalid_argument _ -> ();;
+let _ = try
+    bm_check_disjointness
+        `bitmatch (x:(2)word) with | [T; x] -> T | [y; T] -> T`;
+    failwith "Must fail"
+  with Invalid_argument _ -> ();;
+let _ = try
+    bm_check_disjointness
+        `bitmatch (x:(2)word) with | [0b11:2] -> T | [0b00:2] -> T | [0b00:2] -> T`;
+    failwith "Must fail"
+  with Invalid_argument _ -> ();;
