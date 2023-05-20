@@ -297,7 +297,8 @@ let REAL_INT_ADD_CONV =
   GEN_REWRITE_CONV I [pth0] ORELSEC
   (fun tm ->
     try let l,r = dest tm in
-        if rator l = neg_tm then
+        if not(is_realintconst l) || not(is_realintconst r) then failwith ""
+        else if rator l = neg_tm then
           if rator r = neg_tm then
             let th1 = INST [rand(rand l),m_tm; rand(rand r),n_tm] pth1 in
             let tm1 = rand(rand(rand(concl th1))) in

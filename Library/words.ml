@@ -562,6 +562,16 @@ let VAL_WORD = prove
   ASM_REWRITE_TAC[NSUM_CLAUSES_NUMSEG_LT; EXP; MOD_1] THEN
   ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[MOD_MULT_MOD] THEN ARITH_TAC);;
 
+let MOD_VAL_WORD = prove
+ (`!n k. k <= dimindex(:N) ==> val(word n:N word) MOD 2 EXP k = n MOD 2 EXP k`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[VAL_WORD; MOD_MOD_EXP_MIN] THEN
+  ASM_SIMP_TAC[ARITH_RULE `k <= n ==> MIN n k = k`]);;
+
+let DIVIDES_VAL_WORD = prove
+ (`!n x. n <= dimindex(:N)
+         ==> (2 EXP n divides val(word x:N word) <=> 2 EXP n divides x)`,
+  SIMP_TAC[MOD_VAL_WORD; DIVIDES_MOD]);;
+
 let VAL_WORD_LE = prove
  (`!n k. n <= k ==> val(word n:N word) <= k`,
   REWRITE_TAC[VAL_WORD] THEN MESON_TAC[LE_TRANS; MOD_LE]);;
@@ -687,6 +697,18 @@ let VAL_WORD_GALOIS = prove
 let WORD_VAL_GALOIS = prove
  (`!(w:N word) n. word n = w <=> n MOD 2 EXP dimindex(:N) = val w`,
   MESON_TAC[VAL_WORD; WORD_MOD_SIZE; WORD_VAL]);;
+
+let DIVIDES_VAL_WORD_EQ = prove
+ (`!n x. 2 EXP n divides val(word x:N word) <=>
+         if n < dimindex(:N) then 2 EXP n divides x
+         else word x:N word = word 0`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[DIVIDES_VAL_WORD; LT_IMP_LE] THEN
+  EQ_TAC THEN SIMP_TAC[VAL_WORD_0; NUMBER_RULE `n divides 0`] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP DIVIDES_LE) THEN
+  REWRITE_TAC[VAL_EQ_0] THEN MATCH_MP_TAC(TAUT `~p ==> p \/ q ==> q`) THEN
+  REWRITE_TAC[NOT_LE] THEN TRANS_TAC LTE_TRANS `2 EXP dimindex(:N)` THEN
+  REWRITE_TAC[VAL_BOUND; LE_EXP] THEN ASM_ARITH_TAC);;
 
 let BIT_VAL = prove
  (`!(x:N word) i. bit i x <=> ODD(val x DIV (2 EXP i))`,
@@ -1099,6 +1121,72 @@ let INT_REM_IVAL = prove
   POP_ASSUM MP_TAC THEN
   SIMP_TAC[LE_EXISTS; INT_POW_ADD; LEFT_IMP_EXISTS_THM] THEN
   REPEAT STRIP_TAC THEN CONV_TAC INTEGER_RULE);;
+
+let VAL_IVAL_REM = prove
+ (`!x:N word. &(val x) = ival x rem &2 pow dimindex(:N)`,
+  GEN_TAC THEN CONV_TAC SYM_CONV THEN REWRITE_TAC[INT_REM_UNIQUE] THEN
+  REWRITE_TAC[INT_ABS_POW; INT_ABS_NUM; INT_OF_NUM_CLAUSES] THEN
+  REWRITE_TAC[LE_0; VAL_BOUND] THEN
+  REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES; IVAL_VAL_CONG]);;
+
+let INT_REM_IVAL_IWORD = prove
+ (`!x k. k <= dimindex(:N)
+         ==> ival(iword x:N word) rem &2 pow k = x rem &2 pow k`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC EQ_TRANS `x rem &2 pow dimindex(:N) rem &2 pow k` THEN
+  CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM(REWRITE_RULE[GSYM INT_REM_EQ] IVAL_IWORD_CONG)];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[INT_REM_REM_POW_MIN; ARITH_RULE `k <= n ==> MIN n k = k`]);;
+
+let INT_DIVIDES_IVAL_IWORD = prove
+ (`!n x. n <= dimindex(:N)
+         ==> (&2 pow n divides ival(iword x:N word) <=> &2 pow n divides x)`,
+  SIMP_TAC[INT_REM_IVAL_IWORD; GSYM INT_REM_EQ_0]);;
+
+let FORALL_IVAL_GEN = prove
+ (`!P. (!x:N word. P (ival x) x) <=>
+       (!n. --(&2 pow (dimindex (:N) - 1)) <= n /\
+            n < &2 pow (dimindex (:N) - 1)
+            ==> P n (iword n))`,
+  MESON_TAC[IVAL_IWORD; IWORD_IVAL; IVAL_BOUND]);;
+
+let FORALL_IVAL = prove
+ (`!P. (!x:N word. P(ival x)) <=>
+       (!n. --(&2 pow (dimindex (:N) - 1)) <= n /\
+            n < &2 pow (dimindex (:N) - 1)
+            ==> P n)`,
+  REWRITE_TAC[FORALL_IVAL_GEN]);;
+
+let FORALL_IWORD = prove
+ (`!P. (!x:N word. P x) <=> (!n. P(iword n))`,
+  MESON_TAC[IWORD_IVAL]);;
+
+let EXISTS_IWORD = prove
+ (`!P. (?x:N word. P x) <=> (?n. P(iword n))`,
+  MESON_TAC[IWORD_IVAL]);;
+
+let IVAL_REM_2 = prove
+ (`!x:N word. ival(x) rem &2 = &(bitval(bit 0 x))`,
+  GEN_TAC THEN REWRITE_TAC[GSYM VAL_MOD_2; GSYM INT_OF_NUM_REM] THEN
+  REWRITE_TAC[INT_REM_EQ] THEN MATCH_MP_TAC(INTEGER_RULE
+   `!m:int. (x == y) (mod m) /\ n divides m ==> (x == y) (mod n)`) THEN
+  EXISTS_TAC `(&2:int) pow dimindex(:N)` THEN REWRITE_TAC[IVAL_VAL_CONG] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; GSYM num_divides] THEN
+  REWRITE_TAC[divides; GSYM EVEN_EXISTS] THEN
+  REWRITE_TAC[EVEN_EXP; ARITH; DIMINDEX_NONZERO]);;
+
+let BIT_LSB_IWORD = prove
+ (`!x. bit 0 (iword x:N word) = x rem &2 = &1`,
+  GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM BITVAL_EQ_1] THEN
+  REWRITE_TAC[GSYM INT_OF_NUM_EQ; GSYM IVAL_REM_2] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[INT_REM_EQ] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `!m:int. (x == y) (mod m) /\ n divides m ==> (x == y) (mod n)`) THEN
+  EXISTS_TAC `(&2:int) pow dimindex(:N)` THEN REWRITE_TAC[IVAL_IWORD_CONG] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; GSYM num_divides] THEN
+  REWRITE_TAC[divides; GSYM EVEN_EXISTS] THEN
+  REWRITE_TAC[EVEN_EXP; ARITH; DIMINDEX_NONZERO]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit operations on `num`.                                                  *)
@@ -2436,6 +2524,26 @@ let WORD_SHL_LSB = prove
   GEN_TAC THEN REWRITE_TAC[WORD_SHL_LSB_ALT; bitval] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[MULT_CLAUSES]);;
 
+let WORD_SHL_WORD = prove
+ (`!x n. word_shl (word x:N word) n = word(2 EXP n * x)`,
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_SHL; VAL_WORD] THEN
+  CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC[]);;
+
+let WORD_SHL_AS_IWORD = prove
+ (`!(x:N word) n. word_shl x n = iword(ival x * &2 pow n)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[word_shl; WORD_IWORD] THEN
+  REWRITE_TAC[IWORD_EQ; GSYM INT_OF_NUM_CLAUSES] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `(a:int == b) (mod n) ==> (b * x == a * x) (mod n)`) THEN
+  REWRITE_TAC[IVAL_VAL_CONG]);;
+
+let WORD_SHL_IWORD = prove
+ (`!x n. word_shl (iword x:N word) n = iword(&2 pow n * x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[WORD_SHL_AS_IWORD; IWORD_EQ] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `(x:int == y) (mod p) ==> (x * n == n * y) (mod p)`) THEN
+  REWRITE_TAC[IVAL_IWORD_CONG]);;
+
 let word_ushr = new_definition
   `word_ushr (x:(N)word) n =
         word((val x) DIV (2 EXP n)):(N)word`;;
@@ -2597,6 +2705,25 @@ let WORD_ISHR_COMPOSE = prove
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[word_ishr] THEN
   REWRITE_TAC[IVAL_WORD_ISHR; INT_POW_ADD] THEN
   SIMP_TAC[INT_DIV_DIV; INT_POW_LE; INT_POS]);;
+
+let WORD_ISHR_UNIQUE = prove
+ (`!(x:N word) y n. ival x = &2 pow n * y ==> word_ishr x n = iword y`,
+  SIMP_TAC[word_ishr; INT_DIV_MUL; INT_POW_EQ_0; INT_OF_NUM_EQ; ARITH_EQ]);;
+
+let IVAL_WORD_ISHR_SHL_UNIQUE = prove
+ (`!n (x:N word) y.
+        ival(word_ishr (word_shl x n) n) = y <=>
+        ival(word_shl x n) = &2 pow n * y`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IVAL_WORD_ISHR] THEN
+  SUBGOAL_THEN `&2 pow n divides ival(word_shl x n:N word)` MP_TAC THENL
+   [DISJ_CASES_TAC(ARITH_RULE `dimindex(:N) <= n \/ n <= dimindex(:N)`) THEN
+    ASM_SIMP_TAC[WORD_SHL_TRIVIAL; WORD_ISHR_0; IVAL_WORD_0;
+                 INTEGER_RULE `(d:int) divides &0`] THEN
+    ASM_SIMP_TAC[WORD_SHL_AS_IWORD; INT_DIVIDES_IVAL_IWORD] THEN
+    CONV_TAC INTEGER_RULE;
+    REWRITE_TAC[int_divides] THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[INT_DIV_MUL; INT_POW_EQ_0; ARITH_EQ; INT_OF_NUM_EQ;
+                 INT_EQ_MUL_LCANCEL]]);;
 
 let word_ror = new_definition
  `(word_ror:N word->num->N word) w n =
@@ -3353,6 +3480,24 @@ let WORD_SX_ZX = prove
   REWRITE_TAC[INT_POW_ADD] THEN CONV_TAC INTEGER_RULE);;
 
 (* ------------------------------------------------------------------------- *)
+(* Sign-extension from a specific bit position in a given word size.         *)
+(* ------------------------------------------------------------------------- *)
+
+let word_sxfrom = define
+ `word_sxfrom n (x:N word) =
+  word_ishr (word_shl x (dimindex(:N) - 1 - n)) (dimindex(:N) - 1 - n)`;;
+
+let BIT_WORD_SXFROM = prove
+ (`!n i (x:N word).
+        bit i (word_sxfrom n x) <=> i < dimindex(:N) /\ bit (MIN n i) x`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[word_sxfrom; BIT_WORD_SHL; BIT_WORD_ISHR] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  EQ_TAC THEN STRIP_TAC THEN REPEAT CONJ_TAC THEN TRY ASM_ARITH_TAC THEN
+  POP_ASSUM MP_TAC THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* Conditional AND and OR, with semantics of C's "&&" and "||"               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -3512,6 +3657,16 @@ let VAL_WORD_SUBWORD_SIMPLE = prove
         val(word_subword w (0,dimindex(:N)):N word) =
         val w MOD (2 EXP dimindex(:N))`,
   REWRITE_TAC[VAL_WORD_SUBWORD_DIMINDEX; EXP; DIV_1]);;
+
+let WORD_SUBWORD_WORD = prove
+ (`!n pos len.
+        pos + len <= dimindex(:N)
+        ==> word_subword (word n:N word) (pos,len) =
+            word((n DIV 2 EXP pos) MOD 2 EXP len)`,
+  REPEAT STRIP_TAC THEN SIMP_TAC[word_subword; DIV_MOD; GSYM EXP_ADD] THEN
+  AP_TERM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[VAL_WORD; MOD_MOD_EXP_MIN] THEN
+  AP_TERM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
 
 let BIT_WORD_SUBWORD = prove
  (`!pos len (w:M word) i.
@@ -3687,6 +3842,25 @@ let WORD_SUBWORD_NOT = prove
   SIMP_TAC[ARITH_RULE `i < MIN m n <=> i < m /\ i < n`] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC[DE_MORGAN_THM] THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC);;
+
+let WORD_SUBWORD_AS_IWORD = prove
+ (`!(w:N word) pos len.
+        pos + len <= dimindex(:N)
+        ==> word_subword w (pos,len):N word =
+            iword((ival w div &2 pow pos) rem &2 pow len)`,
+  REPEAT STRIP_TAC THEN SIMP_TAC[INT_DIV_REM; INT_POW_LE; INT_POS] THEN
+  ASM_SIMP_TAC[GSYM INT_POW_ADD; INT_REM_IVAL] THEN
+  REWRITE_TAC[word_subword; INT_OF_NUM_DIV; INT_OF_NUM_CLAUSES] THEN
+  REWRITE_TAC[WORD_IWORD; EXP_ADD; GSYM DIV_MOD]);;
+
+let WORD_SUBWORD_IWORD = prove
+ (`!x pos len.
+        pos + len <= dimindex(:N)
+        ==> word_subword (iword x:N word) (pos,len):N word =
+            iword((x div &2 pow pos) rem &2 pow len)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[WORD_SUBWORD_AS_IWORD] THEN
+  SIMP_TAC[INT_DIV_REM; INT_POW_LE; INT_POS; GSYM INT_POW_ADD] THEN
+  ASM_SIMP_TAC[INT_REM_IVAL_IWORD]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit recursion equations for "linear" operations.                          *)
@@ -5710,6 +5884,12 @@ let BIT_WORD_CONV =
            LAND_CONV (RAND_CONV
              (LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV) THENC
              NUM_MIN_CONV)))) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_sxfrom",_),i),_))
+      when is_numeral n && is_numeral i ->
+       (GEN_REWRITE_CONV I [BIT_WORD_SXFROM] THENC
+        LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+        (conv_and_f ORELSEC
+         (conv_and_t THENC LAND_CONV NUM_MIN_CONV))) tm
     | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_join",_),_),_))
       when is_numeral n ->
         (GEN_REWRITE_CONV I [BIT_WORD_JOIN] THENC
@@ -5721,8 +5901,7 @@ let BIT_WORD_CONV =
            (conv_cond_t ORELSEC
             (conv_cond_f THENC
              LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV))
-          ))))
-        tm
+          )))) tm
     | Comb(Comb(Const("bit",_),n),
            Comb(Comb(Const("word_subword",_),_),
                 Comb(Comb(Const(",",_),p),q)))
@@ -6446,6 +6625,22 @@ let WORD_SX_CONV =
   RAND_CONV WORD_IVAL_CONV THENC
   WORD_IWORD_CONV;;
 
+let WORD_SXFROM_CONV =
+   let pth = prove
+    (`word_sxfrom (NUMERAL n) (word(NUMERAL x):N word) =
+      word_ishr (word_shl (word(NUMERAL x)) (dimindex (:N) - 1 - NUMERAL n))
+                (dimindex (:N) - 1 - NUMERAL n)`,
+     REWRITE_TAC[word_sxfrom]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  LAND_CONV (RAND_CONV
+   (LAND_CONV(LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV) THENC
+              NUM_SUB_CONV) THENC
+    WORD_SHL_CONV) THENC
+  RAND_CONV
+   (LAND_CONV(LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV) THENC
+              NUM_SUB_CONV) THENC
+  WORD_ISHR_CONV;;
+
 let WORD_CAND_CONV =
  let pth = prove
   (`word_cand (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
@@ -6926,6 +7121,7 @@ let WORD_RED_CONV =
     `word_ror (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ROR_CONV;
     `word_zx (word(NUMERAL n):N word)`,WORD_ZX_CONV;
     `word_sx (word(NUMERAL n):N word)`,WORD_SX_CONV;
+    `word_sxfrom (NUMERAL m) (word(NUMERAL n):N word)`,WORD_SXFROM_CONV;
     `word_cand (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_CAND_CONV;
     `word_cor (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_COR_CONV;
     `word_join (word(NUMERAL m):M word) (word(NUMERAL n):N word)`,

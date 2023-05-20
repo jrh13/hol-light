@@ -8,6 +8,184 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 16th May 2023               int.ml, Library/words.ml
+
+Added two more elementary integer remainder lemmas (analogous to similar
+ones for natural number MOD that are already there)
+
+  INT_REM_REM_LE =
+    |- !m n p. ~(n = &0) /\ abs n <= abs p ==> m rem n rem p = m rem n
+
+  INT_REM_REM_POW_MIN =
+    |- !x p m n. x rem p pow m rem p pow n = x rem p pow MIN m n
+
+and a few miscellaneous useful word lemmas:
+
+  DIVIDES_VAL_WORD =
+    |- !n x.
+         n <= dimindex(:N)
+         ==> (2 EXP n divides val(word x) <=> 2 EXP n divides x)
+
+  DIVIDES_VAL_WORD_EQ =
+    |- !n x.
+         2 EXP n divides val(word x) <=>
+         (if n < dimindex(:N) then 2 EXP n divides x else word x = word 0)
+
+  INT_DIVIDES_IVAL_IWORD =
+    |- !n x.
+         n <= dimindex(:N)
+         ==> (&2 pow n divides ival(iword x) <=> &2 pow n divides x)
+
+  INT_REM_IVAL_IWORD =
+    |- !x k.
+           k <= dimindex(:N) ==> ival(iword x) rem &2 pow k = x rem &2 pow k
+
+  IVAL_WORD_ISHR_SHL_UNIQUE =
+    |- !n x y.
+           ival(word_ishr (word_shl x n) n) = y <=>
+           ival(word_shl x n) = &2 pow n * y
+
+  MOD_VAL_WORD =
+    |- !n k. k <= dimindex(:N) ==> val(word n) MOD 2 EXP k = n MOD 2 EXP k
+
+  VAL_IVAL_REM =
+    |- !x. &(val x) = ival x rem &2 pow dimindex(:N)
+
+  WORD_ISHR_UNIQUE =
+    |- !x y n.
+           ival x = &2 pow n * y
+           ==> word_ishr x n = iword y
+
+  WORD_SHL_AS_IWORD =
+    |- !x n. word_shl x n = iword(ival x * &2 pow n)
+
+  WORD_SHL_IWORD =
+    |- !x n. word_shl (iword x) n = iword(&2 pow n * x)
+
+  WORD_SHL_WORD =
+    |- !x n. word_shl (word x) n = word(2 EXP n * x)
+
+  WORD_SUBWORD_AS_IWORD =
+    |- !w pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword w (pos,len) =
+               iword((ival w div &2 pow pos) rem &2 pow len)
+
+  WORD_SUBWORD_IWORD =
+    |- !x pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword (iword x) (pos,len) =
+               iword((x div &2 pow pos) rem &2 pow len)
+
+  WORD_SUBWORD_WORD =
+    |- !n pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword (word n) (pos,len) =
+               word((n DIV 2 EXP pos) MOD 2 EXP len)
+
+Tue 16th May 2023               nums.ml
+
+Added an update from Juneyoung Lee to extend the free variable feedback
+in the error messages (see change of Wed 25th Jan 2023 below) to the case
+of "new_specification", and hence by inheritance in "define".
+
+Fri 12th May 2023               Library/words.ml
+
+Added a construct "word_sxfrom" to sign-extend a word (within a fixed size)
+from an arbitrary bit position, together with a conversion WORD_SXFROM_CONV and
+the usual support in BIT_WORD_CONV, WORD_RED_CONV and WORD_REDUCE_CONV. As well
+as the basics about this, added a few more miscelleneous lemmas about signed
+words and their values.
+
+  word_sxfrom =
+    |- word_sxfrom n x =
+       word_ishr (word_shl x (dimindex(:N) - 1 - n)) (dimindex(:N) - 1 - n)
+
+  BIT_LSB_IWORD =
+    |- !x. bit 0 (iword x) <=> x rem &2 = &1
+
+  BIT_WORD_SXFROM =
+    |- !n i x. bit i (word_sxfrom n x) <=> i < dimindex(:N) /\ bit (MIN n i) x
+
+  EXISTS_IWORD =
+    |- !P. (?x. P x) <=> (?n. P (iword n))
+
+  FORALL_IVAL =
+    |- !P. (!x. P (ival x)) <=>
+           (!n. --(&2 pow (dimindex(:N) - 1)) <= n /\
+                n < &2 pow (dimindex(:N) - 1)
+                ==> P n)
+
+  FORALL_IVAL_GEN =
+    |- !P. (!x. P (ival x) x) <=>
+           (!n. --(&2 pow (dimindex(:N) - 1)) <= n /\
+                n < &2 pow (dimindex(:N) - 1)
+                ==> P n (iword n))
+
+  FORALL_IWORD =
+    |- !P. (!x. P x) <=> (!n. P (iword n))
+
+  IVAL_REM_2 =
+    |- !x. ival x rem &2 = &(bitval(bit 0 x))
+
+Fri 12th May 2023               int.ml, calc_int.ml
+
+Fixed a surprisingly gross bug in INT_ADD_CONV and REAL_INT_ADD_CONV
+which were not failing as they should on some inappropriate terms
+like `x 1 + x 2`.
+
+Wed 10th May 2023               int.ml
+
+Added a couple of trivial but handy properties about integer
+remainders modulo 2:
+
+  INT_REM_2_EXPAND =
+   |- !x. x rem &2 = (if &2 divides x then &0 else &1)
+
+  INT_REM_2_NEG =
+   |- !x. --x rem &2 = x rem &2
+
+Tue  9th May 2023               Library/grouptheory.ml
+
+Added a few more elementary group theory lemmas:
+
+  GROUP_INV_SUBGROUP =
+    |- !x. x IN group_carrier (subgroup_generated G s)
+           ==> group_inv G x IN group_carrier (subgroup_generated G s)
+
+  GROUP_MUL_SUBGROUP =
+    |- !x y.
+           x IN group_carrier (subgroup_generated G s) /\
+           y IN group_carrier (subgroup_generated G s)
+           ==> group_mul G x y IN group_carrier (subgroup_generated G s)
+
+  SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE =
+    |- !G H s f.
+           group_epimorphism (G,H) f /\
+           s SUBSET group_carrier G /\
+           subgroup_generated G s = G
+           ==> subgroup_generated H (IMAGE f s) = H
+
+  SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ =
+    |- !G H s t f.
+           group_homomorphism (G,H) f /\
+           s SUBSET group_carrier G /\
+           t SUBSET group_carrier G /\
+           subgroup_generated G s = subgroup_generated G t
+           ==> subgroup_generated H (IMAGE f s) =
+               subgroup_generated H (IMAGE f t)
+
+Wed 26th Apr 2023               Library/bitmatch.ml
+
+Added a function "bm_check_disjointness" written by Juneyoung Lee to check
+whether word bitmatch patterns are pairwise disjoint, and hence whether the
+semantics of the bitmatch is independent of their ordering. This can be quite
+painful to analyze by hand in complicated cases but can now be done easily:
+
+  # bm_check_disjointness
+      `bitmatch (x:(2)word) with | [T; x] -> T | [y; T] -> T`;;
+  Exception: Invalid_argument "Pattern number 1 and pattern number 0 overlap".
+
 Mon 24th Apr 2023               Divstep/* [new directory]
 
 Added a formalization, with an iteration bound proof from Dan Bernstein,
@@ -24,19 +202,19 @@ Added a few more basic word lemmas about sign extension and related things:
   BIT_WORD_SX =
     |- !x i.
          bit i (word_sx x) <=>
-         i < dimindex (:N) /\ bit (MIN i (dimindex (:M) - 1)) x
+         i < dimindex(:N) /\ bit (MIN i (dimindex(:M) - 1)) x
 
   WORD_SHL_TRIVIAL =
-    |- !x n. dimindex (:N) <= n ==> word_shl x n = word 0
+    |- !x n. dimindex(:N) <= n ==> word_shl x n = word 0
 
   WORD_SX_ZX =
-    |- !x. dimindex (:N) <= dimindex (:M) ==> word_sx x = word_zx x
+    |- !x. dimindex(:N) <= dimindex(:M) ==> word_sx x = word_zx x
 
   WORD_SX_ZX_GEN =
     |- !x. word_sx x =
            word_or
-           (word_shl (word_neg (word (bitval (bit (dimindex (:M) - 1) x))))
-                     (dimindex (:M)))
+           (word_shl (word_neg (word (bitval (bit (dimindex(:M) - 1) x))))
+                     (dimindex(:M)))
            (word_zx x)
 
 Fixed BIT_WORD_CONV to handle both zero and sign extension (word_zx and
@@ -118,7 +296,7 @@ Also added a few new lemmas:
      |- !b k. &(bitval b) pow k = (if k = 0 then &1 else &(bitval b))
 
   VAL =
-    |- !x. val x = nsum (0..dimindex (:N) - 1) (\i. 2 EXP i * bitval(bit i x))
+    |- !x. val x = nsum (0..dimindex(:N) - 1) (\i. 2 EXP i * bitval(bit i x))
 
 
 Mon  3rd Apr 2023               int.ml

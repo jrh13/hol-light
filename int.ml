@@ -990,7 +990,8 @@ let INT_ADD_CONV =
   GEN_REWRITE_CONV I [pth0] ORELSEC
   (fun tm ->
     try let l,r = dest tm in
-        if rator l = neg_tm then
+        if not(is_intconst l) || not(is_intconst r) then failwith ""
+        else if rator l = neg_tm then
           if rator r = neg_tm then
             let th1 = INST [rand(rand l),m_tm; rand(rand r),n_tm] pth1 in
             let tm1 = rand(rand(rand(concl th1))) in
@@ -1651,6 +1652,12 @@ let INT_DIV_REM = prove
   EXISTS_TAC `m rem n` THEN ASM_SIMP_TAC[INT_DIVISION] THEN
   REWRITE_TAC[INT_ADD_AC; INT_MUL_AC]);;
 
+let INT_REM_REM_LE = prove
+ (`!m n p. ~(n = &0) /\ abs n <= abs p ==> m rem n rem p = m rem n`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INT_REM_EQ_SELF] THEN
+  ASM_CASES_TAC `p:int = &0` THEN ASM_REWRITE_TAC[INT_REM_POS_EQ] THEN
+  TRANS_TAC INT_LTE_TRANS `abs n:int` THEN ASM_MESON_TAC[INT_DIVISION]);;
+
 let INT_LE_DIV = prove
  (`!m n. &0 <= m /\ &0 <= n ==> &0 <= m div n`,
   REWRITE_TAC[GSYM INT_FORALL_POS; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
@@ -1707,6 +1714,15 @@ let INT_REM_2_DIVIDES = prove
    (!n. n rem &2 = &1 <=> ~(&2 divides n))`,
   REWRITE_TAC[GSYM(CONJUNCT1 NOT_INT_REM_2)] THEN
   REWRITE_TAC[INT_REM_EQ_0]);;
+
+let INT_REM_2_EXPAND = prove
+ (`!x. x rem &2 = if &2 divides x then &0 else &1`,
+  MESON_TAC[INT_REM_2_DIVIDES]);;
+
+let INT_REM_2_NEG = prove
+ (`!x. --x rem &2 = x rem &2`,
+  GEN_TAC THEN REWRITE_TAC[INT_REM_2_EXPAND] THEN
+  REWRITE_TAC[INTEGER_RULE `(a:int) divides --x <=> a divides x`]);;
 
 let INT_DIVIDES_DIV_SELF = prove
  (`!n d. d divides n ==> n div d divides n`,
@@ -2171,6 +2187,24 @@ let num_WF_DOWN = prove
      `~(m <= p) ==> m - 1 - (m - 1 - p) = p`] THEN
     DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;
     ASM_MESON_TAC[ARITH_RULE `~(m <= n) ==> n = m - 1 - (m - 1 - n)`]]);;
+
+let INT_REM_REM_POW_MIN = prove
+ (`!x p m n. x rem (p pow m) rem (p pow n) = x rem (p pow MIN m n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `x:int = &0` THEN
+  ASM_REWRITE_TAC[INT_REM_ZERO] THEN ASM_CASES_TAC `p:int = &0` THENL
+   [ASM_REWRITE_TAC[INT_POW_ZERO; ARITH_RULE
+     `MIN a b = 0 <=> a = 0 \/ b = 0`] THEN
+    MAP_EVERY ASM_CASES_TAC [`m = 0`; `n = 0`] THEN
+    ASM_REWRITE_TAC[INT_REM_0; INT_REM_1];
+    REWRITE_TAC[ARITH_RULE `MIN m n = if n <= m then n else m`]] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+   [FIRST_X_ASSUM(CHOOSE_THEN SUBST1_TAC o GEN_REWRITE_RULE I [LE_EXISTS]) THEN
+    REWRITE_TAC[INT_POW_ADD; INT_REM_REM_MUL];
+    RULE_ASSUM_TAC(REWRITE_RULE[NOT_LE])] THEN
+  MATCH_MP_TAC INT_REM_REM_LE THEN
+  ASM_REWRITE_TAC[INT_POW_EQ_0; INT_ABS_POW] THEN
+  MATCH_MP_TAC INT_POW_MONO THEN ASM_SIMP_TAC[LT_IMP_LE] THEN
+  ASM_INT_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Also a similar divisibility procedure for natural numbers.                *)

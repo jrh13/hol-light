@@ -2083,6 +2083,17 @@ let GROUP_ID_SUBGROUP = prove
  (`!G s:A->bool. group_id G IN group_carrier(subgroup_generated G s)`,
   MESON_TAC[GROUP_ID; SUBGROUP_GENERATED]);;
 
+let GROUP_INV_SUBGROUP = prove
+ (`!x. x IN group_carrier (subgroup_generated G s)
+       ==> group_inv G x IN group_carrier(subgroup_generated G s)`,
+  MESON_TAC[GROUP_INV; SUBGROUP_GENERATED]);;
+
+let GROUP_MUL_SUBGROUP = prove
+ (`!x y. x IN group_carrier (subgroup_generated G s) /\
+         y IN group_carrier (subgroup_generated G s)
+         ==> group_mul G x y IN group_carrier(subgroup_generated G s)`,
+  MESON_TAC[GROUP_MUL; SUBGROUP_GENERATED]);;
+
 let ABELIAN_SUBGROUP_GENERATED = prove
  (`!G h:A->bool.
         abelian_group G ==> abelian_group(subgroup_generated G h)`,
@@ -3392,6 +3403,27 @@ let SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE = prove
     FIRST_ASSUM(MP_TAC o ISPECL [`s:A->bool`; `IMAGE (f:A->B) s`] o MATCH_MP
      (REWRITE_RULE[IMP_CONJ] GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS)) THEN
     SIMP_TAC[group_homomorphism; SUBSET_REFL]]);;
+
+let SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ = prove
+ (`!G H s t (f:A->B).
+        group_homomorphism (G,H) f /\
+        s SUBSET group_carrier G /\
+        t SUBSET group_carrier G /\
+        subgroup_generated G s = subgroup_generated G t
+        ==> subgroup_generated H (IMAGE f s) =
+            subgroup_generated H (IMAGE f t)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GROUPS_EQ; CONJUNCT2 SUBGROUP_GENERATED] THEN
+  ASM_SIMP_TAC[SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE]);;
+
+let SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE = prove
+ (`!G H s (f:A->B).
+        group_epimorphism (G,H) f /\
+        s SUBSET group_carrier G /\
+        subgroup_generated G s = G
+        ==> subgroup_generated H (IMAGE f s) = H`,
+  REWRITE_TAC[SUBGROUP_GENERATED_EQ] THEN
+  SIMP_TAC[group_epimorphism; SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE]);;
 
 let GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS = prove
  (`!G H (f:A->B).
