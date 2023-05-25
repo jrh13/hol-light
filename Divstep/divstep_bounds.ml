@@ -5,6 +5,7 @@
 
 needs "Library/floor.ml";;
 needs "Divstep/divstep.ml";;
+needs "Divstep/idivstep.ml";;
 needs "Divstep/hull_light.ml";;
 
 (* ------------------------------------------------------------------------- *)
@@ -75,3 +76,19 @@ let DIVSTEP_ENDTOEND_BITS_SIMPLE = prove
   REWRITE_TAC[INT_MUL_DIV_EQ; INT_2_DIVIDES_ADD; INT_2_DIVIDES_SUB] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[INT_REM_2_DIVIDES]) THEN
   ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Overall result for the integer-scaled version starting at 1.              *)
+(* ------------------------------------------------------------------------- *)
+
+let IDIVSTEP_ENDTOEND_BITS_SIMPLE = prove
+ (`!f g b n.
+        &0 <= g /\ g <= f /\ f <= &2 pow b /\ f rem &2 = &1 /\
+        9437 * b + 1 <= 4096 * n
+        ==> divstep_g n (&1,f,g) = &0 /\
+            abs(divstep_f n (&1,f,g)) = gcd(f,g)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP DIVSTEP_ENDTOEND_BITS_SIMPLE) THEN
+    REWRITE_TAC[ITER_DIVSTEP_INTEGER];
+    ASM_MESON_TAC[DIVSTEP_FG_GCD; INT_GCD_0]]);;

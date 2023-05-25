@@ -3497,6 +3497,30 @@ let BIT_WORD_SXFROM = prove
   POP_ASSUM MP_TAC THEN MATCH_MP_TAC EQ_IMP THEN
   AP_THM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
 
+let IVAL_WORD_SXFROM_UNIQUE = prove
+ (`!(w:N word) k x.
+        k < dimindex(:N)
+        ==> (ival(word_sxfrom k w) = x <=>
+             --(&2 pow k) <= x /\ x < &2 pow k /\
+             (ival w == x) (mod (&2 pow (k + 1))))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[word_sxfrom; IVAL_WORD_ISHR_SHL_UNIQUE] THEN
+  REWRITE_TAC[IVAL_IWORD_GALOIS] THEN
+  REWRITE_TAC[ONCE_REWRITE_RULE[INT_MUL_SYM] WORD_SHL_AS_IWORD] THEN
+  REWRITE_TAC[IWORD_EQ] THEN
+  SUBGOAL_THEN
+   `(&2:int) pow (dimindex(:N) - 1) =
+    &2 pow (dimindex(:N) - 1 - k) * &2 pow k /\
+   (&2:int) pow dimindex(:N) =
+    &2 pow (dimindex(:N) - 1 - k) * &2 pow (k + 1)`
+  (CONJUNCTS_THEN SUBST1_TAC) THENL
+   [REWRITE_TAC[GSYM INT_POW_ADD] THEN CONJ_TAC THEN AP_TERM_TAC THEN
+    ASM_ARITH_TAC;
+    SIMP_TAC[GSYM INT_MUL_RNEG; INT_LE_LMUL_EQ; INT_LT_LMUL_EQ; INT_LT_POW2;
+             INT_LT_IMP_NE; INTEGER_RULE
+              `(a * x:int == a * y) (mod (a * b)) <=>
+               a = &0 \/ (x == y) (mod b)`]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Conditional AND and OR, with semantics of C's "&&" and "||"               *)
 (* ------------------------------------------------------------------------- *)
@@ -3861,6 +3885,33 @@ let WORD_SUBWORD_IWORD = prove
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[WORD_SUBWORD_AS_IWORD] THEN
   SIMP_TAC[INT_DIV_REM; INT_POW_LE; INT_POS; GSYM INT_POW_ADD] THEN
   ASM_SIMP_TAC[INT_REM_IVAL_IWORD]);;
+
+let WORD_SUBWORD_AS_USHR_SHL = prove (`!(x:N word) pos len.
+        pos + len <= dimindex(:N)
+        ==> word_subword x (pos,len):N word =
+            word_ushr (word_shl x (dimindex(:N) - (pos + len)))
+                      (dimindex(:N) - len)`,
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD;
+              BIT_WORD_USHR; BIT_WORD_SHL] THEN
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[BIT_GUARD] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN MATCH_MP_TAC(TAUT
+   `(p <=> p') /\ (p /\ p' ==> (q <=> q')) ==> (p /\ q <=> p' /\ q')`) THEN
+  CONJ_TAC THENL [ALL_TAC; STRIP_TAC THEN AP_THM_TAC THEN AP_TERM_TAC] THEN
+  ASM_ARITH_TAC);;
+
+let WORD_SXFROM_SUBWORD_AS_ISHR_SHL = prove
+ (`!(x:N word) pos len.
+        pos + len <= dimindex(:N) /\ 0 < len
+        ==> word_sxfrom (len-1) (word_subword x (pos,len)):N word =
+            word_ishr (word_shl x (dimindex(:N) - (pos + len)))
+                      (dimindex(:N) - len)`,
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_SXFROM;
+              BIT_WORD_ISHR; BIT_WORD_SHL] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ONCE_REWRITE_TAC[BIT_GUARD] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN MATCH_MP_TAC(TAUT
+   `(p <=> p') /\ (p /\ p' ==> (q <=> q')) ==> (p /\ q <=> p' /\ q')`) THEN
+  (CONJ_TAC THENL [ALL_TAC; STRIP_TAC THEN AP_THM_TAC THEN AP_TERM_TAC]) THEN
+  ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit recursion equations for "linear" operations.                          *)

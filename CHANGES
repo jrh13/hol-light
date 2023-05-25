@@ -8,6 +8,40 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 24th May 2023               Divstep/idivstep.ml [new file], divstep_bounds.ml
+
+Added an integer-scaled version of "divstep", which scales the delta by a
+factor of 2 and assumes that it is an odd number. This defines various
+sub-functions for specific fields of the n-fold iteration of divstep.
+
+Sat 20th May 2023               Library/words.ml
+
+Added a few more lemmas about expressing "word_subword" as right+left
+shifts, including the corresponding sign-extended version, and uniqueness for
+"word_sxfrom":
+
+  IVAL_WORD_SXFROM_UNIQUE =
+    |- !w k x.
+           k < dimindex(:N)
+           ==> (ival(word_sxfrom k w) = x <=>
+                --(&2 pow k) <= x /\
+                x < &2 pow k /\
+                (ival w == x) (mod (&2 pow (k + 1))))
+
+  WORD_SUBWORD_AS_USHR_SHL =
+    |- !x pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword x (pos,len) =
+               word_ushr (word_shl x (dimindex(:N) - (pos + len)))
+               (dimindex (:N) - len)
+
+  WORD_SXFROM_SUBWORD_AS_ISHR_SHL =
+    |- !x pos len.
+           pos + len <= dimindex(:N) /\ 0 < len
+           ==> word_sxfrom (len - 1) (word_subword x (pos,len)) =
+               word_ishr (word_shl x (dimindex(:N) - (pos + len)))
+               (dimindex(:N) - len)
+
 Tue 16th May 2023               int.ml, Library/words.ml
 
 Added two more elementary integer remainder lemmas (analogous to similar

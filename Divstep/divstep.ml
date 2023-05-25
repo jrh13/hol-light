@@ -97,13 +97,12 @@ let DIVSTEP_MAINTAINS_GCD = prove
 (* ------------------------------------------------------------------------- *)
 
 let DIVSTEP_RANGE_2SCOMPLEMENT = prove
- (`!d f g d' f' g' n.
-        f rem &2 = &1 /\
+ (`!B d f g d' f' g'.
         divstep(d,f,g) = d',f',g' /\
-        --(&2 pow n) <= f /\ f < &2 pow n /\
-        --(&2 pow n) <= g /\ g < &2 pow n
-        ==> --(&2 pow n) <= f' /\ f' < &2 pow n /\
-            --(&2 pow n) <= g' /\ g' < &2 pow n`,
+        --B <= f /\ f < B /\
+        --B <= g /\ g < B
+        ==> --B <= f' /\ f' < B /\
+            --B <= g' /\ g' < B`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE LAND_CONV [divstep]) THEN
   COND_CASES_TAC THEN REWRITE_TAC[PAIR_EQ] THEN
@@ -114,13 +113,12 @@ let DIVSTEP_RANGE_2SCOMPLEMENT = prove
   ASM_INT_ARITH_TAC);;
 
 let DIVSTEP_RANGE_SIGNMAGNITUDE = prove
- (`!d f g d' f' g' n.
-        f rem &2 = &1 /\
+ (`!B d f g d' f' g'.
         divstep(d,f,g) = d',f',g' /\
-        --(&2 pow n) < f /\ f < &2 pow n /\
-        --(&2 pow n) < g /\ g < &2 pow n
-        ==> --(&2 pow n) < f' /\ f' < &2 pow n /\
-            --(&2 pow n) < g' /\ g' < &2 pow n`,
+        --B < f /\ f < B /\
+        --B < g /\ g < B
+        ==> --B < f' /\ f' < B /\
+            --B < g' /\ g' < B`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE LAND_CONV [divstep]) THEN
   COND_CASES_TAC THEN REWRITE_TAC[PAIR_EQ] THEN
