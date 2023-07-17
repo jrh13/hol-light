@@ -73,7 +73,7 @@ let help s =
    "-------------------------------------------------------------------\n";
   Format.print_flush();
   (if mem s mod_listing then
-    let fn = assocd s funny_filenames s ^".doc" in
+    let fn = assocd s funny_filenames s ^".hlp" in
     let file = file_on_path true_path fn
     and script = file_on_path [!hol_dir] "doc-to-help.sed" in
     ignore(Sys.command("sed -f "^script^" "^file))
