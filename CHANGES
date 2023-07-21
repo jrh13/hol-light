@@ -8,6 +8,112 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 18th Jul 2023               Library/pocklington.ml, Library/integer.ml, 100/reciprocity.ml, 100/wilson.ml
+
+Removed a couple of effective duplicates with this renaming
+
+        CONG_MOD_MULT -> CONG_DIVIDES_MODULUS
+
+        INT_CONG_MOD_MULT -> INT_CONG_INT_DIVIDES_MODULUS
+
+Tue 18th Jul 2023               int.ml
+
+Enhanced INT_ARITH, INT_ARITH_TAC and ASM_INT_ARITH_TAC with better reduction
+of constant-expressions and elimination of div and rem analogous to that
+already present for DIV and MOD in the corresponding natural number routines
+ARITH_RULE etc. For example, the new version can handle basic lemmas like this:
+
+  let lemma = prove
+   (`abs(n) <= &2 pow 320
+     ==> let p = &2 pow 255 - &19 in
+         let q = n div &2 pow 255 in
+         let q' = if q < &0 then q - &1 else q in
+         &0 <= n - q' * p /\ n - q' * p < &2 * p`,
+  REWRITE_TAC[LET_DEF; LET_END_DEF] THEN INT_ARITH_TAC);;
+
+Mon 17th Jul 2023               lib.ml
+
+Added two trivial but handy functions to convert an integer into a
+hex string (string_of_num_hex), or a string to any base <= 16
+(string_of_num_nary), e.g.
+
+  # string_of_num_nary 2 (Int 255);;
+  val it : string = "11111111"
+  # string_of_num_nary 16 (Int 255);;
+  val it : string = "ff"
+  # string_of_num_nary 10 (Int 255);;
+  val it : string = "255"
+  #  string_of_num_hex (Int 126);;
+  val it : string = "0x7e"
+
+Mon 17th Jul 2023               Help/passim, help.ml, doc-to-help.sed
+
+Renamed all the ".doc" documentation files (used by "help" as well as
+in autogeneration of HTML and LaTeX reference documentation) to have
+the ".hlp" extension instead. This avoids complaints from tools that
+make assumptions about file type based on the extension.
+
+Thu 13th Jun 2023               Library/words.ml
+
+Added a few more miscellaneous word theorems. TWOS_COMPLEMENT is only
+really word-specific in its use of the bitval constant, but anyway is
+intended for word-oriented applications.
+
+  BITVAL_MSB =
+    |- !x. bitval(bit (dimindex(:N) - 1) x) =
+           val x DIV 2 EXP (dimindex(:N) - 1)
+
+  INT_VAL_IWORD =
+    |- !x. &0 <= x /\ x < &2 pow dimindex(:N) ==> &(val(iword x)) = x
+
+  INT_VAL_IWORD_EQ =
+    |- !x. &(val(iword x)) = x <=> &0 <= x /\ x < &2 pow dimindex(:N)
+
+  INT_VAL_WORD_NEG =
+    |- !x. &(val(word_neg x)) =
+           &2 pow dimindex(:N) * &(bitval(~(x = word 0))) - &(val x)
+
+  REAL_VAL_WORD_NEG =
+    |- !x. &(val(word_neg x)) =
+           &2 pow dimindex(:N) * &(bitval(~(x = word 0))) - &(val x)
+
+  TWOS_COMPLEMENT =
+    |- !p n x.
+           (&n == x) (mod (&2 pow p)) /\
+           ~(p = 0) /\
+           n < 2 EXP p /\
+           --(&2 pow (p - 1)) <= x /\
+           x < &2 pow (p - 1)
+           ==> (2 EXP (p - 1) <= n <=> x < &0) /\
+               n DIV 2 EXP (p - 1) = bitval(x < &0) /\
+               &n - &2 pow p * &(bitval(x < &0)) = x
+
+Wed 12th Jul 2023               int.ml
+
+Added a couple of lemmas about bounding integer remainders in terms of
+a bound on the left hand argument, a trivial but occasionally useful
+case:
+
+  INT_REM_LE =
+    |- !m n p. (n = &0 \/ &0 <= m) /\ m <= p ==> m rem n <= p
+
+  INT_REM_LE_EQ =
+    |- !m n. m rem n <= m <=> n = &0 \/ &0 <= m
+
+Tue 20th Jun 2023               Library/prime.ml, Library/pocklington.ml
+
+Added a couple of simple lemmas that both, in slightly different ways,
+help to work around the inconvenience of congruences on N with limited
+support for subtraction, one by switching into Z and one by eliminating
+an ostensible case split:
+
+  PRIME_INT_DIVPROD_EQ =
+    |- !p a b.
+          prime p ==> (&p divides a * b <=> &p divides a \/ &p divides b)
+
+  CONG_CASE =
+    |- !n a x. a < n ==> ((x == a) (mod n) <=> ?q. x = q * n + a)
+
 Wed 24th May 2023               Divstep/idivstep.ml [new file], divstep_bounds.ml
 
 Added an integer-scaled version of "divstep", which scales the delta by a

@@ -404,6 +404,17 @@ let lcm_num x y =
   if x =/ num_0 && y =/ num_0 then num_0
   else abs_num((x */ y) // gcd_num x y);;
 
+let string_of_num_nary =
+  let digits = ["0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9";
+                "a"; "b"; "c"; "d"; "e"; "f"] in
+  let rec string_of_num base n =
+    let n0 = mod_num n base and n1 = quo_num n base in
+    let d0 = el (Num.int_of_num n0) digits in
+    if n1 =/ num_0 then d0 else (string_of_num base n1)^d0 in
+  fun b n -> string_of_num (Int b) n;;
+
+let string_of_num_hex n = "0x" ^ string_of_num_nary 16 n;;
+
 (* ------------------------------------------------------------------------- *)
 (* All pairs arising from applying a function over two lists.                *)
 (* ------------------------------------------------------------------------- *)

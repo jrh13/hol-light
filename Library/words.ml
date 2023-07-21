@@ -746,6 +746,18 @@ let MSB_INT_VAL = prove
     bit (dimindex(:N) - 1) w <=> (&2 pow (dimindex(:N) - 1)):int <= &(val w)`,
   REWRITE_TAC[INT_OF_NUM_POW; INT_OF_NUM_LE; MSB_VAL]);;
 
+let BITVAL_MSB = prove
+ (`!x:N word. bitval(bit (dimindex(:N)-1) x) =
+              val x DIV 2 EXP (dimindex(:N)-1)`,
+  GEN_TAC THEN REWRITE_TAC[MSB_VAL] THEN CONV_TAC SYM_CONV THEN
+  REWRITE_TAC[bitval] THEN COND_CASES_TAC THENL
+   [MATCH_MP_TAC(ARITH_RULE `n < 2 /\ ~(n = 0) ==> n = 1`); ALL_TAC] THEN
+  ASM_SIMP_TAC[DIV_EQ_0; EXP_EQ_0; ARITH_EQ; RDIV_LT_EQ] THEN
+  ASM_REWRITE_TAC[GSYM NOT_LE] THEN ONCE_REWRITE_TAC[MULT_SYM] THEN
+  SIMP_TAC[GSYM(CONJUNCT2 EXP); NOT_LE] THEN
+  SIMP_TAC[DIMINDEX_NONZERO; ARITH_RULE `~(n = 0) ==> SUC(n - 1) = n`] THEN
+  REWRITE_TAC[VAL_BOUND]);;
+
 let BLOCK_BITS_ZERO_ALT = prove
  (`!(x:N word) m n.
         (!i. m <= i /\ i < n ==> ~bit i x) <=>
@@ -942,6 +954,18 @@ let VAL_IVAL = prove
     &(val w) =
     ival w + &2 pow dimindex(:N) * &(bitval (bit (dimindex (:N) - 1) w))`,
   REWRITE_TAC[IVAL_VAL] THEN CONV_TAC INT_ARITH);;
+
+let INT_VAL_IWORD = prove
+ (`!x. &0 <= x /\ x < &2 pow dimindex(:N) ==> &(val(iword x:N word)) = x`,
+  SIMP_TAC[IMP_CONJ; GSYM INT_FORALL_POS] THEN
+  REWRITE_TAC[GSYM WORD_IWORD; INT_OF_NUM_CLAUSES; VAL_WORD_EQ]);;
+
+let INT_VAL_IWORD_EQ = prove
+ (`!x. &(val(iword x:N word)) = x <=>
+       &0 <= x /\ x < &2 pow dimindex(:N)`,
+  GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[INT_VAL_IWORD] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; LE_0; VAL_BOUND]);;
 
 let MSB_IVAL = prove
  (`!(w:N word).
@@ -1187,6 +1211,34 @@ let BIT_LSB_IWORD = prove
   REWRITE_TAC[INT_OF_NUM_CLAUSES; GSYM num_divides] THEN
   REWRITE_TAC[divides; GSYM EVEN_EXISTS] THEN
   REWRITE_TAC[EVEN_EXP; ARITH; DIMINDEX_NONZERO]);;
+
+let TWOS_COMPLEMENT = prove
+ (`!p n x:int.
+        (&n == x) (mod (&2 pow p)) /\
+        ~(p = 0) /\ n < 2 EXP p /\
+        --(&2 pow (p - 1)) <= x /\ x < &2 pow (p - 1)
+        ==> (2 EXP (p - 1) <= n <=> x < &0) /\
+            n DIV (2 EXP (p - 1)) = bitval(x < &0) /\
+            &n - &2 pow p * &(bitval(x < &0)) = x`,
+  MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC[] THEN
+  X_GEN_TAC `p:num` THEN DISCH_THEN(K ALL_TAC) THEN
+  REWRITE_TAC[NOT_SUC; EXP; SUC_SUB1; INT_POW] THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `n DIV 2 EXP p < 2` ASSUME_TAC THENL
+   [ASM_SIMP_TAC[RDIV_LT_EQ; EXP_EQ_0; ARITH_EQ] THEN ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  REWRITE_TAC[bitval] THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[ARITH_RULE `n < 2 ==> (n = 1 <=> ~(n = 0))`] THEN
+  SIMP_TAC[DIV_EQ_0; EXP_EQ_0; ARITH_EQ; NOT_LE; NOT_LT; CONJ_ASSOC] THEN
+  REWRITE_TAC[INT_MUL_RZERO; INT_MUL_RID; INT_EQ_SUB_RADD] THEN
+  MATCH_MP_TAC(TAUT `(q ==> p) /\ q ==> p /\ q`) THEN
+  (CONJ_TAC THENL
+    [SIMP_TAC[GSYM INT_OF_NUM_CLAUSES];
+     MATCH_MP_TAC INT_CONG_IMP_EQ THEN EXISTS_TAC `(&2:int) * &2 pow p` THEN
+     ASM_REWRITE_TAC[INT_ADD_RID; INTEGER_RULE
+      `(x:int == y + n) (mod n) <=> (x == y) (mod n)`]]) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[GSYM INT_OF_NUM_CLAUSES]) THEN
+  ASM_INT_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit operations on `num`.                                                  *)
@@ -2213,6 +2265,24 @@ let REAL_VAL_WORD_NEG_CASES = prove
         if &(val x):real = &0 then &0 else &2 pow dimindex(:N) - &(val x)`,
   SIMP_TAC[REAL_OF_NUM_POW; REAL_OF_NUM_SUB; LT_IMP_LE; VAL_BOUND] THEN
   REWRITE_TAC[VAL_WORD_NEG_CASES; REAL_OF_NUM_EQ] THEN MESON_TAC[]);;
+
+let INT_VAL_WORD_NEG = prove
+ (`!x:N word. &(val(word_neg x)):int =
+              &2 pow dimindex(:N) * &(bitval(~(x = word 0))) -
+              &(val x)`,
+  GEN_TAC THEN REWRITE_TAC[INT_VAL_WORD_NEG_CASES] THEN
+  REWRITE_TAC[INT_OF_NUM_EQ; VAL_EQ_0] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[BITVAL_CLAUSES; VAL_WORD_0] THEN
+  INT_ARITH_TAC);;
+
+let REAL_VAL_WORD_NEG = prove
+ (`!x:N word. &(val(word_neg x)):real =
+              &2 pow dimindex(:N) * &(bitval(~(x = word 0))) -
+              &(val x)`,
+  GEN_TAC THEN REWRITE_TAC[REAL_VAL_WORD_NEG_CASES] THEN
+  REWRITE_TAC[REAL_OF_NUM_EQ; VAL_EQ_0] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[BITVAL_CLAUSES; VAL_WORD_0] THEN
+  REAL_ARITH_TAC);;
 
 let CONG_WORD_NEG = prove
  (`!x:(N)word.
