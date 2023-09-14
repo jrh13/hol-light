@@ -32,8 +32,7 @@ let temp_path = ref "/tmp";;
 
 let use_file s =
   if Toploop.use_file Format.std_formatter s then ()
-  else (Format.print_string("Error in included file "^s);
-        Format.print_newline());;
+  else failwith("Error in included file "^s);;
 
 let hol_expand_directory s =
   if s = "$" || s = "$/" then !hol_dir
