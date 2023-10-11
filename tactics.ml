@@ -747,6 +747,10 @@ let ANTS_TAC =
 (* A printer for goals etc.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
+(* A parameter to prettyprinter's max boxes for printing hypotheses.         *)
+(* Set to None if the formatter's default max boxes value is to be used.     *)
+let print_goal_hyp_max_boxes = ref None;;
+
 let (pp_print_goal:Format.formatter->goal->unit) =
   let string_of_int3 n =
     if n < 10 then "  "^string_of_int n
@@ -757,7 +761,12 @@ let (pp_print_goal:Format.formatter->goal->unit) =
     Format.pp_print_string fmt (string_of_int3 n);
     Format.pp_print_string fmt " [";
     pp_open_hvbox fmt 0;
+    let old_max_boxes = pp_get_max_boxes fmt () in
+    (match !print_goal_hyp_max_boxes with
+     | None -> ()
+     | Some hb -> pp_set_max_boxes fmt hb);
     pp_print_qterm fmt (concl th);
+    pp_set_max_boxes fmt old_max_boxes;
     pp_close_box fmt ();
     Format.pp_print_string fmt "]";
     (if not (s = "") then (Format.pp_print_string fmt (" ("^s^")")) else ());
