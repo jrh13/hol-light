@@ -30,9 +30,20 @@ let temp_path = ref "/tmp";;
 (* $ character at the start of a directory.                                  *)
 (* ------------------------------------------------------------------------- *)
 
+(* A flag that sets whether use_file must raise Failure if loading the file  *)
+(* did not succeed. If set to true, this helps (nested) loading of files fail*)
+(* early. However, propagation of the failure will cause Toplevel to forget  *)
+(* bindings ('let .. = ..;;') that have been made before the erroneous       *)
+(* statement in the file. This leads to an inconsistent state between        *)
+(* variable and defined constants in HOL Light.                              *)
+let use_file_raise_failure = ref false;;
+
 let use_file s =
   if Toploop.use_file Format.std_formatter s then ()
-  else failwith("Error in included file "^s);;
+  else if !use_file_raise_failure
+  then failwith("Error in included file "^s)
+  else (Format.print_string("Error in included file "^s);
+        Format.print_newline());;
 
 let hol_expand_directory s =
   if s = "$" || s = "$/" then !hol_dir
