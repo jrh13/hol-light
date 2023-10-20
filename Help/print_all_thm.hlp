@@ -26,7 +26,8 @@ Not applicable.
 }
 
 \SEEALSO
-pp_print_term, prebroken_binops, print_unambiguous_comprehensions,
-reverse_interface_mapping, typify_universal_set, unspaced_binops.
+pp_print_term, prebroken_binops, print_goal_hyp_max_boxes,
+print_unambiguous_comprehensions, reverse_interface_mapping,
+typify_universal_set, unspaced_binops.
 
 \ENDDOC

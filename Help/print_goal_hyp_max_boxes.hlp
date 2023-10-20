@@ -1,0 +1,62 @@
+\DOC print_goal_hyp_max_boxes
+
+\TYPE {print_goal_hyp_max_boxes : int option ref}
+
+\SYNOPSIS
+Flag determining the maximum number of boxes used to pretty-print each hypothesis
+of a goal.
+
+\DESCRIBE
+The reference variable {print_goal_hyp_max_boxes} is a parameter controlling
+the maximum number of boxes used to pretty-print each hypothesis of a goal.
+This reference variable is used by {pp_print_goal}.
+A box is a logical unit for pretty-printing an object and it is used by OCaml's
+{Format} module.
+When it is set to {Some k}, {k} is used as the maximum number of boxes and
+terms in a hypothesis that need more than {k} boxes are abbreviated by a
+dot ({.}).
+When it is set to {None}, the maximum number of boxes configured in OCaml's
+default formatter is used.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+{
+   # g `1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 = 10
+        ==> 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 20`;;
+   val it : goalstack = 1 subgoal (1 total)
+
+   `1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 = 10
+   ==> 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 20`
+
+   # e(STRIP_TAC);;
+   val it : goalstack = 1 subgoal (1 total)
+
+   0 [`1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 = 10`]
+
+   `2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 20`
+
+   # print_goal_hyp_max_boxes := Some 5;;
+   val it : unit = ()
+   # p();;
+   val it : goalstack = 1 subgoal (1 total)
+
+   0 [`. = 10`]
+
+   `2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 20`
+
+   # print_goal_hyp_max_boxes := None;;
+   val it : unit = ()
+   # p();;
+   val it : goalstack = 1 subgoal (1 total)
+
+   0 [`1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 = 10`]
+
+   `2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 20`
+}
+
+\SEEALSO
+pp_print_goal, print_all_thm.
+
+\ENDDOC
