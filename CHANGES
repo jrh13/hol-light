@@ -8,6 +8,176 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  3rd Nov 2023               cart.ml, Library/words.ml
+
+Added various lemmas, mostly about machine words and with a focus
+on bounds for "word_popcount" (population count, Hamming weight)
+including its subadditivity (WORD_POPCOUNT_ADD). New theorems:
+  
+  BITS_OF_WORD_SUBSET =
+    |- !x y. bits_of_word x SUBSET bits_of_word y <=> 
+             (!i. bit i x ==> bit i y)
+  
+  BITS_OF_WORD_SUBSET_ALT =
+    |- !x y.
+           bits_of_word x SUBSET bits_of_word y <=>
+           (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
+  
+  BITS_OF_WORD_SUBSET_NUMSEG =
+    |- !x. bits_of_word x SUBSET {i | i < dimindex(:N)}
+  
+  BIT_WORD_JOIN_GEN =
+    |- !e h l i.
+           l < 2 EXP e
+           ==> (ODD((2 EXP e * h + l) DIV 2 EXP i) <=>
+                (if i < e
+                 then ODD(l DIV 2 EXP i)
+                 else ODD(h DIV 2 EXP (i - e))))
+  
+  NUMSEG_LT_DIMINDEX =
+    |- {i | i < dimindex(:N)} = 0..dimindex(:N) - 1
+  
+  VAL_LE_SUBSET =
+    |- !x y. bits_of_word x SUBSET bits_of_word y ==> val x <= val y
+  
+  WORD_OF_BITS_EMPTY =
+    |- word_of_bits {} = word 0
+  
+  WORD_POPCOUNT_ADD =
+    |- !x y. word_popcount(word_add x y) <= word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_ADD_DISJOINT =
+    |- !x y.
+           word_and x y = word 0
+           ==> word_popcount(word_add x y) = word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_ADD_OR =
+    |- !x y. word_popcount(word_add x y) <= word_popcount(word_or x y)
+  
+  WORD_POPCOUNT_AND =
+    |- !x y.
+           word_popcount(word_and x y) <=
+           MIN (word_popcount x) (word_popcount y)
+  
+  WORD_POPCOUNT_BITVAL =
+    |- !b. word_popcount(word(bitval b)) <= 1
+  
+  WORD_POPCOUNT_BOUND_SIZE =
+    |- !x n. val x < 2 EXP n ==> word_popcount x <= n
+  
+  WORD_POPCOUNT_LE_BITS =
+    |- !x y.
+           (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
+           ==> word_popcount x <= word_popcount y
+  
+  WORD_POPCOUNT_NSUM =
+    |- !x. word_popcount x =
+           nsum {i | i < dimindex(:N)} (\i. bitval(bit i x))
+  
+  WORD_POPCOUNT_OR =
+    |- !x y. word_popcount(word_or x y) <= word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_OR_AND =
+    |- !x y.
+           word_popcount(word_or x y) + word_popcount(word_and x y) =
+           word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_OR_DISJOINT =
+    |- !x y.
+           word_and x y = word 0
+           ==> word_popcount(word_or x y) = word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_SHL =
+    |- !x n. word_popcount(word_shl x n) <= word_popcount x
+  
+  WORD_POPCOUNT_USHR =
+    |- !x n. word_popcount(word_ushr x n) <= word_popcount x
+  
+  WORD_POPCOUNT_WORD_OF_BITS =
+    |- !s. s SUBSET {i | i < dimindex(:N)}
+           ==> word_popcount(word_of_bits s) = CARD s
+  
+  WORD_POPCOUNT_WORD_OF_BITS_GEN =
+    |- !s. word_popcount(word_of_bits s) =
+           CARD ({i | i < dimindex(:N)} INTER s)
+  
+  WORD_POPCOUNT_XOR =
+    |- !x y. word_popcount(word_xor x y) <= word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_XOR_AND =
+    |- !x y.
+           word_popcount(word_xor x y) + word_popcount(word_and x y) =
+           word_popcount(word_or x y)
+
+  WORD_POPCOUNT_XOR_AND2 =
+    |- !x y.
+           word_popcount(word_xor x y) + 2 * word_popcount(word_and x y) =
+           word_popcount x + word_popcount y
+
+Thu  2nd Nov 2023               Library/words.ml
+
+Added a construct "word_insert x (pos,len) y" which inserts a length len
+subword of word y at position pos into x (with a result possibly another
+wordsize), together with one basic lemma and support in BIT_WORD_CONV
+and WORD_RED_CONV/WORD_REDUCE_CONV:
+
+  word_insert =
+   |- !x' len x pos.
+         word_insert x (pos,len) x' =
+         word
+         (2 EXP (pos + len) * val x DIV 2 EXP (pos + len) +
+          2 EXP pos * val x' MOD 2 EXP len +
+          val x MOD 2 EXP pos)
+
+  BIT_WORD_INSERT =
+   |- !x x' pos len i.
+         bit i (word_insert x (pos,len) x') <=>
+         i < dimindex (:P) /\
+         (if pos <= i /\ i < pos + len then bit (i - pos) x' else bit i x)
+
+Fri 20th Oct 2023               tactics.ml, Help/print_all_thm.hlp, Help/print_goal_hyp_max_boxes.hlp [new file]
+
+Added a variable controlling prettyprinter box limits on the hypotheses
+of goals, from June Lee (PR https://github.com/jrh13/hol-light/pull/84).
+This is
+
+        print_goal_hyp_max_boxes
+
+and can be set either to None (the default) or Some limit.
+
+Fri 20th Oct 2023               hol.ml, Help/use_file_raise_failure.hlp [new file]
+
+Made the recent error behavior on loads switchable by a flag, since
+both behaviors can be useful. This is an update from June Lee
+(see PR https://github.com/jrh13/hol-light/pull/83). The flag is
+
+        use_file_raise_failure
+
+Fri 20th Oct 2023               load_camlp5_topfind.ml, update_database_4.14.ml
+
+Incorporated an update from June Lee to avoid loading compiler-libs.common
+when using OCaml 4.14. This does have the side-effect of requiring an
+explicit OCaml toplevel in more cases, but this is already recommended
+in the latest README:
+
+  ocamlmktop -o ocaml-hol
+
+Fri 20th Oct 2023               Makefile, pa_j_4.xx_8.02.ml [new file]
+
+Added support for another camlp5 version, 8.02, with a new file from
+Stephane Glondu (see PR https://github.com/jrh13/hol-light/pull/81)
+
+Thu 14th Sep 2023               hol.ml
+
+Finally adopted an old improvement from Quentin Carbonneaux to the loading of
+files containing errors via "loads" or "loadt", forcing an immediate stop on
+the first error.
+
+Thu 14th Sep 2023               README, hol.ml, load_camlp4.ml [new file], load_camlp5.ml [new file], load_camlp5_topfind.ml [new file]
+
+Added an improved approach from June Lee to the camlp5 and num dependencies,
+using Topfind to find them when the OCaml version is >= 4.14.
+
 Tue 18th Jul 2023               Library/pocklington.ml, Library/integer.ml, 100/reciprocity.ml, 100/wilson.ml
 
 Removed a couple of effective duplicates with this renaming
