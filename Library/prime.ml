@@ -650,6 +650,13 @@ let PRIME_DIVPROD_EQ = prove
  (`!p a b. prime(p) ==> (p divides (a * b) <=> p divides a \/ p divides b)`,
   MESON_TAC[PRIME_DIVPROD; DIVIDES_LMUL; DIVIDES_RMUL]);;
 
+let PRIME_INT_DIVPROD_EQ = prove
+ (`!p a b:int.
+        prime p ==> (&p divides a * b <=> &p divides a \/ &p divides b)`,
+  REWRITE_TAC[FORALL_INT_CASES; INT_MUL_LNEG; INT_MUL_RNEG; INT_NEG_NEG] THEN
+  REWRITE_TAC[INTEGER_RULE `(a:int) divides --b <=> a divides b`] THEN
+  REWRITE_TAC[GSYM num_divides; PRIME_DIVPROD_EQ; INT_OF_NUM_CLAUSES]);;
+
 let PRIME_GE_2 = prove
  (`!p. prime(p) ==> 2 <= p`,
   REWRITE_TAC[ARITH_RULE `2 <= p <=> ~(p = 0) /\ ~(p = 1)`] THEN

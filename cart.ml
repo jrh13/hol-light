@@ -41,6 +41,10 @@ let HAS_SIZE_1 = prove
    [REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING] THEN MESON_TAC[one];
     SIMP_TAC[NOT_IN_EMPTY; HAS_SIZE; FINITE_RULES; CARD_CLAUSES; ARITH]]);;
 
+let NUMSEG_LT_DIMINDEX = prove
+ (`{i | i < dimindex(:N)} = 0..dimindex(:N)-1`,
+  REWRITE_TAC[NUMSEG_LT; DIMINDEX_NONZERO]);;
+
 let DIMINDEX_1 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_1;;
 
 (* ------------------------------------------------------------------------- *)

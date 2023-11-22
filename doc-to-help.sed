@@ -1,4 +1,4 @@
-# Script to convert .doc file into a presentable ASCII form
+# Script to convert .hlp file into a presentable ASCII form
 #
 # This is essentially a copy of an old file from the HOL88 distribution.
 

@@ -34,11 +34,13 @@ prerequisites is as simple as
 For other OSs, more work is involved. The Objective CAML (OCaml)
 implementation is a prerequisite for running HOL Light. HOL Light
 should work with any recent version of OCaml; I've tried it on at
-least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2 and 4.00.
+least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2, 4.00,
+4.05 and 4.14.
 However, for versions >= 3.10 (in 3.10 there was an incompatible
 change in the camlp4 preprocessor) you will also need to get camlp5
-(version >= 4.07). Installing both items of software should not be too
-difficult, depending on the platform.
+(version >= 4.07). For versions >= 4.14, you will need to get camlp5
+8.00 and ocamlfind. Installing these items should not be
+too difficult, depending on the platform.
 
  1. OCaml: there are packages for many Linux distributions. For
     example, on a debian derivative like Ubuntu, you may just need
@@ -89,6 +91,10 @@ difficult, depending on the platform.
     with just something like
 
         sudo apt-get install camlp5
+
+    or
+
+        opam install camlp5
 
     However, you may get a version in "transitional" instead of
     "strict" mode (do "camlp5 -pmode" to check which you have).
@@ -141,6 +147,10 @@ be available for some platforms. First the basic approach:
                 Objective Caml version 4.01.0
 
         #
+
+    If you are using OCaml 4.14, you need to create a top-level OCaml
+    using 'ocamlmktop -o ocaml-hol' and use 'ocaml-hol' because the default
+    'ocaml' does not have 'compiler-libs' that is necessary to run HOL Light.
 
 (3) At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
     command, not the prompt) followed by a newline. This should rebuild

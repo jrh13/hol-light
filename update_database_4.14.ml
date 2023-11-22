@@ -139,3 +139,9 @@ let search =
 (* ------------------------------------------------------------------------- *)
 
 update_database();;
+
+(* This printf checks whether standard modules like Printf are still alive
+   after update_database.
+   See also: https://github.com/ocaml/ocaml/issues/12271 *)
+Printf.printf "update_database.ml loaded! # theorems: %d\n"
+   (List.length !theorems);;

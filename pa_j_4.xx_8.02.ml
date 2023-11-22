@@ -1115,8 +1115,8 @@ do {
   Grammar.Unsafe.clear_entry class_str_item
 };
 
-Pcaml.parse_interf.val := Grammar.Entry.parse interf;
-Pcaml.parse_implem.val := Grammar.Entry.parse implem;
+Pcaml.transduce_interf.parse.val := Some (Grammar.Entry.parse interf);
+Pcaml.transduce_implem.parse.val := Some (Grammar.Entry.parse implem);
 
 value error loc msg = Ploc.raise loc (Failure msg);
 

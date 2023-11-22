@@ -106,6 +106,7 @@ echo '### Loading Library/rstc.ml,reduct.ml';
 echo '### Loading Arithmetic/make.ml'; echo 'loadt "Arithmetic/make.ml";;' | (time $hollight)
 echo '### Loading Boyer_Moore/make.ml'; echo 'loadt "Boyer_Moore/make.ml";;' | (time $hollight)
 echo '### Loading Complex/make.ml'; echo 'loadt "Complex/make.ml";;' | (time $hollight)
+echo '### Loading Divstep/make.ml'; echo 'loadt "Divstep/make.ml";;' | (time $hollight)
 echo '### Loading EC/make.ml'; echo 'loadt "EC/make.ml";;' | (time $hollight)
 echo '### Loading GL/make.ml'; echo 'loadt "GL/make.ml";;' | (time $hollight)
 echo '### Loading Geometric_Algebra/make.ml'; echo 'loadt "Geometric_Algebra/make.ml";;' | (time $hollight)

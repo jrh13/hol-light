@@ -67,9 +67,11 @@ pa_j.cmo: pa_j.ml; if test ${OCAML_BINARY_VERSION} = "3.0" ; \
 # based on the camlp5 version. The main distinction is < 6.00 and >= 6.00, but
 # there are some other incompatibilities, unfortunately.
 
-pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx.ml pa_j_4.xx_8.00.ml; \
+pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx.ml pa_j_4.xx_8.00.ml pa_j_4.xx_8.02.ml; \
         if test ${OCAML_BINARY_VERSION} = "3.0"  ; \
         then cp pa_j_${OCAML_VERSION}.ml pa_j.ml ; \
+        elif test $(shell echo ${CAMLP5_VERSION} | head -c4) = "8.02" ; \
+        then cp pa_j_4.xx_8.02.ml pa_j.ml; \
         elif test ${CAMLP5_BINARY_VERSION} = "8" ; \
         then cp pa_j_4.xx_8.00.ml pa_j.ml; \
         elif test ${CAMLP5_BINARY_VERSION} = "7" ; \

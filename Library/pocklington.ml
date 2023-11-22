@@ -129,6 +129,13 @@ let CONG_CASES = prove
    `x + a = y + b ==> x = (b - a) + y \/ y = (a - b) + x`)) THEN
   REWRITE_TAC[GSYM LEFT_SUB_DISTRIB] THEN MESON_TAC[MULT_SYM]);;
 
+let CONG_CASE = prove
+ (`!n a x:num. a < n ==> ((x == a) (mod n) <=> ?q. x = q * n + a)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CONG_CASES; OR_EXISTS_THM] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[] THEN
+  MATCH_MP_TAC num_INDUCTION THEN SIMP_TAC[MULT_CLAUSES; ADD_CLAUSES] THEN
+  ASM_ARITH_TAC);;
+
 let CONG_MULT_LCANCEL = prove
  (`!a n x y. coprime(a,n) /\ (a * x == a * y) (mod n) ==> (x == y) (mod n)`,
   NUMBER_TAC);;
@@ -297,10 +304,6 @@ let MOD_MULT_CONG = prove
    (fun th -> MESON_TAC[th; CONG_TRANS; CONG_SYM]) THEN
   MATCH_MP_TAC CONG_DIVIDES_MODULUS THEN EXISTS_TAC `a * b` THEN
   ASM_SIMP_TAC[CONG_MOD; MULT_EQ_0; DIVIDES_RMUL; DIVIDES_REFL]);;
-
-let CONG_MOD_MULT = prove
- (`!x y m n. (x == y) (mod n) /\ m divides n ==> (x == y) (mod m)`,
-  NUMBER_TAC);;
 
 let CONG_MOD_LT = prove
  (`!y. y < n ==> (x MOD n = y <=> (x == y) (mod n))`,

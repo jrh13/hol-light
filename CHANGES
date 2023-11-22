@@ -8,6 +8,746 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  3rd Nov 2023               cart.ml, Library/words.ml
+
+Added various lemmas, mostly about machine words and with a focus
+on bounds for "word_popcount" (population count, Hamming weight)
+including its subadditivity (WORD_POPCOUNT_ADD). New theorems:
+  
+  BITS_OF_WORD_SUBSET =
+    |- !x y. bits_of_word x SUBSET bits_of_word y <=> 
+             (!i. bit i x ==> bit i y)
+  
+  BITS_OF_WORD_SUBSET_ALT =
+    |- !x y.
+           bits_of_word x SUBSET bits_of_word y <=>
+           (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
+  
+  BITS_OF_WORD_SUBSET_NUMSEG =
+    |- !x. bits_of_word x SUBSET {i | i < dimindex(:N)}
+  
+  BIT_WORD_JOIN_GEN =
+    |- !e h l i.
+           l < 2 EXP e
+           ==> (ODD((2 EXP e * h + l) DIV 2 EXP i) <=>
+                (if i < e
+                 then ODD(l DIV 2 EXP i)
+                 else ODD(h DIV 2 EXP (i - e))))
+  
+  NUMSEG_LT_DIMINDEX =
+    |- {i | i < dimindex(:N)} = 0..dimindex(:N) - 1
+  
+  VAL_LE_SUBSET =
+    |- !x y. bits_of_word x SUBSET bits_of_word y ==> val x <= val y
+  
+  WORD_OF_BITS_EMPTY =
+    |- word_of_bits {} = word 0
+  
+  WORD_POPCOUNT_ADD =
+    |- !x y. word_popcount(word_add x y) <= word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_ADD_DISJOINT =
+    |- !x y.
+           word_and x y = word 0
+           ==> word_popcount(word_add x y) = word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_ADD_OR =
+    |- !x y. word_popcount(word_add x y) <= word_popcount(word_or x y)
+  
+  WORD_POPCOUNT_AND =
+    |- !x y.
+           word_popcount(word_and x y) <=
+           MIN (word_popcount x) (word_popcount y)
+  
+  WORD_POPCOUNT_BITVAL =
+    |- !b. word_popcount(word(bitval b)) <= 1
+  
+  WORD_POPCOUNT_BOUND_SIZE =
+    |- !x n. val x < 2 EXP n ==> word_popcount x <= n
+  
+  WORD_POPCOUNT_LE_BITS =
+    |- !x y.
+           (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
+           ==> word_popcount x <= word_popcount y
+  
+  WORD_POPCOUNT_NSUM =
+    |- !x. word_popcount x =
+           nsum {i | i < dimindex(:N)} (\i. bitval(bit i x))
+  
+  WORD_POPCOUNT_OR =
+    |- !x y. word_popcount(word_or x y) <= word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_OR_AND =
+    |- !x y.
+           word_popcount(word_or x y) + word_popcount(word_and x y) =
+           word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_OR_DISJOINT =
+    |- !x y.
+           word_and x y = word 0
+           ==> word_popcount(word_or x y) = word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_SHL =
+    |- !x n. word_popcount(word_shl x n) <= word_popcount x
+  
+  WORD_POPCOUNT_USHR =
+    |- !x n. word_popcount(word_ushr x n) <= word_popcount x
+  
+  WORD_POPCOUNT_WORD_OF_BITS =
+    |- !s. s SUBSET {i | i < dimindex(:N)}
+           ==> word_popcount(word_of_bits s) = CARD s
+  
+  WORD_POPCOUNT_WORD_OF_BITS_GEN =
+    |- !s. word_popcount(word_of_bits s) =
+           CARD ({i | i < dimindex(:N)} INTER s)
+  
+  WORD_POPCOUNT_XOR =
+    |- !x y. word_popcount(word_xor x y) <= word_popcount x + word_popcount y
+  
+  WORD_POPCOUNT_XOR_AND =
+    |- !x y.
+           word_popcount(word_xor x y) + word_popcount(word_and x y) =
+           word_popcount(word_or x y)
+
+  WORD_POPCOUNT_XOR_AND2 =
+    |- !x y.
+           word_popcount(word_xor x y) + 2 * word_popcount(word_and x y) =
+           word_popcount x + word_popcount y
+
+Thu  2nd Nov 2023               Library/words.ml
+
+Added a construct "word_insert x (pos,len) y" which inserts a length len
+subword of word y at position pos into x (with a result possibly another
+wordsize), together with one basic lemma and support in BIT_WORD_CONV
+and WORD_RED_CONV/WORD_REDUCE_CONV:
+
+  word_insert =
+   |- !x' len x pos.
+         word_insert x (pos,len) x' =
+         word
+         (2 EXP (pos + len) * val x DIV 2 EXP (pos + len) +
+          2 EXP pos * val x' MOD 2 EXP len +
+          val x MOD 2 EXP pos)
+
+  BIT_WORD_INSERT =
+   |- !x x' pos len i.
+         bit i (word_insert x (pos,len) x') <=>
+         i < dimindex (:P) /\
+         (if pos <= i /\ i < pos + len then bit (i - pos) x' else bit i x)
+
+Fri 20th Oct 2023               tactics.ml, Help/print_all_thm.hlp, Help/print_goal_hyp_max_boxes.hlp [new file]
+
+Added a variable controlling prettyprinter box limits on the hypotheses
+of goals, from June Lee (PR https://github.com/jrh13/hol-light/pull/84).
+This is
+
+        print_goal_hyp_max_boxes
+
+and can be set either to None (the default) or Some limit.
+
+Fri 20th Oct 2023               hol.ml, Help/use_file_raise_failure.hlp [new file]
+
+Made the recent error behavior on loads switchable by a flag, since
+both behaviors can be useful. This is an update from June Lee
+(see PR https://github.com/jrh13/hol-light/pull/83). The flag is
+
+        use_file_raise_failure
+
+Fri 20th Oct 2023               load_camlp5_topfind.ml, update_database_4.14.ml
+
+Incorporated an update from June Lee to avoid loading compiler-libs.common
+when using OCaml 4.14. This does have the side-effect of requiring an
+explicit OCaml toplevel in more cases, but this is already recommended
+in the latest README:
+
+  ocamlmktop -o ocaml-hol
+
+Fri 20th Oct 2023               Makefile, pa_j_4.xx_8.02.ml [new file]
+
+Added support for another camlp5 version, 8.02, with a new file from
+Stephane Glondu (see PR https://github.com/jrh13/hol-light/pull/81)
+
+Thu 14th Sep 2023               hol.ml
+
+Finally adopted an old improvement from Quentin Carbonneaux to the loading of
+files containing errors via "loads" or "loadt", forcing an immediate stop on
+the first error.
+
+Thu 14th Sep 2023               README, hol.ml, load_camlp4.ml [new file], load_camlp5.ml [new file], load_camlp5_topfind.ml [new file]
+
+Added an improved approach from June Lee to the camlp5 and num dependencies,
+using Topfind to find them when the OCaml version is >= 4.14.
+
+Tue 18th Jul 2023               Library/pocklington.ml, Library/integer.ml, 100/reciprocity.ml, 100/wilson.ml
+
+Removed a couple of effective duplicates with this renaming
+
+        CONG_MOD_MULT -> CONG_DIVIDES_MODULUS
+
+        INT_CONG_MOD_MULT -> INT_CONG_INT_DIVIDES_MODULUS
+
+Tue 18th Jul 2023               int.ml
+
+Enhanced INT_ARITH, INT_ARITH_TAC and ASM_INT_ARITH_TAC with better reduction
+of constant-expressions and elimination of div and rem analogous to that
+already present for DIV and MOD in the corresponding natural number routines
+ARITH_RULE etc. For example, the new version can handle basic lemmas like this:
+
+  let lemma = prove
+   (`abs(n) <= &2 pow 320
+     ==> let p = &2 pow 255 - &19 in
+         let q = n div &2 pow 255 in
+         let q' = if q < &0 then q - &1 else q in
+         &0 <= n - q' * p /\ n - q' * p < &2 * p`,
+  REWRITE_TAC[LET_DEF; LET_END_DEF] THEN INT_ARITH_TAC);;
+
+Mon 17th Jul 2023               lib.ml
+
+Added two trivial but handy functions to convert an integer into a
+hex string (string_of_num_hex), or a string to any base <= 16
+(string_of_num_nary), e.g.
+
+  # string_of_num_nary 2 (Int 255);;
+  val it : string = "11111111"
+  # string_of_num_nary 16 (Int 255);;
+  val it : string = "ff"
+  # string_of_num_nary 10 (Int 255);;
+  val it : string = "255"
+  #  string_of_num_hex (Int 126);;
+  val it : string = "0x7e"
+
+Mon 17th Jul 2023               Help/passim, help.ml, doc-to-help.sed
+
+Renamed all the ".doc" documentation files (used by "help" as well as
+in autogeneration of HTML and LaTeX reference documentation) to have
+the ".hlp" extension instead. This avoids complaints from tools that
+make assumptions about file type based on the extension.
+
+Thu 13th Jun 2023               Library/words.ml
+
+Added a few more miscellaneous word theorems. TWOS_COMPLEMENT is only
+really word-specific in its use of the bitval constant, but anyway is
+intended for word-oriented applications.
+
+  BITVAL_MSB =
+    |- !x. bitval(bit (dimindex(:N) - 1) x) =
+           val x DIV 2 EXP (dimindex(:N) - 1)
+
+  INT_VAL_IWORD =
+    |- !x. &0 <= x /\ x < &2 pow dimindex(:N) ==> &(val(iword x)) = x
+
+  INT_VAL_IWORD_EQ =
+    |- !x. &(val(iword x)) = x <=> &0 <= x /\ x < &2 pow dimindex(:N)
+
+  INT_VAL_WORD_NEG =
+    |- !x. &(val(word_neg x)) =
+           &2 pow dimindex(:N) * &(bitval(~(x = word 0))) - &(val x)
+
+  REAL_VAL_WORD_NEG =
+    |- !x. &(val(word_neg x)) =
+           &2 pow dimindex(:N) * &(bitval(~(x = word 0))) - &(val x)
+
+  TWOS_COMPLEMENT =
+    |- !p n x.
+           (&n == x) (mod (&2 pow p)) /\
+           ~(p = 0) /\
+           n < 2 EXP p /\
+           --(&2 pow (p - 1)) <= x /\
+           x < &2 pow (p - 1)
+           ==> (2 EXP (p - 1) <= n <=> x < &0) /\
+               n DIV 2 EXP (p - 1) = bitval(x < &0) /\
+               &n - &2 pow p * &(bitval(x < &0)) = x
+
+Wed 12th Jul 2023               int.ml
+
+Added a couple of lemmas about bounding integer remainders in terms of
+a bound on the left hand argument, a trivial but occasionally useful
+case:
+
+  INT_REM_LE =
+    |- !m n p. (n = &0 \/ &0 <= m) /\ m <= p ==> m rem n <= p
+
+  INT_REM_LE_EQ =
+    |- !m n. m rem n <= m <=> n = &0 \/ &0 <= m
+
+Tue 20th Jun 2023               Library/prime.ml, Library/pocklington.ml
+
+Added a couple of simple lemmas that both, in slightly different ways,
+help to work around the inconvenience of congruences on N with limited
+support for subtraction, one by switching into Z and one by eliminating
+an ostensible case split:
+
+  PRIME_INT_DIVPROD_EQ =
+    |- !p a b.
+          prime p ==> (&p divides a * b <=> &p divides a \/ &p divides b)
+
+  CONG_CASE =
+    |- !n a x. a < n ==> ((x == a) (mod n) <=> ?q. x = q * n + a)
+
+Wed 24th May 2023               Divstep/idivstep.ml [new file], divstep_bounds.ml
+
+Added an integer-scaled version of "divstep", which scales the delta by a
+factor of 2 and assumes that it is an odd number. This defines various
+sub-functions for specific fields of the n-fold iteration of divstep.
+
+Sat 20th May 2023               Library/words.ml
+
+Added a few more lemmas about expressing "word_subword" as right+left
+shifts, including the corresponding sign-extended version, and uniqueness for
+"word_sxfrom":
+
+  IVAL_WORD_SXFROM_UNIQUE =
+    |- !w k x.
+           k < dimindex(:N)
+           ==> (ival(word_sxfrom k w) = x <=>
+                --(&2 pow k) <= x /\
+                x < &2 pow k /\
+                (ival w == x) (mod (&2 pow (k + 1))))
+
+  WORD_SUBWORD_AS_USHR_SHL =
+    |- !x pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword x (pos,len) =
+               word_ushr (word_shl x (dimindex(:N) - (pos + len)))
+               (dimindex (:N) - len)
+
+  WORD_SXFROM_SUBWORD_AS_ISHR_SHL =
+    |- !x pos len.
+           pos + len <= dimindex(:N) /\ 0 < len
+           ==> word_sxfrom (len - 1) (word_subword x (pos,len)) =
+               word_ishr (word_shl x (dimindex(:N) - (pos + len)))
+               (dimindex(:N) - len)
+
+Tue 16th May 2023               int.ml, Library/words.ml
+
+Added two more elementary integer remainder lemmas (analogous to similar
+ones for natural number MOD that are already there)
+
+  INT_REM_REM_LE =
+    |- !m n p. ~(n = &0) /\ abs n <= abs p ==> m rem n rem p = m rem n
+
+  INT_REM_REM_POW_MIN =
+    |- !x p m n. x rem p pow m rem p pow n = x rem p pow MIN m n
+
+and a few miscellaneous useful word lemmas:
+
+  DIVIDES_VAL_WORD =
+    |- !n x.
+         n <= dimindex(:N)
+         ==> (2 EXP n divides val(word x) <=> 2 EXP n divides x)
+
+  DIVIDES_VAL_WORD_EQ =
+    |- !n x.
+         2 EXP n divides val(word x) <=>
+         (if n < dimindex(:N) then 2 EXP n divides x else word x = word 0)
+
+  INT_DIVIDES_IVAL_IWORD =
+    |- !n x.
+         n <= dimindex(:N)
+         ==> (&2 pow n divides ival(iword x) <=> &2 pow n divides x)
+
+  INT_REM_IVAL_IWORD =
+    |- !x k.
+           k <= dimindex(:N) ==> ival(iword x) rem &2 pow k = x rem &2 pow k
+
+  IVAL_WORD_ISHR_SHL_UNIQUE =
+    |- !n x y.
+           ival(word_ishr (word_shl x n) n) = y <=>
+           ival(word_shl x n) = &2 pow n * y
+
+  MOD_VAL_WORD =
+    |- !n k. k <= dimindex(:N) ==> val(word n) MOD 2 EXP k = n MOD 2 EXP k
+
+  VAL_IVAL_REM =
+    |- !x. &(val x) = ival x rem &2 pow dimindex(:N)
+
+  WORD_ISHR_UNIQUE =
+    |- !x y n.
+           ival x = &2 pow n * y
+           ==> word_ishr x n = iword y
+
+  WORD_SHL_AS_IWORD =
+    |- !x n. word_shl x n = iword(ival x * &2 pow n)
+
+  WORD_SHL_IWORD =
+    |- !x n. word_shl (iword x) n = iword(&2 pow n * x)
+
+  WORD_SHL_WORD =
+    |- !x n. word_shl (word x) n = word(2 EXP n * x)
+
+  WORD_SUBWORD_AS_IWORD =
+    |- !w pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword w (pos,len) =
+               iword((ival w div &2 pow pos) rem &2 pow len)
+
+  WORD_SUBWORD_IWORD =
+    |- !x pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword (iword x) (pos,len) =
+               iword((x div &2 pow pos) rem &2 pow len)
+
+  WORD_SUBWORD_WORD =
+    |- !n pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword (word n) (pos,len) =
+               word((n DIV 2 EXP pos) MOD 2 EXP len)
+
+Tue 16th May 2023               nums.ml
+
+Added an update from Juneyoung Lee to extend the free variable feedback
+in the error messages (see change of Wed 25th Jan 2023 below) to the case
+of "new_specification", and hence by inheritance in "define".
+
+Fri 12th May 2023               Library/words.ml
+
+Added a construct "word_sxfrom" to sign-extend a word (within a fixed size)
+from an arbitrary bit position, together with a conversion WORD_SXFROM_CONV and
+the usual support in BIT_WORD_CONV, WORD_RED_CONV and WORD_REDUCE_CONV. As well
+as the basics about this, added a few more miscelleneous lemmas about signed
+words and their values.
+
+  word_sxfrom =
+    |- word_sxfrom n x =
+       word_ishr (word_shl x (dimindex(:N) - 1 - n)) (dimindex(:N) - 1 - n)
+
+  BIT_LSB_IWORD =
+    |- !x. bit 0 (iword x) <=> x rem &2 = &1
+
+  BIT_WORD_SXFROM =
+    |- !n i x. bit i (word_sxfrom n x) <=> i < dimindex(:N) /\ bit (MIN n i) x
+
+  EXISTS_IWORD =
+    |- !P. (?x. P x) <=> (?n. P (iword n))
+
+  FORALL_IVAL =
+    |- !P. (!x. P (ival x)) <=>
+           (!n. --(&2 pow (dimindex(:N) - 1)) <= n /\
+                n < &2 pow (dimindex(:N) - 1)
+                ==> P n)
+
+  FORALL_IVAL_GEN =
+    |- !P. (!x. P (ival x) x) <=>
+           (!n. --(&2 pow (dimindex(:N) - 1)) <= n /\
+                n < &2 pow (dimindex(:N) - 1)
+                ==> P n (iword n))
+
+  FORALL_IWORD =
+    |- !P. (!x. P x) <=> (!n. P (iword n))
+
+  IVAL_REM_2 =
+    |- !x. ival x rem &2 = &(bitval(bit 0 x))
+
+Fri 12th May 2023               int.ml, calc_int.ml
+
+Fixed a surprisingly gross bug in INT_ADD_CONV and REAL_INT_ADD_CONV
+which were not failing as they should on some inappropriate terms
+like `x 1 + x 2`.
+
+Wed 10th May 2023               int.ml
+
+Added a couple of trivial but handy properties about integer
+remainders modulo 2:
+
+  INT_REM_2_EXPAND =
+   |- !x. x rem &2 = (if &2 divides x then &0 else &1)
+
+  INT_REM_2_NEG =
+   |- !x. --x rem &2 = x rem &2
+
+Tue  9th May 2023               Library/grouptheory.ml
+
+Added a few more elementary group theory lemmas:
+
+  GROUP_INV_SUBGROUP =
+    |- !x. x IN group_carrier (subgroup_generated G s)
+           ==> group_inv G x IN group_carrier (subgroup_generated G s)
+
+  GROUP_MUL_SUBGROUP =
+    |- !x y.
+           x IN group_carrier (subgroup_generated G s) /\
+           y IN group_carrier (subgroup_generated G s)
+           ==> group_mul G x y IN group_carrier (subgroup_generated G s)
+
+  SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE =
+    |- !G H s f.
+           group_epimorphism (G,H) f /\
+           s SUBSET group_carrier G /\
+           subgroup_generated G s = G
+           ==> subgroup_generated H (IMAGE f s) = H
+
+  SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ =
+    |- !G H s t f.
+           group_homomorphism (G,H) f /\
+           s SUBSET group_carrier G /\
+           t SUBSET group_carrier G /\
+           subgroup_generated G s = subgroup_generated G t
+           ==> subgroup_generated H (IMAGE f s) =
+               subgroup_generated H (IMAGE f t)
+
+Wed 26th Apr 2023               Library/bitmatch.ml
+
+Added a function "bm_check_disjointness" written by Juneyoung Lee to check
+whether word bitmatch patterns are pairwise disjoint, and hence whether the
+semantics of the bitmatch is independent of their ordering. This can be quite
+painful to analyze by hand in complicated cases but can now be done easily:
+
+  # bm_check_disjointness
+      `bitmatch (x:(2)word) with | [T; x] -> T | [y; T] -> T`;;
+  Exception: Invalid_argument "Pattern number 1 and pattern number 0 overlap".
+
+Mon 24th Apr 2023               Divstep/* [new directory]
+
+Added a formalization, with an iteration bound proof from Dan Bernstein,
+of the Bernstein-Yang "divstep" algorithm as described in the paper:
+
+  Daniel J. Bernstein and Bo-Yin Yang
+  "Fast constant-time gcd computation and modular inversion"
+  https://gcd.cr.yp.to/safegcd-20190413.pdf
+
+Wed 19th Apr 2023               Library/words.ml
+
+Added a few more basic word lemmas about sign extension and related things:
+
+  BIT_WORD_SX =
+    |- !x i.
+         bit i (word_sx x) <=>
+         i < dimindex(:N) /\ bit (MIN i (dimindex(:M) - 1)) x
+
+  WORD_SHL_TRIVIAL =
+    |- !x n. dimindex(:N) <= n ==> word_shl x n = word 0
+
+  WORD_SX_ZX =
+    |- !x. dimindex(:N) <= dimindex(:M) ==> word_sx x = word_zx x
+
+  WORD_SX_ZX_GEN =
+    |- !x. word_sx x =
+           word_or
+           (word_shl (word_neg (word (bitval (bit (dimindex(:M) - 1) x))))
+                     (dimindex(:M)))
+           (word_zx x)
+
+Fixed BIT_WORD_CONV to handle both zero and sign extension (word_zx and
+word_sx) and made one further small improvement to WORD_BLAST, which among
+other things means it can get this formula from "Hacker's Delight" 2-5:
+
+  WORD_BLAST
+   `word_sub (word_xor ((word_zx:byte->int16) x) (word 0x80))
+             (word 0x80) =
+    word_sx x`;;
+
+Thu 13th Apr 2023               Library/words.ml
+
+Made a few additional enhancements and cleanups to WORD_BLAST, in particular
+making it try to use hypotheses of the form "val x < 2 EXP n" as well as
+explicit equations. This includes fixing a bug in the VAL_EXPAND_CONV
+expansion of "val x MOD 2 EXP n". For example, WORD_BLAST can now handle
+
+  WORD_BLAST
+   `val (x:int16) <= 255
+    ==> word_add (word_and x (word 0x000F)) (word_and x (word 0x00F0)) = x`;;
+
+Mon  3rd Apr 2023               Library/words.ml
+
+Improved the ability of WORD_RULE to handle some arithmetic-bitwise
+combinations (mainly arithmetic over bitwise rather than the reverse, so
+still not a full solution the general case):
+
+  WORD_RULE
+    `word_add x y = word_add (word_xor x y) (word_shl (word_and x y) 1)`;;
+
+Also added a fourth distinct words decision procedure, this one expanding
+word expressions for specific sizes in terms of bits then using arithmetic
+(not SAT as with full bit-blasting), e.g.
+
+  WORD_BLAST
+    `!x:int32. val(word_shl x 2) + 2 EXP 32 * val(word_ushr x 30) =
+              4 * val x`;;
+
+  WORD_BLAST
+    `word_add (word_and x (word 0x0F)) (word_and x (word 0xF0)):byte = x`;;
+
+These use a refactoring via new conversions:
+
+ - BINT_POLY_CONV: like INT_POLY_CONV but exploiting the fact that
+   higher powers of bit values b collapse as b^k = b (k >= 1)
+
+ - WORD_VAL_CONG_CONV: converts word equation into integer congruence
+   in terms of numeric values
+
+ - VAL_EXPAND_CONV: expand "val x" (as well as, for a numeral k,
+   "val x DIV 2 EXP k" and "val x MOD 2 EXP k") bitwise for words
+   of a specific size.
+
+Also added a few new lemmas:
+
+  BITVAL_EXP =
+    |- !b k. bitval b EXP k = (if k = 0 then 1 else bitval b)
+
+  INT_BITVAL_AND =
+    |- !b c. &(bitval(b /\ c)) = &(bitval b) * &(bitval c)
+
+  INT_BITVAL_IFF =
+    |- !b c.
+           &(bitval(b <=> c)) =
+           &1 - ((&(bitval b) + &(bitval c)) - &2 * &(bitval b) * &(bitval c))
+
+  INT_BITVAL_IMP =
+     |- !b c.
+           &(bitval(b ==> c)) =
+           (&1 - &(bitval b) + &(bitval c)) - (&1 - &(bitval b)) * &(bitval c)
+
+  INT_BITVAL_OR =
+     |- !b c.
+           &(bitval(b \/ c)) =
+           (&(bitval b) + &(bitval c)) - &(bitval b) * &(bitval c)
+
+  INT_BITVAL_POW =
+     |- !b k. &(bitval b) pow k = (if k = 0 then &1 else &(bitval b))
+
+  VAL =
+    |- !x. val x = nsum (0..dimindex(:N) - 1) (\i. 2 EXP i * bitval(bit i x))
+
+
+Mon  3rd Apr 2023               int.ml
+
+Added a collected clausal rewrite of all the "real_of_int" mapping
+properties
+
+  REAL_OF_INT_CLAUSES =
+    |- (!x y. real_of_int x = real_of_int y <=> x = y) /\
+       (!x y. real_of_int x >= real_of_int y <=> x >= y) /\
+       (!x y. real_of_int x > real_of_int y <=> x > y) /\
+       (!x y. real_of_int x <= real_of_int y <=> x <= y) /\
+       (!x y. real_of_int x < real_of_int y <=> x < y) /\
+       (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+       (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+       (!n. &n = real_of_int(&n)) /\
+       (!x. --real_of_int x = real_of_int(--x)) /\
+       (!x. abs(real_of_int x) = real_of_int(abs x)) /\
+       (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+       (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+       (!x. real_sgn (real_of_int x) = real_of_int(int_sgn x)) /\
+       (!x y. real_of_int x + real_of_int y = real_of_int(x + y)) /\
+       (!x y. real_of_int x - real_of_int y = real_of_int(x - y)) /\
+       (!x y. real_of_int x * real_of_int y = real_of_int(x * y)) /\
+       (!x n. real_of_int x pow n = real_of_int(x pow n))
+
+Thu 30th Mar 2023               Library/words.ml
+
+Tweaked BIT_WORD_CONV to rewrite bits beyond the end of a word to "F" when
+there are otherwise no applicable recursions, for example, on a variable:
+
+  # BIT_WORD_CONV `bit 40 (x:int32)`;;
+  val it : thm = |- bit 40 x <=> F
+
+Thu 30th Mar 2023               pa_j_4.xx_8.00.ml
+
+Restored to the latest version of the pa_j file the special "it" identifier
+automatically assigned to otherwise nameless toplevel expressions:
+
+  # 42;;
+  val it : int = 42
+
+Fri 10th Mar 2023               EC/ccsm2.ml [new file]
+
+Added one more specific elliptic curve to the collection, the
+SM2 curve. For more info see "https://www.cryptopp.com/wiki/SM2".
+The parameters are taken from Table 11 (SM2_P256) here:
+
+https://trustedcomputinggroup.org/wp-content/uploads/TCGAlgorithmRegistry_Rev01.15.pdf
+
+Mon 27th Feb 2023               Library/words.ml
+
+Added a general "reverse b-bit fields" operation generalizing the
+existing "word_bytereverse", based on material from Juneyoung Lee.
+The operation also works on inputs where the word size is not an
+exact multiple of the field width, mapping bits in the upper overspill
+from b * N DIV b upwards to themselves, for definiteness.
+
+  word_reversefields =
+    |- !b w.
+           word_reversefields b w =
+           word_of_bits
+           {i | i < dimindex(:N) /\
+                bit
+                (if i < b * dimindex(:N) DIV b
+                 then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+                 else i)
+                w}
+
+This is supported by an extension of BIT_WORD_CONV and WORD_RED_CONV
+as well as a custom conversion WORD_REVERSEFIELDS_CONV. Added a few
+more basic lemmas about this and other word concepts:
+
+  BIT_WORD_REVERSEFIELDS =
+    |- !x b i.
+           bit i (word_reversefields b x) <=>
+           i < dimindex(:N) /\
+           bit
+           (if i < b * dimindex(:N) DIV b
+            then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+            else i)
+           x
+
+  VAL_WORD_AND_POW2_BITVAL =
+    |- (!x k b.
+            val (word_and x (word (2 EXP k * bitval b))) =
+            2 EXP k * bitval (bit k x /\ b)) /\
+       (!x k b.
+            val (word_and (word (2 EXP k * bitval b)) x) =
+            2 EXP k * bitval (b /\ bit k x))
+
+  WORD_AND_POW2_BITVAL =
+    |- (!x k b.
+            word_and x (word (2 EXP k * bitval b)) =
+            word (2 EXP k * bitval (bit k x /\ b))) /\
+       (!x k b.
+            word_and (word (2 EXP k * bitval b)) x =
+            word (2 EXP k * bitval (b /\ bit k x)))
+
+  WORD_BYTEREVERSE_REVERSEFIELDS =
+    |- word_bytereverse = word_reversefields 8
+
+  WORD_REVERSEFIELDS_REVERSEFIELDS =
+    |- !x b. word_reversefields b (word_reversefields b x) = x
+
+  WORD_SHL_LSB =
+    |- !x. word_shl x (dimindex(:N) - 1) =
+           word (2 EXP (dimindex(:N) - 1) * bitval (bit 0 x))
+
+  WORD_SHL_LSB_ALT =
+    |- !x. word_shl x (dimindex(:N) - 1) =
+           (if bit 0 x then word (2 EXP (dimindex(:N) - 1)) else word 0)
+
+Mon 27th Feb 2023               calc_num.ml
+
+Updated NUM_DIV_CONV and NUM_MOD_CONV to handle the degenerate cases
+of the form `m DIV 0` and `m MOD 0` (where m is a numeral), which
+are fixed by definition to convenient values, 0 and m respectively.
+
+Fri 27th Jan 2023               Makefile, update_database_4.14.ml [new file], pa_j_4.xx_8.00.ml [renamed pa_j_8.xx.ml]
+
+Added an update from Juneyoung Lee based on work by Chet Murthy
+to make the "update_database" functionality work in OCaml 4.14.
+
+Wed 25th Jan 2023               fusion.ml
+
+Added an update from Juneyoung Lee that provides better feedback
+when definitions are disallowed because of free variables by
+listing those free variables in the failure string.
+
+Wed 25th Jan 2023               Makefile, pa_j_8.xx.ml [new file]
+
+Added an update from Quentin Carbonneaux with support for newer
+OCaml (4.14) and camlp5 (8.00) versions.
+
+Thu 19th Jan 2023               Library/words.ml
+
+Made a change from Juneyoung Lee generalizing the types of the "usimdN"
+constructors so that the source and destination types can differ:
+usimd2, usimd4 and usimd8.
+
 Tue 13th Dec 2022               100/isoperimetric.ml [new file], Multivariate/passim
 
 Added a proof of the isoperimetric theorem to the "100 greatest
@@ -222,10 +962,10 @@ binary operations on machine words, following the index type to decompose:
     |- !f x y.
            simd2 f x y =
            word_join
-           (f (word_subword x (dimindex (:N),dimindex (:N)))
-           (word_subword y (dimindex (:N),dimindex (:N))))
-           (f (word_subword x (0,dimindex (:N)))
-           (word_subword y (0,dimindex (:N))))
+           (f (word_subword x (dimindex(:N),dimindex(:N)))
+           (word_subword y (dimindex(:N),dimindex(:N))))
+           (f (word_subword x (0,dimindex(:N)))
+           (word_subword y (0,dimindex(:N))))
 
   simd4 =
     |- !f. simd4 f = simd2 (simd2 f)
@@ -239,8 +979,8 @@ binary operations on machine words, following the index type to decompose:
   usimd2 =
     |- !f x.
            usimd2 f x =
-           word_join (f (word_subword x (dimindex (:N),dimindex (:N))))
-           (f (word_subword x (0,dimindex (:N))))
+           word_join (f (word_subword x (dimindex(:N),dimindex(:N))))
+           (f (word_subword x (0,dimindex(:N))))
   usimd4 =
     |- !f. usimd4 f = usimd2 (usimd2 f)
 
@@ -1359,7 +2099,7 @@ based on the intuition that the bit patterns are not overlapping
     |- !x. bits_of_num(val x) = bits_of_word x
 
   BITS_OF_WORD_WORD =
-    |- !n. bits_of_word (word n) = {i | i < dimindex (:N)} INTER bits_of_num n
+    |- !n. bits_of_word (word n) = {i | i < dimindex(:N)} INTER bits_of_num n
 
   DISJOINT_BITS_CLAUSES =
     |- (!k h l.

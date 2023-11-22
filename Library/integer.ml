@@ -740,10 +740,6 @@ let INT_COPRIME_LREM = prove
  (`!a b. coprime(a rem n,n) <=> coprime(a,n)`,
   MESON_TAC[INT_COPRIME_RREM; INT_COPRIME_SYM]);;
 
-let INT_CONG_MOD_MULT = prove
- (`!x y m n. (x == y) (mod n) /\ m divides n ==> (x == y) (mod m)`,
-  INTEGER_TAC);;
-
 let INT_CONG_GCD_RIGHT = prove
  (`!x y n. (x == y) (mod n) ==> gcd(n,x) = gcd(n,y)`,
   REWRITE_TAC[INT_GCD_UNIQUE; INT_GCD_POS] THEN INTEGER_TAC);;

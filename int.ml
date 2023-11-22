@@ -185,6 +185,32 @@ let int_pow_th = prove
     ASM_REWRITE_TAC[GSYM int_mul; int_mul_th]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* All collected into a single rewrite                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_OF_INT_CLAUSES = prove
+ (`(!x y. real_of_int x = real_of_int y <=> x = y) /\
+   (!x y. real_of_int x >= real_of_int y <=> x >= y) /\
+   (!x y. real_of_int x > real_of_int y <=> x > y) /\
+   (!x y. real_of_int x <= real_of_int y <=> x <= y) /\
+   (!x y. real_of_int x < real_of_int y <=> x < y) /\
+   (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+   (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+   (!n. &n = real_of_int(&n)) /\
+   (!x. --real_of_int x = real_of_int(--x)) /\
+   (!x. abs(real_of_int x) = real_of_int(abs x)) /\
+   (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+   (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+   (!x. real_sgn (real_of_int x) = real_of_int(int_sgn x)) /\
+   (!x y. real_of_int x + real_of_int y = real_of_int(x + y)) /\
+   (!x y. real_of_int x - real_of_int y = real_of_int(x - y)) /\
+   (!x y. real_of_int x * real_of_int y = real_of_int(x * y)) /\
+   (!x n. real_of_int x pow n = real_of_int(x pow n))`,
+  REWRITE_TAC[int_eq; int_ge; int_gt; int_le; int_lt; int_max_th; int_min_th;
+              int_of_num_th; int_neg_th; int_abs_th; int_max_th; int_min_th;
+              int_sgn_th;  int_add_th; int_sub_th; int_mul_th; int_pow_th]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A few convenient theorems about the integer type.                         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -642,13 +668,13 @@ let INT_LT = prove
   REWRITE_TAC[int_lt; int_le; real_lt]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Now a decision procedure for the integers.                                *)
+(* An initial bootstrapping procedure for the integers, enhanced later.      *)
 (* ------------------------------------------------------------------------- *)
 
 let INT_ARITH =
   let atom_CONV =
     let pth = prove
-      (`(~(x <= y) <=> y + &1 <= x) /\
+      (`(~(x:int <= y) <=> y + &1 <= x) /\
         (~(x < y) <=> y <= x) /\
         (~(x = y) <=> x + &1 <= y \/ y + &1 <= x) /\
         (x < y <=> x + &1 <= y)`,
@@ -964,7 +990,8 @@ let INT_ADD_CONV =
   GEN_REWRITE_CONV I [pth0] ORELSEC
   (fun tm ->
     try let l,r = dest tm in
-        if rator l = neg_tm then
+        if not(is_intconst l) || not(is_intconst r) then failwith ""
+        else if rator l = neg_tm then
           if rator r = neg_tm then
             let th1 = INST [rand(rand l),m_tm; rand(rand r),n_tm] pth1 in
             let tm1 = rand(rand(rand(concl th1))) in
@@ -1625,6 +1652,12 @@ let INT_DIV_REM = prove
   EXISTS_TAC `m rem n` THEN ASM_SIMP_TAC[INT_DIVISION] THEN
   REWRITE_TAC[INT_ADD_AC; INT_MUL_AC]);;
 
+let INT_REM_REM_LE = prove
+ (`!m n p. ~(n = &0) /\ abs n <= abs p ==> m rem n rem p = m rem n`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INT_REM_EQ_SELF] THEN
+  ASM_CASES_TAC `p:int = &0` THEN ASM_REWRITE_TAC[INT_REM_POS_EQ] THEN
+  TRANS_TAC INT_LTE_TRANS `abs n:int` THEN ASM_MESON_TAC[INT_DIVISION]);;
+
 let INT_LE_DIV = prove
  (`!m n. &0 <= m /\ &0 <= n ==> &0 <= m div n`,
   REWRITE_TAC[GSYM INT_FORALL_POS; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
@@ -1637,6 +1670,20 @@ let INT_LT_DIV = prove
   CONJ_TAC THENL
    [MATCH_MP_TAC INT_LE_DIV THEN ASM_INT_ARITH_TAC;
     REWRITE_TAC[INT_DIV_EQ_0] THEN ASM_INT_ARITH_TAC]);;
+
+let INT_REM_LE_EQ = prove
+ (`!m n. m rem n <= m <=> n = &0 \/ &0 <= m`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n:int = &0` THEN
+  ASM_SIMP_TAC[INT_REM_0; INT_LE_REFL] THEN
+  EQ_TAC THENL [ASM_MESON_TAC[INT_REM_POS; INT_LE_TRANS]; ALL_TAC] THEN
+  ONCE_REWRITE_TAC[GSYM INT_REM_RABS] THEN
+  MAP_EVERY (fun t -> SPEC_TAC(t,t)) [`m:int`; `n:int`] THEN
+  REWRITE_TAC[GSYM INT_FORALL_POS; GSYM INT_FORALL_ABS] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; INT_OF_NUM_REM; MOD_LE]);;
+
+let INT_REM_LE = prove
+ (`!m n p. (n = &0 \/ &0 <= m) /\ m <= p ==> m rem n <= p`,
+  MESON_TAC[INT_REM_LE_EQ; INT_LE_TRANS]);;
 
 let INT_REM_MUL_ADD = prove
  (`(!m n p. (m * n + p) rem n = p rem n) /\
@@ -1681,6 +1728,15 @@ let INT_REM_2_DIVIDES = prove
    (!n. n rem &2 = &1 <=> ~(&2 divides n))`,
   REWRITE_TAC[GSYM(CONJUNCT1 NOT_INT_REM_2)] THEN
   REWRITE_TAC[INT_REM_EQ_0]);;
+
+let INT_REM_2_EXPAND = prove
+ (`!x. x rem &2 = if &2 divides x then &0 else &1`,
+  MESON_TAC[INT_REM_2_DIVIDES]);;
+
+let INT_REM_2_NEG = prove
+ (`!x. --x rem &2 = x rem &2`,
+  GEN_TAC THEN REWRITE_TAC[INT_REM_2_EXPAND] THEN
+  REWRITE_TAC[INTEGER_RULE `(a:int) divides --x <=> a divides x`]);;
 
 let INT_DIVIDES_DIV_SELF = prove
  (`!n d. d divides n ==> n div d divides n`,
@@ -2113,7 +2169,86 @@ let ASM_ARITH_TAC =
   ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
-(* A few miscellaneous applications.                                         *)
+(* Enhanced integer procedures eliminating div and rem (replacing first one) *)
+(* ------------------------------------------------------------------------- *)
+
+let INT_ARITH =
+  let atom_CONV =
+    let pth = prove
+      (`(~(x:int <= y) <=> y + &1 <= x) /\
+        (~(x < y) <=> y <= x) /\
+        (~(x = y) <=> x + &1 <= y \/ y + &1 <= x) /\
+        (x < y <=> x + &1 <= y)`,
+       REWRITE_TAC[INT_NOT_LE; INT_NOT_LT; INT_NOT_EQ; INT_LT_DISCRETE]) in
+    GEN_REWRITE_CONV I [pth]
+  and bub_CONV = GEN_REWRITE_CONV TOP_SWEEP_CONV
+   [int_eq; int_le; int_lt; int_ge; int_gt;
+    int_of_num_th; int_neg_th; int_add_th; int_mul_th;
+    int_sub_th; int_pow_th; int_abs_th; int_max_th; int_min_th] in
+  let base_CONV = TRY_CONV atom_CONV THENC bub_CONV in
+  let NNF_NORM_CONV = GEN_NNF_CONV false
+   (base_CONV,fun t -> base_CONV t,base_CONV(mk_neg t)) in
+  let INT_DIVREM_ELIM_CONV =
+    let DIVREM_ELIM_THM = prove
+     (`P (m div n) (m rem n) <=>
+       ?q r. (n = &0 /\ q = &0 /\ r = m \/
+              m = q * n + r /\ &0 <= r /\ r < abs n) /\
+             P q r`,
+      ASM_CASES_TAC `n:int = &0` THEN
+      ASM_METIS_TAC[INT_DIVISION; INT_DIV_0; INT_REM_0; INT_LET_ANTISYM;
+                    INT_DIVMOD_UNIQ; INT_DIVISION_SIMP])
+    and BETA2_CONV = RATOR_CONV BETA_CONV THENC BETA_CONV
+    and div_tm = `(div):int->int->int`
+    and rem_tm = `(rem):int->int->int`
+    and p_tm = `P:int->int->bool`
+    and m_tm = `m:int`
+    and n_tm = `n:int` in
+    let is_divrem =
+      let is_div = is_binop div_tm and is_rem = is_binop rem_tm in
+      fun tm -> is_div tm || is_rem tm in
+    let rec conv tm =
+      try let t = find_term (fun t -> is_divrem t && free_in t tm) tm in
+          let x = lhand t and y = rand t in
+          let dtm = mk_comb(mk_comb(div_tm,x),y)
+          and rtm = mk_comb(mk_comb(rem_tm,x),y) in
+          let vd = genvar(type_of dtm)
+          and vr = genvar(type_of rtm) in
+          let p = list_mk_abs([vd;vr],subst[vd,dtm; vr,rtm] tm) in
+          let th1 = INST [p,p_tm; x,m_tm; y,n_tm] DIVREM_ELIM_THM in
+          let th2 = CONV_RULE(COMB2_CONV(RAND_CONV BETA2_CONV)
+               (funpow 2 BINDER_CONV(RAND_CONV BETA2_CONV))) th1 in
+          let th3 = CONV_RULE(RAND_CONV
+                     (funpow 2 BINDER_CONV INT_REDUCE_CONV)) th2 in
+          CONV_RULE(RAND_CONV(RAND_CONV conv)) th3
+      with Failure _ -> REFL tm in
+    let rec topconv tm =
+      if is_forall tm || is_exists tm then BINDER_CONV topconv tm
+      else conv tm in
+    topconv in
+  let init_CONV =
+    TOP_DEPTH_CONV BETA_CONV THENC
+    PRESIMP_CONV THENC
+    GEN_REWRITE_CONV DEPTH_CONV [INT_GT; INT_GE] THENC
+    NNF_CONV THENC DEPTH_BINOP_CONV `(\/)` CONDS_ELIM_CONV THENC
+    INT_REDUCE_CONV THENC INT_DIVREM_ELIM_CONV THENC
+    NNF_NORM_CONV in
+  let p_tm = `p:bool`
+  and not_tm = `(~)` in
+  let pth = TAUT(mk_eq(mk_neg(mk_neg p_tm),p_tm)) in
+  fun tm ->
+    let th0 = INST [tm,p_tm] pth
+    and th1 = init_CONV (mk_neg tm) in
+    let th2 = REAL_ARITH(mk_neg(rand(concl th1))) in
+    EQ_MP th0 (EQ_MP (AP_TERM not_tm (SYM th1)) th2);;
+
+let INT_ARITH_TAC = CONV_TAC(EQT_INTRO o INT_ARITH);;
+
+let ASM_INT_ARITH_TAC =
+  REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
+  INT_ARITH_TAC;;
+
+(* ------------------------------------------------------------------------- *)
+(* A few miscellaneous natural number lemmas.                                *)
 (* ------------------------------------------------------------------------- *)
 
 let BINARY_INDUCT = prove
@@ -2145,6 +2280,24 @@ let num_WF_DOWN = prove
      `~(m <= p) ==> m - 1 - (m - 1 - p) = p`] THEN
     DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;
     ASM_MESON_TAC[ARITH_RULE `~(m <= n) ==> n = m - 1 - (m - 1 - n)`]]);;
+
+let INT_REM_REM_POW_MIN = prove
+ (`!x p m n. x rem (p pow m) rem (p pow n) = x rem (p pow MIN m n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `x:int = &0` THEN
+  ASM_REWRITE_TAC[INT_REM_ZERO] THEN ASM_CASES_TAC `p:int = &0` THENL
+   [ASM_REWRITE_TAC[INT_POW_ZERO; ARITH_RULE
+     `MIN a b = 0 <=> a = 0 \/ b = 0`] THEN
+    MAP_EVERY ASM_CASES_TAC [`m = 0`; `n = 0`] THEN
+    ASM_REWRITE_TAC[INT_REM_0; INT_REM_1];
+    REWRITE_TAC[ARITH_RULE `MIN m n = if n <= m then n else m`]] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+   [FIRST_X_ASSUM(CHOOSE_THEN SUBST1_TAC o GEN_REWRITE_RULE I [LE_EXISTS]) THEN
+    REWRITE_TAC[INT_POW_ADD; INT_REM_REM_MUL];
+    RULE_ASSUM_TAC(REWRITE_RULE[NOT_LE])] THEN
+  MATCH_MP_TAC INT_REM_REM_LE THEN
+  ASM_REWRITE_TAC[INT_POW_EQ_0; INT_ABS_POW] THEN
+  MATCH_MP_TAC INT_POW_MONO THEN ASM_SIMP_TAC[LT_IMP_LE] THEN
+  ASM_INT_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Also a similar divisibility procedure for natural numbers.                *)
