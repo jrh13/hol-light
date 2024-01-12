@@ -31,7 +31,8 @@ fails with an error message:
   # type_invention_error := true;;
   val it : unit = ()
   # let tm = `x = x`;;
-  Exception: Failure "typechecking error (cannot infer type of variables)".
+  Exception:
+  Failure "typechecking error (cannot infer type of variables): =, x".
 }
 \noindent You can avoid the error by explicitly giving appropriate types or
 type variables yourself:

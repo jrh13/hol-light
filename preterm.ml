@@ -393,41 +393,58 @@ let type_of_pretype,term_of_preterm,retypecheck =
   in
 
   (* ----------------------------------------------------------------------- *)
-  (* Flag to indicate that Stvs were translated to real type variables.      *)
+  (* Pretype -> type conversion. The base function returns a flag if a       *)
+  (* system type variable was translated to real type variable.              *)
   (* ----------------------------------------------------------------------- *)
 
-  let stvs_translated = ref false in
-
-  (* ----------------------------------------------------------------------- *)
-  (* Pretype <-> type conversion; -> flags system type variable translation. *)
-  (* ----------------------------------------------------------------------- *)
-
-  let rec type_of_pretype ty =
+  let rec type_of_pretype_base (ty:pretype): hol_type * bool =
     match ty with
-      Stv n -> stvs_translated := true;
-               let s = "?"^(string_of_int n) in
-               mk_vartype(s)
-    | Utv(v) -> mk_vartype(v)
-    | Ptycon(con,args) -> mk_type(con,map type_of_pretype args) in
+      Stv n -> let s = "?"^(string_of_int n) in
+               (mk_vartype(s), true)
+    | Utv(v) -> (mk_vartype(v), false)
+    | Ptycon(con,args) ->
+      let args',translated = unzip (map type_of_pretype_base args) in
+      let translated = List.fold_left (||) false translated in
+      (mk_type(con,args'), translated) in
+
+  let type_of_pretype (ty:pretype): hol_type =
+    fst (type_of_pretype_base ty) in
 
   (* ----------------------------------------------------------------------- *)
   (* Maps preterms to terms.                                                 *)
   (* ----------------------------------------------------------------------- *)
 
   let term_of_preterm =
-    let rec term_of_preterm ptm =
+    let stvs_translated_terms:string list ref = ref [] in
+    let rec term_of_preterm (ptm:preterm): term =
       match ptm with
-        Varp(s,pty) -> mk_var(s,type_of_pretype pty)
-      | Constp(s,pty) -> mk_mconst(s,type_of_pretype pty)
+        Varp(s,pty) ->
+          let ty, translated = type_of_pretype_base pty in
+          let v = mk_var(s,ty) in
+          let _ =
+            if translated && not (exists (fun s' -> s = s')
+                             !stvs_translated_terms)
+            then stvs_translated_terms := s::!stvs_translated_terms
+            else () in v
+      | Constp(s,pty) ->
+          let ty, translated = type_of_pretype_base pty in
+          let c = mk_mconst(s,ty) in
+          let _ =
+            if translated && not (exists (fun s' -> s = s')
+                             !stvs_translated_terms)
+            then stvs_translated_terms := s::!stvs_translated_terms
+            else () in c
       | Combp(l,r) -> mk_comb(term_of_preterm l,term_of_preterm r)
       | Absp(v,bod) -> mk_gabs(term_of_preterm v,term_of_preterm bod)
       | Typing(ptm,pty) -> term_of_preterm ptm in
     let report_type_invention () =
-      if !stvs_translated then
+      if !stvs_translated_terms <> [] then
         if !type_invention_error
-        then failwith "typechecking error (cannot infer type of variables)"
+        then failwith
+            ("typechecking error (cannot infer type of variables): " ^
+             String.concat ", " !stvs_translated_terms)
         else warn !type_invention_warning "inventing type variables" in
-    fun ptm -> stvs_translated := false;
+    fun ptm -> stvs_translated_terms := [];
                let tm = term_of_preterm ptm in
                report_type_invention (); tm in
 
