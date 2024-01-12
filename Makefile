@@ -1,11 +1,8 @@
 ###############################################################################
 # Makefile for HOL Light                                                      #
 #                                                                             #
-# Simple "make" just builds the camlp4 syntax extension "pa_j.cmo", which is  #
-# necessary to load the HOL Light core into the OCaml toplevel.               #
-#                                                                             #
-# The later options such as "make hol" create standalone images, but only     #
-# work under Linux when the "ckpt" checkpointing program is installed.        #
+# Simple "make" just builds the camlp4/camlp5 syntax extension "pa_j.cmo",    #
+# which is necessary to load the HOL Light core into the OCaml toplevel.      #
 #                                                                             #
 # See the README file for more detailed information about the build process.  #
 #                                                                             #
@@ -88,6 +85,8 @@ pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx
         else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
         fi
 
+# TODO: update this and hol.* commands to use one of checkpointing  tools
+# other than ckpt.
 # Build a standalone hol image called "hol" (needs Linux and ckpt program)
 
 hol: pa_j.cmo ${HOLSRC} update_database.ml;                    \
