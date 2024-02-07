@@ -981,6 +981,10 @@ let VAL_IVAL = prove
     ival w + &2 pow dimindex(:N) * &(bitval (bit (dimindex (:N) - 1) w))`,
   REWRITE_TAC[IVAL_VAL] THEN CONV_TAC INT_ARITH);;
 
+let IVAL_EQ_VAL = prove
+ (`!x:N word. val(x) < 2 EXP (dimindex(:N)-1) ==> ival x = &(val x)`,
+  SIMP_TAC[ival]);;
+
 let INT_VAL_IWORD = prove
  (`!x. &0 <= x /\ x < &2 pow dimindex(:N) ==> &(val(iword x:N word)) = x`,
   SIMP_TAC[IMP_CONJ; GSYM INT_FORALL_POS] THEN
@@ -2283,6 +2287,13 @@ let INT_CONG_WORD_SUB = prove
   REWRITE_TAC[INTEGER_RULE
    `(z:int == x - y) (mod n) <=> (z + y == x) (mod n)`] THEN
   REWRITE_TAC[INT_OF_NUM_CLAUSES; CONG_WORD_SUB; GSYM num_congruent]);;
+
+let INT_VAL_WORD_SUB = prove
+ (`!x y:N word.
+        &(val(word_sub x y:N word)):int =
+        (&(val x) - &(val y)) rem &2 pow dimindex(:N)`,
+   REWRITE_TAC[GSYM(REWRITE_RULE[GSYM INT_REM_EQ] INT_CONG_WORD_SUB)] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; INT_OF_NUM_REM; VAL_MOD_REFL]);;
 
 let ICONG_WORD_SUB = prove
  (`!x y:N word.

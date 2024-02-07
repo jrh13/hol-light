@@ -8,24 +8,73 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue  6th Feb 2024               Library/words.ml
+
+Added a couple of little word lemmas:
+
+  INT_VAL_WORD_SUB =
+    |- !x y.
+           &(val (word_sub x y)) =
+           (&(val x) - &(val y)) rem &2 pow dimindex(:N)
+
+  IVAL_EQ_VAL =
+    |- !x. val x < 2 EXP (dimindex(:N) - 1) ==> ival x = &(val x)
+
+Mon  5th Feb 2024               Divstep/idivstep.ml
+
+Added a few simple divstep lemmas, noting that once g = 0 the update
+matrix remains diagonal thereafter:
+
+  DIVSTEP_MAT_DIAGONAL =
+    |- d f n. divstep_mat n (d,f,&0) $1$2 = &0 /\
+              divstep_mat n (d,f,&0) $2$1 = &0
+
+  DIVSTEP_MAT_DIAGONAL_1 =
+    |- !d f g n. g = &0 ==> divstep_mat n (d,f,g) $1$2 = &0
+
+  DIVSTEP_MAT_DIAGONAL_2 =
+    |- !d f g n. g = &0 ==> divstep_mat n (d,f,g) $2$1 = &0
+
+  IDIVSTEP_STAYS_ZERO =
+    |- !d f g d' f' g'.
+        g = &0 /\ idivstep(d,f,g) = d',f',g' ==> g' = &0
+
+Fri 12th Jan 2024               preterm.ml, Help/type_invention_error.hlp
+
+Added an update from June Lee to provide more explicit information
+to accompany the type variable invention error triggered when the
+"type_invention_warning" flag is set, e.g.
+
+  # type_invention_error := true;;
+  val it : unit = ()
+  # `f x`;;
+  Exception:
+  Failure "typechecking error (cannot infer type of variables): f, x".
+
+Fri 12th Jan 2024               README, Makefile
+
+Added an update from June Lee which now correctly documents not only
+the use of the DMTCP checkpointer with HOL Light, but also two other
+checkpointing tools, CRIU and selfie.
+
 Fri  3rd Nov 2023               cart.ml, Library/words.ml
 
 Added various lemmas, mostly about machine words and with a focus
 on bounds for "word_popcount" (population count, Hamming weight)
 including its subadditivity (WORD_POPCOUNT_ADD). New theorems:
-  
+
   BITS_OF_WORD_SUBSET =
-    |- !x y. bits_of_word x SUBSET bits_of_word y <=> 
+    |- !x y. bits_of_word x SUBSET bits_of_word y <=>
              (!i. bit i x ==> bit i y)
-  
+
   BITS_OF_WORD_SUBSET_ALT =
     |- !x y.
            bits_of_word x SUBSET bits_of_word y <=>
            (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
-  
+
   BITS_OF_WORD_SUBSET_NUMSEG =
     |- !x. bits_of_word x SUBSET {i | i < dimindex(:N)}
-  
+
   BIT_WORD_JOIN_GEN =
     |- !e h l i.
            l < 2 EXP e
@@ -33,77 +82,77 @@ including its subadditivity (WORD_POPCOUNT_ADD). New theorems:
                 (if i < e
                  then ODD(l DIV 2 EXP i)
                  else ODD(h DIV 2 EXP (i - e))))
-  
+
   NUMSEG_LT_DIMINDEX =
     |- {i | i < dimindex(:N)} = 0..dimindex(:N) - 1
-  
+
   VAL_LE_SUBSET =
     |- !x y. bits_of_word x SUBSET bits_of_word y ==> val x <= val y
-  
+
   WORD_OF_BITS_EMPTY =
     |- word_of_bits {} = word 0
-  
+
   WORD_POPCOUNT_ADD =
     |- !x y. word_popcount(word_add x y) <= word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_ADD_DISJOINT =
     |- !x y.
            word_and x y = word 0
            ==> word_popcount(word_add x y) = word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_ADD_OR =
     |- !x y. word_popcount(word_add x y) <= word_popcount(word_or x y)
-  
+
   WORD_POPCOUNT_AND =
     |- !x y.
            word_popcount(word_and x y) <=
            MIN (word_popcount x) (word_popcount y)
-  
+
   WORD_POPCOUNT_BITVAL =
     |- !b. word_popcount(word(bitval b)) <= 1
-  
+
   WORD_POPCOUNT_BOUND_SIZE =
     |- !x n. val x < 2 EXP n ==> word_popcount x <= n
-  
+
   WORD_POPCOUNT_LE_BITS =
     |- !x y.
            (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
            ==> word_popcount x <= word_popcount y
-  
+
   WORD_POPCOUNT_NSUM =
     |- !x. word_popcount x =
            nsum {i | i < dimindex(:N)} (\i. bitval(bit i x))
-  
+
   WORD_POPCOUNT_OR =
     |- !x y. word_popcount(word_or x y) <= word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_OR_AND =
     |- !x y.
            word_popcount(word_or x y) + word_popcount(word_and x y) =
            word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_OR_DISJOINT =
     |- !x y.
            word_and x y = word 0
            ==> word_popcount(word_or x y) = word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_SHL =
     |- !x n. word_popcount(word_shl x n) <= word_popcount x
-  
+
   WORD_POPCOUNT_USHR =
     |- !x n. word_popcount(word_ushr x n) <= word_popcount x
-  
+
   WORD_POPCOUNT_WORD_OF_BITS =
     |- !s. s SUBSET {i | i < dimindex(:N)}
            ==> word_popcount(word_of_bits s) = CARD s
-  
+
   WORD_POPCOUNT_WORD_OF_BITS_GEN =
     |- !s. word_popcount(word_of_bits s) =
            CARD ({i | i < dimindex(:N)} INTER s)
-  
+
   WORD_POPCOUNT_XOR =
     |- !x y. word_popcount(word_xor x y) <= word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_XOR_AND =
     |- !x y.
            word_popcount(word_xor x y) + word_popcount(word_and x y) =
