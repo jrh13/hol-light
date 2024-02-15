@@ -4,7 +4,7 @@
 ****              EXPORTATION TO COQ             ****
 ****                                             ****
 ****          Steven Obua (obua@in.tum.de)       ****
-****         Technische Universität München      ****
+****         Technische UniversitÃ¤t MÃ¼nchen      ****
 ****                February 2005                ****
 ****                     and                     ****
 **** Chantal Keller (keller@lix.polytechnique.fr)****
@@ -165,7 +165,7 @@ subdirectory $HOLPROOFEXPORTDIR/hollight/hollight.
 
 4. To exploit the theorems that have been exported, you have to download
 the Coq's interface at
-<http://perso.ens-lyon.fr/chantal.keller/Documents-recherche/Stage09/hollightcoq-coq.tar.gz>.
+<https://www.lri.fr/~keller/Documents-recherche/Stage09/hollightcoq-all.tar.gz>.
 A README file explains how to use it.
 
 
