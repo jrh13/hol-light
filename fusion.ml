@@ -597,6 +597,8 @@ module Hol : Hol_kernel = struct
         else let c = new_constant(cname,ty); Const(cname,ty) in
              let dth = Sequent([],safe_mk_eq c r) in
              the_definitions := dth::(!the_definitions); dth
+    | Comb(Comb(Const("=",_),Const(cname,ty)),r) ->
+      failwith ("new_basic_definition: '" ^ cname ^ "' is already defined")
     | _ -> failwith "new_basic_definition"
 
 (* ------------------------------------------------------------------------- *)
