@@ -529,7 +529,11 @@ let GEN_REAL_ARITH PROVER =
 let REAL_ARITH =
   let init = GEN_REWRITE_CONV ONCE_DEPTH_CONV [DECIMAL]
   and pure = GEN_REAL_ARITH REAL_LINEAR_PROVER in
-  fun tm -> let th = init tm in EQ_MP (SYM th) (pure(rand(concl th)));;
+  fun tm ->
+    try
+      let th = init tm in EQ_MP (SYM th) (pure(rand(concl th)))
+    with Failure m ->
+      failwith ("REAL_ARITH `" ^ (string_of_term tm) ^ "`: " ^ m);;
 
 let REAL_ARITH_TAC = CONV_TAC REAL_ARITH;;
 

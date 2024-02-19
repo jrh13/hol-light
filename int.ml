@@ -2150,17 +2150,20 @@ let ARITH_RULE =
       Comb(Const("int_of_num",_),n) when not(is_numeral n) -> true
     | _ -> false in
   fun tm ->
-    let th1 = init_conv tm in
-    let tm1 = rand(concl th1) in
-    let avs,bod = strip_forall tm1 in
-    let nim = setify(find_terms is_numimage bod) in
-    let gvs = map (genvar o type_of) nim in
-    let pths = map (fun v -> SPEC (rand v) INT_POS) nim in
-    let ibod = itlist (curry mk_imp o concl) pths bod in
-    let gbod = subst (zip gvs nim) ibod in
-    let th2 = INST (zip nim gvs) (INT_ARITH gbod) in
-    let th3 = GENL avs (rev_itlist (C MP) pths th2) in
-    EQ_MP (SYM th1) th3;;
+    try
+      let th1 = init_conv tm in
+      let tm1 = rand(concl th1) in
+      let avs,bod = strip_forall tm1 in
+      let nim = setify(find_terms is_numimage bod) in
+      let gvs = map (genvar o type_of) nim in
+      let pths = map (fun v -> SPEC (rand v) INT_POS) nim in
+      let ibod = itlist (curry mk_imp o concl) pths bod in
+      let gbod = subst (zip gvs nim) ibod in
+      let th2 = INST (zip nim gvs) (INT_ARITH gbod) in
+      let th3 = GENL avs (rev_itlist (C MP) pths th2) in
+      EQ_MP (SYM th1) th3
+    with Failure msg ->
+      failwith ("ARITH_RULE `" ^ (string_of_term tm) ^ "`: " ^ msg);;
 
 let ARITH_TAC = CONV_TAC(EQT_INTRO o ARITH_RULE);;
 
@@ -2236,10 +2239,13 @@ let INT_ARITH =
   and not_tm = `(~)` in
   let pth = TAUT(mk_eq(mk_neg(mk_neg p_tm),p_tm)) in
   fun tm ->
-    let th0 = INST [tm,p_tm] pth
-    and th1 = init_CONV (mk_neg tm) in
-    let th2 = REAL_ARITH(mk_neg(rand(concl th1))) in
-    EQ_MP th0 (EQ_MP (AP_TERM not_tm (SYM th1)) th2);;
+    try
+      let th0 = INST [tm,p_tm] pth
+      and th1 = init_CONV (mk_neg tm) in
+      let th2 = REAL_ARITH(mk_neg(rand(concl th1))) in
+      EQ_MP th0 (EQ_MP (AP_TERM not_tm (SYM th1)) th2)
+    with Failure m ->
+      failwith ("INT_ARITH `" ^ (string_of_term tm) ^ "`: " ^ m);;
 
 let INT_ARITH_TAC = CONV_TAC(EQT_INTRO o INT_ARITH);;
 

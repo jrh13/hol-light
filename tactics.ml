@@ -295,6 +295,20 @@ let (REMOVE_THEN:string->thm_tactic->tactic) =
     let asl' = asl1 @ tl asl2 in
     ttac th (asl',w);;
 
+let NAME_ASSUMS_TAC: tactic =
+  fun (asl,g) ->
+    let idx: int ref = ref 0 in
+    let has (name:string) = exists (fun (name',_) -> name = name') asl in
+    let rec next_hyp_name (): string =
+      let n = "H" ^ (string_of_int !idx) in
+      idx := !idx + 1;
+      if has n then next_hyp_name ()
+      else n in
+    let asl = map
+      (fun (name,a) -> if name = "" then (next_hyp_name(),a) else (name,a))
+      asl in
+    ALL_TAC (asl,g);;
+
 (* ------------------------------------------------------------------------- *)
 (* General tools to augment a required set of theorems with assumptions.     *)
 (* Here ASM uses all current hypotheses of the goal, while HYP uses only     *)
@@ -805,6 +819,7 @@ let (pp_print_goalstack:Format.formatter->goalstack->unit) =
 
 let print_goal = pp_print_goal Format.std_formatter;;
 let print_goalstack = pp_print_goalstack Format.std_formatter;;
+let PRINT_GOAL_TAC: tactic = fun gl -> print_goal gl; ALL_TAC gl;;
 
 (* ------------------------------------------------------------------------- *)
 (* Convert a tactic into a refinement on head subgoal in current state.      *)

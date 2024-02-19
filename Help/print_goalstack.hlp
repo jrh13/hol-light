@@ -17,6 +17,6 @@ This is invoked automatically when something of type {goalstack} is produced at
 the top level, so manual invocation is not normally needed.
 
 \SEEALSO
-print_goal, print_term.
+print_goal, print_term, PRINT_GOAL_TAC.
 
 \ENDDOC

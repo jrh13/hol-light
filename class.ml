@@ -376,7 +376,10 @@ let TAUT =
      W((fun t1 t2 -> t1 THEN t2) (REWRITE_TAC[]) o BOOL_CASES_TAC o
        hd o sort free_in o find_terms ok o snd)) (asl,w) in
   let TAUT_TAC = REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN REPEAT RTAUT_TAC in
-  fun tm -> prove(tm,TAUT_TAC);;
+  fun tm ->
+    try prove(tm,TAUT_TAC)
+    with Failure _ ->
+      failwith ("TAUT `" ^ (string_of_term tm) ^ "`: cannot solve");;
 
 (* ------------------------------------------------------------------------- *)
 (* Throw monotonicity in.                                                    *)

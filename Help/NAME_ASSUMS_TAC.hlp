@@ -1,0 +1,59 @@
+\DOC NAME_ASSUMS_LIST
+
+\TYPE {NAME_ASSUMS_LIST : tactic}
+
+\SYNOPSIS
+Label unnamed assumptions.
+
+\KEYWORDS
+assumption.
+
+\DESCRIBE
+{NAME_ASSUMS_LIST} labels unnamed assumptions with "H0", "H1", ....
+It skips named assumptions.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+	# g `!(a: A) b c d. a = b ==> b = c ==> c = d ==> a = d`;;
+	val it : goalstack = 1 subgoal (1 total)
+
+	`!a b c d. a = b ==> b = c ==> c = d ==> a = d`
+
+	# e(REPEAT GEN_TAC);;
+	val it : goalstack = 1 subgoal (1 total)
+
+	`a = b ==> b = c ==> c = d ==> a = d`
+
+	# e(DISCH_THEN (LABEL_TAC "Hnamed"));;
+	val it : goalstack = 1 subgoal (1 total)
+
+		0 [`a = b`] (Hnamed)
+
+	`b = c ==> c = d ==> a = d`
+
+	# e(REPEAT STRIP_TAC);;
+	val it : goalstack = 1 subgoal (1 total)
+
+		0 [`a = b`] (Hnamed)
+		1 [`b = c`]
+		2 [`c = d`]
+
+	`a = d`
+
+	# e(NAME_ASSUMS_TAC);;
+	val it : goalstack = 1 subgoal (1 total)
+
+		0 [`a = b`] (Hnamed)
+		1 [`b = c`] (H1)
+		2 [`c = d`] (H0)
+
+	`a = d`
+}
+
+\SEEALSO
+HYP, LABEL_TAC, REMOVE_THEN, USE_THEN.
+
+\ENDDOC
