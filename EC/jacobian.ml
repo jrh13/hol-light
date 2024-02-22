@@ -341,3 +341,98 @@ let JACOBIAN_OF_WEIERSTRASS_ADD = prove
            JACOBIAN_POINT_ADD; WEIERSTRASS_POINT_ADD;
            WEIERSTRASS_OF_JACOBIAN_ADD;
            WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some simpler variants that don't take such care over special cases.       *)
+(* ------------------------------------------------------------------------- *)
+
+let jacobian_add_unexceptional = new_definition
+ `jacobian_add_unexceptional (f:A ring,a:A,b:A) (x1,y1,z1) (x2,y2,z2) =
+   if z1 = ring_0 f then (x2,y2,z2)
+   else if z2 = ring_0 f then (x1,y1,z1)
+   else
+     let r = ring_mul f x1 (ring_pow f z2 2)
+     and s = ring_mul f x2 (ring_pow f z1 2)
+     and t = ring_mul f y1 (ring_pow f z2 3)
+     and u = ring_mul f y2 (ring_pow f z1 3) in
+     let v = ring_sub f s r
+     and w = ring_sub f u t in
+     let x3 =
+         ring_add f
+         (ring_sub f (ring_neg f (ring_pow f v 3))
+         (ring_mul f (ring_of_num f 2) (ring_mul f r (ring_pow f v 2))))
+         (ring_pow f w 2) in
+     x3,
+     ring_add f (ring_mul f (ring_neg f t) (ring_pow f v 3))
+     (ring_mul f (ring_sub f (ring_mul f r (ring_pow f v 2)) x3) w),
+     ring_mul f v (ring_mul f z1 z2)`;;
+
+let WEIERSTRASS_OF_JACOBIAN_ADD_UNEXCEPTIONAL = prove
+ (`!(f:A ring) a b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p /\ jacobian_point f q /\
+        ~(jacobian_eq f p q)
+        ==> weierstrass_of_jacobian f (jacobian_add_unexceptional (f,a,b) p q) =
+            weierstrass_add (f,a,b)
+             (weierstrass_of_jacobian f p)
+             (weierstrass_of_jacobian f q)`,
+  REWRITE_TAC[FIELD_CHAR_NOT23; FORALL_PAIR_THM; jacobian_point] THEN
+  MAP_EVERY X_GEN_TAC
+   [`f:A ring`; `a:A`; `b:A`; `x1:A`; `y1:A`; `z1:A`;
+    `x2:A`; `y2:A`; `z2:A`] THEN
+  REWRITE_TAC[weierstrass_of_jacobian; jacobian_add_unexceptional] THEN
+  REWRITE_TAC[jacobian_eq] THEN
+  MAP_EVERY ASM_CASES_TAC [`z1:A = ring_0 f`; `z2:A = ring_0 f`] THEN
+  ASM_REWRITE_TAC[weierstrass_of_jacobian; weierstrass_add] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[jacobian_neg; jacobian_0] THEN
+  ASM_SIMP_TAC[ring_div; RING_INV_POW] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[LET_DEF; LET_END_DEF] THEN
+  REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_of_jacobian] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
+  REPEAT(FIRST_X_ASSUM(DISJ_CASES_TAC) ORELSE
+         FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC)) THEN
+  FIELD_TAC THEN NOT_RING_CHAR_DIVIDES_TAC);;
+
+let jacobian_double_unexceptional = new_definition
+ `jacobian_double_unexceptional (f:A ring,a:A,b:A) (x1,y1,z1) =
+     let v = ring_mul f (ring_of_num f 4) (ring_mul f x1 (ring_pow f y1 2))
+     and w =
+       ring_add f (ring_mul f (ring_of_num f 3) (ring_pow f x1 2))
+       (ring_mul f a (ring_pow f z1 4)) in
+     let x3 =
+       ring_add f (ring_mul f (ring_neg f (ring_of_num f 2)) v)
+       (ring_pow f w 2) in
+     x3,
+     ring_add f (ring_mul f (ring_neg f (ring_of_num f 8)) (ring_pow f y1 4))
+     (ring_mul f (ring_sub f v x3) w),
+     ring_mul f (ring_of_num f 2) (ring_mul f y1 z1)`;;
+
+let WEIERSTRASS_OF_JACOBIAN_DOUBLE_UNEXCEPTIONAL = prove
+ (`!(f:A ring) a b p.
+      field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+      a IN ring_carrier f /\ b IN ring_carrier f /\
+      jacobian_point f p
+      ==> weierstrass_of_jacobian f (jacobian_double_unexceptional (f,a,b) p) =
+          weierstrass_add (f,a,b)
+           (weierstrass_of_jacobian f p)
+           (weierstrass_of_jacobian f p)`,
+  REWRITE_TAC[FIELD_CHAR_NOT23; FORALL_PAIR_THM; jacobian_point] THEN
+  MAP_EVERY X_GEN_TAC [`f:A ring`; `a:A`; `b:A`; `x1:A`; `y1:A`; `z1:A`] THEN
+  REWRITE_TAC[weierstrass_of_jacobian; jacobian_double_unexceptional] THEN
+  ASM_CASES_TAC `z1:A = ring_0 f` THEN
+  ASM_REWRITE_TAC[weierstrass_of_jacobian; weierstrass_add] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[jacobian_neg; jacobian_0] THEN
+  ASM_SIMP_TAC[ring_div; RING_INV_POW] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[LET_DEF; LET_END_DEF] THEN
+  REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_of_jacobian] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
+  REPEAT(FIRST_X_ASSUM(DISJ_CASES_TAC) ORELSE
+         FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC)) THEN
+  FIELD_TAC THEN NOT_RING_CHAR_DIVIDES_TAC);;

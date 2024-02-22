@@ -1508,6 +1508,24 @@ let DIV_ADD_MOD = prove
   ASM_REWRITE_TAC[EQ_ADD_RCANCEL; EQ_ADD_LCANCEL; EQ_MULT_RCANCEL] THEN
   REWRITE_TAC[EQ_SYM_EQ]);;
 
+let MOD_ADD_EQ_EQ = prove
+ (`!n x y. (x + y) MOD n = x MOD n + y MOD n <=>
+           n = 0 \/ x MOD n + y MOD n < n`,
+  MESON_TAC[MOD_ZERO; MOD_EQ_SELF; MOD_ADD_MOD]);;
+
+let DIV_ADD_EQ_EQ = prove
+ (`!n x y. (x + y) DIV n = x DIV n + y DIV n <=>
+           n = 0 \/ x MOD n + y MOD n < n`,
+  METIS_TAC[DIV_ZERO; ADD_CLAUSES; DIV_ADD_MOD; MOD_ADD_EQ_EQ]);;
+
+let DIV_ADD_EQ = prove
+ (`!n x y. x MOD n + y MOD n < n ==> (x + y) DIV n = x DIV n + y DIV n`,
+  SIMP_TAC[DIV_ADD_EQ_EQ]);;
+
+let MOD_ADD_EQ = prove
+ (`!n x y. x MOD n + y MOD n < n ==> (x + y) MOD n = x MOD n + y MOD n`,
+  SIMP_TAC[MOD_ADD_EQ_EQ]);;
+
 let DIV_REFL = prove
  (`!n. ~(n = 0) ==> (n DIV n = 1)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC DIV_UNIQ THEN

@@ -190,6 +190,15 @@ let DIGITSUM_DIV_MOD = prove
   ASM_REWRITE_TAC[EMPTY_GSPEC; NSUM_CLAUSES] THEN
   REWRITE_TAC[SING_GSPEC; NSUM_SING; SUB_REFL; MULT_CLAUSES; EXP]);;
 
+let DIGITSUM_UNIQUE = prove
+ (`!B b c s n.
+     FINITE s /\
+     (!i. i IN s ==> b i < B) /\
+     (!i. i IN s ==> c i < B)
+     ==> (nsum s (\i. B EXP i * b i) = nsum s (\i. B EXP i * c i) <=>
+          !i. i IN s ==> b i = c i)`,
+  MESON_TAC[DIGITSUM_DIV_MOD; NSUM_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Mapping a Boolean to the natural number 1 (true) or 0 (false)             *)
 (* ------------------------------------------------------------------------- *)
@@ -3413,7 +3422,7 @@ let WORD_BITWISE_TAC =
   CONV_TAC TAUT;;
 
 let WORD_BITWISE_RULE tm =
-  try 
+  try
     prove(tm,WORD_BITWISE_TAC)
   with Failure m ->
     failwith ("WORD_BITWISE_RULE `" ^ (string_of_term tm) ^ "`: " ^ m);;
@@ -4077,6 +4086,20 @@ let WORD_SUBWORD_NOT = prove
   REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC[DE_MORGAN_THM] THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC);;
 
+let WORD_SUBWORD_ADD = prove
+ (`!x y:N word.
+        dimindex(:M) = len /\ pos + len <= dimindex(:N) /\
+        val x MOD 2 EXP pos + val y MOD 2 EXP pos < 2 EXP pos
+        ==> word_subword (word_add x y) (pos,len):M word =
+            word_add (word_subword x (pos,len))
+                     (word_subword y (pos,len))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_ADD; VAL_WORD_SUBWORD] THEN
+  FIRST_ASSUM SUBST1_TAC THEN REWRITE_TAC[ARITH_RULE `MIN n n = n`] THEN
+  CONV_TAC MOD_DOWN_CONV THEN ASM_SIMP_TAC[GSYM DIV_ADD_EQ] THEN
+  REWRITE_TAC[DIV_MOD; GSYM EXP_ADD; MOD_MOD_EXP_MIN] THEN
+  ASM_SIMP_TAC[ARITH_RULE `m <= n ==> MIN n m = m`]);;
+
 let WORD_SUBWORD_AS_IWORD = prove
  (`!(w:N word) pos len.
         pos + len <= dimindex(:N)
@@ -4122,6 +4145,64 @@ let WORD_SXFROM_SUBWORD_AS_ISHR_SHL = prove
    `(p <=> p') /\ (p /\ p' ==> (q <=> q')) ==> (p /\ q <=> p' /\ q')`) THEN
   (CONJ_TAC THENL [ALL_TAC; STRIP_TAC THEN AP_THM_TAC THEN AP_TERM_TAC]) THEN
   ASM_ARITH_TAC);;
+
+let VAL_EXPAND_SUBWORDS = prove
+ (`!k m (x:N word).
+        dimindex(:M) = k /\ dimindex(:N) = k * m
+        ==> nsum {i | i < m}
+                 (\i.  2 EXP (k * i) *
+                       val(word_subword x (k * i,k):M word)) =
+            val x`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[val_def; GSYM NSUM_LMUL; BIT_WORD_SUBWORD] THEN
+  POP_ASSUM_LIST(CONV_TAC o SUBS_CONV) THEN
+  REWRITE_TAC[MULT_ASSOC; GSYM EXP_ADD; ARITH_RULE `MIN n n = n`] THEN
+  SIMP_TAC[NSUM_NSUM_PRODUCT; FINITE_NUMSEG_LT] THEN
+  MATCH_MP_TAC NSUM_EQ_GENERAL_INVERSES THEN
+  MAP_EVERY EXISTS_TAC [`\(i,j). (k:num) * i + j`; `\n. n DIV k,n MOD k`] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[IN_ELIM_PAIR_THM; PAIR_EQ] THEN SIMP_TAC[IN_ELIM_THM] THEN
+  ASM_CASES_TAC `k = 0` THEN ASM_REWRITE_TAC[LT; MULT_CLAUSES] THEN
+  ASM_SIMP_TAC[DIV_MULT_ADD; DIVISION_SIMP; MOD_MULT_ADD; DIV_LT; MOD_LT] THEN
+  ASM_SIMP_TAC[MOD_LT_EQ; RDIV_LT_EQ; ADD_CLAUSES] THEN
+  REPEAT STRIP_TAC THEN TRANS_TAC LTE_TRANS `k * i + k:num` THEN
+  ASM_REWRITE_TAC[LT_ADD_LCANCEL] THEN
+  ASM_REWRITE_TAC[ARITH_RULE `k * i + k = k * (i + 1)`] THEN
+  REWRITE_TAC[LE_MULT_LCANCEL] THEN ASM_ARITH_TAC);;
+
+let VAL_SUBWORDS_EQ = prove
+ (`!k m f (x:N word).
+        dimindex(:M) = k /\ dimindex(:N) = k * m
+        ==> ((!i. i < m ==> val(word_subword x (k * i,k):M word) = f i) <=>
+             (!i. i < m ==> f i < 2 EXP k) /\
+             val x = nsum {i | i < m} (\i.  2 EXP (k * i) * f i))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!i. i < m ==> val(word_subword (x:N word) (k * i,k):M word) < 2 EXP k`
+  ASSUME_TAC THENL
+   [REPEAT(FIRST_X_ASSUM(SUBST1_TAC o SYM)) THEN REWRITE_TAC[VAL_BOUND];
+    ALL_TAC] THEN
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)`) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; DISCH_TAC] THEN
+  MP_TAC(SPECL [`k:num`; `m:num`; `x:N word`] VAL_EXPAND_SUBWORDS) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  ASM_SIMP_TAC[DIGITSUM_UNIQUE; EXP_MULT; IN_ELIM_THM; FINITE_NUMSEG_LT] THEN
+  MESON_TAC[]);;
+
+let WORD_SUBWORDS_EQ = prove
+ (`!k m f (x:N word).
+        dimindex(:M) = k /\ dimindex(:N) = k * m
+        ==> ((!i. i < m ==> val(word_subword x (k * i,k):M word) = f i) <=>
+             (!i. i < m ==> f i < 2 EXP k) /\
+             word(nsum {i | i < m} (\i.  2 EXP (k * i) * f i)) = x)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP VAL_SUBWORDS_EQ th]) THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+  DISCH_TAC THEN REWRITE_TAC[GSYM VAL_EQ; VAL_WORD] THEN
+  CONV_TAC(RAND_CONV SYM_CONV) THEN AP_TERM_TAC THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
+  FIRST_X_ASSUM(SUBST1_TAC o CONJUNCT2) THEN
+  ASM_SIMP_TAC[EXP_MULT; DIGITSUM_BOUND; IN_ELIM_THM; FINITE_NUMSEG_LT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extract bottom len bits of x' and insert into x at position pos.          *)

@@ -8,6 +8,109 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 21st Feb 2024               EC/jacobian.ml
+
+Added some alternative definitions of Jacobian-coordinate elliptic curve
+operations with fewer special case distinctions, "jacobian_add_unexceptional"
+and "jacobian_double_unexceptional". The key theorems still work for these,
+with the exception of using the addition formula for doubling, which still
+needs to be handled separately:
+
+  WEIERSTRASS_OF_JACOBIAN_ADD_UNEXCEPTIONAL =
+    |- !f a b p q.
+          field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+          a IN ring_carrier f /\ b IN ring_carrier f /\
+          jacobian_point f p /\ jacobian_point f q /\
+          ~(jacobian_eq f p q)
+          ==> weierstrass_of_jacobian f (jacobian_add_unexceptional (f,a,b) p q) =
+              weierstrass_add (f,a,b)
+               (weierstrass_of_jacobian f p)
+               (weierstrass_of_jacobian f q)
+  
+  WEIERSTRASS_OF_JACOBIAN_DOUBLE_UNEXCEPTIONAL =
+    |- !f a b p.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p
+        ==> weierstrass_of_jacobian f (jacobian_double_unexceptional (f,a,b) p) =
+            weierstrass_add (f,a,b)
+             (weierstrass_of_jacobian f p)
+             (weierstrass_of_jacobian f p)
+  
+Wed 21st Feb 2024               calc_rat.ml, class.ml, define.ml, fusion.ml, int.ml, tactics.ml, Library/words.ml, Help/passim
+
+Added an update from June Lee with two new tactics
+
+  NAME_ASSUMS_TAC - names unlabelled assumptions ("H0", "H1" etc.)
+
+  PRINT_GOAL_TAC - prints the current subgoal, useful for debugging
+
+as well as several improvements in the error messages from automated
+rules and tactics.
+
+Wed 21st Feb 2024               Proofrecording/README
+
+Fixed a broken link, thanks to Yiyuan Cao, in the Proofrecording
+documentation, with an updated link to Chantal Keller's code for
+replaying HOL Light proofs in Coq.
+
+Tue 20th Feb 2024               Library/words.ml
+
+Added a few additional word lemmas:
+
+  DIGITSUM_UNIQUE =
+    |- !B b c s n.
+           FINITE s /\ (!i. i IN s ==> b i < B) /\ (!i. i IN s ==> c i < B)
+           ==> (nsum s (\i. B EXP i * b i) = nsum s (\i. B EXP i * c i) <=>
+                (!i. i IN s ==> b i = c i))
+  
+  VAL_EXPAND_SUBWORDS =
+    |- !k m x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> nsum {i | i < m}
+               (\i. 2 EXP (k * i) * val (word_subword x (k * i,k))) =
+               val x
+  
+  VAL_SUBWORDS_EQ =
+    |- !k m f x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> ((!i. i < m ==> val (word_subword x (k * i,k)) = f i) <=>
+                (!i. i < m ==> f i < 2 EXP k) /\
+                val x = nsum {i | i < m} (\i. 2 EXP (k * i) * f i))
+  
+  WORD_SUBWORD_ADD =
+    |- !x y.
+           dimindex (:M) = len /\
+           pos + len <= dimindex (:N) /\
+           val x MOD 2 EXP pos + val y MOD 2 EXP pos < 2 EXP pos
+           ==> word_subword (word_add x y) (pos,len) =
+               word_add (word_subword x (pos,len)) (word_subword y (pos,len))
+  
+  WORD_SUBWORDS_EQ =
+    |- !k m f x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> ((!i. i < m ==> val (word_subword x (k * i,k)) = f i) <=>
+                (!i. i < m ==> f i < 2 EXP k) /\
+                word (nsum {i | i < m} (\i. 2 EXP (k * i) * f i)) = x)
+
+Tue 13th Feb 2024               arith.ml
+
+Added a few more conditions for distributing DIV or MOD over addition:
+
+  DIV_ADD_EQ =
+    |- !n x y. x MOD n + y MOD n < n ==> (x + y) DIV n = x DIV n + y DIV n
+
+  DIV_ADD_EQ_EQ =
+    |- !n x y.
+           (x + y) DIV n = x DIV n + y DIV n <=> n = 0 \/ x MOD n + y MOD n < n
+
+  MOD_ADD_EQ =
+    |- !n x y. x MOD n + y MOD n < n ==> (x + y) MOD n = x MOD n + y MOD n
+
+  MOD_ADD_EQ_EQ =
+    |- !n x y.
+           (x + y) MOD n = x MOD n + y MOD n <=> n = 0 \/ x MOD n + y MOD n < n
+
 Tue  6th Feb 2024               Library/words.ml
 
 Added a couple of little word lemmas:
