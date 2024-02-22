@@ -3377,9 +3377,12 @@ let WORD_RULE =
   let wordprover tm =
     try NUMBER_RULE tm with Failure _ -> prove(tm,WORD_UNBLAST_TAC) in
   fun tm ->
-    let avs,bod = strip_forall tm in
-    let th = ONCE_DEPTH_CONV WORD_VAL_CONG_CONV bod in
-    GENL avs (EQT_ELIM(TRANS th (EQT_INTRO(wordprover (rand(concl th))))));;
+    try
+      let avs,bod = strip_forall tm in
+      let th = ONCE_DEPTH_CONV WORD_VAL_CONG_CONV bod in
+      GENL avs (EQT_ELIM(TRANS th (EQT_INTRO(wordprover (rand(concl th))))))
+    with Failure m ->
+      failwith ("WORD_RULE `" ^ (string_of_term tm) ^ "`: " ^ m);;
 
 (* ------------------------------------------------------------------------- *)
 (* A somewhat complementary purely bitwise decision procedure.               *)
@@ -3409,7 +3412,13 @@ let WORD_BITWISE_TAC =
   TRY(GEN_TAC THEN DISCH_TAC) THEN ASM_REWRITE_TAC[] THEN
   CONV_TAC TAUT;;
 
-let WORD_BITWISE_RULE tm = prove(tm,WORD_BITWISE_TAC);;
+let WORD_BITWISE_RULE tm =
+  try 
+    prove(tm,WORD_BITWISE_TAC)
+  with Failure m ->
+    failwith ("WORD_BITWISE_RULE `" ^ (string_of_term tm) ^ "`: " ^ m);;
+
+let WORD_BITWISE_TAC = CONV_TAC WORD_BITWISE_RULE;;
 
 (* ------------------------------------------------------------------------- *)
 (* Slightly ad hoc but useful reduction to linear arithmetic.                *)
@@ -3439,7 +3448,13 @@ let WORD_ARITH_TAC =
   W(MAP_EVERY (MP_TAC o C ISPEC INT_VAL_BOUND) o find_terms wordy o snd) THEN
   REWRITE_TAC[CONJUNCT2 TWICE_MSB] THEN INT_ARITH_TAC;;
 
-let WORD_ARITH tm = prove(tm,WORD_ARITH_TAC);;
+let WORD_ARITH tm =
+  try
+    prove(tm,WORD_ARITH_TAC)
+  with Failure m ->
+    failwith ("WORD_ARITH `" ^ (string_of_term tm) ^ "`: " ^ m);;
+
+let WORD_ARITH_TAC = CONV_TAC WORD_ARITH;;
 
 (* ------------------------------------------------------------------------- *)
 (* Expand "val x" or "val x DIV 2 EXP k" or "val x MOD 2 EXP k"              *)
@@ -6317,8 +6332,11 @@ let WORD_BLAST =
     CONV_TAC conv THEN
     (INT_ARITH_TAC ORELSE CONV_TAC INT_RING) in
   fun tm ->
-    prove(tm,REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN
-             (tac_word ORELSE tac_num));;
+    try
+      prove(tm,REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN
+              (tac_word ORELSE tac_num))
+    with Failure m ->
+      failwith ("WORD_BLAST `" ^ (string_of_term tm) ^ "`: " ^ m);;
 
 (* ------------------------------------------------------------------------- *)
 (* Subadditivity (and a bit more) of popcount.                               *)
