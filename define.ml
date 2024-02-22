@@ -982,9 +982,13 @@ let define =
         else failwith ""
     with Failure _ ->
       let f,th = close_definition_clauses tm in
-      let etm = mk_exists(f,hd(hyp th)) in
-      let th1 = prove_general_recursive_function_exists etm in
-      let th2 = new_specification[fst(dest_var f)] th1 in
-      let g = mk_mconst(dest_var f) in
-      let th3 = PROVE_HYP th2 (INST [g,f] th) in
-      the_definitions := th3::(!the_definitions); th3;;
+      if not (is_var f) then
+        (* If f is not Var, mk_exists will fail. *)
+        failwith ("define: '" ^ (string_of_term f) ^ "' is already defined")
+      else
+        let etm = mk_exists(f,hd(hyp th)) in
+        let th1 = prove_general_recursive_function_exists etm in
+        let th2 = new_specification[fst(dest_var f)] th1 in
+        let g = mk_mconst(dest_var f) in
+        let th3 = PROVE_HYP th2 (INST [g,f] th) in
+        the_definitions := th3::(!the_definitions); th3;;
