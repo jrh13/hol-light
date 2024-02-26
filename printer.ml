@@ -145,6 +145,15 @@ let typify_universal_set = ref true;;
 let print_all_thm = ref true;;
 
 (* ------------------------------------------------------------------------- *)
+(* Flag controlling whether types of subterms must be printed.               *)
+(* 0: Do not print the types of subterms                                     *)
+(* 1 (defualt) : Only print types containing invented type variables         *)
+(* 2: Print the types of constants and variables                             *)
+(* ------------------------------------------------------------------------- *)
+
+let print_types_of_subterms = ref 1;;
+
+(* ------------------------------------------------------------------------- *)
 (* Get the name of a constant or variable.                                   *)
 (* ------------------------------------------------------------------------- *)
 
@@ -422,7 +431,21 @@ let pp_print_term =
       else if (is_const hop || is_var hop) && args = [] then
         let s' = if parses_as_binder s || can get_infix_status s || is_prefix s
                  then "("^s^")" else s in
-        pp_print_string fmt s'
+        let rec has_invented_typevar (ty:hol_type): bool =
+          if is_vartype ty then (dest_vartype ty).[0] = '?'
+          else List.exists has_invented_typevar (snd (dest_type ty)) in
+        if !print_types_of_subterms = 2 ||
+           (!print_types_of_subterms = 1 && has_invented_typevar (type_of hop))
+        then
+          (pp_open_box fmt 0;
+          pp_print_string fmt "(";
+          pp_print_string fmt s';
+          pp_print_string fmt ":";
+          pp_print_type fmt (type_of hop);
+          pp_print_string fmt ")";
+          pp_close_box fmt ())
+        else
+          pp_print_string fmt s'
       else
         let l,r = dest_comb tm in
         (pp_open_hvbox fmt 0;

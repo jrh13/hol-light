@@ -42,6 +42,6 @@ type variables yourself:
 }
 
 \SEEALSO
-retypecheck, term_of_preterm, type_invention_warning.
+print_types_of_subterms, retypecheck, term_of_preterm, type_invention_warning.
 
 \ENDDOC
