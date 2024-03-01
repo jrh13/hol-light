@@ -1,0 +1,56 @@
+\DOC print_types_of_subterms
+
+\TYPE {print_types_of_subterms : int ref}
+
+\SYNOPSIS
+Flag controlling the level of printing types of subterms.
+
+\DESCRIBE
+The reference variable {print_types_of_subterms} is one of several
+settable parameters controlling printing of terms by {pp_print_term}, and hence
+the automatic printing of terms and theorems at the toplevel.
+
+When it is {0}, {pp_print_term} does not print the types of subterms.
+When it is {1}, as it is by default, {pp_print_term} only prints types of subterms containing invented type variables.
+When it is {2}, {pp_print_term} prints the types of all constants and variables in the term.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+{
+  # loadt "Library/words.ml";;
+  ...
+
+  # `word_join (word 10:int64) (word 20:int64)`;;
+  Warning: inventing type variables
+  val it : term =
+    `(word_join:(64)word->(64)word->(?194629)word) (word 10) (word 20)`
+  # `word_join (word 10:int64) (word 20:int64):int128`;;
+  val it : term = `word_join (word 10) (word 20)`
+
+  # print_types_of_subterms := 0;;
+  val it : unit = ()
+  # `word_join (word 10:int64) (word 20:int64)`;;
+  Warning: inventing type variables
+  val it : term = `word_join (word 10) (word 20)`
+  # `word_join (word 10:int64) (word 20:int64):int128`;;
+  val it : term = `word_join (word 10) (word 20)`
+
+  # print_types_of_subterms := 2;;
+  val it : unit = ()
+  # `word_join (word 10:int64) (word 20:int64)`;;
+  Warning: inventing type variables
+  val it : term =
+    `(word_join:(64)word->(64)word->(?194609)word) ((word:num->(64)word) 10)
+    ((word:num->(64)word) 20)`
+  # `word_join (word 10:int64) (word 20:int64):int128`;;
+  val it : term =
+    `(word_join:(64)word->(64)word->(128)word) ((word:num->(64)word) 10)
+    ((word:num->(64)word) 20)`
+}
+
+\SEEALSO
+pp_print_term, type_invention_error, type_invention_warning
+
+\ENDDOC
