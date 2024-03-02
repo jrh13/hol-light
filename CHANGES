@@ -8,6 +8,84 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  1st Mar 2024               Library/words.ml
+
+Added a few more miscellaneous word lemmas:
+
+  BIT_REVERSEFIELDS_1 =
+    |- !x i.
+           bit i (word_reversefields 1 x) <=>
+           i < dimindex (:N) /\ bit (dimindex (:N) - 1 - i) x
+
+  WORD_CLZ_REVERSEFIELDS =
+    |- !x. word_clz (word_reversefields 1 x) = word_ctz x
+
+  WORD_CTZ_EMULATION_POPCOUNT =
+    |- !x. word_ctz x =
+           word_popcount (word_and (word_not x) (word_sub x (word 1)))
+
+  WORD_CTZ_REVERSEFIELDS =
+    |- !x. word_ctz (word_reversefields 1 x) = word_clz x
+
+  WORD_EVENPARITY_POPCOUNT =
+    |- !x. word (bitval (word_evenparity x)) =
+           word_zx (word_not (word (word_popcount x)))
+
+  WORD_MUL_EXPAND =
+    |- !x y.
+           word_mul x y =
+           word
+           (nsum {i | i < dimindex (:N)}
+           (\i. bitval (bit i x) * val (word_shl y i)))
+
+  WORD_MUL_EXPAND_ALT =
+    |- !x y.
+           word_mul x y =
+           word
+           (nsum {i | i < dimindex (:N)}
+           (\i. val
+                (word_and (word_neg (word (bitval (bit i x)))) (word_shl y i))))
+
+  WORD_ODDPARITY_POPCOUNT =
+    |- !x. word (bitval (word_oddparity x)) = word_zx (word (word_popcount x))
+
+  WORD_POPCOUNT_MUL =
+    |- !x y. word_popcount (word_mul x y) <= word_popcount x * word_popcount y
+
+and two new type constructor/destructor utility functions,
+"dest_word_ty" and "mk_word_ty", e.g.
+
+  #  dest_word_ty `:int64`;;
+  val it : num = 64
+
+Fri  1st Mar 2024               printer.ml
+
+Added a new printing option from June Lee, controlled by a flag
+"print_types_of_subterms".
+
+        0 - Behaviour as before, no printing of types
+        1 - prints types of subterms containing invented type variables
+        2 - prints the types of all constants and variables
+
+Thu 29th Feb 2024               Library/words.ml
+
+Augmented BIT_WORD_CONV to handle the two special cases of condition
+and mask words based on "bitval b":
+
+  BIT_WORD_CONV `bit 0 (word(bitval b):byte)`;;
+
+  BIT_WORD_CONV `bit 42 (word_neg(word(bitval b)):int64)`;;
+
+Tue 27th Feb 2024               Minisat/minisat_prove.ml, Minisat/README, Minisat/zc2mso/README
+
+Made the overall GEN_SAT_PROVE, SAT_PROVE and ZSAT_PROVE initially convert
+any non-variable atomic formulas into variables before calling the core
+procedure. This makes things work on more general tautologies where the
+atomic formulas are arbitrary.
+
+Also made a few modernizations to the two README files to better reflect
+the current experience with MiniSat and zchaff.
+
 Wed 21st Feb 2024               EC/jacobian.ml
 
 Added some alternative definitions of Jacobian-coordinate elliptic curve
@@ -26,7 +104,7 @@ needs to be handled separately:
               weierstrass_add (f,a,b)
                (weierstrass_of_jacobian f p)
                (weierstrass_of_jacobian f q)
-  
+
   WEIERSTRASS_OF_JACOBIAN_DOUBLE_UNEXCEPTIONAL =
     |- !f a b p.
         field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
@@ -36,7 +114,7 @@ needs to be handled separately:
             weierstrass_add (f,a,b)
              (weierstrass_of_jacobian f p)
              (weierstrass_of_jacobian f p)
-  
+
 Wed 21st Feb 2024               calc_rat.ml, class.ml, define.ml, fusion.ml, int.ml, tactics.ml, Library/words.ml, Help/passim
 
 Added an update from June Lee with two new tactics
@@ -63,21 +141,21 @@ Added a few additional word lemmas:
            FINITE s /\ (!i. i IN s ==> b i < B) /\ (!i. i IN s ==> c i < B)
            ==> (nsum s (\i. B EXP i * b i) = nsum s (\i. B EXP i * c i) <=>
                 (!i. i IN s ==> b i = c i))
-  
+
   VAL_EXPAND_SUBWORDS =
     |- !k m x.
            dimindex (:M) = k /\ dimindex (:N) = k * m
            ==> nsum {i | i < m}
                (\i. 2 EXP (k * i) * val (word_subword x (k * i,k))) =
                val x
-  
+
   VAL_SUBWORDS_EQ =
     |- !k m f x.
            dimindex (:M) = k /\ dimindex (:N) = k * m
            ==> ((!i. i < m ==> val (word_subword x (k * i,k)) = f i) <=>
                 (!i. i < m ==> f i < 2 EXP k) /\
                 val x = nsum {i | i < m} (\i. 2 EXP (k * i) * f i))
-  
+
   WORD_SUBWORD_ADD =
     |- !x y.
            dimindex (:M) = len /\
@@ -85,7 +163,7 @@ Added a few additional word lemmas:
            val x MOD 2 EXP pos + val y MOD 2 EXP pos < 2 EXP pos
            ==> word_subword (word_add x y) (pos,len) =
                word_add (word_subword x (pos,len)) (word_subword y (pos,len))
-  
+
   WORD_SUBWORDS_EQ =
     |- !k m f x.
            dimindex (:M) = k /\ dimindex (:N) = k * m

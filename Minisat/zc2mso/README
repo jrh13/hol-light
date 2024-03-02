@@ -5,8 +5,10 @@ To compile zChaff:
 ==================
 
 You need to make two changes to the zChaff source file "zchaff_solver.cpp"
-before the usual "make". (This is based on zchaff.2004.11.15, but will
-probably be the same or very similar in other versions.)
+before the usual "make". We recommend the following version (for a 64-bit
+system at least):
+
+  https://www.princeton.edu/~chaff/zchaff/zchaff.64bit.2007.3.12.zip
 
 1. Uncomment (remove "//" from) the following line (about line 48)
 
@@ -19,13 +21,16 @@ probably be the same or very similar in other versions.)
 
 These will, respectively, make zChaff record a proof, and make it
 leave this proof in /tmp/resolve_trace instead of whatever the current
-directory is.
+directory is. If your compiler complains, you may also need to 
+
+3. Add a line "#include <cstring>" near the top of sat_solver.cpp.
 
 To compile zc2mso:
 ==================
 
 Put zc2mso.C in some dir. Put symbolic links to (or copy) the following files
-from the Minisat 1.14p sources in the same dir:
+from the Minisat 1.14p sources (tweaked if necessary as specified in the
+main README) in the same dir:
 
 File.C
 File.h
