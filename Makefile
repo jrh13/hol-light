@@ -35,7 +35,7 @@ CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-'
 
 # Main target
 
-default: update_database.ml pa_j.cmo;
+default: update_database.ml pa_j.cmo hol.sh;
 
 # Choose an appropriate "update_database.ml" file
 
@@ -84,6 +84,20 @@ pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx
         then cp pa_j_3.1x_6.11.ml pa_j.ml; \
         else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
         fi
+
+# Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
+
+hol.sh: pa_j.cmo ${HOLSRC} update_database.ml
+	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
+		ocamlmktop -o ocaml-hol nums.cma ; \
+		if test ${OCAML_VERSION} = "4.14" ; \
+		then sed "s^__DIR__^`pwd`^g" hol_4.14.sh > hol.sh ; \
+		else sed "s^__DIR__^`pwd`^g" hol_4.sh > hol.sh ; \
+		fi ; \
+		chmod +x hol.sh ; \
+	else \
+		echo 'FAILURE: hol.sh assumes Linux' ; \
+	fi
 
 # TODO: update this and hol.* commands to use one of checkpointing  tools
 # other than ckpt.
@@ -136,13 +150,12 @@ hol.complex: ./hol.multivariate                                         \
         echo -e 'loadt "Multivariate/complexes.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transcendentals.ml";;\nloadt "Multivariate/realanalysis.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
 
 # Build all those
-
-all: hol hol.multivariate hol.sosa hol.card hol.complex;
+all: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
 
 # Build binaries and copy them to binary directory
 
-install: hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivariate hol.sosa hol.card hol.complex ${BINDIR}
+install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivariate hol.sosa hol.card hol.complex ${BINDIR}
 
 # Clean up all compiled files
 
-clean:; rm -f update_database.ml pa_j.ml pa_j.cmi pa_j.cmo hol hol.multivariate hol.sosa hol.card hol.complex;
+clean:; rm -f update_database.ml pa_j.ml pa_j.cmi pa_j.cmo ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;

@@ -140,36 +140,28 @@ be available for some platforms. First the basic approach:
 
       export CAMLP5LIB=$HOME/mylib/ocaml/camlp5
 
-(2) Do 'ocaml'. (Actually for OCaml >= 4.02 I prefer 'ocaml -safe-string'
-    to avoid mutable strings, while you may need something else like
-    'ocamlnum' on some platforms --- see [*] below.) You should see a
-    prompt, something like:
+(2) If you are using a Unix-like environment, simply run `./hol.sh`.
+    This should rebuild all the core HOL Light theories, and terminate after
+    a few minutes with the usual OCaml prompt, something like:
 
-                Objective Caml version 4.01.0
+                Camlp5 parsing version (HOL-Light) 8.02.00
 
         #
 
+    HOL Light is now ready for the user to start proving theorems.
+
+    If you are not using a Unix-like environment, do
+    'ocaml'. (Actually for OCaml >= 4.02 I prefer 'ocaml -safe-string'
+    to avoid mutable strings, while you may need something else like
+    'ocamlnum' on some platforms --- see [*] below.)
     If you are using OCaml 4.14, you need to create a top-level OCaml
     using 'ocamlmktop -o ocaml-hol' and use 'ocaml-hol' because the default
     'ocaml' does not have 'compiler-libs' that is necessary to run HOL Light.
 
-(3) At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
-    command, not the prompt) followed by a newline. This should rebuild
-    all the core HOL Light theories, and terminate after a few minutes
-    with the usual OCaml prompt, something like:
+    At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
+    command, not the prompt) followed by a newline.
 
-        val search : term list -> (string * thm) list = <fun>
-        - : unit = ()
-        File "help.ml" already loaded
-        - : unit = ()
-        - : unit = ()
-        - : unit = ()
-                Camlp5 parsing version 7.03
-
-        #
-
-    HOL Light is now ready for the user to start proving theorems. You
-    can also use the load process (2) and (3) in other directories, but
+    You can also use the load process (2) in other directories, but
     you should either set the environment variable HOLLIGHT_DIR to point
     to the directory containing the HOL source files, or change the
     first line of "hol.ml" to give that explicitly, from
