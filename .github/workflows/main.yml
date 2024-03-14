@@ -37,7 +37,7 @@ jobs:
           cd hol-light
           eval $(opam env)
           make
-          ocaml -I `camlp5 -where` camlp5o.cma -init "hol.ml" | tee log.txt
+          ./hol.sh | tee log.txt
           ! grep "Error" log.txt
 
   test2:
@@ -62,6 +62,5 @@ jobs:
           cd hol-light
           eval $(opam env)
           make
-          ocamlmktop -o ocaml-hol
-          ./ocaml-hol -init "hol.ml" | tee log.txt
+          ./hol.sh | tee log.txt
           ! grep "Error" log.txt

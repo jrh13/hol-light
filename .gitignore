@@ -1,7 +1,10 @@
 .DS_Store
+_opam
 *.cmi
 *.cmo
 *.o
 *.cmx
 pa_j.ml
 update_database.ml
+ocaml-hol
+hol.sh
