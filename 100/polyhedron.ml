@@ -1364,9 +1364,7 @@ let EULER_POLYHEDRAL_CONE = prove
         {{x | (fa:(real^N->bool)->real^N) h dot x <= &0} | h IN J}`
       SUBST1_TAC THENL
        [ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
-        REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN
-        MATCH_MP_TAC(SET_RULE
-         `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+        REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN MATCH_MP_TAC IMAGE_EQ THEN
         GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[] THEN
         MATCH_MP_TAC CLOSURE_HALFSPACE_LT THEN ASM SET_TAC[];
         ALL_TAC] THEN

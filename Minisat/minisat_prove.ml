@@ -210,19 +210,6 @@ let GEN_SAT_PROVE solver solvername =
   let triv_rule p th = EQ_MP(INST [p,p_tm] pth_triv) th
   and main_rule p q sth th =
     itlist PROVE_HYP [sth; DISCH_ALL th] (INST [p,p_tm; q,q_tm] pth_main) in
-  let rec compoundprops tm =
-    match tm with
-      Comb(Comb(Const("/\\",_),l),r) ->
-         union (compoundprops l) (compoundprops r)
-    | Comb(Comb(Const("\\/",_),l),r) ->
-         union (compoundprops l) (compoundprops r)
-    | Comb(Comb(Const("==>",_),l),r) ->
-         union (compoundprops l) (compoundprops r)
-    | Comb(Comb(Const("=",Tyapp("fun",[Tyapp("bool",[]);_])),l),r) ->
-         union (compoundprops l) (compoundprops r)
-    | Comb(Const("~",_),l) -> compoundprops l
-    | Var(_,_) -> []
-    | _ -> [tm] in
   let invoke_minisat lfn mcth stm t rcv vc =
     let nr = Array.length rcv in
     let res = match invokeSat solver None t (Some vc) with
@@ -270,7 +257,7 @@ let GEN_SAT_PROVE solver solvername =
     else main_rule tm stm sth th) in
   fun tm ->
     if type_of tm <> bool_ty then failwith "GEN_SAT_PROVE" else
-    let pats = compoundprops tm in
+    let pats = filter (not o is_var) (atoms tm) in
     let bvs = map (genvar o type_of) pats in
     let tm' = subst (zip bvs pats) tm in
     try let th' = PROP_PROVE tm' in

@@ -424,7 +424,7 @@ let SKOLEM_THM = prove
   POP_ASSUM MATCH_ACCEPT_TAC);;
 
 let SKOLEM_THM_GEN = prove
- (`!P R. (!x. P x ==> ?y. R x y) <=> (?f. !x. P x ==> R x (f x))`,
+ (`!P R. (!x:A. P x ==> ?y:B. R x y) <=> (?f. !x. P x ==> R x (f x))`,
   REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM]);;
 
 (* ------------------------------------------------------------------------- *)

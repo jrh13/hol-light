@@ -6917,9 +6917,7 @@ let COLUMNS_IMAGE_BASIS = prove
      columns A = IMAGE (\x. A ** x) {basis i | 1 <= i /\ i <= dimindex(:M)}`,
   GEN_TAC THEN REWRITE_TAC[columns] THEN
   ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
-  REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN
-  MATCH_MP_TAC(SET_RULE
-    `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN MATCH_MP_TAC IMAGE_EQ THEN
   SIMP_TAC[IN_ELIM_THM; MATRIX_VECTOR_MUL_BASIS]);;
 
 let RANK_DIM_IM = prove

@@ -1,0 +1,32 @@
+\DOC atoms
+
+\TYPE {atoms : term -> term list}
+
+\SYNOPSIS
+Returns a list of the atomic propositions in a Boolean term
+
+\DESCRIBE
+When applied to a term of Boolean type, {atoms} returns a list of the atomic
+fomulas, considering the term as a propositional formula built up recursively 
+with negation, conjunction, disjunction, implication and logical equivalence, 
+treating all other subterms (e.g. quantified ones) as atomic.
+
+\FAILURE
+Fails if the term does not have type {:bool}.
+
+\EXAMPLE
+Here the atomic formulas are simply variables:
+{
+  # atoms `p \/ q ==> r`;;
+  val it : term list = [`r`; `p`; `q`]
+}
+\noindent while here the atomic formulas are composite:
+{
+  # atoms `x < 1 \/ x > 1 ==> ~(x = 1)`;;
+  val it : term list = [`x < 1`; `x > 1`; `x = 1`]
+}
+
+\SEEALSO
+frees, freesl, free_in, thm_frees, variables.
+
+\ENDDOC

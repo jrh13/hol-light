@@ -2,6 +2,8 @@ HOLLIGHT:=ocaml -init hol.ml
 
 STANDALONE_EXAMPLES:=\
 	Library/agm \
+	Library/bdd \
+	Examples/bdd_examples \
 	Library/binary \
 	Library/binomial \
 	Library/bitmatch \

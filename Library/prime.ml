@@ -1640,6 +1640,15 @@ let INDEX_GCD = prove
   REWRITE_TAC[ARITH_RULE `k <= m /\ k <= n <=> k <= MIN m n`] THEN
   MESON_TAC[LE_REFL; LE_ANTISYM; LE_TRANS]);;
 
+let FORALL_PRIME_INDEX = prove
+ (`(!p. prime p ==> !P. ((!x. P(index p x)) <=> !k. P k)) /\
+   (!p. prime p ==> !P. ((!x. ~(x = 0) ==> P(index p x)) <=> !k. P k))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `k:num` THEN FIRST_X_ASSUM(MP_TAC o SPEC `p EXP k`) THEN
+  ASM_SIMP_TAC[INDEX_EXP; INDEX_REFL; EXP_EQ_0; PRIME_IMP_NZ] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP PRIME_GE_2) THEN ARITH_TAC);;
+
 let INDEX_FACT_PRIME_MULT = prove
  (`!p n. prime p ==> index p (FACT(p * n)) = n + index p (FACT n)`,
   REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THEN

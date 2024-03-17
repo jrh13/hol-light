@@ -222,7 +222,7 @@ let FORALL_UNWIND_THM2 = prove
     ASM_REWRITE_TAC[]]);;
 
 let FORALL_UNWIND_THM1 = prove
- (`!P a. (!x. a = x ==> P x) <=> P a`,
+ (`!P (a:A). (!x. a = x ==> P x) <=> P a`,
   REPEAT GEN_TAC THEN CONV_TAC(LAND_CONV(ONCE_DEPTH_CONV SYM_CONV)) THEN
   MATCH_ACCEPT_TAC FORALL_UNWIND_THM2);;
 
@@ -377,7 +377,7 @@ let WLOG_RELATION = prove
  (`!R P. (!x y. P x y ==> P y x) /\
          (!x y. R x y \/ R y x) /\
          (!x y. R x y ==> P x y)
-         ==> !x y. P x y`,
+         ==> !x y:A. P x y`,
   REPEAT GEN_TAC THEN DISCH_THEN
    (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)) THEN
   REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN

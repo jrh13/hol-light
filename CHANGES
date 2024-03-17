@@ -8,6 +8,138 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 15th Mar 2024               Library/bdd.ml [new file], Examples/bdd_examples.ml [new file]
+
+Added a new file giving a basic implementation (as a HOL derived rule) of
+ordered binary decision diagrams with complement edges, a canonical form for
+Boolean formulas. The style of implementation follows Brace, Rudell and
+Bryant's paper "Efficient implementation of a BDD package" (DAC 1990). This
+implementation is distantly descended from the hol90 implementation in "Binary
+Decision Diagrams as a HOL Derived Rule", but greatly simplified since HOL
+Light handles pointer-eq subterms more efficiently and so we can avoid
+introducing any additional variables.
+
+The two top-level functions are BDD_TAUT just taking a formula and BDD_DEFTAUT
+taking both a list of variables determining the BDD variable order (allowed to
+be empty in which case the default is used) and a formula that is also allowed
+to contain "definitions". The examples in Examples/bdd_examples.ml give an idea
+how to use these options.
+
+Fri 15th Mar 2024               passim
+
+Made a number of explicit type variable choices in theorems (and occasionally
+fixed up or added quantifiers), just so things look tidier.
+
+Thu 14th Mar 2024               Makefile, README, .github/workflows/main.yml, .gitignore [new file], hol_4.14.sh [new file], hol_4.sh [new file]
+
+Added an update from June Lee that automatically creates (as part of
+the default "make" target) a shell script "hol.sh" to run HOL Light
+directly.
+
+Wed 13th Mar 2024               Library/ringtheory.ml
+
+Added a few more ring theory lemmas, mainly basic machinery including the
+usual "Chinese remainder theorem" facts about Z_{m*n}, and also the simple
+but rather obscure fact that Z_n is a von Neumann regular ring iff n is
+squarefree:
+
+  ISOMORPHIC_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           integer_mod_ring (m * n) isomorphic_ring
+           prod_ring (integer_mod_ring m) (integer_mod_ring n) <=>
+           coprime(m,n)
+
+  RING_CARRIER_INTEGER_MOD_RING =
+    |- !n. ring_carrier (integer_mod_ring n) = IMAGE (\x. x rem &n) (:int)
+
+  RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           ring_homomorphism
+           (integer_mod_ring (m * n),
+            prod_ring (integer_mod_ring m) (integer_mod_ring n))
+           (\a. a rem &m,a rem &n)
+
+  RING_ISOMORPHISM_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           ring_isomorphism
+           (integer_mod_ring (m * n),
+            prod_ring (integer_mod_ring m) (integer_mod_ring n))
+           (\a. a rem &m,a rem &n) <=>
+           coprime(m,n)
+
+  RING_OF_INT_PROD_RING =
+    |- !r s n. ring_of_int (prod_ring r s) n = ring_of_int r n,ring_of_int s n
+
+  RING_OF_NUM_PROD_RING =
+    |- !r s n. ring_of_num (prod_ring r s) n = ring_of_num r n,ring_of_num s n
+
+  VNREGULAR_INTEGER_MOD_RING =
+    |- !n. vnregular_ring (integer_mod_ring n) <=> squarefree n
+
+Wed 13th Mar 2024               Library/prime.ml, Library/pocklington.ml
+
+Added a few more number theory lemmas, mainly involving "squarefree":
+
+  FORALL_PRIME_INDEX =
+    |- (!p. prime p ==> (!P. (!x. P (index p x)) <=> (!k. P k))) /\
+       (!p. prime p ==> (!P. (!x. ~(x = 0) ==> P (index p x)) <=> (!k. P k)))
+
+  SQUAREFREE =
+    |- !n. squarefree n <=>
+           ~(n = 0) /\ (!m k. n divides m EXP k ==> n divides m)
+
+  SQUAREFREE_ALT =
+    |- !n. squarefree n <=> ~(n = 0) /\ (!m. n divides m EXP 2 ==> n divides m)
+
+  SQUAREFREE_DIVEXP =
+    |- !n q x. squarefree q /\ q divides x EXP n ==> q divides x
+
+  SQUAREFREE_DIVEXP_EQ =
+    |- !n q x. squarefree q /\ ~(n = 0) ==> (q divides x EXP n <=> q divides x)
+
+  SQUAREFREE_DIVIDES =
+    |- !q n.
+           squarefree q
+           ==> (q divides n <=> (!p. prime p /\ p divides q ==> p divides n))
+
+  SQUAREFREE_GCD =
+    |- !m n. squarefree m \/ squarefree n ==> squarefree (gcd (m,n))
+
+  SQUAREFREE_GCD_SQUARE =
+    |- !n. squarefree n <=> (!x. gcd (x EXP 2,n) divides x)
+
+Tue 12th Mar 2024               sets.ml, passim
+
+Added one basic lemma that was previously regenerated many times via
+SET_RULE
+
+  IMAGE_EQ =
+    |- !f g s. (!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s
+
+as well as a couple of elaborations of "image of a set is <= the set"
+using two different imaging functions:
+
+  CARD_IMAGE_LE2 =
+    |- !f g s.
+           FINITE s /\ (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y)
+           ==> CARD(IMAGE f s) <= CARD(IMAGE g s)
+
+  CARD_IMAGE_LT2 =
+    |- !f g s.
+           FINITE s /\
+           (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y) /\
+           ~(!x y. x IN s /\ y IN s /\ f x = f y ==> g x = g y)
+           ==> CARD(IMAGE f s) < CARD(IMAGE g s)
+
+Mon 11th Mar 2024               basics.ml, Minisat/minisat_prove.ml
+
+Added a function "atoms" to return the set (as a list with no repetitions
+but arbitrary order) of atomic formulas in a term, considering it as a
+propositional formula and any non-propositional subterms as atomic:
+
+  # atoms `x < 1 \/ x > 1 ==> ~(x = 1)`;;
+  val it : term list = [`x < 1`; `x > 1`; `x = 1`]
+
 Fri  1st Mar 2024               Library/words.ml
 
 Added a few more miscellaneous word lemmas:
@@ -85,6 +217,7 @@ atomic formulas are arbitrary.
 
 Also made a few modernizations to the two README files to better reflect
 the current experience with MiniSat and zchaff.
+
 
 Wed 21st Feb 2024               EC/jacobian.ml
 

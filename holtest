@@ -31,6 +31,8 @@ fi
 # Standalone examples
 
 echo '### Loading Library/agm.ml'; echo 'loadt "Library/agm.ml";;' | (time $hollight)
+echo '### Loading Library/bdd.ml, Examples/bdd_examples.ml';
+(echo 'loadt "Library/bdd.ml";;'; echo 'loadt "Examples/bdd_examples.ml";;') | (time $hollight)
 echo '### Loading Library/binary.ml'; echo 'loadt "Library/binary.ml";;' | (time $hollight)
 echo '### Loading Library/binomial.ml'; echo 'loadt "Library/binomial.ml";;' | (time $hollight)
 echo '### Loading Library/bitmatch.ml'; echo 'loadt "Library/bitmatch.ml";;' | (time $hollight)

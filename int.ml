@@ -1180,7 +1180,7 @@ parse_as_infix("divides",(12,"right"));;
 overload_interface("divides",`int_divides:int->int->bool`);;
 
 let int_divides = new_definition
-  `a divides b <=> ?x. b = a * x`;;
+  `a divides b <=> ?x:int. b = a * x`;;
 
 let INT_DIVIDES_LE = prove
  (`!x y:int. x divides y ==> abs(x) <= abs(y) \/ y = &0`,
@@ -2334,7 +2334,7 @@ let CONG_DIV2 = prove
   SIMP_TAC[CONG; DIV_MOD]);;
 
 let divides = prove
- (`a divides b <=> ?x. b = a * x`,
+ (`a divides b <=> ?x:num. b = a * x`,
   REWRITE_TAC[num_divides; int_divides] THEN
   EQ_TAC THENL [ALL_TAC; MESON_TAC[INT_OF_NUM_MUL; INT_OF_NUM_EQ]] THEN
   DISCH_THEN(X_CHOOSE_TAC `x:int`) THEN EXISTS_TAC `num_of_int(abs x)` THEN

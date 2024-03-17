@@ -255,7 +255,7 @@ let WF_REC_num = prove
 (* ------------------------------------------------------------------------- *)
 
 let MEASURE = new_definition
-  `MEASURE m = \x y. m(x) < m(y)`;;
+  `MEASURE (m:A->num) = \x y. m(x) < m(y)`;;
 
 let WF_MEASURE = prove
  (`!m:A->num. WF(MEASURE m)`,
@@ -264,8 +264,8 @@ let WF_MEASURE = prove
   MATCH_ACCEPT_TAC WF_num);;
 
 let MEASURE_LE = prove
- (`(!y. MEASURE m y a ==> MEASURE m y b) <=> m(a) <= m(b)`,
-    REWRITE_TAC[MEASURE] THEN MESON_TAC[NOT_LE; LTE_TRANS; LT_REFL]);;
+ (`!m:A->num. (!y. MEASURE m y a ==> MEASURE m y b) <=> m(a) <= m(b)`,
+  REWRITE_TAC[MEASURE] THEN MESON_TAC[NOT_LE; LTE_TRANS; LT_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Trivially, a WF relation is irreflexive and antisymmetric.                *)
