@@ -840,18 +840,19 @@ let num_of_string =
 (* ------------------------------------------------------------------------- *)
 
 let strings_of_file filename =
-  let fd = try Pervasives.open_in filename
-           with Sys_error _ ->
-             failwith("strings_of_file: can't open "^filename) in
+  let fd =
+    try open_in filename
+    with Sys_error _ -> failwith("strings_of_file: can't open "^filename) in
   let rec suck_lines acc =
-    try let l = Pervasives.input_line fd in
-        suck_lines (l::acc)
-    with End_of_file -> rev acc in
+    let l = try [input_line fd] with End_of_file -> [] in
+     if l = [] then rev acc else suck_lines(hd l::acc) in
   let data = suck_lines [] in
-  (Pervasives.close_in fd; data);;
+  (close_in fd; data);;
 
 let string_of_file filename =
-  end_itlist (fun s t -> s^"\n"^t) (strings_of_file filename);;
+  let fd = open_in_bin filename in
+  let data = really_input_string fd (in_channel_length fd) in
+  (close_in fd; data);;
 
 let file_of_string filename s =
   let fd = Pervasives.open_out filename in

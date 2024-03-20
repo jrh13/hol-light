@@ -22,16 +22,25 @@
 (* There are conversions like WORD_REDUCE_CONV for reducing via proof        *)
 (* expressions built up from concrete words like `word 255:byte`.            *)
 (*                                                                           *)
-(* Some simple decision procedures for proving basic equalities are here too *)
-(* and have limited and somewhat complementary scopes:                       *)
+(* Some simple decision procedures for proving basic word lemmas are here    *)
+(* too, and have limited and somewhat complementary scopes:                  *)
+(*                                                                           *)
 (*  - WORD_RULE for simple algebraic properties                              *)
 (*  - WORD_BITWISE_RULE for bitwise-type properties of logical operations    *)
 (*  - WORD_ARITH for things involving numerical values                       *)
 (*  - WORD_BLAST for fixed-size bitwise expansions followed by arithmetic    *)
+(*  - BITBLAST_RULE is a BDD-based "flattening" or "bit-blasting" rule       *)
 (*                                                                           *)
-(*              (c) Copyright, John Harrison 2019-2020                       *)
+(*              (c) Copyright, John Harrison 2019-2024                       *)
 (*                (c) Copyright, Mario Carneiro 2020                         *)
+(*                (c) Copyright, June Lee 2022-2024                          *)
 (* ========================================================================= *)
+
+needs "Library/bdd.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Some common word sizes.                                                   *)
+(* ------------------------------------------------------------------------- *)
 
 let HAS_SIZE_8 = HAS_SIZE_DIMINDEX_RULE `:8`;;
 let HAS_SIZE_16 = HAS_SIZE_DIMINDEX_RULE `:16`;;
@@ -7794,6 +7803,315 @@ let WORD_TO_IWORD_CONV =
 
 let WORD_IREDUCE_CONV =
   WORD_REDUCE_CONV THENC ONCE_DEPTH_CONV WORD_TO_IWORD_CONV;;
+
+(* ------------------------------------------------------------------------- *)
+(* Expanding a natural number sum in a more "balanced" way.                  *)
+(* ------------------------------------------------------------------------- *)
+
+let EXPAND_NSUM_BALANCE_CONV =
+  let op = `(+):num->num->num` in
+  let dest = dest_binop op
+  and mk = mk_binop op
+  and lmk = list_mk_binop op
+  and PRV = AC ADD_AC in
+  let rec balance tm =
+    let tms = striplist dest tm in
+    let n = length tms in
+    if n <= 3 then tm else
+    let tms1,tms2 = chop_list (n / 2) tms in
+    mk (balance(lmk tms1)) (balance(lmk tms2)) in
+  fun tm ->
+    let th = EXPAND_NSUM_CONV tm in
+    let tm' = rand(concl th) in
+    let th' = PRV(mk_eq(tm',balance tm')) in
+    TRANS th th';;
+
+(* ------------------------------------------------------------------------- *)
+(* Convert a natural number expression to the form "val(some_word)"          *)
+(* ------------------------------------------------------------------------- *)
+
+let WORDIFY_CONV =
+  let m_ty = `:M` and n_ty = `:N` and p_ty = `:P` and num_ty = `:num`
+  and and_th = TAUT `T /\ T <=> T`
+  and pth_bitval = prove
+   (`!b. bitval b = val(word(bitval b):1 word)`,
+    REWRITE_TAC[VAL_WORD_BITVAL])
+  and pth_add = prove
+   (`dimindex(:M) < dimindex(:P) /\ dimindex(:N) < dimindex(:P)
+     ==> !x y. val(x:M word) + val(y:N word) =
+               val(word_add (word_zx x) (word_zx y):P word)`,
+    REPEAT STRIP_TAC THEN REWRITE_TAC[VAL_WORD_ADD; VAL_WORD_ZX_GEN] THEN
+    CONV_TAC MOD_DOWN_CONV THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
+    TRANS_TAC LTE_TRANS `2 EXP dimindex(:M) + 2 EXP dimindex(:N)` THEN
+    SIMP_TAC[LT_ADD2; VAL_BOUND] THEN
+    TRANS_TAC LE_TRANS `2 EXP SUC(MAX (dimindex(:M)) (dimindex(:N)))` THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[EXP; MULT_2] THEN MATCH_MP_TAC LE_ADD2 THEN CONJ_TAC;
+      ALL_TAC] THEN
+    REWRITE_TAC[LE_EXP; ARITH_EQ] THEN ASM_ARITH_TAC)
+  and pth_mul = prove
+   (`dimindex(:M) + dimindex(:N) <= dimindex(:P)
+     ==> !x y. val(x:M word) * val(y:N word) =
+               val(word_mul (word_zx x) (word_zx y):P word)`,
+    REPEAT STRIP_TAC THEN REWRITE_TAC[VAL_WORD_MUL; VAL_WORD_ZX_GEN] THEN
+    CONV_TAC MOD_DOWN_CONV THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
+    TRANS_TAC LTE_TRANS `2 EXP (dimindex (:M) + dimindex (:N))` THEN
+    ASM_REWRITE_TAC[LE_EXP; ARITH_EQ] THEN REWRITE_TAC[EXP_ADD] THEN
+    MATCH_MP_TAC LT_MULT2 THEN REWRITE_TAC[VAL_BOUND]) in
+  let log2 =
+    let rec log2 n m i =
+      if n </ m then i else log2 n (num_2 */ m) (i + 1) in
+    fun n -> Int(log2 (abs_num n) num_1 0) in
+  let rec conv tm =
+    match tm with
+      Comb(Const("bitval",_),_) ->
+          GEN_REWRITE_CONV I [pth_bitval] tm
+    | Comb(Const("val",_),Comb(Const("word",_),_)) ->
+          TRY_CONV(RAND_CONV(RAND_CONV conv)) tm
+    | Comb(Const("val",_),_) -> REFL tm
+    | Comb(Const("NUMERAL",_),_) ->
+        let n = max_num num_1 (log2(dest_numeral tm)) in
+        let th1 = SPEC tm (INST_TYPE [mk_finty n,n_ty] VAL_WORD_EQ) in
+        let th2 =
+         (RAND_CONV(RAND_CONV DIMINDEX_CONV THENC NUM_EXP_CONV) THENC
+          NUM_LT_CONV) (lhand(concl th1)) in
+        SYM(MP th1 (EQT_ELIM th2))
+    | Comb(Comb(Const("+",_),_),_) ->
+        let eth = BINOP_CONV conv tm in
+        let mtm = rand(lhand(rand(concl eth)))
+        and ntm = rand(rand(rand(concl eth))) in
+        let mty = dest_word_ty(type_of mtm)
+        and nty = dest_word_ty(type_of ntm) in
+        let pty = max_num mty nty +/ num_1 in
+        let th = INST_TYPE
+          [mk_finty mty,m_ty; mk_finty nty,n_ty; mk_finty pty,p_ty] pth_add in
+        let ath = (BINOP_CONV (BINOP_CONV DIMINDEX_CONV THENC NUM_LT_CONV))
+                  (lhand(concl th)) in
+        TRANS eth (SPECL [mtm; ntm] (MP th (EQT_ELIM (TRANS ath and_th))))
+    | Comb(Comb(Const("*",_),_),_) ->
+        let eth = BINOP_CONV conv tm in
+        let mtm = rand(lhand(rand(concl eth)))
+        and ntm = rand(rand(rand(concl eth))) in
+        let mty = dest_word_ty(type_of mtm)
+        and nty = dest_word_ty(type_of ntm) in
+        let pty = mty +/ nty in
+        let th = INST_TYPE
+          [mk_finty mty,m_ty; mk_finty nty,n_ty; mk_finty pty,p_ty] pth_mul in
+        let ath = (BINOP2_CONV (BINOP_CONV DIMINDEX_CONV THENC NUM_ADD_CONV)
+                               DIMINDEX_CONV THENC
+                   NUM_LE_CONV) (lhand(concl th)) in
+        TRANS eth (SPECL [mtm; ntm] (MP th (EQT_ELIM ath)))
+    | _ -> failwith "WORDIFY_CONV" in
+  let fullconv = conv THENC GEN_REWRITE_CONV DEPTH_CONV [WORD_ZX_TRIVIAL] in
+  fun tm -> if type_of tm = num_ty then fullconv tm
+            else failwith "WORDIFY_CONV";;
+
+(* ------------------------------------------------------------------------- *)
+(* Adjust word sizes in "val(...)" to be possibly larger                     *)
+(* ------------------------------------------------------------------------- *)
+
+let VAL_WORD_ADJUST_CONV =
+  let m_ty = `:M` and n_ty = `:N`
+  and pth = prove
+   (`dimindex(:M) <= dimindex(:N)
+     ==> !x. val(x:M word) = val(word_zx x:N word)`,
+    SIMP_TAC[VAL_WORD_ZX]) in
+  fun n tm ->
+    match tm with
+      Comb(Const("val",_),_) ->
+       let m = dest_word_ty(type_of(rand tm)) in
+       if m =/ n then REFL tm
+       else if m >/ n then failwith "VAL_WORD_ADJUST_CONV: too small" else
+       let th = INST_TYPE[mk_finty m,m_ty; mk_finty n,n_ty] pth in
+       let cth = (BINOP_CONV DIMINDEX_CONV THENC NUM_LE_CONV)
+                 (lhand(concl th)) in
+      SPEC (rand tm) (MP th (EQT_ELIM cth))
+   | _ -> failwith "VAL_WORD_ADJUST_CONV: wrong form of term";;
+
+let VAL_WORD_ADJUST_BINOP_CONV tm =
+  let tm1 = lhand tm and tm2 = rand tm in
+  let n = max_num (dest_word_ty(type_of(rand tm1)))
+                  (dest_word_ty(type_of(rand tm2))) in
+  BINOP_CONV (VAL_WORD_ADJUST_CONV n) tm;;
+
+(* ------------------------------------------------------------------------- *)
+(* Convert a natural number atom m = n, m < n etc. to word form.             *)
+(* ------------------------------------------------------------------------- *)
+
+let WORDIFY_ATOM_CONV =
+  let num_ty = `:num`
+  and pth = prove
+   (`!(x:N word) (y:N word).
+          val x < val y <=>
+          (~bit (dimindex(:N)-1) x /\ bit (dimindex(:N)-1) y) \/
+          (~bit (dimindex(:N)-1) x \/ bit (dimindex(:N)-1) y) /\
+          bit (dimindex(:N)-1) (word_sub x y)`,
+    CONV_TAC WORD_ARITH) in
+  let pat =
+      mk_abs(`x:num`,
+             subst[`x:num`,`dimindex(:N)-1`]
+               (rand(snd(strip_forall(concl pth))))) in
+  let VAL_LT_CONV =
+     GEN_REWRITE_CONV I [pth] THENC
+     PAT_CONV pat (LAND_CONV DIMINDEX_CONV THENC NUM_SUB_CONV) in
+  let conv tm =
+    match tm with
+      Comb(Comb(Const("=",_),_),t) when type_of t = num_ty ->
+         (BINOP_CONV WORDIFY_CONV THENC
+          VAL_WORD_ADJUST_BINOP_CONV THENC
+          GEN_REWRITE_CONV I [VAL_EQ]) tm
+    | Comb(Comb(Const("<",_),_),_) ->
+         (BINOP_CONV WORDIFY_CONV THENC
+          VAL_WORD_ADJUST_BINOP_CONV THENC
+          VAL_LT_CONV) tm
+    | Comb(Comb(Const(">",_),_),_) ->
+         (BINOP_CONV WORDIFY_CONV THENC
+          VAL_WORD_ADJUST_BINOP_CONV THENC
+          GEN_REWRITE_CONV I [GT] THENC
+          VAL_LT_CONV) tm
+    | Comb(Comb(Const("<=",_),_),_) ->
+         (BINOP_CONV WORDIFY_CONV THENC
+          VAL_WORD_ADJUST_BINOP_CONV THENC
+          GEN_REWRITE_CONV I [GSYM NOT_LT] THENC
+          RAND_CONV VAL_LT_CONV) tm
+    | Comb(Comb(Const(">=",_),_),_) ->
+         (BINOP_CONV WORDIFY_CONV THENC
+          VAL_WORD_ADJUST_BINOP_CONV THENC
+          GEN_REWRITE_CONV I [GE] THENC
+          GEN_REWRITE_CONV I [GSYM NOT_LT] THENC
+          RAND_CONV VAL_LT_CONV) tm
+    | _ -> failwith "WORDIFY_ATOM_CONV" in
+  conv;;
+
+(* ------------------------------------------------------------------------- *)
+(* Convert a word(....) term with composite inside to word form.             *)
+(* ------------------------------------------------------------------------- *)
+
+let WORDIFY_WORD_CONV =
+  let conv =
+    RAND_CONV WORDIFY_CONV THENC
+    (GEN_REWRITE_CONV I [WORD_VAL] ORELSEC
+     GEN_REWRITE_CONV I [GSYM word_zx]) in
+  fun tm ->
+    match tm with
+      Comb(Const("word",_),t) when not(is_numeral t) -> conv tm
+    | _ -> failwith "WORDIFY_WORD_CONV";;
+
+(* ------------------------------------------------------------------------- *)
+(* Expanding multiplication, popcount and unsigned word ordering relations.  *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_MUL_EXPAND_CONV =
+  let pth = prove
+   (`!b x:N word.
+          word(bitval b * val x) =
+          word_and (word_neg(word(bitval b))) x`,
+    REPEAT GEN_TAC THEN REWRITE_TAC[WORD_AND_MASK] THEN
+    COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[BITVAL_CLAUSES; MULT_CLAUSES; WORD_VAL]) in
+  let conv =
+    GEN_REWRITE_CONV I [REWRITE_RULE[NUMSEG_LT_DIMINDEX] WORD_MUL_EXPAND] THENC
+    RAND_CONV
+     (LAND_CONV(RAND_CONV(LAND_CONV DIMINDEX_CONV THENC NUM_SUB_CONV)) THENC
+      EXPAND_NSUM_BALANCE_CONV) THENC
+    ONCE_DEPTH_CONV BIT_WORD_CONV THENC
+    GEN_REWRITE_CONV DEPTH_CONV
+     [BITVAL_CLAUSES; MULT_CLAUSES; ADD_CLAUSES] THENC
+    GEN_REWRITE_CONV TOP_SWEEP_CONV [WORD_ADD] THENC
+    GEN_REWRITE_CONV ONCE_DEPTH_CONV [WORD_VAL; pth]
+  and swap = GEN_REWRITE_CONV I [WORD_MUL_SYM] in
+  fun tm ->
+    match tm with
+      Comb(Comb(Const("word_mul",_),_),Comb(Const("word",_),n))
+      when is_numeral n -> (swap THENC conv) tm
+    | Comb(Comb(Const("word_mul",_),Comb(Const("word",_),n)),_)
+      when is_numeral n -> conv tm
+    | Comb(Comb(Const("word_mul",_),x),y) -> conv tm
+    | _ -> failwith "WORD_MUL_EXPAND_CONV";;
+
+let WORD_POPCOUNT_EXPAND_CONV =
+  GEN_REWRITE_CONV I
+   [REWRITE_RULE[NUMSEG_LT_DIMINDEX] WORD_POPCOUNT_NSUM] THENC
+  LAND_CONV (RAND_CONV(LAND_CONV DIMINDEX_CONV THENC NUM_SUB_CONV)) THENC
+  EXPAND_NSUM_BALANCE_CONV;;
+
+let WORD_URELATION_EXPAND_CONV =
+  GEN_REWRITE_CONV I
+   (map (REWRITE_CONV[relational2; word_ule; word_ult; word_uge; word_ugt])
+        [`word_ule (x:N word) y`; `word_ult (x:N word) y`;
+         `word_uge (x:N word) y`; `word_ugt (x:N word) y`]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Basic bit-blasting tactic.                                                *)
+(* ------------------------------------------------------------------------- *)
+
+let BITBLAST_THEN =
+  let carrying tm =
+    match tm with
+      Comb(Comb(Const("word_add",_),_),_) -> true
+    | Comb(Comb(Const("word_sub",_),_),_) -> true
+    | Comb(Const("word_neg",_),
+           Comb(Const("word",_),
+                Comb(Const("bitval",_),_))) -> false
+    | Comb(Const("word_neg",_),_) -> true
+    | _ -> false
+  and BITWISE_EXPAND_CONV =
+    GEN_REWRITE_CONV I [WORD_EQ_BITS_ALT] THENC
+    BINDER_CONV(LAND_CONV(RAND_CONV(!word_SIZE_CONV))) THENC
+    EXPAND_CASES_CONV in
+  let BITBLAST_EQUATION th =
+    let ths = CONJUNCTS(CONV_RULE BITWISE_EXPAND_CONV th) in
+    end_itlist CONJ (map (CONV_RULE
+     (LAND_CONV
+       (BIT_WORD_CONV THENC SUBS_CONV[th] THENC
+        TOP_DEPTH_CONV (BIT_WORD_CONV o check (not o carrying o rand))) THENC
+      SYM_CONV THENC
+      RAND_CONV(REWRITE_CONV[]))) ths) in
+  let wordbits =
+    let bit_tm = `bit:num->(N)word->bool` and n_ty = `:N` in
+    let wordbits_var tm =
+      try let ty = type_of tm in
+          let n = dest_word_ty ty in
+          let btm = inst[mk_finty n,n_ty] bit_tm in
+          map (fun i -> mk_comb(mk_comb(btm,mk_small_numeral i),tm))
+              (0--(Num.int_of_num n-1))
+      with Failure _ -> [] in
+    let rec interleave lis =
+      match lis with
+        [] -> []
+      | []::rst -> interleave rst
+      | (h::t)::rst -> h::(interleave(rst @ [t])) in
+    fun tm -> interleave (map wordbits_var (frees tm)) in
+  fun tac ->
+    REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN
+    REPEAT((COND_CASES_TAC THEN POP_ASSUM MP_TAC) ORELSE
+           (CHANGED_TAC(CONV_TAC(ONCE_DEPTH_CONV let_CONV)))) THEN
+    W(fun (_,w) -> let vars = wordbits w in
+      CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN REWRITE_TAC[] THEN
+      CONV_TAC(DEPTH_CONV(WORD_RED_CONV ORELSEC NUM_RED_CONV)) THEN
+      CONV_TAC(ONCE_DEPTH_CONV WORD_URELATION_EXPAND_CONV) THEN
+      GEN_REWRITE_TAC TOP_DEPTH_CONV
+       [WORD_ODDPARITY_POPCOUNT; WORD_EVENPARITY_POPCOUNT;
+        WORD_CTZ_EMULATION_POPCOUNT; GSYM WORD_CTZ_REVERSEFIELDS] THEN
+      CONV_TAC(ONCE_DEPTH_CONV WORD_POPCOUNT_EXPAND_CONV) THEN
+      CONV_TAC(ONCE_DEPTH_CONV WORDIFY_WORD_CONV) THEN
+      CONV_TAC(ONCE_DEPTH_CONV WORDIFY_ATOM_CONV) THEN
+      CONV_TAC(DEPTH_CONV WORD_MUL_EXPAND_CONV) THEN
+      REPEAT(W(fun (_,w) ->
+        let t = hd(sort free_in (find_terms carrying w)) in
+        let v = genvar(type_of t) in
+         ABBREV_TAC(mk_eq(v,t)))) THEN
+      CONV_TAC(ONCE_DEPTH_CONV
+       (BITWISE_EXPAND_CONV THENC TOP_DEPTH_CONV BIT_WORD_CONV)) THEN
+      CONV_TAC(TOP_DEPTH_CONV
+       (BIT_WORD_CONV o check (not o carrying o rand))) THEN
+      TRY(POP_ASSUM_LIST
+       (MP_TAC o end_itlist CONJ o map BITBLAST_EQUATION o rev)) THEN
+      REWRITE_TAC[] THEN tac vars);;
+
+let BITBLAST_TAC = BITBLAST_THEN (CONV_TAC o BDD_DEFTAUT);;
+
+let BITBLAST_RULE tm = time prove(tm,BITBLAST_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* SIMD repetition of a unary (usimd) or binary (simd) function.             *)

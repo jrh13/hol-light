@@ -6,8 +6,10 @@ STANDALONE_EXAMPLES:=\
 	Examples/bdd_examples \
 	Library/binary \
 	Library/binomial \
+	Examples/bitblast \
 	Library/bitmatch \
 	Library/bitsize \
+	Examples/bondy \
 	Examples/borsuk \
 	Examples/brunn_minkowski \
 	Library/card \

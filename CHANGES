@@ -8,6 +8,28 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 19th Mar 2024               lib.ml
+
+Made "strings_of_file" and "string_of_file" more robust so they can handle
+bigger input files without problems. Previously, the core loop of
+"strings_of_file" was not tail recursive because the body was enclosed in
+a "try...with" block; this is now changed. The "string_of_file" function now
+just uses more basic library functions directly instead of calling
+"strings_of_file" and concatenating the results.
+
+Mon 18th Mar 2024               Library/words.ml, Examples/bitblast.ml [new file]
+
+Added a basic bit-blasting tactic and rule to the word library, using
+BDDs as the backend by default (BITBLAST_TAC and BITBLAST_RULE) but
+providing a more general BITBLAST_THEN that does the reduction followed
+by another tactic (e.g. SAT). The new file "Examples/bitblast.ml" gives
+a number of examples, mainly typical "Hacker's Delight" fare.
+
+Sat 16th Mar 2024               Examples/bondy.ml [new file]
+
+Added a new example, a proof of Bondy's theorem, following the first
+of the two proofs given in Bollobas's "Combinatorics" for Theorem 1 (p4).
+
 Fri 15th Mar 2024               Library/bdd.ml [new file], Examples/bdd_examples.ml [new file]
 
 Added a new file giving a basic implementation (as a HOL derived rule) of
