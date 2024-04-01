@@ -389,16 +389,10 @@ and num_10 = Num.num_of_int 10;;
 let pow2 n = power_num num_2 (Num.num_of_int n);;
 let pow10 n = power_num num_10 (Num.num_of_int n);;
 
-let numdom r =
-  let r' = Ratio.normalize_ratio (ratio_of_num r) in
-  num_of_big_int(Ratio.numerator_ratio r'),
-  num_of_big_int(Ratio.denominator_ratio r');;
-
 let numerator = fst o numdom
 and denominator = snd o numdom;;
 
-let gcd_num n1 n2 =
-  num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
+(* gcd_num x y is defined in the NumExt module. *)
 
 let lcm_num x y =
   if x =/ num_0 && y =/ num_0 then num_0

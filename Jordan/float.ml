@@ -72,11 +72,7 @@ add_test("mk_int",
 
 (* ------------------------------------------------------------------ *)
 
-let (split_ratio:Num.num -> Num.num*Num.num) =
-  function
-    (Ratio r) -> (Big_int (Ratio.numerator_ratio r)),
-         (Big_int (Ratio.denominator_ratio r))|
-    u -> (u,(Num.num_of_int 1));;
+let (split_ratio:Num.num -> Num.num*Num.num) = numdom;;
 
 add_test("split_ratio",
    let (a,b) = split_ratio ((Num.num_of_int 4)//(Num.num_of_int 20)) in

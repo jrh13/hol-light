@@ -50,7 +50,7 @@ jobs:
           sudo apt update && sudo apt install -y opam xdot
           opam init --disable-sandboxing --compiler=4.14.0
           opam pin -y add camlp5 8.02.01
-          opam install -y num
+          opam install -y zarith
 
       - name: Checkout this repo
         uses: actions/checkout@v2

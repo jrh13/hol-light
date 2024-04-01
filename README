@@ -54,10 +54,17 @@ too difficult, depending on the platform.
 
         http://caml.inria.fr/ocaml/index.en.html
 
- 2. num: The HOL Light system uses the OCaml "Num" library for rational
-    arithmetic. As of OCaml 4.06, this is no longer included in
-    the core system and will need to be added separately. You can
-    do this using the OCaml package manager "opam" if you use it by
+ 2. zarith or num: The HOL Light system uses the OCaml "Num" library
+    or "Zarith" library for rational arithmetic. If OCaml 4.14 is used,
+    HOL Light will use Zarith. You can install it using the OCaml package
+    manager "opam" by
+
+        opam install zarith
+
+    If OCaml 4.05 is used, HOL Light will use Num which is included in
+    the core system. If you are using an OCaml version between 4.06 and 4.13,
+    Num must be installed separately because it is no longer included in
+    the core system. You can use "opam" by
 
         opam install num
 
