@@ -135,7 +135,7 @@ SIMPLIFY_CONV `T /\ T \/ F`
 
 let operations =
   ["=",(=/); "<",(</); ">",(>/); "<=",(<=/); ">=",(>=/);
-   "divides",(fun x y -> mod_num y x =/ Int 0)];;
+   "divides",(fun x y -> mod_num y x =/ Num.num_of_int 0)];;
 
 let evalc_atom at =
   match at with

@@ -24,15 +24,15 @@ open Informal_poly;;
 open Informal_atn;;
 
 let rec fact n =
-  if sign_num n <= 0 then Int 1 else
+  if sign_num n <= 0 then Num.num_of_int 1 else
     n */ fact (pred_num n);;
 
 let one = mk_small_num_float 1 and
     neg_one = neg_float (mk_small_num_float 1);;
 
 let cos_tables pp n =
-  let t1 = map (fun i -> fact (Int (4 * i))) (0 -- (n / 2)) and
-      t2 = map (fun i -> fact (Int (4 * i + 2))) (0 -- ((n + 1) / 2 - 1)) in
+  let t1 = map (fun i -> fact (Num.num_of_int (4 * i))) (0 -- (n / 2)) and
+      t2 = map (fun i -> fact (Num.num_of_int (4 * i + 2))) (0 -- ((n + 1) / 2 - 1)) in
   let f n = inv_interval pp (mk_num_interval n) in
     map f t1, map f t2;;
 
@@ -366,17 +366,17 @@ let n = -10000;;
 let a = 3 and
     b = 5;;
 
-let x = mk_interval (mk_float (Int a) 0, mk_float (Int b) 0);;
-let y = mk_interval (mk_float (Int (-a)) 0, mk_float (Int b) 0);;
-let z = mk_interval (mk_float (Int (-b)) 0, mk_float (Int a) 0);;
-let u = mk_interval (mk_float (Int (-3)) 0, mk_float (Int (-2)) 0);;
+let x = mk_interval (mk_float (Num.num_of_int a) 0, mk_float (Num.num_of_int b) 0);;
+let y = mk_interval (mk_float (Num.num_of_int (-a)) 0, mk_float (Num.num_of_int b) 0);;
+let z = mk_interval (mk_float (Num.num_of_int (-b)) 0, mk_float (Num.num_of_int a) 0);;
+let u = mk_interval (mk_float (Num.num_of_int (-3)) 0, mk_float (Num.num_of_int (-2)) 0);;
 
 abs_interval x;;
 abs_interval y;;
 abs_interval z;;
 abs_interval u;;
 
-let x = mk_interval (mk_float (Int a) 0, mk_float (Int b) 0);;
+let x = mk_interval (mk_float (Num.num_of_int a) 0, mk_float (Num.num_of_int b) 0);;
 let x_th = (ASSUME o Interval_arith.mk_interval `x:real` o mk_pair)
   (More_float.mk_float a 0, More_float.mk_float b 0);;
 

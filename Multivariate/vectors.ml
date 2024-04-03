@@ -721,12 +721,12 @@ let NORM_ARITH =
             find_normedterms l (find_normedterms r acc)
       | Comb(Comb(Const("real_mul",_),c),n) ->
             if not (is_ratconst c) then acc else
-            augment_norm (rat_of_term c >=/ Int 0) n acc
+            augment_norm (rat_of_term c >=/ Num.num_of_int 0) n acc
       | _ -> augment_norm true tm acc in
     find_normedterms in
   let lincomb_neg t = mapf minus_num t in
-  let lincomb_cmul c t = if c =/ Int 0 then undefined else mapf (( */ ) c) t in
-  let lincomb_add l r = combine (+/) (fun x -> x =/ Int 0) l r in
+  let lincomb_cmul c t = if c =/ Num.num_of_int 0 then undefined else mapf (( */ ) c) t in
+  let lincomb_add l r = combine (+/) (fun x -> x =/ Num.num_of_int 0) l r in
   let lincomb_sub l r = lincomb_add l (lincomb_neg r) in
   let lincomb_eq l r = lincomb_sub l r = undefined in
   let rec vector_lincomb tm =
@@ -739,9 +739,9 @@ let NORM_ARITH =
           lincomb_cmul (rat_of_term l) (vector_lincomb r)
       | Comb(Const("vector_neg",_),t) ->
           lincomb_neg (vector_lincomb t)
-      | Comb(Const("vec",_),n) when is_numeral n && dest_numeral n =/ Int 0 ->
+      | Comb(Const("vec",_),n) when is_numeral n && dest_numeral n =/ Num.num_of_int 0 ->
           undefined
-      | _ -> (tm |=> Int 1) in
+      | _ -> (tm |=> Num.num_of_int 1) in
   let vector_lincombs tms =
     itlist (fun t fns ->
                   if can (assoc t) fns then fns else
@@ -753,7 +753,7 @@ let NORM_ARITH =
     match tm with
       Comb(Comb(Const("real_add",_),l),r) ->
           BINOP_CONV (replacenegnorms fn) tm
-    | Comb(Comb(Const("real_mul",_),c),n) when rat_of_term c </ Int 0 ->
+    | Comb(Comb(Const("real_mul",_),c),n) when rat_of_term c </ Num.num_of_int 0 ->
           RAND_CONV fn tm
     | _ -> REFL tm in
   let flip v eq =
@@ -764,14 +764,14 @@ let NORM_ARITH =
     | (a::t) -> let res = allsubsets t in
                 map (fun b -> a::b) res @ res in
   let evaluate env lin =
-    foldr (fun x c s -> s +/ c */ apply env x) lin (Int 0) in
+    foldr (fun x c s -> s +/ c */ apply env x) lin (Num.num_of_int 0) in
   let rec solve (vs,eqs) =
     match (vs,eqs) with
-      [],[] -> (0 |=> Int 1)
+      [],[] -> (0 |=> Num.num_of_int 1)
     | _,eq::oeqs ->
           let v = hd(intersect vs (dom eq)) in
           let c = apply eq v in
-          let vdef = lincomb_cmul (Int(-1) // c) eq in
+          let vdef = lincomb_cmul (Num.num_of_int(-1) // c) eq in
           let eliminate eqn =
             if not(defined eqn v) then eqn else
             lincomb_add (lincomb_cmul (apply eqn v) vdef) eqn in
@@ -786,9 +786,9 @@ let NORM_ARITH =
   let vertices vs eqs =
     let vertex cmb =
       let soln = solve(vs,cmb) in
-      map (fun v -> tryapplyd soln v (Int 0)) vs in
+      map (fun v -> tryapplyd soln v (Num.num_of_int 0)) vs in
     let rawvs = mapfilter vertex (combinations (length vs) eqs) in
-    let unset = filter (forall (fun c -> c >=/ Int 0)) rawvs in
+    let unset = filter (forall (fun c -> c >=/ Num.num_of_int 0)) rawvs in
     itlist (insert' (forall2 (=/))) unset [] in
   let subsumes l m = forall2 (fun x y -> abs_num x <=/ abs_num y) l m in
   let rec subsume todo dun =
@@ -895,7 +895,7 @@ let NORM_ARITH =
           (APPLY_pth2 THENC VECTOR_CANON_CONV) tm
       | Comb(Const("vector_neg",_),t) ->
           (APPLY_pth3 THENC VECTOR_CANON_CONV) tm
-      | Comb(Const("vec",_),n) when is_numeral n && dest_numeral n =/ Int 0 ->
+      | Comb(Const("vec",_),n) when is_numeral n && dest_numeral n =/ Num.num_of_int 0 ->
           REFL tm
       | _ -> APPLY_pth1 tm in
     fun tm ->
@@ -923,21 +923,21 @@ let NORM_ARITH =
           itlist (fun (f,v) g -> if defined f x then (v |-> apply f x) g else g)
                  srccombs inp in
         let equations = map coefficients vvs
-        and inequalities = map (fun n -> (n |=> Int 1)) nvs in
+        and inequalities = map (fun n -> (n |=> Num.num_of_int 1)) nvs in
         let plausiblevertices f =
           let flippedequations = map (itlist flip f) equations in
           let constraints = flippedequations @ inequalities in
           let rawverts = vertices nvs constraints in
           let check_solution v =
-            let f = itlist2 (|->) nvs v (0 |=> Int 1) in
-            forall (fun e -> evaluate f e =/ Int 0) flippedequations in
+            let f = itlist2 (|->) nvs v (0 |=> Num.num_of_int 1) in
+            forall (fun e -> evaluate f e =/ Num.num_of_int 0) flippedequations in
           let goodverts = filter check_solution rawverts in
           let signfixups = map (fun n -> if mem n f then -1 else 1) nvs in
-          map (map2 (fun s c -> Int s */ c) signfixups) goodverts in
+          map (map2 (fun s c -> Num.num_of_int s */ c) signfixups) goodverts in
         let allverts = itlist (@) (map plausiblevertices (allsubsets nvs)) [] in
         subsume allverts [] in
       let compute_ineq v =
-        let ths = mapfilter (fun (v,t) -> if v =/ Int 0 then fail()
+        let ths = mapfilter (fun (v,t) -> if v =/ Num.num_of_int 0 then fail()
                                           else  NORM_CMUL_RULE v t)
                             (zip v nubs) in
         INEQUALITY_CANON_RULE (end_itlist NORM_ADD_RULE ths) in

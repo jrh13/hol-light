@@ -2243,8 +2243,8 @@ let PI_SER = prove_by_refinement(
 let SUC_EXPAND_CONV tm =
    let count = dest_numeral tm in
    let rec add_suc i r =
-     if (i <=/ (Int 0)) then r
-     else add_suc (i -/ (Int 1)) (mk_comb (`SUC`,r)) in
+     if (i <=/ (Num.num_of_int 0)) then r
+     else add_suc (i -/ (Num.num_of_int 1)) (mk_comb (`SUC`,r)) in
    let tm' = add_suc count `0` in
    REWRITE_RULE[] (ARITH_REWRITE_CONV[] (mk_eq (tm,tm')));;
 
@@ -2266,7 +2266,7 @@ let PI_SERn n =
 (* abs(pi - u ) < e *)
 let recompute_pi bprec =
    let n = (bprec /4) in
-   let pi_ser = PI_SERn (mk_numeral (Int n)) in
+   let pi_ser = PI_SERn (mk_numeral (Num.num_of_int n)) in
    let _ = remove_real_constant `pi` in
    (add_real_constant pi_ser; INTERVAL_OF_TERM bprec `pi`);;
 

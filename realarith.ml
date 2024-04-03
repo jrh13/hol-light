@@ -449,14 +449,14 @@ let REAL_LINEAR_PROVER =
     and mul_tm = `(*):real->real->real` in
     let rec lin_of_hol tm =
       if tm = zero_tm then undefined
-      else if not (is_comb tm) then (tm |=> Int 1)
+      else if not (is_comb tm) then (tm |=> Num.num_of_int 1)
       else if is_ratconst tm then (one_tm |=> rat_of_term tm) else
       let lop,r = dest_comb tm in
-      if not (is_comb lop) then (tm |=> Int 1) else
+      if not (is_comb lop) then (tm |=> Num.num_of_int 1) else
       let op,l = dest_comb lop in
       if op = add_tm then linear_add (lin_of_hol l) (lin_of_hol r)
       else if op = mul_tm && is_ratconst l then (r |=> rat_of_term l)
-      else (tm |=> Int 1) in
+      else (tm |=> Num.num_of_int 1) in
     lin_of_hol in
   let is_alien tm =
     match tm with
@@ -480,8 +480,8 @@ let REAL_LINEAR_PROVER =
     let all_aliens = filter is_alien
       (itlist (union o dom) (eq_pols @ le_pols @ lt_pols) []) in
     let suc_aliens,aliens = partition is_suc_alien all_aliens in
-    let le_pols' = le_pols @ map (fun v -> (v |=> Int 1)) aliens in
-    let lt_pols' = lt_pols @ map (fun v -> (v |=> Int 1)) suc_aliens in
+    let le_pols' = le_pols @ map (fun v -> (v |=> Num.num_of_int 1)) aliens in
+    let lt_pols' = lt_pols @ map (fun v -> (v |=> Num.num_of_int 1)) suc_aliens in
     let _,proof = linear_prover(eq_pols,le_pols',lt_pols') in
     let le' = le @ map (fun a -> INST [rand a,n_tm] pth) aliens in
     let lt' = lt @ map (fun a -> INST [dest_suc_alien a,n_tm] pth_suc) suc_aliens in

@@ -16,14 +16,14 @@ let lin_of_hol =
   and lin_add = combine (+/) (fun x -> x =/ num_0) in
   let rec lin_of_hol tm =
     if tm = zero_tm then undefined
-    else if not (is_comb tm) then (tm |=> Int 1)
+    else if not (is_comb tm) then (tm |=> Num.num_of_int 1)
     else if is_ratconst tm then (one_tm |=> rat_of_term tm) else
       let lop,r = dest_comb tm in
-        if not (is_comb lop) then (tm |=> Int 1) else
+        if not (is_comb lop) then (tm |=> Num.num_of_int 1) else
           let op,l = dest_comb lop in
             if op = add_tm then lin_add (lin_of_hol l) (lin_of_hol r)
             else if op = mul_tm && is_ratconst l then (r |=> rat_of_term l)
-            else (tm |=> Int 1) in
+            else (tm |=> Num.num_of_int 1) in
     lin_of_hol;;
 
 let words s =
@@ -115,7 +115,7 @@ let LP_PROVER =
       and lt_pols = map (lin_of_hol o lhand o concl) lt in
       let aliens =  filter is_alien
         (itlist (union o dom) (eq_pols @ le_pols @ lt_pols) []) in
-      let le_pols' = le_pols @ map (fun v -> (v |=> Int 1)) aliens in
+      let le_pols' = le_pols @ map (fun v -> (v |=> Num.num_of_int 1)) aliens in
       let proof = lp_prover(eq_pols,le_pols',lt_pols) in
       let le' = le @ map (fun a -> INST [rand a,n_tm] pth) aliens in
         translator (eq,le',lt) proof;;

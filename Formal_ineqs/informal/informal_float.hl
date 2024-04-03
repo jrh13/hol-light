@@ -86,9 +86,9 @@ let print_ifloat = print_ifloat_fmt Format.std_formatter;;
 (* Creates a floating-point value *)
 let mk_float n e : ifloat =
   if n < 0 then
-    true, mk_nat (minus_num (Int n)), e + min_exp
+    true, mk_nat (minus_num (Num.num_of_int n)), e + min_exp
   else
-    false, mk_nat (Int n), e + min_exp;;
+    false, mk_nat (Num.num_of_int n), e + min_exp;;
 
 let mk_num_float n = false, mk_nat n, min_exp;;
 
@@ -107,7 +107,7 @@ let make_float s n e : ifloat = s, mk_nat n, e;;
 let num_of_ifloat =
   let b = num_of_int arith_base in
     fun ((s, n, e) : ifloat) ->
-      let r = (dest_nat n) */ (b **/ Int (e - min_exp)) in
+      let r = (dest_nat n) */ (b **/ Num.num_of_int (e - min_exp)) in
 	if s then minus_num r else r;;
 
 let float_of_ifloat f =
@@ -139,14 +139,14 @@ let ifloat_of_float =
 	    s, t, n
   and extract =
     let b = float_of_int arith_base in
-    let nb = Int arith_base in
+    let nb = Num.num_of_int arith_base in
     let rec step k f acc =
       if k <= 0 then acc
       else
 	let d = int_of_float f in
-	  step (k - 1) ((f -. float_of_int d) *. b) (Int d +/ (nb */ acc)) in
+	  step (k - 1) ((f -. float_of_int d) *. b) (Num.num_of_int d +/ (nb */ acc)) in
       fun pp f ->
-	step pp f (Int 0)
+	step pp f (Num.num_of_int 0)
   in
     fun pp f ->
       let s, x, k = split f in

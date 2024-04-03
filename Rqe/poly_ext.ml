@@ -515,7 +515,7 @@ let rec headconst p =
 let MONIC_CONV =
   let mul_tm = `( * ):real->real->real` in
   fun vars p ->
-    let c = Int 1 // headconst p in
+    let c = Num.num_of_int 1 // headconst p in
     POLY_MUL_CONV vars (mk_comb(mk_comb(mul_tm,term_of_rat c),p));;
 
 (* ------------------------------------------------------------------------- *)
@@ -566,7 +566,7 @@ let PDIVIDE =
 (* ------------------------------------------------------------------------- *)
 
 let SIGN_CONST =
-  let zero = Int 0
+  let zero = Num.num_of_int 0
   and zero_tm = `&0`
   and eq_tm = `(=):real->real->bool`
   and gt_tm = `(>):real->real->bool`

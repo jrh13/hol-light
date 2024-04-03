@@ -29,7 +29,7 @@ let num_of_float =
     let u2 = int_of_float(y2 *. p22) in
     let y3 = p22 *. y2 -. float_of_int u2 in
     if y3 <> 0.0 then failwith "num_of_float: inexactness!" else
-    (Int u0 // q22 +/ Int u1 // q44 +/ Int u2 // q66) */ pow2 n;;
+    (Num.num_of_int u0 // q22 +/ Num.num_of_int u1 // q44 +/ Num.num_of_int u2 // q66) */ pow2 n;;
 
 (* ------------------------------------------------------------------------- *)
 (* Integer truncated square root                                             *)
@@ -126,9 +126,9 @@ let LN_N_CONV =
     if ltm <> ln_tm then failwith "expected ln(ratconst)" else
     let x = rat_of_term tm in
     let rec dlog n y =
-      let y' = y +/ y // Int 8 in
+      let y' = y +/ y // Num.num_of_int 8 in
       if y' </ x then dlog (n + 1) y' else n in
-    let n = dlog 0 (Int 1) in
+    let n = dlog 0 (Num.num_of_int 1) in
     let th1 = INST [mk_small_numeral n,n_tm; tm,x_tm] pth in
     let th2 = AP_TERM ltm th1 in
     let th3 = PART_MATCH (lhs o rand) qth (rand(concl th2)) in
@@ -159,9 +159,9 @@ let LN_N2_CONV =
     if ltm <> ln_tm then failwith "expected ln(ratconst)" else
     let x = rat_of_term tm in
     let rec dlog n y =
-      let y' = y */ Int 2 in
+      let y' = y */ Num.num_of_int 2 in
       if y' </ x then dlog (n + 1) y' else n in
-    let n = dlog 0 (Int 1) in
+    let n = dlog 0 (Num.num_of_int 1) in
     let th1 = INST [mk_small_numeral n,n_tm; tm,x_tm] pth in
     let th2 = AP_TERM ltm th1 in
     let th3 = PART_MATCH (lhs o rand) qth (rand(concl th2)) in
@@ -359,7 +359,7 @@ let PRIME_PRIMEPOW = prove
 (* ------------------------------------------------------------------------- *)
 
 let rec bezout (m,n) =
-  if m =/ Int 0 then (Int 0,Int 1) else if n =/ Int 0 then (Int 1,Int 0)
+  if m =/ Num.num_of_int 0 then (Num.num_of_int 0,Num.num_of_int 1) else if n =/ Num.num_of_int 0 then (Num.num_of_int 1,Num.num_of_int 0)
   else if m <=/ n then
     let q = quo_num n m and r = mod_num n m in
     let (x,y) = bezout(m,r) in
@@ -412,8 +412,8 @@ let PRIMEPOW_CONV =
     let ptm,tm = dest_comb tm0 in
     if ptm <> primepow_tm then failwith "expected primepow(numeral)" else
     let q = dest_numeral tm in
-    if q =/ Int 0 then pth0
-    else if q =/ Int 1 then pth1 else
+    if q =/ Num.num_of_int 0 then pth0
+    else if q =/ Num.num_of_int 1 then pth1 else
     match factor q with
       [] -> failwith "internal failure in PRIMEPOW_CONV"
     | [p,k] -> let th1 = INST [mk_numeral q,q_tm;
@@ -425,7 +425,7 @@ let PRIMEPOW_CONV =
                let d = q // (p */ r) in
                let (x,y) = bezout(p,r) in
                let p,r,x,y =
-                 if x </ Int 0 then r,p,y,minus_num x
+                 if x </ Num.num_of_int 0 then r,p,y,minus_num x
                  else p,r,x,minus_num y in
                let th1 = INST [mk_numeral q,q_tm;
                                mk_numeral p,p_tm;
@@ -449,7 +449,7 @@ let APRIMEDIVISOR_CONV =
     let ptm,tm = dest_comb tm0 in
     if ptm <> aprimedivisor_tm then failwith "expected primepow(numeral)" else
     let q = dest_numeral tm in
-    if q =/ Int 0 then failwith "APRIMEDIVISOR_CONV: not a prime power" else
+    if q =/ Num.num_of_int 0 then failwith "APRIMEDIVISOR_CONV: not a prime power" else
     match factor q with
       [p,k] -> let th1 = INST [mk_numeral q,q_tm;
                                mk_numeral p,p_tm;
@@ -1027,8 +1027,8 @@ let MANGOLDT_CONV =
     let ptm,tm = dest_comb tm0 in
     if ptm <> mangoldt_tm then failwith "expected mangoldt(numeral)" else
     let q = dest_numeral tm in
-    if q =/ Int 0 then pth0
-    else if q =/ Int 1 then pth1 else
+    if q =/ Num.num_of_int 0 then pth0
+    else if q =/ Num.num_of_int 1 then pth1 else
     match factor q with
       [] -> failwith "internal failure in MANGOLDT_CONV"
     | [p,k] -> let th1 = INST [mk_numeral q,q_tm;
@@ -1040,7 +1040,7 @@ let MANGOLDT_CONV =
                let d = q // (p */ r) in
                let (x,y) = bezout(p,r) in
                let p,r,x,y =
-                 if x </ Int 0 then r,p,y,minus_num x
+                 if x </ Num.num_of_int 0 then r,p,y,minus_num x
                  else p,r,x,minus_num y in
                let th1 = INST [mk_numeral q,q_tm;
                                mk_numeral p,p_tm;
@@ -1145,14 +1145,14 @@ let DOUBLE_CASES_RULE th =
   let ant,cons = dest_imp bod in
   let m = dest_numeral (rand ant)
   and c = rat_of_term (lhand(lhand(rand cons))) in
-  let x = float_of_num(m +/ Int 1) in
+  let x = float_of_num(m +/ Num.num_of_int 1) in
   let d = (4.0 *. log x +. 3.0) /. (x *. log 2.0) in
-  let c' = c // Int 2 +/ Int 1 +/
-           (floor_num(num_of_float(1024.0 *. d)) +/ Int 2) // Int 1024 in
+  let c' = c // Num.num_of_int 2 +/ Num.num_of_int 1 +/
+           (floor_num(num_of_float(1024.0 *. d)) +/ Num.num_of_int 2) // Num.num_of_int 1024 in
   let c'' = max_num c c' in
   let tm = mk_forall
    (`n:num`,
-    subst [mk_numeral(Int 2 */ m),rand ant;
+    subst [mk_numeral(Num.num_of_int 2 */ m),rand ant;
           term_of_rat c'',lhand(lhand(rand cons))] bod) in
   prove(tm,
     REPEAT STRIP_TAC THEN

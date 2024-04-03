@@ -1779,7 +1779,7 @@ let INT_DIV_CONV,INT_REM_CONV =
   and dtm = `(div)` and mtm = `(rem)` in
   let emod_num x y =
     let r = mod_num x y in
-    if r </ Int 0 then r +/ abs_num y else r in
+    if r </ Num.num_of_int 0 then r +/ abs_num y else r in
   let equo_num x y = quo_num (x -/ emod_num x y) y in
   let INT_DIVMOD_CONV x y =
     let k = equo_num x y

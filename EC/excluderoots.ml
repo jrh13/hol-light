@@ -13,7 +13,7 @@ needs "Library/pocklington.ml";;
 let num_modinv =
   let rec gcdex(m,n) =
     if n </ m then let (x,y) = gcdex(n,m) in (y,x)
-    else if m =/ Int 0 then (Int 0,Int 1) else
+    else if m =/ Num.num_of_int 0 then (Num.num_of_int 0,Num.num_of_int 1) else
     let q = quo_num n m in
     let r = n -/ q */ m in
     let (x,y) = gcdex(r,m) in (y -/ q */ x,x) in

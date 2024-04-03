@@ -6,9 +6,9 @@ needs "Library/prime.ml";;
 
 prioritize_num();;
 
-let num_0 = Int 0;;
-let num_1 = Int 1;;
-let num_2 = Int 2;;
+let num_0 = Num.num_of_int 0;;
+let num_1 = Num.num_of_int 1;;
+let num_2 = Num.num_of_int 2;;
 
 (* ------------------------------------------------------------------------- *)
 (* Mostly for compatibility. Should eliminate this eventually.               *)
@@ -939,8 +939,8 @@ let PRIME_TEST =
   and m_tm = `m:num` and n_tm = `n:num` and p_tm = `p:num` in
   fun tm ->
     let p = dest_numeral tm in
-    if p =/ Int 0 then EQF_INTRO PRIME_0
-    else if p =/ Int 1 then EQF_INTRO PRIME_1 else
+    if p =/ Num.num_of_int 0 then EQF_INTRO PRIME_0
+    else if p =/ Num.num_of_int 1 then EQF_INTRO PRIME_1 else
     let pfact = multifactor p in
     if length pfact = 1 then
      (remark ("proving that " ^ string_of_num p ^ " is prime");
@@ -973,9 +973,9 @@ time PRIME_TEST `65536`;;
 
 time PRIME_TEST `65537`;;
 
-time PROVE_PRIMEFACT (Int 222);;
+time PROVE_PRIMEFACT (Num.num_of_int 222);;
 
-time PROVE_PRIMEFACT (Int 151);;
+time PROVE_PRIMEFACT (Num.num_of_int 151);;
 
 (* ------------------------------------------------------------------------- *)
 (* The "Landau trick" in Erdos's proof of Chebyshev-Bertrand theorem.        *)
