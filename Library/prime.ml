@@ -2383,7 +2383,7 @@ let COPRIME_CONV =
   and x_tm = `x:num` and y_tm = `y:num`
   and d_tm = `d:num` and coprime_tm = `coprime` in
   let rec bezout (m,n) =
-    if m =/ Num.num_of_int 0 then (Num.num_of_int 0,Num.num_of_int 1) else if n =/ Num.num_of_int 0 then (Num.num_of_int 1,Num.num_of_int 0)
+    if m =/ num 0 then (num 0,num 1) else if n =/ num 0 then (num 1,num 0)
     else if m <=/ n then
       let q = quo_num n m and r = mod_num n m in
       let (x,y) = bezout(m,r) in
@@ -2394,12 +2394,12 @@ let COPRIME_CONV =
    if pop <> coprime_tm then failwith "COPRIME_CONV" else
    let l,r = dest_pair ptm in
    let m = dest_numeral l and n = dest_numeral r in
-   if m =/ Num.num_of_int 0 && n =/ Num.num_of_int 0 then pth_oo else
+   if m =/ num 0 && n =/ num 0 then pth_oo else
    let (x,y) = bezout(m,n) in
    let d = x */ m +/ y */ n in
    let th =
-     if d =/ Num.num_of_int 1 then
-       if x >/ Num.num_of_int 0 then
+     if d =/ num 1 then
+       if x >/ num 0 then
           INST [l,m_tm; r,n_tm; mk_numeral x,x_tm;
                 mk_numeral(minus_num y),y_tm] pth_yes_l
        else
@@ -2430,7 +2430,7 @@ let GCD_CONV =
     MESON_TAC[pth1; GCD_SYM]) in
   let gcd_tm = `gcd` in
   let rec bezout (m,n) =
-    if m =/ Num.num_of_int 0 then (Num.num_of_int 0,Num.num_of_int 1) else if n =/ Num.num_of_int 0 then (Num.num_of_int 1,Num.num_of_int 0)
+    if m =/ num 0 then (num 0,num 1) else if n =/ num 0 then (num 1,num 0)
     else if m <=/ n then
       let q = quo_num n m and r = mod_num n m in
       let (x,y) = bezout(m,r) in
@@ -2440,7 +2440,7 @@ let GCD_CONV =
             if gt <> gcd_tm then failwith "GCD_CONV" else
             let mtm,ntm = dest_pair lr in
             let m = dest_numeral mtm and n = dest_numeral ntm in
-            if m =/ Num.num_of_int 0 && n =/ Num.num_of_int 0 then pth0 else
+            if m =/ num 0 && n =/ num 0 then pth0 else
             let x0,y0 = bezout(m,n) in
             let x = abs_num x0 and y = abs_num y0 in
             let xtm = mk_numeral x and ytm = mk_numeral y in

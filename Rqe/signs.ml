@@ -36,7 +36,7 @@ let FINDSIGN =
     let p' = rand(concl mth) in
     let pth = find (fun th -> lhand(concl th) = p') sgns in
     let c = lhand(lhand(concl mth)) in
-    let c' = term_of_rat(Num.num_of_int 1 // rat_of_term c) in
+    let c' = term_of_rat(num 1 // rat_of_term c) in
     let sth = SIGN_CONST c' in
     let rel_c = funpow 2 rator (concl sth) in
     let rel_p = funpow 2 rator (concl pth) in

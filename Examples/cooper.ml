@@ -455,7 +455,7 @@ let is_int_const =
 
 let mk_int_const,dest_int_const =
   let ptm = `(--)` in
-  (fun n -> if n </ Num.num_of_int 0 then mk_comb(ptm,mk_num_const(minus_num n))
+  (fun n -> if n </ num 0 then mk_comb(ptm,mk_num_const(minus_num n))
             else mk_num_const n),
   (fun tm -> if try rator tm = ptm with Failure _ -> false then
                minus_num (dest_num_const(rand tm))
@@ -767,13 +767,13 @@ let LINEARIZE_CONV =
 
 let coefficient x tm =
   try let l,r = dest_add tm in
-      if l = x then Num.num_of_int 1 else
+      if l = x then num 1 else
       let c,y = dest_mul l in
-      if y = x then dest_int_const c else Num.num_of_int 0
+      if y = x then dest_int_const c else num 0
   with Failure _ -> try
       let c,y = dest_mul tm in
-      if y = x then dest_int_const c else Num.num_of_int 0
-  with Failure _ -> Num.num_of_int 1;;
+      if y = x then dest_int_const c else num 0
+  with Failure _ -> num 1;;
 
 (* ------------------------------------------------------------------------- *)
 (* Find (always positive) LCM of all the multiples of x in formula tm.       *)
@@ -787,9 +787,9 @@ let rec formlcm x tm =
      lcm_num (formlcm x (lhand tm)) (formlcm x (rand tm))
   else if is_forall tm || is_exists tm then
      formlcm x (body(rand tm))
-  else if not(mem x (frees tm)) then Num.num_of_int 1
+  else if not(mem x (frees tm)) then num 1
   else let c = coefficient x (rand tm) in
-       if c =/ Num.num_of_int 0 then Num.num_of_int 1 else c;;
+       if c =/ num 0 then num 1 else c;;
 
 (* ------------------------------------------------------------------------- *)
 (* Switch from "x [+ ...]" to "&1 * x [+ ...]" to suit later proforma.       *)
@@ -853,16 +853,16 @@ let ADJUSTCOEFF_CONV =
       let lop,t = dest_comb tm in
       let op,z = dest_comb lop in
       let c = coefficient (hd vars) t in
-      if c =/ Num.num_of_int 0 then REFL tm else
+      if c =/ num 0 then REFL tm else
       let th1 =
         if c =/ l then REFL tm else
         let m = l // c in
         let th0 = if op = op_eq then pth_eq
                   else if op = op_divides then pth_divides
                   else if op = op_lt then
-                    if m >/ Num.num_of_int 0 then pth_lt_pos else pth_lt_neg
+                    if m >/ num 0 then pth_lt_pos else pth_lt_neg
                   else if op = op_gt then
-                    if m >/ Num.num_of_int 0 then pth_gt_pos else pth_gt_neg
+                    if m >/ num 0 then pth_gt_pos else pth_gt_neg
                   else failwith "ADJUSTCOEFF_CONV: unknown predicate" in
         let th1 = INST [mk_int_const m,d_tm; z,c_tm; t,e_tm] th0 in
         let tm1 = lhand(concl th1) in
@@ -881,7 +881,7 @@ let ADJUSTCOEFF_CONV =
         else
           let tm2 = rator(rand(concl th3)) in
           TRANS th3 (AP_TERM tm2 (LINEAR_CMUL vars m t)) in
-      if l =/ Num.num_of_int 1 then
+      if l =/ num 1 then
         CONV_RULE(funpow 2 RAND_CONV (MULTIPLY_1_CONV vars)) th1
       else th1 in
   ADJUSTCOEFF_CONV;;
@@ -899,7 +899,7 @@ let NORMALIZE_COEFF_CONV =
     let x,bod = dest_exists tm in
     let l = formlcm x tm in
     let th1 = ADJUSTCOEFF_CONV (x::vars) l tm in
-    let th2 = if l =/ Num.num_of_int 1 then EXISTS_MULTIPLE_THM_1
+    let th2 = if l =/ num 1 then EXISTS_MULTIPLE_THM_1
               else INST [mk_int_const l,c_tm] pth in
     TRANS th1 (REWR_CONV th2 (rand(concl th1))) in
   NORMALIZE_COEFF_CONV;;
@@ -963,7 +963,7 @@ let dplcm =
     if hop = divides_tm || hop = ndivides_tm then dest_int_const (hd args)
     else if hop = and_tm || hop = or_tm
     then end_itlist lcm_num (map dplcm args)
-    else Num.num_of_int 1 in
+    else num 1 in
   dplcm;;
 
 (* ------------------------------------------------------------------------- *)

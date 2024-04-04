@@ -209,7 +209,7 @@ let BIT1_DEF =
 (* ------------------------------------------------------------------------- *)
 
 let mk_numeral =
-  let pow24 = pow2 24 and num_0 = Num.num_of_int 0
+  let pow24 = pow2 24 and num_0 = num 0
   and zero_tm = mk_const("_0",[])
   and BIT0_tm = mk_const("BIT0",[])
   and BIT1_tm = mk_const("BIT1",[])
@@ -235,7 +235,7 @@ let mk_numeral =
   fun n -> if n </ num_0 then failwith "mk_numeral: negative argument" else
            mk_comb(NUMERAL_tm,mk_raw_numeral n);;
 
-let mk_small_numeral n = mk_numeral(Num.num_of_int n);;
+let mk_small_numeral n = mk_numeral(num n);;
 
 let dest_small_numeral t = Num.int_of_num(dest_numeral t);;
 

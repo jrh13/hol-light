@@ -346,16 +346,16 @@ let NUM_BINOM_CONV =
       MP_CONV NUM_LT_CONV th
     else if n =/ k then
       INST [mk_numeral n,n_tm] pth_1
-    else if Num.num_of_int 2 */ k </ n then
+    else if num 2 */ k </ n then
       let th1 = INST [mk_numeral n,n_tm; mk_numeral k,k_tm] pth_swap in
       let th2 = MP th1 (EQT_ELIM(NUM_LE_CONV (lhand(concl th1)))) in
       let th3 = CONV_RULE(funpow 3 RAND_CONV NUM_SUB_CONV) th2 in
       TRANS th3 (BINOM_RULE(n,n -/ k))
     else
-      let th1 = BINOM_RULE(n -/ Num.num_of_int 1,k) in
+      let th1 = BINOM_RULE(n -/ num 1,k) in
       let y = dest_numeral(rand(concl th1)) in
       let x = (n // (n -/ k)) */ y in
-      let th2 = INST [mk_numeral(n -/ Num.num_of_int 1),n_tm; mk_numeral k,k_tm;
+      let th2 = INST [mk_numeral(n -/ num 1),n_tm; mk_numeral k,k_tm;
                       mk_numeral x,x_tm; mk_numeral y,y_tm] pth_step in
       let th3 = MP_CONV NUM_REDUCE_CONV (MP_CONV NUM_LE_CONV (MP th2 th1)) in
       CONV_RULE (LAND_CONV(RAND_CONV(LAND_CONV NUM_SUC_CONV))) th3 in

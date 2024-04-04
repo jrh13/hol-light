@@ -324,14 +324,14 @@ let LUCAS_LEHMER_RULE =
      (INST [mk_small_numeral p,p_tm] pth_base)
     and th_step =  CONV_RULE(RAND_CONV(LAND_CONV NUM_REDUCE_CONV))
      (INST [mk_small_numeral p,p_tm] pth_step)
-    and pp1 = pow2 p -/ Num.num_of_int 1 in
+    and pp1 = pow2 p -/ num 1 in
     let rec lucas_lehmer k =
       if k = 0 then th_base,dest_numeral(rand(concl th_base)) else
       let th1,mval = lucas_lehmer (k - 1) in
       let gofer() =
         let mtm = rand(concl th1) in
-        let yval = power_num mval (Num.num_of_int 2) in
-        let qval = quo_num yval pp1 and rval = mod_num yval pp1 -/ Num.num_of_int 2 in
+        let yval = power_num mval (num 2) in
+        let qval = quo_num yval pp1 and rval = mod_num yval pp1 -/ num 2 in
         let th3 = INST [mk_small_numeral(k - 1),n_tm; mtm,m_tm;
                         mk_numeral qval,q_tm; mk_numeral rval,r_tm] th_step in
         let th4 = MP th3 th1 in
@@ -344,7 +344,7 @@ let LUCAS_LEHMER_RULE =
         time gofer())
       else gofer() in
     let th1,y = lucas_lehmer (p - 2) in
-    if y <>/ Num.num_of_int 0 then failwith "LUCAS_LEHMER_RULE: not a prime" else
+    if y <>/ num 0 then failwith "LUCAS_LEHMER_RULE: not a prime" else
     let th2 = SPEC(mk_small_numeral p) LUCAS_LEHMER in
     let th3 = CONV_RULE
      (LAND_CONV(RAND_CONV(LAND_CONV

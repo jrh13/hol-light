@@ -167,11 +167,11 @@ let B0_EXPLICIT = prove(mk_eq(mk_comb(b0_const, n_var_num),
 let mk_table = Hashtbl.create maximum;;
 
 for i = 0 to maximum - 1 do
-  Hashtbl.add mk_table (Num.num_of_int i) const_array.(i)
+  Hashtbl.add mk_table (num i) const_array.(i)
 done;;
 
 (* mk_numeral *)
-let max_num = Num.num_of_int maximum;;
+let max_num = num maximum;;
 
 let mk_numeral_hash =
   let rec mk_num n =
@@ -209,12 +209,12 @@ let mk_small_numeral_array =
 let dest_table_num = Hashtbl.create maximum;;
 
 for i = 0 to maximum - 1 do
-  Hashtbl.add dest_table_num names_array.(i) (Num.num_of_int i)
+  Hashtbl.add dest_table_num names_array.(i) (num i)
 done;;
 
 
 (* dest_numeral *)
-let max_num = Num.num_of_int maximum;;
+let max_num = num maximum;;
 
 let rec raw_dest_hash tm =
   if tm = zero_const then

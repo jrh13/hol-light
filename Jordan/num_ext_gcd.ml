@@ -136,37 +136,37 @@ let gcd_certificate = prove(`!a b g. ((? r s r' s' a' b'.
    then check the answer in HOL-light *)
 let gcd_num x1 x2 =
         let rec gcd_data (a1,b1,x1,a2,b2,x2) =
-        if (x1 < (Num.num_of_int 0)) then
+        if (x1 < (num 0)) then
                 gcd_data(minus_num a1,minus_num b1,minus_num x1,a2,b2,x2)
-        else if (x2 < (Num.num_of_int 0)) then gcd_data(a1,b1,x1,minus_num a2,minus_num
+        else if (x2 < (num 0)) then gcd_data(a1,b1,x1,minus_num a2,minus_num
         b2,minus_num x2)
-        else if (x1 = (Num.num_of_int 0)) then (a2,b2,x2)
+        else if (x1 = (num 0)) then (a2,b2,x2)
         else if (x1>x2) then gcd_data (a2,b2,x2,a1,b1,x1)
         else (
                 let r = (quo_num x2 x1) in
                 gcd_data (a1,b1,x1,a2 -/ r*/ a1,b2 -/ r*/ b1, x2 -/ r*/ x1)
              ) in
-        gcd_data ((Num.num_of_int 1),(Num.num_of_int 0),x1,(Num.num_of_int 0),(Num.num_of_int 1),x2);;
+        gcd_data ((num 1),(num 0),x1,(num 0),(num 1),x2);;
 
 let gcd_num x1 x2 =
         let rec gcd_data (a1,b1,x1,a2,b2,x2) =
-        if (x1 < (Num.num_of_int 0)) then
+        if (x1 < (num 0)) then
                 gcd_data(minus_num a1,minus_num b1,minus_num x1,a2,b2,x2)
-        else if (x2 < (Num.num_of_int 0)) then gcd_data(a1,b1,x1,minus_num a2,minus_num
+        else if (x2 < (num 0)) then gcd_data(a1,b1,x1,minus_num a2,minus_num
         b2,minus_num x2)
-        else if (x1 = (Num.num_of_int 0)) then (a2,b2,x2)
+        else if (x1 = (num 0)) then (a2,b2,x2)
         else if (x1>x2) then gcd_data (a2,b2,x2,a1,b1,x1)
         else (
                 let r = (quo_num x2 x1) in
                 gcd_data (a1,b1,x1,a2 -/ r*/ a1,b2 -/ r*/ b1, x2 -/ r*/ x1)
              ) in
-        gcd_data ((Num.num_of_int 1),(Num.num_of_int 0),x1,(Num.num_of_int 0),(Num.num_of_int 1),x2);;
+        gcd_data ((num 1),(num 0),x1,(num 0),(num 1),x2);;
 
         (* g = gcd, (a',b') = (a,b)/g, g +r1'*a+s1'*b = r1*a+s1*b *)
 let gcd_numdata a b =
         let a = abs_num a in
         let b = abs_num b in
-        let Z = Num.num_of_int 0 in
+        let Z = num 0 in
         let (r,s,g) = gcd_num a b in
         let a' = if (g=Z) then Z else round_num(a//g) in
         let b' = if (g=Z) then Z else round_num(b//g) in

@@ -16,16 +16,16 @@ exception Unsolvable;;
 
 let decimalize =
   let rec normalize y =
-    if abs_num y </ Num.num_of_int 1 // Num.num_of_int 10 then normalize (Num.num_of_int 10 */ y) - 1
-    else if abs_num y >=/ Num.num_of_int 1 then normalize (y // Num.num_of_int 10) + 1
+    if abs_num y </ num 1 // num 10 then normalize (num 10 */ y) - 1
+    else if abs_num y >=/ num 1 then normalize (y // num 10) + 1
     else 0 in
   fun d x ->
-    if x =/ Num.num_of_int 0 then "0.0" else
+    if x =/ num 0 then "0.0" else
     let y = abs_num x in
     let e = normalize y in
-    let z = pow10(-e) */ y +/ Num.num_of_int 1 in
+    let z = pow10(-e) */ y +/ num 1 in
     let k = round_num(pow10 d */ z) in
-    (if x </ Num.num_of_int 0 then "-0." else "0.") ^
+    (if x </ num 0 then "-0." else "0.") ^
     implode(tl(explode(string_of_num k))) ^
     (if e = 0 then "" else "e"^string_of_int e);;
 
@@ -58,13 +58,13 @@ type poly = (monomial,num)func;;
 (* Assignment avoiding zeros.                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let (|-->) x y a = if y =/ Num.num_of_int 0 then a else (x |-> y) a;;
+let (|-->) x y a = if y =/ num 0 then a else (x |-> y) a;;
 
 (* ------------------------------------------------------------------------- *)
 (* This can be generic.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let element (d,v) i = tryapplyd v i (Num.num_of_int 0);;
+let element (d,v) i = tryapplyd v i (num 0);;
 
 let mapa f (d,v) =
   d,foldl (fun a i c -> (i |--> f(c)) a) undefined v;;
@@ -80,14 +80,14 @@ let vec_0 n = (n,undefined:vector);;
 let vec_dim (v:vector) = fst v;;
 
 let vec_const c n =
-  if c =/ Num.num_of_int 0 then vec_0 n
+  if c =/ num 0 then vec_0 n
   else (n,itlist (fun k -> k |-> c) (1--n) undefined :vector);;
 
-let vec_1 = vec_const (Num.num_of_int 1);;
+let vec_1 = vec_const (num 1);;
 
 let vec_cmul c (v:vector) =
   let n = vec_dim v in
-  if c =/ Num.num_of_int 0 then vec_0 n
+  if c =/ num 0 then vec_0 n
   else n,mapf (fun x -> c */ x) (snd v)
 
 let vec_neg (v:vector) = (fst v,mapf minus_num (snd v) :vector);;
@@ -95,15 +95,15 @@ let vec_neg (v:vector) = (fst v,mapf minus_num (snd v) :vector);;
 let vec_add (v1:vector) (v2:vector) =
   let m = vec_dim v1 and n = vec_dim v2 in
   if m <> n then failwith "vec_add: incompatible dimensions" else
-  (n,combine (+/) (fun x -> x =/ Num.num_of_int 0) (snd v1) (snd v2) :vector);;
+  (n,combine (+/) (fun x -> x =/ num 0) (snd v1) (snd v2) :vector);;
 
 let vec_sub v1 v2 = vec_add v1 (vec_neg v2);;
 
 let vec_dot (v1:vector) (v2:vector) =
   let m = vec_dim v1 and n = vec_dim v2 in
   if m <> n then failwith "vec_add: incompatible dimensions" else
-  foldl (fun a i x -> x +/ a) (Num.num_of_int 0)
-        (combine ( */ ) (fun x -> x =/ Num.num_of_int 0) (snd v1) (snd v2));;
+  foldl (fun a i x -> x +/ a) (num 0)
+        (combine ( */ ) (fun x -> x =/ num 0) (snd v1) (snd v2));;
 
 let vec_of_list l =
   let n = length l in
@@ -119,14 +119,14 @@ let dimensions (m:matrix) = fst m;;
 
 let matrix_const c (m,n as mn) =
   if m <> n then failwith "matrix_const: needs to be square"
-  else if c =/ Num.num_of_int 0 then matrix_0 mn
+  else if c =/ num 0 then matrix_0 mn
   else (mn,itlist (fun k -> (k,k) |-> c) (1--n) undefined :matrix);;
 
-let matrix_1 = matrix_const (Num.num_of_int 1);;
+let matrix_1 = matrix_const (num 1);;
 
 let matrix_cmul c (m:matrix) =
   let (i,j) = dimensions m in
-  if c =/ Num.num_of_int 0 then matrix_0 (i,j)
+  if c =/ num 0 then matrix_0 (i,j)
   else (i,j),mapf (fun x -> c */ x) (snd m);;
 
 let matrix_neg (m:matrix) = (dimensions m,mapf minus_num (snd m) :matrix);;
@@ -134,7 +134,7 @@ let matrix_neg (m:matrix) = (dimensions m,mapf minus_num (snd m) :matrix);;
 let matrix_add (m1:matrix) (m2:matrix) =
   let d1 = dimensions m1 and d2 = dimensions m2 in
   if d1 <> d2 then failwith "matrix_add: incompatible dimensions"
-  else (d1,combine (+/) (fun x -> x =/ Num.num_of_int 0) (snd m1) (snd m2) :matrix);;
+  else (d1,combine (+/) (fun x -> x =/ num 0) (snd m1) (snd m2) :matrix);;
 
 let matrix_sub m1 m2 = matrix_add m1 (matrix_neg m2);;
 
@@ -169,8 +169,8 @@ let matrix_of_list l =
 (* ------------------------------------------------------------------------- *)
 
 let monomial_eval assig (m:monomial) =
-  foldl (fun a x k -> a */ power_num (apply assig x) (Num.num_of_int k))
-        (Num.num_of_int 1) m;;
+  foldl (fun a x k -> a */ power_num (apply assig x) (num k))
+        (num 1) m;;
 
 let monomial_1 = (undefined:monomial);;
 
@@ -206,30 +206,30 @@ let monomial_variables m = dom m;;
 (* ------------------------------------------------------------------------- *)
 
 let eval assig (p:poly) =
-  foldl (fun a m c -> a +/ c */ monomial_eval assig m) (Num.num_of_int 0) p;;
+  foldl (fun a m c -> a +/ c */ monomial_eval assig m) (num 0) p;;
 
 let poly_0 = (undefined:poly);;
 
 let poly_isconst (p:poly) = foldl (fun a m c -> m = monomial_1 && a) true p;;
 
-let poly_var x = ((monomial_var x) |=> Num.num_of_int 1 :poly);;
+let poly_var x = ((monomial_var x) |=> num 1 :poly);;
 
 let poly_const c =
-  if c =/ Num.num_of_int 0 then poly_0 else (monomial_1 |=> c);;
+  if c =/ num 0 then poly_0 else (monomial_1 |=> c);;
 
 let poly_cmul c (p:poly) =
-  if c =/ Num.num_of_int 0 then poly_0
+  if c =/ num 0 then poly_0
   else mapf (fun x -> c */ x) p;;
 
 let poly_neg (p:poly) = (mapf minus_num p :poly);;
 
 let poly_add (p1:poly) (p2:poly) =
-  (combine (+/) (fun x -> x =/ Num.num_of_int 0) p1 p2 :poly);;
+  (combine (+/) (fun x -> x =/ num 0) p1 p2 :poly);;
 
 let poly_sub p1 p2 = poly_add p1 (poly_neg p2);;
 
 let poly_cmmul (c,m) (p:poly) =
-  if c =/ Num.num_of_int 0 then poly_0
+  if c =/ num 0 then poly_0
   else if m = monomial_1 then mapf (fun d -> c */ d) p
   else foldl (fun a m' d -> (monomial_mul m m' |-> c */ d) a) poly_0 p;;
 
@@ -239,13 +239,13 @@ let poly_mul (p1:poly) (p2:poly) =
 let poly_div (p1:poly) (p2:poly) =
   if not(poly_isconst p2) then failwith "poly_div: non-constant" else
   let c = eval undefined p2 in
-  if c =/ Num.num_of_int 0 then failwith "poly_div: division by zero"
-  else poly_cmul (Num.num_of_int 1 // c) p1;;
+  if c =/ num 0 then failwith "poly_div: division by zero"
+  else poly_cmul (num 1 // c) p1;;
 
 let poly_square p = poly_mul p p;;
 
 let rec poly_pow p k =
-  if k = 0 then poly_const (Num.num_of_int 1)
+  if k = 0 then poly_const (num 1)
   else if k = 1 then p
   else let q = poly_square(poly_pow p (k / 2)) in
        if k mod 2 = 1 then poly_mul p q else q;;
@@ -320,7 +320,7 @@ let string_of_monomial m =
 
 let string_of_cmonomial (c,m) =
   if m = monomial_1 then string_of_num c
-  else if c =/ Num.num_of_int 1 then string_of_monomial m
+  else if c =/ num 1 then string_of_monomial m
   else string_of_num c ^ "*" ^ string_of_monomial m;;
 
 let string_of_poly (p:poly) =
@@ -328,7 +328,7 @@ let string_of_poly (p:poly) =
   let cms = sort (fun (m1,_) (m2,_) -> humanorder_monomial m1 m2) (graph p) in
   let s =
     List.fold_left (fun a (m,c) ->
-             if c </ Num.num_of_int 0 then a ^ " - " ^ string_of_cmonomial(minus_num c,m)
+             if c </ num 0 then a ^ " - " ^ string_of_cmonomial(minus_num c,m)
              else a ^ " + " ^ string_of_cmonomial(c,m))
           "" cms in
   let s1 = String.sub s 0 3
@@ -374,7 +374,7 @@ let poly_of_term =
     if lop = neg_tm then poly_neg(poly_of_term r)
     else if lop = inv_tm then
       let p = poly_of_term r in
-      if poly_isconst p then poly_const(Num.num_of_int 1 // eval undefined p)
+      if poly_isconst p then poly_const(num 1 // eval undefined p)
       else failwith "poly_of_term: inverse of non-constant polyomial"
     else if not(is_comb lop) then poly_var tm else
     let op,l = dest_comb lop in
@@ -385,7 +385,7 @@ let poly_of_term =
     else if op = mul_tm then poly_mul (poly_of_term l) (poly_of_term r)
     else if op = div_tm then
       let p = poly_of_term l and q = poly_of_term r in
-      if poly_isconst q then poly_cmul (Num.num_of_int 1 // eval undefined q) p
+      if poly_isconst q then poly_cmul (num 1 // eval undefined q) p
       else failwith "poly_of_term: division by non-constant polynomial"
     else poly_var tm in
   fun tm -> if type_of tm = real_ty then poly_of_term tm
@@ -469,7 +469,7 @@ let decimal =
     ||| prs in
   let exponent = (a "e" ||| a "E") ++ signed decimalint >> snd in
     signed decimalsig ++ possibly exponent
-    >> (function (h,[]) -> h | (h,[x]) -> h */ power_num (Num.num_of_int 10) x);;
+    >> (function (h,[]) -> h | (h,[x]) -> h */ power_num (num 10) x);;
 
 let mkparser p s =
   let x,rst = p(explode s) in
@@ -637,12 +637,12 @@ let scale_then =
   and maximal_element amat acc =
     foldl (fun maxa m c -> max_num maxa (abs_num c)) acc amat in
   fun solver obj mats ->
-    let cd1 = itlist common_denominator mats (Num.num_of_int 1)
-    and cd2 = common_denominator (snd obj)  (Num.num_of_int 1) in
+    let cd1 = itlist common_denominator mats (num 1)
+    and cd2 = common_denominator (snd obj)  (num 1) in
     let mats' = map (mapf (fun x -> cd1 */ x)) mats
     and obj' = vec_cmul cd2 obj in
-    let max1 = itlist maximal_element mats' (Num.num_of_int 0)
-    and max2 = maximal_element (snd obj') (Num.num_of_int 0) in
+    let max1 = itlist maximal_element mats' (num 0)
+    and max2 = maximal_element (snd obj') (num 0) in
     let scal1 = pow2 (20-int_of_float(log(float_of_num max1) /. log 2.0))
     and scal2 = pow2 (20-int_of_float(log(float_of_num max2) /. log 2.0)) in
     let mats'' = map (mapf (fun x -> x */ scal1)) mats'
@@ -665,7 +665,7 @@ let nice_vector n = mapa (nice_rational n);;
 let linear_program_basic a =
   let m,n = dimensions a in
   let mats =  map (fun j -> diagonal (column j a)) (1--n)
-  and obj = vec_const (Num.num_of_int 1) m in
+  and obj = vec_const (num 1) m in
   let rv,res = run_csdp false obj mats in
   if rv = 1 || rv = 2 then false
   else if rv = 0 then true
@@ -679,7 +679,7 @@ let linear_program a b =
   let m,n = dimensions a in
   if vec_dim b <> m then failwith "linear_program: incompatible dimensions" else
   let mats = diagonal b :: map (fun j -> diagonal (column j a)) (1--n)
-  and obj = vec_const (Num.num_of_int 1) m in
+  and obj = vec_const (num 1) m in
   let rv,res = run_csdp false obj mats in
   if rv = 1 || rv = 2 then false
   else if rv = 0 then true
@@ -699,8 +699,8 @@ let in_convex_hull pts pt =
   let m = v + n - 1 in
   let mat =
     (m,n),
-    itern 1 pts2 (fun pts j -> itern 1 pts (fun x i -> (i,j) |-> Num.num_of_int x))
-                 (iter (1,n) (fun i -> (v + i,i+1) |-> Num.num_of_int 1) undefined) in
+    itern 1 pts2 (fun pts j -> itern 1 pts (fun x i -> (i,j) |-> num x))
+                 (iter (1,n) (fun i -> (v + i,i+1) |-> num 1) undefined) in
   linear_program_basic mat;;
 
 (* ------------------------------------------------------------------------- *)
@@ -719,13 +719,13 @@ let minimal_convex_hull =
 (* ------------------------------------------------------------------------- *)
 
 let equation_cmul c eq =
-  if c =/ Num.num_of_int 0 then undefined else mapf (fun d -> c */ d) eq;;
+  if c =/ num 0 then undefined else mapf (fun d -> c */ d) eq;;
 
-let equation_add eq1 eq2 = combine (+/) (fun x -> x =/ Num.num_of_int 0) eq1 eq2;;
+let equation_add eq1 eq2 = combine (+/) (fun x -> x =/ num 0) eq1 eq2;;
 
 let equation_eval assig eq =
   let value v = apply assig v in
-  foldl (fun a v c -> a +/ value(v) */ c) (Num.num_of_int 0) eq;;
+  foldl (fun a v c -> a +/ value(v) */ c) (num 0) eq;;
 
 (* ------------------------------------------------------------------------- *)
 (* Eliminate among linear equations: return unconstrained variables and      *)
@@ -748,10 +748,10 @@ else raise Unsolvable
     | v::vs ->
             try let eq,oeqs = extract_first (fun e -> defined e v) eqs in
                 let a = apply eq v in
-                let eq' = equation_cmul (Num.num_of_int(-1) // a) (undefine v eq) in
+                let eq' = equation_cmul (num(-1) // a) (undefine v eq) in
                 let elim e =
-                  let b = tryapplyd e v (Num.num_of_int 0) in
-                  if b =/ Num.num_of_int 0 then e else
+                  let b = tryapplyd e v (num 0) in
+                  if b =/ num 0 then e else
                   equation_add e (equation_cmul (minus_num b // a) eq) in
                 eliminate vs ((v |-> eq') (mapf elim dun)) (map elim oeqs)
             with Failure _ -> eliminate vs dun eqs in
@@ -779,10 +779,10 @@ let eliminate_all_equations one =
         if is_undefined eq then eliminate dun oeqs else
         let v = choose_variable eq in
         let a = apply eq v in
-        let eq' = equation_cmul (Num.num_of_int(-1) // a) (undefine v eq) in
+        let eq' = equation_cmul (num(-1) // a) (undefine v eq) in
         let elim e =
-          let b = tryapplyd e v (Num.num_of_int 0) in
-          if b =/ Num.num_of_int 0 then e else
+          let b = tryapplyd e v (num 0) in
+          if b =/ num 0 then e else
           equation_add e (equation_cmul (minus_num b // a) eq) in
         eliminate ((v |-> eq') (mapf elim dun)) (map elim oeqs) in
   fun eqs ->
@@ -796,10 +796,10 @@ let eliminate_all_equations one =
 
 let solve_equations one eqs =
   let vars,assigs = eliminate_all_equations one eqs in
-  let vfn = itlist (fun v -> (v |-> Num.num_of_int 0)) vars (one |=> Num.num_of_int(-1)) in
+  let vfn = itlist (fun v -> (v |-> num 0)) vars (one |=> num(-1)) in
   let ass =
     combine (+/) (fun c -> false) (mapf (equation_eval vfn) assigs) vfn in
-  if forall (fun e -> equation_eval ass e =/ Num.num_of_int 0) eqs
+  if forall (fun e -> equation_eval ass e =/ num 0) eqs
   then undefine one ass else raise Sanity;;
 
 (* ------------------------------------------------------------------------- *)
@@ -835,8 +835,8 @@ let diag m =
   let rec diagonalize i m =
     if is_zero m then [] else
     let a11 = element m (i,i) in
-    if a11 </ Num.num_of_int 0 then failwith "diagonalize: not PSD"
-    else if a11 =/ Num.num_of_int 0 then
+    if a11 </ num 0 then failwith "diagonalize: not PSD"
+    else if a11 =/ num 0 then
       if is_zero(row i m) then diagonalize (i + 1) m
       else failwith "diagonalize: not PSD"
     else
@@ -856,15 +856,15 @@ let diag m =
 (* ------------------------------------------------------------------------- *)
 
 let deration d =
-  if d = [] then Num.num_of_int 0,d else
+  if d = [] then num 0,d else
   let adj(c,l) =
-    let a = foldl (fun a i c -> lcm_num a (denominator c)) (Num.num_of_int 1) (snd l) //
-            foldl (fun a i c -> gcd_num a (numerator c)) (Num.num_of_int 0) (snd l) in
+    let a = foldl (fun a i c -> lcm_num a (denominator c)) (num 1) (snd l) //
+            foldl (fun a i c -> gcd_num a (numerator c)) (num 0) (snd l) in
     (c // (a */ a)),mapa (fun x -> a */ x) l in
   let d' = map adj d in
-  let a = itlist (lcm_num o denominator o fst) d' (Num.num_of_int 1) //
-          itlist (gcd_num o numerator o fst) d' (Num.num_of_int 0)  in
-  (Num.num_of_int 1 // a),map (fun (c,l) -> (a */ c,l)) d';;
+  let a = itlist (lcm_num o denominator o fst) d' (num 1) //
+          itlist (gcd_num o numerator o fst) d' (num 0)  in
+  (num 1 // a),map (fun (c,l) -> (a */ c,l)) d';;
 
 (* ------------------------------------------------------------------------- *)
 (* Enumeration of monomials with given multidegree bound.                    *)
@@ -913,7 +913,7 @@ let epoly_pmul p q acc =
 (* ------------------------------------------------------------------------- *)
 
 let epoly_cmul c l =
-  if c =/ Num.num_of_int 0 then undefined else mapf (equation_cmul c) l;;
+  if c =/ num 0 then undefined else mapf (equation_cmul c) l;;
 
 
 
@@ -988,13 +988,13 @@ let csdp nblocks blocksizes obj mats =
 (* 3D versions of matrix operations to consider blocks separately.           *)
 (* ------------------------------------------------------------------------- *)
 
-let bmatrix_add = combine (+/) (fun x -> x =/ Num.num_of_int 0);;
+let bmatrix_add = combine (+/) (fun x -> x =/ num 0);;
 
 let bmatrix_cmul c bm =
-  if c =/ Num.num_of_int 0 then undefined
+  if c =/ num 0 then undefined
   else mapf (fun x -> c */ x) bm;;
 
-let bmatrix_neg = bmatrix_cmul (Num.num_of_int(-1));;
+let bmatrix_neg = bmatrix_cmul (num(-1));;
 
 let bmatrix_sub m1 m2 = bmatrix_add m1 (bmatrix_neg m2);;
 
@@ -1028,7 +1028,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     let mons = enumerate_monomials e vars in
     let nons = zip mons (1--length mons) in
     mons,
-    itlist (fun (m,n) -> (m |-> ((-k,-n,n) |=> Num.num_of_int 1))) nons undefined in
+    itlist (fun (m,n) -> (m |-> ((-k,-n,n) |=> num 1))) nons undefined in
   let mk_sqmultiplier k (p,c) =
     let e = (d - multidegree p) / 2 in
     let mons = enumerate_monomials e vars in
@@ -1038,7 +1038,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
       itlist (fun (m2,n2) a ->
           let m = monomial_mul m1 m2 in
           if n1 > n2 then a else
-          let c = if n1 = n2 then Num.num_of_int 1 else Num.num_of_int 2 in
+          let c = if n1 = n2 then num 1 else num 2 in
           let e = tryapplyd a m undefined in
           (m |-> equation_add ((k,n1,n2) |=> c) e) a)
          nons)
@@ -1053,11 +1053,11 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   let eqns = foldl (fun a m e -> e::a) [] bigsum in
   let pvs,assig = eliminate_all_equations (0,0,0) eqns in
   let qvars = (0,0,0)::pvs in
-  let allassig = itlist (fun v -> (v |-> (v |=> Num.num_of_int 1))) pvs assig in
+  let allassig = itlist (fun v -> (v |-> (v |=> num 1))) pvs assig in
   let mk_matrix v =
     foldl (fun m (b,i,j) ass -> if b < 0 then m else
-                                let c = tryapplyd ass v (Num.num_of_int 0) in
-                                if c =/ Num.num_of_int 0 then m else
+                                let c = tryapplyd ass v (num 0) in
+                                if c =/ num 0 then m else
                                 ((b,j,i) |-> c) (((b,i,j) |-> c) m))
           undefined allassig in
   let diagents = foldl
@@ -1065,7 +1065,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     undefined allassig in
   let mats = map mk_matrix qvars
   and obj = length pvs,
-            itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (Num.num_of_int 0)))
+            itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (num 0)))
                         undefined in
   let raw_vec = if pvs = [] then vec_0 0
                 else scale_then (csdp nblocks blocksizes) obj mats in
@@ -1082,11 +1082,11 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     vec,map diag allmats in
   let vec,ratdias =
     if pvs = [] then find_rounding num_1
-    else tryfind find_rounding (map Num.num_of_int (1--31) @
+    else tryfind find_rounding (map num (1--31) @
                                 map pow2 (5--66)) in
   let newassigs =
     itlist (fun k -> el (k - 1) pvs |-> element vec k)
-           (1--vec_dim vec) ((0,0,0) |=> Num.num_of_int(-1)) in
+           (1--vec_dim vec) ((0,0,0) |=> num(-1)) in
   let finalassigs =
     foldl (fun a v e -> (v |-> equation_eval newassigs e) a) newassigs
           allassig in
@@ -1248,7 +1248,7 @@ let REAL_NONLINEAR_SUBST_PROVER =
     CONV_RULE(REWR_CONV(REAL_ARITH `x + a = (y:real) <=> x = y - a`)) in
   let rec substitutable_monomial fvs tm =
     match tm with
-      Var(_,Tyapp("real",[])) when not (mem tm fvs) -> Num.num_of_int 1,tm
+      Var(_,Tyapp("real",[])) when not (mem tm fvs) -> num 1,tm
     | Comb(Comb(Const("real_mul",_),c),(Var(_,_) as t))
          when is_ratconst c && not (mem t fvs)
           -> rat_of_term c,t
@@ -1265,7 +1265,7 @@ let REAL_NONLINEAR_SUBST_PROVER =
         isolate_variable v(shuffle1 th) in
   let make_substitution th =
     let (c,v) = substitutable_monomial [] (lhs(concl th)) in
-    let th1 = AP_TERM (mk_comb(mul_tm,term_of_rat(Num.num_of_int 1 // c))) th in
+    let th1 = AP_TERM (mk_comb(mul_tm,term_of_rat(num 1 // c))) th in
     let th2 = CONV_RULE(BINOP_CONV REAL_POLY_MUL_CONV) th1 in
     CONV_RULE (RAND_CONV REAL_POLY_CONV) (isolate_variable v th2) in
   fun translator ->
@@ -1518,32 +1518,32 @@ let sumofsquares_general_symmetry tool pol =
       match cls with
         [] -> raise Sanity
       | [h] -> acc
-      | h::t -> map (fun k -> (k |-> Num.num_of_int(-1)) (h |=> Num.num_of_int 1)) t @ acc in
+      | h::t -> map (fun k -> (k |-> num(-1)) (h |=> num 1)) t @ acc in
     itlist mk_eq eqvcls [] in
   let eqs = foldl (fun a x y -> y::a) []
    (itern 1 lpps (fun m1 n1 ->
         itern 1 lpps (fun m2 n2 f ->
                 let m = monomial_mul m1 m2 in
                 if n1 > n2 then f else
-                let c = if n1 = n2 then Num.num_of_int 1 else Num.num_of_int 2 in
+                let c = if n1 = n2 then num 1 else num 2 in
                 (m |-> ((n1,n2) |-> c) (tryapplyd f m undefined)) f))
        (foldl (fun a m c -> (m |-> ((0,0)|=>c)) a)
               undefined pol)) @
     sym_eqs in
   let pvs,assig = eliminate_all_equations (0,0) eqs in
-  let allassig = itlist (fun v -> (v |-> (v |=> Num.num_of_int 1))) pvs assig in
+  let allassig = itlist (fun v -> (v |-> (v |=> num 1))) pvs assig in
   let qvars = (0,0)::pvs in
   let diagents =
     end_itlist equation_add (map (fun i -> apply allassig (i,i)) (1--n)) in
   let mk_matrix v =
    ((n,n),
-    foldl (fun m (i,j) ass -> let c = tryapplyd ass v (Num.num_of_int 0) in
-                              if c =/ Num.num_of_int 0 then m else
+    foldl (fun m (i,j) ass -> let c = tryapplyd ass v (num 0) in
+                              if c =/ num 0 then m else
                               ((j,i) |-> c) (((i,j) |-> c) m))
           undefined allassig :matrix) in
   let mats = map mk_matrix qvars
   and obj = length pvs,
-            itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (Num.num_of_int 0)))
+            itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (num 0)))
                 undefined in
   let raw_vec = if pvs = [] then vec_0 0 else tool obj mats in
   let find_rounding d =
@@ -1561,7 +1561,7 @@ let sumofsquares_general_symmetry tool pol =
        let mat = matrix_neg (el 0 mats) in
        deration(diag mat)
     else
-       tryfind find_rounding (map Num.num_of_int (1--31) @
+       tryfind find_rounding (map num (1--31) @
                               map pow2 (5--66)) in
   let poly_of_lin(d,v) =
     d,foldl(fun a i c -> (el (i - 1) lpps |-> c) a) undefined (snd v) in

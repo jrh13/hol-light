@@ -54,13 +54,13 @@ let halfatn4_pos_lo pp t =
     f (f (f (f t)));;
 
 let rec fact n =
-  if sign_num n <= 0 then Num.num_of_int 1 else
+  if sign_num n <= 0 then num 1 else
     n */ fact (pred_num n);;
 
 let atn_tables pp n =
   let t1 = map (fun i -> 4 * i + 1) (0 -- (n / 2)) and
       t2 = map (fun i -> 4 * i + 3) (0 -- ((n + 1) / 2 - 1)) in
-  let f n = if n = 1 then mk_num_interval (Num.num_of_int n) else inv_interval pp (mk_num_interval (Num.num_of_int n)) in
+  let f n = if n = 1 then mk_num_interval (num n) else inv_interval pp (mk_num_interval (num n)) in
     map f t1, map f t2;;
 
 (* Computes x^k / k! *)

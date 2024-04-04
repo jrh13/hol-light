@@ -67,44 +67,44 @@ let (mk_int:Num.num -> term) =
         Failure _ -> failwith ("dest_int "^(string_of_num a));;
 
 add_test("mk_int",
-   (mk_int (Num.num_of_int (-1443)) = `--: (&:1443)`) &&
-   (mk_int (Num.num_of_int 37) = `(&:37)`));;
+   (mk_int (num (-1443)) = `--: (&:1443)`) &&
+   (mk_int (num 37) = `(&:37)`));;
 
 (* ------------------------------------------------------------------ *)
 
 let (split_ratio:Num.num -> Num.num*Num.num) = numdom;;
 
 add_test("split_ratio",
-   let (a,b) = split_ratio ((Num.num_of_int 4)//(Num.num_of_int 20)) in
-   (a =/ (Num.num_of_int 1)) && (b =/ (Num.num_of_int 5)));;
+   let (a,b) = split_ratio ((num 4)//(num 20)) in
+   (a =/ (num 1)) && (b =/ (num 5)));;
 
 (* ------------------------------------------------------------------ *)
 
 (* break nonzero int r into a*(C**b) with a prime to C . *)
 let (factor_C:int -> Num.num -> Num.num*Num.num) =
   function c ->
-  let intC = (Num.num_of_int c) in
+  let intC = (num c) in
   let rec divC (a,b) =
-    if ((Num.num_of_int 0) =/ mod_num a intC) then (divC (a//intC,b+/(Num.num_of_int 1)))
+    if ((num 0) =/ mod_num a intC) then (divC (a//intC,b+/(num 1)))
       else (a,b) in
   function r->
   if ((Num.is_integer_num r)&& not((Num.sign_num r) = 0)) then
-    divC (r,(Num.num_of_int 0)) else failwith "factor_C";;
+    divC (r,(num 0)) else failwith "factor_C";;
 
 add_test("factor_C",
-   (factor_C 2 (Num.num_of_int (4096+32)) = (Num.num_of_int 129,Num.num_of_int 5)) &&
-   (factor_C 10 (Num.num_of_int (5000)) = (Num.num_of_int 5,Num.num_of_int 3)) &&
-   (cannot (factor_C 2) ((Num.num_of_int 50)//(Num.num_of_int 3))));;
+   (factor_C 2 (num (4096+32)) = (num 129,num 5)) &&
+   (factor_C 10 (num (5000)) = (num 5,num 3)) &&
+   (cannot (factor_C 2) ((num 50)//(num 3))));;
 
 (*--------------------------------------------------------------------*)
 
 let (dest_float:term -> Num.num) =
   fun f ->
     let (a,b) = dest_binop `float` f in
-    (dest_int a)*/ ((Num.num_of_int 2) **/ (dest_int b));;
+    (dest_int a)*/ ((num 2) **/ (dest_int b));;
 
 add_test("dest_float",
-   dest_float `float (&:3) (&:17)` = (Num.num_of_int 393216));;
+   dest_float `float (&:3) (&:17)` = (num 393216));;
 
 add_test("dest_float2", (* must express as numeral first *)
    cannot dest_float `float ((&:3)+:(&:1)) (&:17)`);;
@@ -114,7 +114,7 @@ add_test("dest_float2", (* must express as numeral first *)
 let (mk_float:Num.num -> term) =
   function r ->
     let (a,b) = split_ratio r in
-    let (a',exp_a) = if (a=/(Num.num_of_int 0)) then ((Num.num_of_int 0),(Num.num_of_int 0)) else factor_C 2 a in
+    let (a',exp_a) = if (a=/(num 0)) then ((num 0),(num 0)) else factor_C 2 a in
     let (b',exp_b) = factor_C 2 b in
     let c = a'//b' in
     if (Num.is_integer_num c) then
@@ -122,13 +122,13 @@ let (mk_float:Num.num -> term) =
           else failwith "mk_float";;
 
 add_test("mk_float",
-   mk_float (Num.num_of_int (4096+32)) = `float (&:129) (&:5)` &&
-   (mk_float (Num.num_of_int 0) = `float (&:0) (&:0)`));;
+   mk_float (num (4096+32)) = `float (&:129) (&:5)` &&
+   (mk_float (num 0) = `float (&:0) (&:0)`));;
 
 add_test("mk_float2",  (* throws exception exactly when denom != 2^k *)
    let rtest = fun t -> (t =/ dest_float (mk_float t)) in
-   rtest ((Num.num_of_int 3)//(Num.num_of_int 1024)) &&
-  (cannot rtest ((Num.num_of_int 1)//(Num.num_of_int 3))));;
+   rtest ((num 3)//(num 1024)) &&
+  (cannot rtest ((num 1)//(num 3))));;
 
 add_test("mk_float dest_float",  (* constructs canonical form of float *)
   mk_float (dest_float `float (&:4) (&:3)`) = `float (&:1) (&:5)`);;
@@ -137,27 +137,27 @@ add_test("mk_float dest_float",  (* constructs canonical form of float *)
 (* creates decimal of the form `DECIMAL a b` with a prime to 10 *)
 let (mk_pos_decimal:Num.num -> term) =
   function r ->
-    let _ = assert (r >=/ (Num.num_of_int 0)) in
+    let _ = assert (r >=/ (num 0)) in
     let (a,b) = split_ratio r in
-    if (a=/(Num.num_of_int 0)) then `#0` else
+    if (a=/(num 0)) then `#0` else
     let (a1,exp_a5) = factor_C 5 a in
     let (a2,exp_a2) = factor_C 2 a1 in
     let (b1,exp_b5) = factor_C 5 b in
     let (b2,exp_b2) = factor_C 2 b1 in
-    let _ = assert(b2 =/ (Num.num_of_int 1)) in
-    let c = end_itlist Num.max_num [exp_b5-/exp_a5;exp_b2-/exp_a2;(Num.num_of_int 0)] in
-    let a' = a2*/((Num.num_of_int 2)**/ (c +/ exp_a2 -/ exp_b2))*/
-             ((Num.num_of_int 5)**/(c +/ exp_a5 -/ exp_b5)) in
-    let b' = (Num.num_of_int 10) **/ c in
+    let _ = assert(b2 =/ (num 1)) in
+    let c = end_itlist Num.max_num [exp_b5-/exp_a5;exp_b2-/exp_a2;(num 0)] in
+    let a' = a2*/((num 2)**/ (c +/ exp_a2 -/ exp_b2))*/
+             ((num 5)**/(c +/ exp_a5 -/ exp_b5)) in
+    let b' = (num 10) **/ c in
     mk_binop `DECIMAL` (mk_numeral a') (mk_numeral b');;
 
 add_test("mk_pos_decimal",
-   mk_pos_decimal (Num.num_of_int (5000)) = `#5000` &&
-   (mk_pos_decimal ((Num.num_of_int 30)//(Num.num_of_int 40)) = `#0.75`) &&
-   (mk_pos_decimal (Num.num_of_int 0) = `#0`) &&
-   (mk_pos_decimal ((Num.num_of_int 15)//(Num.num_of_int 25)) = `#0.6`) &&
-   (mk_pos_decimal ((Num.num_of_int 25)//(Num.num_of_int 4)) = `#6.25`) &&
-   (mk_pos_decimal ((Num.num_of_int 2)//(Num.num_of_int 25)) = `#0.08`));;
+   mk_pos_decimal (num (5000)) = `#5000` &&
+   (mk_pos_decimal ((num 30)//(num 40)) = `#0.75`) &&
+   (mk_pos_decimal (num 0) = `#0`) &&
+   (mk_pos_decimal ((num 15)//(num 25)) = `#0.6`) &&
+   (mk_pos_decimal ((num 25)//(num 4)) = `#6.25`) &&
+   (mk_pos_decimal ((num 2)//(num 25)) = `#0.08`));;
 
 let (mk_decimal:Num.num->term) =
   function r ->
@@ -166,8 +166,8 @@ let (mk_decimal:Num.num->term) =
   if (a < 0) then (mk_comb (`--.`, b)) else b;;
 
 add_test("mk_decimal",
-  (mk_decimal (Num.num_of_int 3) = `#3`) &&
-  (mk_decimal (Num.num_of_int (-3)) = `--. (#3)`));;
+  (mk_decimal (num 3) = `#3`) &&
+  (mk_decimal (num (-3)) = `--. (#3)`));;
 
 
 
@@ -181,7 +181,7 @@ let (dest_decimal:term -> Num.num) =
         a1//b1;;
 
 add_test("dest_decimal",
-   dest_decimal `#3.4` =/ ((Num.num_of_int 34)//(Num.num_of_int 10)));;
+   dest_decimal `#3.4` =/ ((num 34)//(num 10)));;
 add_test("dest_decimal2",
    cannot dest_decimal `--. (#3.4)`);;
 
@@ -1080,18 +1080,18 @@ let add_test,test = new_test_suite();;
    Write it as a*2^k, where 1 <= a < 2, return k.
 
    Except:
-   num_exponent (Num.num_of_int 0) is -1.
+   num_exponent (num 0) is -1.
 *)
 let (num_exponent:Num.num -> Num.num) =
   fun a ->
     let afloat = float_of_num (abs_num a) in
-    Num.num_of_int ((snd (frexp afloat)) - 1);;
+    num ((snd (frexp afloat)) - 1);;
 
-(*test*)let f (u,v) = ((num_exponent u) =(Num.num_of_int v)) in
+(*test*)let f (u,v) = ((num_exponent u) =(num v)) in
     add_test("num_exponenwt",
                 forall f
-    [Num.num_of_int 1,0; Num.num_of_int 65,6; Num.num_of_int (-65),6;
-     Num.num_of_int 0,-1; (Num.num_of_int 3)//(Num.num_of_int 4),-1]);;
+    [num 1,0; num 65,6; num (-65),6;
+     num 0,-1; (num 3)//(num 4),-1]);;
 (* ------------------------------------------------------------------ *)
 
 let dest_unary op tm =
@@ -1103,49 +1103,49 @@ let dest_unary op tm =
 (* ------------------------------------------------------------------ *)
 
 
-(* finds a nearby (outward-rounded) Num.num_of_int with only prec_b significant bits *)
+(* finds a nearby (outward-rounded) num with only prec_b significant bits *)
 let (round_outward: int -> Num.num -> Num.num) =
   fun prec_b a ->
     let b = abs_num a in
     let sign = if (a =/ b) then I else minus_num in
-    let throw_bits = Num.max_num (Num.num_of_int 0) ((num_exponent b)-/ (Num.num_of_int prec_b)) in
-    let twoexp = power_num (Num.num_of_int 2) throw_bits  in
+    let throw_bits = Num.max_num (num 0) ((num_exponent b)-/ (num prec_b)) in
+    let twoexp = power_num (num 2) throw_bits  in
     (sign (ceiling_num (b // twoexp)))*/twoexp;;
 
 let (round_inward: int-> Num.num -> Num.num) =
   fun prec_b a ->
     let b = abs_num a in
     let sign = if (a=/b) then I else minus_num in
-    let throw_bits = Num.max_num (Num.num_of_int 0) ((num_exponent b)-/ (Num.num_of_int prec_b)) in
-    let twoexp = power_num (Num.num_of_int 2) throw_bits  in
+    let throw_bits = Num.max_num (num 0) ((num_exponent b)-/ (num prec_b)) in
+    let twoexp = power_num (num 2) throw_bits  in
     (sign (floor_num (b // twoexp)))*/twoexp;;
 
 let round_rat bprec n =
   let b = abs_num n in
   let sign = if (b =/ n) then I else minus_num in
-  let powt  = ((Num.num_of_int 2) **/ (Num.num_of_int bprec)) in
+  let powt  = ((num 2) **/ (num bprec)) in
   sign ((round_outward bprec (Num.ceiling_num (b */ powt)))//powt);;
 
 let round_inward_rat bprec n =
   let b = abs_num n in
   let sign = if (b =/ n) then I else minus_num in
-  let powt  = ((Num.num_of_int 2) **/ (Num.num_of_int bprec)) in
+  let powt  = ((num 2) **/ (num bprec)) in
   sign ((round_inward bprec (Num.floor_num (b */ powt)))//powt);;
 
 let (round_outward_float: int -> float -> Num.num) =
  fun  bprec f ->
-  if (f=0.0) then (Num.num_of_int 0) else
+  if (f=0.0) then (num 0) else
   begin
     let b = abs_float f in
     let sign = if (f >= 0.0) then I else minus_num in
     let (x,n) = frexp b in
     let u = int_of_float( ceil (ldexp x bprec)) in
-    sign ((Num.num_of_int u)*/ ((Num.num_of_int 2) **/ (Num.num_of_int (n - bprec))))
+    sign ((num u)*/ ((num 2) **/ (num (n - bprec))))
   end;;
 
 let (round_inward_float: int -> float -> Num.num) =
  fun  bprec f ->
-  if (f=0.0) then (Num.num_of_int 0) else
+  if (f=0.0) then (num 0) else
   begin
     (* avoid overflow on 30 bit integers *)
     let bprec = if (bprec > 25) then 25 else bprec in
@@ -1153,7 +1153,7 @@ let (round_inward_float: int -> float -> Num.num) =
     let sign = if (f >= 0.0) then I else minus_num in
     let (x,n) = frexp b in
     let u = int_of_float( floor (ldexp x bprec)) in
-    sign ((Num.num_of_int u)*/ ((Num.num_of_int 2) **/ (Num.num_of_int (n - bprec))))
+    sign ((num u)*/ ((num 2) **/ (num (n - bprec))))
   end;;
 
 (* ------------------------------------------------------------------ *)
@@ -1622,7 +1622,7 @@ let is_comb_of t u =
    and such that abs (x  - A/x ) < epsilon *)
 
 let rec heron_sqrt depth A x eps =
-    let half = (Num.num_of_int 1)//(Num.num_of_int 2) in
+    let half = (num 1)//(num 2) in
     if (depth <= 0) then raise (Failure "sqrt recursion depth exceeded") else
     if (Num.abs_num (x -/ (A//x) ) </ eps) && (x*/ x >=/ A)  then (A//x) else
     let x' = half */ (x +/ (A//x)) in
@@ -1750,7 +1750,7 @@ let rec INTERVAL_OF_TERM bprec tm =
     let ez_rat = (ex_num +/ abs_num (f_num -/ (h_num*/ g_num))
         +/ (abs_num h_num */ ey_num))//((abs_num g_num) -/ (ey_num)) in
     let ez_num = round_rat bprec (ez_rat) in
-    let _ = assert((ez_num >=/ (Num.num_of_int 0))) in
+    let _ = assert((ez_num >=/ (num 0))) in
     let ez = mk_float ez_num in
     let hyp1 = a_int in
     let hyp2 = b_int in
@@ -1778,11 +1778,11 @@ let rec INTERVAL_OF_TERM bprec tm =
     (* put in heron's formula *)
     let v_num1 = round_inward_float 25 (apprx_sqrt) in
     let v_num = round_inward_rat bprec
-         (heron_sqrt 10 fd_num v_num1 ((Num.num_of_int 2) **/ (Num.num_of_int (-bprec-4)))) in
+         (heron_sqrt 10 fd_num v_num1 ((num 2) **/ (num (-bprec-4)))) in
     let u_num1 = round_inward_float 25
         (Pervasives.sqrt (float_of_num f_num)) in
     let u_num = round_inward_rat bprec
-        (heron_sqrt 10 f_num u_num1 ((Num.num_of_int 2) **/ (Num.num_of_int (-bprec-4)))) in
+        (heron_sqrt 10 f_num u_num1 ((num 2) **/ (num (-bprec-4)))) in
     let ey_num = round_rat bprec (abs_num (f_num -/ (u_num */ u_num))) in
     let ez_num = round_rat bprec ((ex_num +/ ey_num)//(u_num +/ v_num)) in
     let (v,u) = (mk_float v_num,mk_float u_num) in

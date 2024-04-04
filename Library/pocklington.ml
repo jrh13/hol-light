@@ -7,9 +7,9 @@ needs "Library/prime.ml";;
 
 prioritize_num();;
 
-let num_0 = Num.num_of_int 0;;
-let num_1 = Num.num_of_int 1;;
-let num_2 = Num.num_of_int 2;;
+let num_0 = num 0;;
+let num_1 = num 1;;
+let num_2 = num 2;;
 
 (* ------------------------------------------------------------------------- *)
 (* Mostly for compatibility. Should eliminate this eventually.               *)
@@ -846,7 +846,7 @@ let INVERSE_MOD_INVERSION = prove
 let INVERSE_MOD_CONV =
   let rec gcdex(m,n) =
     if n </ m then let (x,y) = gcdex(n,m) in (y,x)
-    else if m =/ Num.num_of_int 0 then (Num.num_of_int 0,Num.num_of_int 1) else
+    else if m =/ num 0 then (num 0,num 1) else
     let q = quo_num n m in
     let r = n -/ q */ m in
     let (x,y) = gcdex(r,m) in (y -/ q */ x,x) in
@@ -2611,9 +2611,9 @@ time PRIME_TEST `65536`;;
 
 time PRIME_TEST `65537`;;
 
-time PROVE_PRIMEFACT (Num.num_of_int 222);;
+time PROVE_PRIMEFACT (num 222);;
 
-time PROVE_PRIMEFACT (Num.num_of_int 151);;
+time PROVE_PRIMEFACT (num 151);;
 
 (* ------------------------------------------------------------------------- *)
 (* The "Landau trick" in Erdos's proof of Chebyshev-Bertrand theorem.        *)

@@ -7861,7 +7861,7 @@ let WORDIFY_CONV =
   let log2 =
     let rec log2 n m i =
       if n </ m then i else log2 n (num_2 */ m) (i + 1) in
-    fun n -> Num.num_of_int(log2 (abs_num n) num_1 0) in
+    fun n -> num(log2 (abs_num n) num_1 0) in
   let rec conv tm =
     match tm with
       Comb(Const("bitval",_),_) ->
