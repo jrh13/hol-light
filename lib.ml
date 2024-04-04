@@ -381,24 +381,18 @@ let gcd =
 (* Some useful functions on "num" type.                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let num_0 = Int 0
-and num_1 = Int 1
-and num_2 = Int 2
-and num_10 = Int 10;;
+let num_0 = num 0
+and num_1 = num 1
+and num_2 = num 2
+and num_10 = num 10;;
 
-let pow2 n = power_num num_2 (Int n);;
-let pow10 n = power_num num_10 (Int n);;
-
-let numdom r =
-  let r' = Ratio.normalize_ratio (ratio_of_num r) in
-  num_of_big_int(Ratio.numerator_ratio r'),
-  num_of_big_int(Ratio.denominator_ratio r');;
+let pow2 n = power_num num_2 (num n);;
+let pow10 n = power_num num_10 (num n);;
 
 let numerator = fst o numdom
 and denominator = snd o numdom;;
 
-let gcd_num n1 n2 =
-  num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
+(* gcd_num x y is defined in the NumExt module. *)
 
 let lcm_num x y =
   if x =/ num_0 && y =/ num_0 then num_0
@@ -411,7 +405,7 @@ let string_of_num_nary =
     let n0 = mod_num n base and n1 = quo_num n base in
     let d0 = el (Num.int_of_num n0) digits in
     if n1 =/ num_0 then d0 else (string_of_num base n1)^d0 in
-  fun b n -> string_of_num (Int b) n;;
+  fun b n -> string_of_num (num b) n;;
 
 let string_of_num_hex n = "0x" ^ string_of_num_nary 16 n;;
 
@@ -820,9 +814,9 @@ let num_of_string =
     "c",12; "C",12; "d",13; "D",13;
     "e",14; "E",14; "f",15; "F",15] in
   let valof b s =
-    let v = Int(assoc s values) in
+    let v = num(assoc s values) in
     if v </ b then v else failwith "num_of_string: invalid digit for base"
-  and two = num_2 and ten = num_10 and sixteen = Int 16 in
+  and two = num_2 and ten = num_10 and sixteen = num 16 in
   let rec num_of_stringlist b l =
     match l with
       [] -> failwith "num_of_string: no digits after base indicator"

@@ -217,9 +217,9 @@ let pp_print_term =
     match snd(get_infix_status s) with
     "right" -> true | _ -> false in
   let rec powerof10 n =
-    if abs_num n </ Int 1 then false
-    else if n =/ Int 1 then true
-    else powerof10 (n // Int 10) in
+    if abs_num n </ num 1 then false
+    else if n =/ num 1 then true
+    else powerof10 (n // num 10) in
   let bool_of_term t =
     match t with
       Const("T",_) -> true
@@ -333,7 +333,7 @@ let pp_print_term =
         let s_den = implode(tl(explode(string_of_num
                         (n_den +/ (mod_num n_num n_den))))) in
         pp_print_string fmt
-         ("#"^s_num^(if n_den = Int 1 then "" else ".")^s_den)
+         ("#"^s_num^(if n_den = num 1 then "" else ".")^s_den)
       with Failure _ -> try
         if s <> "_MATCH" || length args <> 2 then failwith "" else
         let cls = dest_clauses(hd(tl args)) in

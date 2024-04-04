@@ -26,8 +26,8 @@ let RULE = UNDISCH_ALL o Arith_nat.NUMERALS_TO_NUM o REWRITE_RULE[FLOAT_OF_NUM; 
 (* Converts a float term to the corresponding rational number *)
 let num_of_float_tm tm =
   let s, n_tm, e_tm = dest_float tm in
-  let b = Num.num_of_int Arith_num.arith_base in
-  let m = Num.num_of_int Float_theory.min_exp in
+  let b = num Arith_num.arith_base in
+  let m = num Float_theory.min_exp in
   let ( * ), (^), (-), (!) = ( */ ), ( **/ ), (-/), Arith_nat.raw_dest_hash in
   let r = !n_tm * (b ^ (!e_tm - m)) in
     if s = "T" then minus_num r else r;;
@@ -62,14 +62,14 @@ let float_tm_of_float =
 	    s, t, n
   and extract =
     let b = float_of_int Arith_num.arith_base in
-    let nb = Int Arith_num.arith_base in
+    let nb = num Arith_num.arith_base in
     let rec step k f acc =
       if k <= 0 then acc
       else
 	let d = int_of_float f in
-	  step (k - 1) ((f -. float_of_int d) *. b) (Int d +/ (nb */ acc)) in
+	  step (k - 1) ((f -. float_of_int d) *. b) (num d +/ (nb */ acc)) in
       fun pp f ->
-	step pp f (Int 0)
+	step pp f (num 0)
   in
     fun pp f ->
       let s, x, k = split f in

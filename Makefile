@@ -89,10 +89,9 @@ pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx
 
 hol.sh: pa_j.cmo ${HOLSRC} update_database.ml
 	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
-		ocamlmktop -o ocaml-hol nums.cma ; \
 		if test ${OCAML_VERSION} = "4.14" ; \
-		then sed "s^__DIR__^`pwd`^g" hol_4.14.sh > hol.sh ; \
-		else sed "s^__DIR__^`pwd`^g" hol_4.sh > hol.sh ; \
+		then ocamlmktop -o ocaml-hol ; sed "s^__DIR__^`pwd`^g" hol_4.14.sh > hol.sh ; \
+		else ocamlmktop -o ocaml-hol nums.cma ; sed "s^__DIR__^`pwd`^g" hol_4.sh > hol.sh ; \
 		fi ; \
 		chmod +x hol.sh ; \
 	else \

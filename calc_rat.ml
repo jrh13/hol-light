@@ -258,7 +258,7 @@ let REAL_RAT_ADD_CONV =
     and y3n = y1n */ y2n in
     let d = gcd_num x3n y3n in
     let x3n' = quo_num x3n d and y3n' = quo_num y3n d in
-    let x3n'',y3n'' = if y3n' >/ Int 0 then x3n',y3n'
+    let x3n'',y3n'' = if y3n' >/ num 0 then x3n',y3n'
                       else minus_num x3n',minus_num y3n' in
     let x3' = mk_realintconst x3n'' and y3' = mk_realintconst y3n'' in
     let th0 = INST [x1',x1; y1',y1; x2',x2; y2',y2; x3',x3; y3',y3] pth in

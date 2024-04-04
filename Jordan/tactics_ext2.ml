@@ -351,11 +351,11 @@ let new_factor_order2 t1 t2 =
 
 let rec mon_sz tm =
   if is_var tm then
-    Int (Hashtbl.hash tm)
+    num (Hashtbl.hash tm)
   else
   try let (a,b) = dest_binop `( *. )` tm in
     (mon_sz a) */ (mon_sz b)
-  with Failure _ -> Int 1;;
+  with Failure _ -> num 1;;
 
 let rec new_summand_order t1 t2 =
   try let t1v = fst(dest_binop `( +. )` t1) in

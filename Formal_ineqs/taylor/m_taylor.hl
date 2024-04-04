@@ -59,7 +59,7 @@ let has_size_array = Array.init (max_dim + 1)
   (fun i -> match i with
      | 0 -> TRUTH
      | 1 -> HAS_SIZE_1
-     | _ -> HAS_SIZE_DIMINDEX_RULE(mk_finty(Int i)));;
+     | _ -> HAS_SIZE_DIMINDEX_RULE(mk_finty(num i)));;
 
 let dimindex_array = Array.init (max_dim + 1) 
   (fun i -> if i < 1 then TRUTH else MATCH_MP DIMINDEX_UNIQUE has_size_array.(i));;
