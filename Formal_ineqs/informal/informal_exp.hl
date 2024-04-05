@@ -130,7 +130,7 @@ let exp_high_raw pp x =
       exp_neg_high_raw pp (abs_float x);;
 
 let reduce_float x =
-  let f = abs_float (float_of_ifloat x) in
+  let f = float_fabs (float_of_ifloat x) in
     if f <= exp_max_x then
       false, 0
     else

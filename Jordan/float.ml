@@ -1136,7 +1136,7 @@ let (round_outward_float: int -> float -> Num.num) =
  fun  bprec f ->
   if (f=0.0) then (num 0) else
   begin
-    let b = abs_float f in
+    let b = float_fabs f in
     let sign = if (f >= 0.0) then I else minus_num in
     let (x,n) = frexp b in
     let u = int_of_float( ceil (ldexp x bprec)) in
@@ -1149,7 +1149,7 @@ let (round_inward_float: int -> float -> Num.num) =
   begin
     (* avoid overflow on 30 bit integers *)
     let bprec = if (bprec > 25) then 25 else bprec in
-    let b = abs_float f in
+    let b = float_fabs f in
     let sign = if (f >= 0.0) then I else minus_num in
     let (x,n) = frexp b in
     let u = int_of_float( floor (ldexp x bprec)) in

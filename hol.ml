@@ -103,12 +103,16 @@ then loads "bignum_zarith.ml"
 else loads "bignum_num.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Bind this to a name that is independent of OCaml versions before it       *)
-(* is potentially overwritten by a theorem of the same name. On older        *)
-(* OCaml versions it is "Pervasives.sqrt", and on newer ones "Float.sqrt".   *)
+(* Bind these to names that are independent of OCaml versions before they    *)
+(* are potentially overwritten by an identifier of the same name. In older   *)
+(* and newer Ocaml versions these are respectively:                          *)
+(*                                                                           *)
+(* Pervasives.sqrt -> Float.sqrt                                             *)
+(* Pervasives.abs_float -> Stdlib.abs_float / Float.abs                      *)
 (* ------------------------------------------------------------------------- *)
 
 let float_sqrt = sqrt;;
+let float_fabs = abs_float;;
 
 (* ------------------------------------------------------------------------- *)
 (* Various tweaks to OCaml and general library functions.                    *)
