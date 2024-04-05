@@ -134,10 +134,10 @@ index a08ad1c..7d67f20 100644
       match (c1,c2) with
         Comb(Comb(Const("=",_),l1),r1),Comb(Comb(Const("=",_),l2),r2) ->
          (match type_of r1 with
--           Tyapp("fun",[ty;_]) when Pervasives.compare ty (type_of r2) = 0
+-           Tyapp("fun",[ty;_]) when compare ty (type_of r2) = 0
 -             -> Sequent(term_union asl1 asl2,
 -                        safe_mk_eq (Comb(l1,l2)) (Comb(r1,r2)))
-+           Tyapp("fun",[ty;_]) when Pervasives.compare ty (type_of r2) = 0 ->
++           Tyapp("fun",[ty;_]) when compare ty (type_of r2) = 0 ->
 +             let idx = next_proof_idx() in
 +             let th = Sequent(term_union asl1 asl2,
 +                              safe_mk_eq (Comb(l1,l2)) (Comb(r1,r2)),
@@ -163,9 +163,9 @@ index a08ad1c..7d67f20 100644
 
    let BETA tm =
      match tm with
--      Comb(Abs(v,bod),arg) when Pervasives.compare arg v = 0
+-      Comb(Abs(v,bod),arg) when compare arg v = 0
 -        -> Sequent([],safe_mk_eq tm bod)
-+      Comb(Abs(v,bod),arg) when Pervasives.compare arg v = 0 ->
++      Comb(Abs(v,bod),arg) when compare arg v = 0 ->
 +        let idx = next_proof_idx() in
 +        let th = Sequent([],safe_mk_eq tm bod,idx) in
 +        new_proof (Proof(idx,th,Pbeta(tm)))
@@ -176,8 +176,8 @@ index a08ad1c..7d67f20 100644
  (* ------------------------------------------------------------------------- *)
 
    let ASSUME tm =
--    if Pervasives.compare (type_of tm) bool_ty = 0 then Sequent([tm],tm)
-+    if Pervasives.compare (type_of tm) bool_ty = 0 then
+-    if compare (type_of tm) bool_ty = 0 then Sequent([tm],tm)
++    if compare (type_of tm) bool_ty = 0 then
 +      let idx = next_proof_idx() in
 +      let th = Sequent([tm],tm,idx) in
 +      new_proof (Proof(idx,th,Passume(tm)))
@@ -229,7 +229,7 @@ index a08ad1c..7d67f20 100644
 @@ -574,8 +666,10 @@ module Hol : Hol_kernel = struct
 
    let new_axiom tm =
-     if Pervasives.compare (type_of tm) bool_ty = 0 then
+     if compare (type_of tm) bool_ty = 0 then
 -      let th = Sequent([],tm) in
 -       (the_axioms := th::(!the_axioms); th)
 +      let idx = next_proof_idx() in

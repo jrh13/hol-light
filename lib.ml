@@ -253,7 +253,7 @@ let index x =
   let rec ind n l =
     match l with
       [] -> failwith "index"
-    | (h::t) -> if Pervasives.compare x h = 0 then n else ind (n + 1) t in
+    | (h::t) -> if compare x h = 0 then n else ind (n + 1) t in
   ind 0;;
 
 (* ------------------------------------------------------------------------- *)
@@ -263,7 +263,7 @@ let index x =
 let rec mem x lis =
   match lis with
     [] -> false
-  | (h::t) -> Pervasives.compare x h = 0 || mem x t;;
+  | (h::t) -> compare x h = 0 || mem x t;;
 
 let insert x l =
   if mem x l then l else x::l;;
@@ -286,12 +286,12 @@ let set_eq l1 l2 = subset l1 l2 && subset l2 l1;;
 
 let rec assoc a l =
   match l with
-    (x,y)::t -> if Pervasives.compare x a = 0 then y else assoc a t
+    (x,y)::t -> if compare x a = 0 then y else assoc a t
   | [] -> failwith "find";;
 
 let rec rev_assoc a l =
   match l with
-    (x,y)::t -> if Pervasives.compare y a = 0 then x else rev_assoc a t
+    (x,y)::t -> if compare y a = 0 then x else rev_assoc a t
   | [] -> failwith "find";;
 
 (* ------------------------------------------------------------------------- *)
@@ -345,7 +345,7 @@ let rec sort cmp lis =
 let rec uniq l =
   match l with
     x::(y::_ as t) -> let t' = uniq t in
-                      if Pervasives.compare x y = 0 then t' else
+                      if compare x y = 0 then t' else
                       if t'==t then l else x::t'
  | _ -> l;;
 
@@ -353,7 +353,7 @@ let rec uniq l =
 (* Convert list into set by eliminating duplicates.                          *)
 (* ------------------------------------------------------------------------- *)
 
-let setify s = uniq (sort (fun x y -> Pervasives.compare x y <= 0) s);;
+let setify s = uniq (sort (fun x y -> compare x y <= 0) s);;
 
 (* ------------------------------------------------------------------------- *)
 (* String operations (surely there is a better way...)                       *)
@@ -470,12 +470,12 @@ let time f x =
 let rec assocd a l d =
   match l with
     [] -> d
-  | (x,y)::t -> if Pervasives.compare x a = 0 then y else assocd a t d;;
+  | (x,y)::t -> if compare x a = 0 then y else assocd a t d;;
 
 let rec rev_assocd a l d =
   match l with
     [] -> d
-  | (x,y)::t -> if Pervasives.compare y a = 0 then x else rev_assocd a t d;;
+  | (x,y)::t -> if compare y a = 0 then x else rev_assocd a t d;;
 
 (* ------------------------------------------------------------------------- *)
 (* Version of map that avoids rebuilding unchanged subterms.                 *)
@@ -512,9 +512,9 @@ let mergesort ord =
 (* Common measure predicates to use with "sort".                             *)
 (* ------------------------------------------------------------------------- *)
 
-let increasing f x y = Pervasives.compare (f x) (f y) < 0;;
+let increasing f x y = compare (f x) (f y) < 0;;
 
-let decreasing f x y = Pervasives.compare (f x) (f y) > 0;;
+let decreasing f x y = compare (f x) (f y) > 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Polymorphic finite partial functions via Patricia trees.                  *)
@@ -606,7 +606,7 @@ let ran f = setify(foldl (fun a x y -> y::a) [] f);;
 let applyd =
   let rec apply_listd l d x =
     match l with
-      (a,b)::t -> let c = Pervasives.compare x a in
+      (a,b)::t -> let c = compare x a in
                   if c = 0 then b else if c > 0 then apply_listd t d x else d x
     | [] -> d x in
   fun f d x ->
@@ -633,7 +633,7 @@ let undefine =
   let rec undefine_list x l =
     match l with
       (a,b as ab)::t ->
-          let c = Pervasives.compare x a in
+          let c = compare x a in
           if c = 0 then t
           else if c < 0 then l else
           let t' = undefine_list x t in
@@ -674,7 +674,7 @@ let (|->),combine =
   let rec define_list (x,y as xy) l =
     match l with
       (a,b as ab)::t ->
-          let c = Pervasives.compare x a in
+          let c = compare x a in
           if c = 0 then xy::t
           else if c < 0 then xy::l
           else ab::(define_list xy t)
@@ -684,7 +684,7 @@ let (|->),combine =
       [],_ -> l2
     | _,[] -> l1
     | ((x1,y1 as xy1)::t1,(x2,y2 as xy2)::t2) ->
-          let c = Pervasives.compare x1 x2 in
+          let c = compare x1 x2 in
           if c < 0 then xy1::(combine_list op z t1 l2)
           else if c > 0 then xy2::(combine_list op z l1 t2) else
           let y = op y1 y2 and l = combine_list op z t1 t2 in
@@ -849,5 +849,5 @@ let string_of_file filename =
   (close_in fd; data);;
 
 let file_of_string filename s =
-  let fd = Pervasives.open_out filename in
+  let fd = open_out filename in
   output_string fd s; close_out fd;;

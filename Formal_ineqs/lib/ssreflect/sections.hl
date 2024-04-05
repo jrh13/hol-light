@@ -44,7 +44,7 @@ let end_section name =
       failwith "end_section: No open sections"
     else
       let last_name, _ = hd sections in
-	if Pervasives.compare last_name name <> 0 then
+	if compare last_name name <> 0 then
 	  failwith ("The last open section is " ^ last_name)
 	else
 	  section_stack := tl sections;;

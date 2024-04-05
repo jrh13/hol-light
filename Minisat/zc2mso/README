@@ -21,7 +21,7 @@ system at least):
 
 These will, respectively, make zChaff record a proof, and make it
 leave this proof in /tmp/resolve_trace instead of whatever the current
-directory is. If your compiler complains, you may also need to 
+directory is. If your compiler complains, you may also need to
 
 3. Add a line "#include <cstring>" near the top of sat_solver.cpp.
 

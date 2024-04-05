@@ -40,7 +40,7 @@ let get_quant_var quantifier =
 ;;
 
 let has_quant tm =
-        Pervasives.(||) (is_exists tm) (is_forall tm)
+        (is_exists tm) || (is_forall tm)
 ;;
 
 let dest_quant tm =
@@ -561,7 +561,7 @@ let ADD_MISSING_UNIVERSALS th quants =
                                 match q with
                                         | Existential _ -> BINDER_CONV (add_u qs) tm
                                         | Universal v ->
-                                                if Pervasives.(||) (not (has_quant tm)) (Pervasives.compare ((fst o dest_quant) tm) v != 0) then
+                                                if (not (has_quant tm)) || (compare ((fst o dest_quant) tm) v != 0) then
                                                         let renamed_rewr = EQ_MP (ONCE_DEPTH_CONV (ALPHA_CONV v) (concl FORALL_SIMP2)) FORALL_SIMP2 in
                                                         (PURE_ONCE_REWRITE_CONV [renamed_rewr] THENC BINDER_CONV (add_u qs)) tm
                                                 else
@@ -904,7 +904,7 @@ let execute_squolem input_file_name =
 ;;
 
 let parse_certificate context certificate_file_name =
-  let file_channel = Pervasives.open_in certificate_file_name in
+  let file_channel = open_in certificate_file_name in
   let token_stream = (Genlex.make_lexer ["I";"A";"QBCertificate";"VALID";"INVALID";"E";"R";"CONCLUDE"] (Stream.of_channel file_channel)) in
   read_certificate context token_stream
 

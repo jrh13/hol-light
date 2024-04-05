@@ -1127,7 +1127,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
     fun tm ->
       match tm with
         Comb(Comb(Const("*",_),mtm),ntm) ->
-            if Pervasives.compare mtm ntm = 0 then
+            if compare mtm ntm = 0 then
               let th1 = NUM_SQUARE_RULE mtm in
               let ptm = rand(concl th1) in
               EQ_MP (INST [mtm,m_tm;ptm,p_tm] pth_refl) th1
@@ -1169,7 +1169,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
       match tm with
         Comb(Comb(Const("*",_),Comb(Const("NUMERAL",_),mtm)),
           Comb(Const("NUMERAL",_),ntm)) ->
-            if Pervasives.compare mtm ntm = 0 then
+            if compare mtm ntm = 0 then
               let th1 = NUM_SQUARE_RULE mtm in
               let ptm = rand(concl th1) in
               EQ_MP (INST [mtm,m_tm;ptm,p_tm] pth_refl) th1

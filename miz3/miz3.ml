@@ -220,7 +220,7 @@ let exec_phrase b s =
   Format.pp_print_flush Format.std_formatter ();
   (ok,
    let i = lexbuf.Lexing.lex_curr_pos in
-   String.sub lexbuf.Lexing.lex_buffer
+   Bytes.sub_string lexbuf.Lexing.lex_buffer
      i (lexbuf.Lexing.lex_buffer_len - i));;
 
 let exec_thm_out = ref TRUTH;;
@@ -1793,10 +1793,9 @@ let check_file_verbose name lemma =
     (0,0,0),TRUTH)
   else
  (last_thm_internal := None;
-  let file = Pervasives.open_in name in
+  let file = open_in name in
   let n = in_channel_length file in
-  let s = String.create n in
-  really_input file s 0 n;
+  let s = really_input_string file n in
   close_in file;
   let t,x,y = try
     let steps = parse_proof s in
@@ -1841,7 +1840,7 @@ usr2_handler :=
   fun () ->
     let cleanup () = let _ = Unix.system ("rm -f "^(!miz3_filename)) in () in
     try
-      let namefile = Pervasives.open_in !miz3_filename in
+      let namefile = open_in !miz3_filename in
       let name = input_line namefile in
       let lemma = try Some (input_line namefile) with End_of_file -> None in
       close_in namefile;
@@ -1865,7 +1864,7 @@ let server_down () =
   if Unix.fork() = 0 then
    (exit_proc := (fun () -> ());
    (try
-      let pidfile = Pervasives.open_in !miz3_pid in
+      let pidfile = open_in !miz3_pid in
       let pid_string = input_line pidfile in
       close_in pidfile;
       if pid_string <> string_of_int (Unix.getppid())

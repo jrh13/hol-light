@@ -7,7 +7,7 @@ let maximas e =
     ";' | maxima | grep '^(%o3)' | sed -e 's/^(%o3) //' >" ^
     filename in
   if Sys.command s <> 0 then failwith "maxima" else
-  let fd = Pervasives.open_in filename in
+  let fd = open_in filename in
   let data = input_line fd in
   close_in fd; Sys.remove filename; data;;
 

@@ -16,9 +16,9 @@ prioritize_real();;
 (* ------------------------------------------------------------------------- *)
 
 let num_of_float =
-  let p22 = Pervasives.( ** ) 2.0 22.0
-  and p44 = Pervasives.( ** ) 2.0 44.0
-  and p66 = Pervasives.( ** ) 2.0 66.0
+  let p22 = ( ** ) 2.0 22.0
+  and p44 = ( ** ) 2.0 44.0
+  and p66 = ( ** ) 2.0 66.0
   and q22 = pow2 22 and q44 = pow2 44 and q66 = pow2 66 in
   fun x ->
     let y0,n = frexp x in

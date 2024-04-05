@@ -4,9 +4,9 @@
 let pair_map f (x,y) = (f x,f y)
 
 (* module for maps keyed on terms *)
-module Termmap = Map.Make (struct type t = term let compare = Pervasives.compare end)
+module Termmap = Map.Make (struct type t = term let compare = compare end)
 
-module Litset = Set.Make (struct type t = bool * int let compare = Pervasives.compare end)
+module Litset = Set.Make (struct type t = bool * int let compare = compare end)
 
 let tm_listItems m = List.rev (Termmap.fold (fun k v l -> (k,v)::l) m [])
 

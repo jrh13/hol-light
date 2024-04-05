@@ -85,8 +85,6 @@ let maxInt = Some max_int;;
 
 let div x y = x / y;;
 
-let abs = Pervasives.abs;;
-
 end
 
 module Real = struct
@@ -131,9 +129,7 @@ end
 
 module Math = struct
 
-let exp = Pervasives.exp;;
-let ln = Pervasives.log;;
-let sqrt = Pervasives.sqrt;;
+let ln = log;;
 let pow (x,y) = x ** y;;
 
 end
@@ -377,7 +373,7 @@ let rec interval m = function
 let divides = function
     (_, 0) -> true
   | (0, _) -> false
-  | (a, b) -> b mod (Int.abs a) = 0;;
+  | (a, b) -> b mod (abs a) = 0;;
 let divides = curry divides;;
 
 (* ------------------------------------------------------------------------- *)
@@ -5283,7 +5279,7 @@ let multInt =
     match Int.maxInt with
       None -> (fun x -> fun y -> Some (x * y))
     | Some m ->
-        let m = Real.floor (Math.sqrt (Real.fromInt m))
+        let m = Real.floor (sqrt (Real.fromInt m))
       in
         fun x -> fun y -> if x <= m && y <= m then Some (x * y) else None
       ;;

@@ -94,7 +94,7 @@ let is_compl l1 l2 = (abs(l2-l1)=1) && (l1 mod 2 = 0)
   sl is internal clause sorted and unduped, with diff in var numbering account for *)
 (* thus if il and sl are not exactly the same,
    then the clause represented by sl was skipped *)
-let isSameClause (il,sl) = (Pervasives.compare il sl = 0)
+let isSameClause (il,sl) = (compare il sl = 0)
 
 let rec getNextRootClause scl vc cc lr il rcv =
   let rc = Array.get rcv lr in
@@ -104,7 +104,7 @@ let rec getNextRootClause scl vc cc lr il rcv =
     List.fold_left (fun s e -> Litset.add e s)
       Litset.empty lnl in
   let slnl = (* FIXME: speed this up*)
-    List.sort Pervasives.compare
+    List.sort compare
       (setify
          (List.map (fun (isn,vi) ->
            if isn

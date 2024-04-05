@@ -47,7 +47,7 @@ let cdd ins =
     output_string inch ins;
     close_out inch;
     if Sys.command s <> 0 then failwith "cdd" else
-      let fd = Pervasives.open_in outfn in let data = input_line fd in close_in fd; Sys.remove infn; Sys.remove outfn; data;;
+      let fd = open_in outfn in let data = input_line fd in close_in fd; Sys.remove infn; Sys.remove outfn; data;;
 
 let rec take n l =
   match l with

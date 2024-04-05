@@ -22,7 +22,7 @@ let rec create_dirs path =
 
 (* Reads all lines from a file *)
 let read_file fname =
-  let ic = Pervasives.open_in fname in
+  let ic = open_in fname in
   let rec read acc =
     try
       let line = input_line ic in
@@ -115,7 +115,7 @@ let run_tests_raw =
       let r = if result then r else [] in
       let total = itlist (+.) time 0.0 and
 	  m = mean n time and
-	  std = Pervasives.sqrt (var n time) in
+	  std = float_sqrt (var n time) in
 	(m, std, total), r;;
 
 let load_data data_file pre mk post =

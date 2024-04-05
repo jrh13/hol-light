@@ -90,8 +90,7 @@ module Num = struct
     Q.of_bigint (Z.ediv (Q.to_bigint x) (Q.to_bigint y))
 
   let is_integer_num (n:num) =
-    try let _ = Q.to_int n in true
-    with _ -> false
+    Q.equal n (floor_num n)
 
   let succ_num = fun n ->
     Q.of_bigint (Z.succ (Q.to_bigint n))
@@ -125,7 +124,6 @@ let (<=/) x y = Num.le_num x y;;
 
 let (>=/) x y = Num.ge_num x y;;
 
-
 let pp_print_num fmt (n:Num.num) =
   Format.pp_open_hbox fmt ();
   Format.pp_print_string fmt (Num.string_of_num n);
@@ -138,6 +136,12 @@ let print_num = pp_print_num Format.std_formatter;;
 include Num;;
 
 let num = Num.num_of_int;;
+
+let ( **/) x y =
+  if y >=/ num 0 then Num.power_num x y
+  else num 1 // Num.power_num x (minus_num y);;
+
+let power_num = ( **/);;
 
 module NumExt = struct
   let numdom (r:num):num * num =

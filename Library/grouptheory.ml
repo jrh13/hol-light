@@ -1006,7 +1006,7 @@ let GROUP_RULE =
     LAND_CONV GROUP_NORM_CONV in
   let rec GROUP_EQ_HYPERNORM_CONV tm =
     let ts = list_of_gtm(lhand tm) in
-    if length ts > 2 &
+    if length ts > 2 &&
        (let p,v = hd ts and q,w = last ts in not(p = q) && v = w)
     then (GROUP_ROTATE_CONV 1 THENC GROUP_EQ_HYPERNORM_CONV) tm
     else REFL tm in

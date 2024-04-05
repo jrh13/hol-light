@@ -47,9 +47,9 @@ let enter =
     else if mem op lconsts then Lcnet(fst(dest_var op),length args),args
     else Vnet,[] in
   let canon_eq x y =
-    try Pervasives.compare x y = 0 with Invalid_argument _ -> false
+    try compare x y = 0 with Invalid_argument _ -> false
   and canon_lt x y =
-    try Pervasives.compare x y < 0 with Invalid_argument _ -> false in
+    try compare x y < 0 with Invalid_argument _ -> false in
   let rec sinsert x l =
     if l = [] then [x] else
     let h = hd l in
@@ -99,9 +99,9 @@ let lookup =
 
 let merge_nets =
   let canon_eq x y =
-    try Pervasives.compare x y = 0 with Invalid_argument _ -> false
+    try compare x y = 0 with Invalid_argument _ -> false
   and canon_lt x y =
-    try Pervasives.compare x y < 0 with Invalid_argument _ -> false in
+    try compare x y < 0 with Invalid_argument _ -> false in
   let rec set_merge l1 l2 =
     if l1 = [] then l2
     else if l2 = [] then l1 else

@@ -7,8 +7,8 @@ Returns a list of the atomic propositions in a Boolean term
 
 \DESCRIBE
 When applied to a term of Boolean type, {atoms} returns a list of the atomic
-fomulas, considering the term as a propositional formula built up recursively 
-with negation, conjunction, disjunction, implication and logical equivalence, 
+fomulas, considering the term as a propositional formula built up recursively
+with negation, conjunction, disjunction, implication and logical equivalence,
 treating all other subterms (e.g. quantified ones) as atomic.
 
 \FAILURE

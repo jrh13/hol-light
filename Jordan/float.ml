@@ -1774,13 +1774,13 @@ let rec INTERVAL_OF_TERM bprec tm =
     let ex_num = dest_float ex in
     let fd_num = f_num -/ ex_num in
     let fe_f = Num.float_of_num fd_num in
-    let apprx_sqrt = Pervasives.sqrt fe_f in
+    let apprx_sqrt = float_sqrt fe_f in
     (* put in heron's formula *)
     let v_num1 = round_inward_float 25 (apprx_sqrt) in
     let v_num = round_inward_rat bprec
          (heron_sqrt 10 fd_num v_num1 ((num 2) **/ (num (-bprec-4)))) in
     let u_num1 = round_inward_float 25
-        (Pervasives.sqrt (float_of_num f_num)) in
+        (float_sqrt (float_of_num f_num)) in
     let u_num = round_inward_rat bprec
         (heron_sqrt 10 f_num u_num1 ((num 2) **/ (num (-bprec-4)))) in
     let ey_num = round_rat bprec (abs_num (f_num -/ (u_num */ u_num))) in

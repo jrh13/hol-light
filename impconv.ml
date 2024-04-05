@@ -211,8 +211,8 @@ let MP_CLOSURE ths1 ths2 =
 let module Tset =
   struct
     type t = term list
-    let cmp (x:term) y = Pervasives.compare x y
-    let lt (x:term) y = Pervasives.compare x y < 0
+    let cmp (x:term) y = compare x y
+    let lt (x:term) y = compare x y < 0
     let lift f = List.sort cmp o f
     let of_list = lift I
     let insert ts t =
@@ -392,7 +392,7 @@ let GEN_PART_MATCH_ALL =
       let eth = INSTANTIATE_ALL ([],insts,tyinsts) (GENL fvs ath) in
       let fth = itlist (fun v th -> snd(SPEC_VAR th)) fvs eth in
       let tm' = partfn (concl fth) in
-      if Pervasives.compare tm' tm = 0 then fth else
+      if compare tm' tm = 0 then fth else
       try SUBS[ALPHA tm' tm] fth
       with Failure _ -> failwith "PART_MATCH: Sanity check failure" in
 

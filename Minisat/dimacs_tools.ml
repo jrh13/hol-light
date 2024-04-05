@@ -301,7 +301,7 @@ let readTerms ins =
 
 let readDimacs filename =
  (*let val fullfilename = Path.mkAbsolute(filename, FileSys.getDir())*)
-  let inf          = Pervasives.open_in filename in
+  let inf          = open_in filename in
   let ins          = Stream.of_channel inf in
   let term         = readTerms ins in
   (close_in inf;
