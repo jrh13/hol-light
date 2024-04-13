@@ -14,6 +14,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/brunn_minkowski \
 	Library/card \
 	Examples/combin \
+	Examples/complexpolygon \
 	Examples/cong \
 	Examples/cooper \
 	Examples/dickson \
@@ -73,6 +74,7 @@ STANDALONE_EXAMPLES:=\
 EXTENDED_EXAMPLES:=\
 	Arithmetic/make \
 	Boyer_Moore/make \
+	Cadical/make-test \
 	Complex/make \
 	Divstep/make \
 	EC/make \
@@ -84,7 +86,7 @@ EXTENDED_EXAMPLES:=\
 	Logic/make \
 	Mizarlight/make \
 	miz3/make-test \
-	Minisat/make-taut \
+	Minisat/make-test \
 	Model/make \
 	Multivariate/make \
 	Multivariate/make_complex \
@@ -223,16 +225,16 @@ $(LOGDIR)/miz3/make-test.ready:
 	@(echo 'loadt "miz3/make.ml";;'; echo 'loadt "miz3/test.ml";;'; echo 'loadt "miz3/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/miz3/make-test 2>&1
 	@touch $(LOGDIR)/miz3/make-test.ready
 
-$(LOGDIR)/Minisat/make-taut.ready:
-	@mkdir -p $(LOGDIR)/$$(dirname Minisat/make-taut)
-	@echo '### Loading Minisat/make.ml,Minisat/taut.ml'
+$(LOGDIR)/Minisat/make-test.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Minisat/make-test)
+	@echo '### Loading Minisat/make.ml,Minisat/test.ml'
 	if which zchaff > /dev/null ; then \
-		echo '### Loading Minisat/make.ml,Minisat/taut.ml' > $(LOGDIR)/Minisat/make-taut ; \
-		(echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Minisat/make-taut 2>&1 ; \
+		echo '### Loading Minisat/make.ml,Minisat/test.ml' > $(LOGDIR)/Minisat/make-test ; \
+		(echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;'; echo 'loadt "Minisat/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Minisat/make-test 2>&1 ; \
 	else \
-		echo '### Error: skip Minisat/make.ml, Minisat/taut.ml because zchaff is not available' > $(LOGDIR)/Minisat/make-taut ; \
+		echo '### Error: skip Minisat/make.ml, Minisat/test.ml because zchaff is not available' > $(LOGDIR)/Minisat/make-test ; \
 	fi
-	@touch $(LOGDIR)/Minisat/make-taut.ready
+	@touch $(LOGDIR)/Minisat/make-test.ready
 
 $(LOGDIR)/Formal_ineqs/make-ineqs.ready:
 	@mkdir -p $(LOGDIR)/$$(dirname Formal_ineqs/make-ineqs)
@@ -247,7 +249,16 @@ $(LOGDIR)/100/bertrand-primerecip.ready:
 	@(echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/100/bertrand-primerecip 2>&1
 	@touch $(LOGDIR)/100/bertrand-primerecip.ready
 
-
+$(LOGDIR)/Cadical/make-test.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Cadical/make-test)
+	@echo '### Loading Cadical/make.ml,Cadical/test.ml'
+	if which cadical > /dev/null ; then \
+		echo '### Loading Cadical/make.ml,Cadical/test.ml' > $(LOGDIR)/Cadical/make-test ; \
+		(echo 'loadt "Cadical/make.ml";;'; echo 'loadt "Minisat/taut.ml";;'; echo 'loadt "Cadical/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Cadical/make-test 2>&1 ; \
+	else \
+		echo '### Error: skip Cadical/make.ml, Cadical/test.ml because cadical is not available' > $(LOGDIR)/Cadical/make-test ; \
+	fi
+	@touch $(LOGDIR)/Cadical/make-test.ready
 
 # Recall that $* is the stem matched by the %
 $(LOGDIR)/%.ready:

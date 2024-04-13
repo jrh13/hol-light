@@ -224,6 +224,21 @@ let SAME_DISTANCES_TO_AFFINE_HULL = prove
    `(x + y) dot (x + y):real^N = (x dot x + y dot y) + &2 * x dot y`] THEN
   SIMP_TAC[DOT_LSUB; DOT_RSUB; DOT_SYM] THEN CONV_TAC REAL_RING);;
 
+let BILINEAR_IN_AFFINE_HULL = prove
+ (`!(f:real^M->real^N->real^P) s t x y.
+        bilinear f /\ x IN affine hull s /\ y IN affine hull t
+        ==> f x y IN affine hull { f a b | a IN s /\ b IN t}`,
+  REWRITE_TAC[bilinear; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
+  MATCH_MP_TAC HULL_INDUCT THEN CONJ_TAC THENL
+   [GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC HULL_INDUCT THEN
+    ASM_SIMP_TAC[AFFINE_LINEAR_PREIMAGE; AFFINE_AFFINE_HULL] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[];
+    REWRITE_TAC[SET_RULE
+     `{x | !y. y IN k ==> P x y} = INTERS {{x | P x y} | y IN k}`] THEN
+    MATCH_MP_TAC AFFINE_INTERS THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ASM_SIMP_TAC[AFFINE_LINEAR_PREIMAGE; AFFINE_AFFINE_HULL]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some convenient lemmas about common affine combinations.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -3557,6 +3572,21 @@ let AFFINE_HULL_PCROSS,CONVEX_HULL_PCROSS = (CONJ_PAIR o prove)
       SIMP_TAC[convex; IN_ELIM_THM; lemma1;
                ONCE_REWRITE_RULE[convex] CONVEX_CONVEX_HULL]]]);;
 
+let BILINEAR_IN_CONVEX_HULL = prove
+ (`!(f:real^M->real^N->real^P) s t x y.
+        bilinear f /\ x IN convex hull s /\ y IN convex hull t
+        ==> f x y IN convex hull { f a b | a IN s /\ b IN t}`,
+  REWRITE_TAC[bilinear; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
+  MATCH_MP_TAC HULL_INDUCT THEN CONJ_TAC THENL
+   [GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC HULL_INDUCT THEN
+    ASM_SIMP_TAC[CONVEX_LINEAR_PREIMAGE; CONVEX_CONVEX_HULL] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[];
+    REWRITE_TAC[SET_RULE
+     `{x | !y. y IN k ==> P x y} = INTERS {{x | P x y} | y IN k}`] THEN
+    MATCH_MP_TAC CONVEX_INTERS THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ASM_SIMP_TAC[CONVEX_LINEAR_PREIMAGE; CONVEX_CONVEX_HULL]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations among closure notions and corresponding hulls.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -6579,11 +6609,22 @@ let CONVEX_HULL_INTERIOR_SUBSET = prove
 (* ------------------------------------------------------------------------- *)
 
 let SIMPLEX_FURTHEST_LT = prove
- (`!a:real^N s.
-        FINITE s
-        ==> !x. x IN (convex hull s) /\ ~(x IN s)
-                ==> ?y. y IN (convex hull s) /\ norm(x - a) < norm(y - a)`,
-  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+ (`!a:real^N s x.
+        x IN (convex hull s) /\ ~(x IN s)
+        ==> ?y. y IN (convex hull s) /\ norm(x - a) < norm(y - a)`,
+  GEN_TAC THEN MATCH_MP_TAC(MESON[]
+   `((!s. FINITE s ==> P s) ==> !s. P s) /\ (!s. FINITE s ==> P s)
+    ==> !s. P s`) THEN
+  CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [CARATHEODORY]) THEN
+    REWRITE_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `t:real^N->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `t:real^N->bool`) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN
+    ASM_MESON_TAC[SUBSET; HULL_MONO];
+    ALL_TAC] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   REWRITE_TAC[CONVEX_HULL_EMPTY; NOT_IN_EMPTY] THEN
   MAP_EVERY X_GEN_TAC [`x:real^N`; `s:real^N->bool`] THEN
   ASM_CASES_TAC `s:real^N->bool = {}` THENL
@@ -6637,6 +6678,24 @@ let SIMPLEX_FURTHEST_LT = prove
   ASM_SIMP_TAC[REAL_LE_ADD; REAL_LT_IMP_LE; REAL_SUB_LE] THEN
   UNDISCH_TAC `u + v = &1` THEN REAL_ARITH_TAC);;
 
+let SIMPLEX_FURTHEST_LT_EXISTS = prove
+ (`!a:real^N s x.
+        x IN convex hull s /\ ~(x IN s)
+        ==> ?y. y IN s /\ norm(x - a) < norm(y - a)`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o SPEC `a:real^N` o MATCH_MP SIMPLEX_FURTHEST_LT) THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[NOT_EXISTS_THM; REAL_NOT_LT; TAUT `~(p /\ q) <=> p ==> ~q`] THEN
+  DISCH_TAC THEN MATCH_MP_TAC HULL_INDUCT THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[NORM_ARITH `norm(y - a:real^N) = dist(a,y)`] THEN
+  REWRITE_TAC[CONVEX_CBALL; GSYM cball]);;
+
+let SIMPLEX_FURTHEST_LE_EXISTS = prove
+ (`!a:real^N s x.
+        x IN convex hull s
+        ==> ?y. y IN s /\ norm(x - a) <= norm(y - a)`,
+  MESON_TAC[SIMPLEX_FURTHEST_LT_EXISTS; REAL_LE_LT]);;
+
 let SIMPLEX_FURTHEST_LE = prove
  (`!a:real^N s.
         FINITE s /\ ~(s = {})
@@ -6650,13 +6709,6 @@ let SIMPLEX_FURTHEST_LE = prove
     ALL_TAC] THEN
   ONCE_REWRITE_TAC[DIST_SYM] THEN REWRITE_TAC[dist] THEN
   ASM_MESON_TAC[SIMPLEX_FURTHEST_LT; REAL_NOT_LE]);;
-
-let SIMPLEX_FURTHEST_LE_EXISTS = prove
- (`!a:real^N s.
-        FINITE s
-        ==> !x. x IN (convex hull s)
-                ==> ?y. y IN s /\ norm(x - a) <= norm(y - a)`,
-  MESON_TAC[NOT_IN_EMPTY; CONVEX_HULL_EMPTY; SIMPLEX_FURTHEST_LE]);;
 
 let SIMPLEX_EXTREMAL_LE = prove
  (`!s:real^N->bool.

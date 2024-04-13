@@ -4690,6 +4690,27 @@ let SUBGROUP_OF_SETWISE = prove
         group_setmul G s s SUBSET s`,
   REWRITE_TAC[subgroup_of; group_setinv; group_setmul] THEN SET_TAC[]);;
 
+let FINITE_SUBGROUP_OF_SETWISE = prove
+ (`!G s:A->bool.
+        FINITE s
+        ==> (s subgroup_of G <=>
+             s SUBSET group_carrier G /\
+             ~(s = {}) /\
+             group_setmul G s s SUBSET s)`,
+  REWRITE_TAC[SUBGROUP_OF_SETWISE] THEN REPEAT STRIP_TAC THEN
+  EQ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[SUBSET; group_setmul; group_setinv; FORALL_IN_GSPEC] THEN
+  STRIP_TAC THEN RULE_ASSUM_TAC(REWRITE_RULE[GSYM MEMBER_NOT_EMPTY]) THEN
+  SUBGOAL_THEN
+   `!x y:A. x IN s /\ y IN s ==> ?z. z IN s /\ group_mul G x z = y`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN MP_TAC
+     (SPECL [`s:A->bool`;`group_mul G (x:A)`] SURJECTIVE_IFF_INJECTIVE) THEN
+    ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; GROUP_MUL_LCANCEL; IMP_CONJ];
+    ASM_REWRITE_TAC[]] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[GROUP_RID_EQ]; ASM_MESON_TAC[GROUP_LINV_EQ]]);;
+
 let OPPOSITE_GROUP_SETINV = prove
  (`!G s:A->bool.
         group_setinv (opposite_group G) s = group_setinv G s`,

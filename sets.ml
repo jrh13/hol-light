@@ -239,6 +239,72 @@ let EXISTS_IN_UNION = prove
         (?x. x IN s /\ P x) \/ (?x. x IN t /\ P x)`,
   REWRITE_TAC[IN_UNION] THEN MESON_TAC[]);;
 
+let FORALL_IN_IMAGE = prove
+ (`!(f:A->B) s. (!y. y IN IMAGE f s ==> P y) <=> (!x. x IN s ==> P(f x))`,
+  REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[]);;
+
+let EXISTS_IN_IMAGE = prove
+ (`!(f:A->B) s. (?y. y IN IMAGE f s /\ P y) <=> ?x. x IN s /\ P(f x)`,
+  REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[]);;
+
+let FORALL_IN_GSPEC = prove
+ (`(!P Q (f:A->B). (!z. z IN {f x | P x} ==> Q z) <=> (!x. P x ==> Q(f x))) /\
+   (!P Q (f:A->B->C).
+        (!z. z IN {f x y | P x y} ==> Q z) <=>
+        (!x y. P x y ==> Q(f x y))) /\
+   (!P Q (f:A->B->C->D).
+        (!z. z IN {f w x y | P w x y} ==> Q z) <=>
+        (!w x y. P w x y ==> Q(f w x y))) /\
+   (!P Q (f:A->B->C->D->E).
+        (!z. z IN {f v w x y | P v w x y} ==> Q z) <=>
+        (!v w x y. P v w x y ==> Q(f v w x y)))`,
+  REWRITE_TAC[GSPEC; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let EXISTS_IN_GSPEC = prove
+ (`(!P Q (f:A->B). (?z. z IN {f x | P x} /\ Q z) <=> (?x. P x /\ Q(f x))) /\
+   (!P Q (f:A->B->C).
+        (?z. z IN {f x y | P x y} /\ Q z) <=>
+        (?x y. P x y /\ Q(f x y))) /\
+   (!P Q (f:A->B->C->D).
+        (?z. z IN {f w x y | P w x y} /\ Q z) <=>
+        (?w x y. P w x y /\ Q(f w x y))) /\
+   (!P Q (f:A->B->C->D->E).
+        (?z. z IN {f v w x y | P v w x y} /\ Q z) <=>
+        (?v w x y. P v w x y /\ Q(f v w x y)))`,
+  REWRITE_TAC[GSPEC; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let UNIONS_IMAGE = prove
+ (`!(f:A->B->bool) s. UNIONS (IMAGE f s) = {y | ?x. x IN s /\ y IN f x}`,
+  REPEAT GEN_TAC THEN  GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[IN_UNIONS; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let INTERS_IMAGE = prove
+ (`!(f:A->B->bool) s. INTERS (IMAGE f s) = {y | !x. x IN s ==> y IN f x}`,
+  REPEAT GEN_TAC THEN  GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[IN_INTERS; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let UNIONS_GSPEC = prove
+ (`(!P (f:A->B->bool).
+        UNIONS {f x | P x} = {a | ?x. P x /\ a IN (f x)}) /\
+   (!P (f:A->B->C->bool).
+        UNIONS {f x y | P x y} = {a | ?x y. P x y /\ a IN (f x y)}) /\
+   (!P (f:A->B->C->D->bool).
+        UNIONS {f x y z | P x y z} =
+        {a | ?x y z. P x y z /\ a IN (f x y z)})`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[IN_UNIONS; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let INTERS_GSPEC = prove
+ (`(!P (f:A->B->bool).
+        INTERS {f x | P x} = {a | !x. P x ==> a IN (f x)}) /\
+   (!P (f:A->B->C->bool).
+        INTERS {f x y | P x y} = {a | !x y. P x y ==> a IN (f x y)}) /\
+   (!P (f:A->B->C->D->bool).
+        INTERS {f x y z | P x y z} =
+        {a | !x y z. P x y z ==> a IN (f x y z)})`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[IN_INTERS; IN_ELIM_THM] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Basic property of the choice function.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -252,16 +318,18 @@ let CHOICE_DEF = prove
 (* ------------------------------------------------------------------------- *)
 
 let SET_TAC =
-  let PRESET_TAC =
-    POP_ASSUM_LIST(K ALL_TAC) THEN REPEAT COND_CASES_TAC THEN
-    REWRITE_TAC[EXTENSION; SUBSET; PSUBSET; DISJOINT; SING] THEN
-    REWRITE_TAC[NOT_IN_EMPTY; IN_UNIV; IN_UNION; IN_INTER; IN_DIFF; IN_INSERT;
-                IN_DELETE; IN_REST; IN_INTERS; IN_UNIONS; IN_IMAGE;
-                IN_ELIM_THM; IN] in
+  let PRESET_CONV =
+    REWRITE_CONV[INTERS_IMAGE; INTERS_GSPEC; UNIONS_IMAGE; UNIONS_GSPEC] THENC
+    REWRITE_CONV[EXTENSION; SUBSET; PSUBSET; DISJOINT; SING] THENC
+    REWRITE_CONV[NOT_IN_EMPTY; IN_UNIV; IN_UNION; IN_INTER; IN_DIFF; IN_INSERT;
+                 IN_DELETE; IN_REST; IN_INTERS; IN_UNIONS; IN_IMAGE;
+                 IN_ELIM_THM; IN] in
   fun ths ->
-    (if ths = [] then ALL_TAC else MP_TAC(end_itlist CONJ ths)) THEN
-    PRESET_TAC THEN
-    MESON_TAC[];;
+    MAP_EVERY MP_TAC ths THEN POP_ASSUM_LIST(K ALL_TAC) THEN
+    REPEAT(COND_CASES_TAC THEN POP_ASSUM MP_TAC) THEN
+    CONV_TAC PRESET_CONV THEN MAP_EVERY MP_TAC
+     (filter (fun th -> CONV_RULE PRESET_CONV th = TRUTH) ths) THEN
+    REWRITE_TAC[IN] THEN MESON_TAC[];;
 
 let SET_RULE tm = prove(tm,SET_TAC[]);;
 
@@ -938,14 +1006,6 @@ let IMAGE_EQ_EMPTY = prove
  (`!(f:A->B) s. (IMAGE f s = {}) <=> (s = {})`,
   REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_IMAGE] THEN MESON_TAC[]);;
 
-let FORALL_IN_IMAGE = prove
- (`!(f:A->B) s. (!y. y IN IMAGE f s ==> P y) <=> (!x. x IN s ==> P(f x))`,
-  REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[]);;
-
-let EXISTS_IN_IMAGE = prove
- (`!(f:A->B) s. (?y. y IN IMAGE f s /\ P y) <=> ?x. x IN s /\ P(f x)`,
-  REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[]);;
-
 let FORALL_IN_IMAGE_2 = prove
  (`!(f:A->B) P s. (!x y. x IN IMAGE f s /\ y IN IMAGE f s ==> P x y) <=>
                  (!x y. x IN s /\ y IN s ==> P (f x) (f y))`,
@@ -1031,69 +1091,11 @@ let SET_PAIR_THM = prove
  (`!(P:A#B->bool). {p | P p} = {(a,b) | P(a,b)}`,
   REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_ELIM_THM; IN_ELIM_PAIR_THM]);;
 
-let FORALL_IN_GSPEC = prove
- (`(!P Q (f:A->B). (!z. z IN {f x | P x} ==> Q z) <=> (!x. P x ==> Q(f x))) /\
-   (!P Q (f:A->B->C).
-        (!z. z IN {f x y | P x y} ==> Q z) <=>
-        (!x y. P x y ==> Q(f x y))) /\
-   (!P Q (f:A->B->C->D).
-        (!z. z IN {f w x y | P w x y} ==> Q z) <=>
-        (!w x y. P w x y ==> Q(f w x y))) /\
-   (!P Q (f:A->B->C->D->E).
-        (!z. z IN {f v w x y | P v w x y} ==> Q z) <=>
-        (!v w x y. P v w x y ==> Q(f v w x y)))`,
-  SET_TAC[]);;
-
-let EXISTS_IN_GSPEC = prove
- (`(!P Q (f:A->B). (?z. z IN {f x | P x} /\ Q z) <=> (?x. P x /\ Q(f x))) /\
-   (!P Q (f:A->B->C).
-        (?z. z IN {f x y | P x y} /\ Q z) <=>
-        (?x y. P x y /\ Q(f x y))) /\
-   (!P Q (f:A->B->C->D).
-        (?z. z IN {f w x y | P w x y} /\ Q z) <=>
-        (?w x y. P w x y /\ Q(f w x y))) /\
-   (!P Q (f:A->B->C->D->E).
-        (?z. z IN {f v w x y | P v w x y} /\ Q z) <=>
-        (?v w x y. P v w x y /\ Q(f v w x y)))`,
-  SET_TAC[]);;
-
 let SET_PROVE_CASES = prove
  (`!P:(A->bool)->bool.
        P {} /\ (!a s. ~(a IN s) ==> P(a INSERT s))
        ==> !s. P s`,
   MESON_TAC[SET_CASES]);;
-
-let UNIONS_IMAGE = prove
- (`!(f:A->B->bool) s. UNIONS (IMAGE f s) = {y | ?x. x IN s /\ y IN f x}`,
-  REPEAT GEN_TAC THEN  GEN_REWRITE_TAC I [EXTENSION] THEN
-  REWRITE_TAC[IN_UNIONS; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[]);;
-
-let INTERS_IMAGE = prove
- (`!(f:A->B->bool) s. INTERS (IMAGE f s) = {y | !x. x IN s ==> y IN f x}`,
-  REPEAT GEN_TAC THEN  GEN_REWRITE_TAC I [EXTENSION] THEN
-  REWRITE_TAC[IN_INTERS; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[]);;
-
-let UNIONS_GSPEC = prove
- (`(!P (f:A->B->bool).
-        UNIONS {f x | P x} = {a | ?x. P x /\ a IN (f x)}) /\
-   (!P (f:A->B->C->bool).
-        UNIONS {f x y | P x y} = {a | ?x y. P x y /\ a IN (f x y)}) /\
-   (!P (f:A->B->C->D->bool).
-        UNIONS {f x y z | P x y z} =
-        {a | ?x y z. P x y z /\ a IN (f x y z)})`,
-  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
-  REWRITE_TAC[IN_UNIONS; IN_ELIM_THM] THEN MESON_TAC[]);;
-
-let INTERS_GSPEC = prove
- (`(!P (f:A->B->bool).
-        INTERS {f x | P x} = {a | !x. P x ==> a IN (f x)}) /\
-   (!P (f:A->B->C->bool).
-        INTERS {f x y | P x y} = {a | !x y. P x y ==> a IN (f x y)}) /\
-   (!P (f:A->B->C->D->bool).
-        INTERS {f x y z | P x y z} =
-        {a | !x y z. P x y z ==> a IN (f x y z)})`,
-  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
-  REWRITE_TAC[IN_INTERS; IN_ELIM_THM] THEN MESON_TAC[]);;
 
 let UNIONS_SINGS_GEN = prove
  (`!P:A->bool. UNIONS {{x} | P x} = {x | P x}`,

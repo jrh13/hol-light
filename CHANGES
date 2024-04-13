@@ -8,6 +8,90 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 12th Apr 2024               Cadical/* [new directory]
+
+Added a proof-checking interface to the Cadical SAT solver
+(https://github.com/arminbiere/cadical). This is highly analogous
+to the existing interfaces to Minisat and zchaff in "Minisat/*"
+and uses some very similar code for CNF transformation. Among
+other facilities, this makes available a Cadical-powered tautology
+checker, with the LRAT proof produced by Cadical (it is tidied up
+with lrat-trim in the standard flow) checked in the HOL Light
+kernel. For example:
+
+  # CADICAL_PROVE `(p ==> q) <=> (p <=> p /\ q)`;;
+  val it : thm = |- p ==> q <=> p <=> p /\ q
+
+Thu 11th Apr 2024               Examples/complexpolygon.ml
+
+Added a proof that a polygon with all its vertices on the unit circle
+is closed under complex multiplication iff the vertices are the n'th
+complex roots of unity for some n. This is based on the discussion in
+
+  https://math.stackexchange.com/questions/4892153
+
+in particular the observation from Dario extending Carl Schildkraut's
+proof of the original problem to an equivalence.
+
+Thu 11th Apr 2024               Library/grouptheory.ml
+
+Added a few new miscellaneous theorems:
+
+  BILINEAR_IN_AFFINE_HULL =
+    |- !f s t x y.
+           bilinear f /\ x IN affine hull s /\ y IN affine hull t
+           ==> f x y IN affine hull {f a b | a IN s /\ b IN t}
+
+  BILINEAR_IN_CONVEX_HULL =
+    |- !f s t x y.
+           bilinear f /\ x IN convex hull s /\ y IN convex hull t
+           ==> f x y IN convex hull {f a b | a IN s /\ b IN t}
+
+  FINITE_SUBGROUP_OF_SETWISE =
+    |- !G s.
+           FINITE s
+           ==> (s subgroup_of G <=>
+                s SUBSET group_carrier G /\
+                ~(s = {}) /\
+                group_setmul G s s SUBSET s)
+
+  SIMPLEX_FURTHEST_LT_EXISTS =
+    |- !a s x.
+           x IN convex hull s /\ ~(x IN s)
+           ==> ?y. y IN s /\ norm(x - a) < norm(y - a)
+
+as well as generalizing both SIMPLEX_FURTHEST_LT and SIMPLEX_FURTHEST_LE_EXISTS
+to remove the finiteness assumption (hence perhaps making the "SIMPLEX" in the
+name a bit misleading).
+
+Tue  2nd Apr 2024               printer.ml, bool.ml, Arithmetic/passim, Model/passim
+
+Fixed a bug in the printer where the interface map was not reversed for
+binders. Also made a few minor name changes in the embedded logics to
+avoid using "true" and "false", to make room for using those as alternative
+names for T and F.
+
+Mon  1st Apr 2024               sets.ml
+
+Made a few useful improvements to SET_TAC and SET_RULE. First of all, they now
+deal with conditionals at least to some extent (the previous failure to do so
+was a basic bug). They also use streamlined versions of certain "write away set
+concepts" rules such as UNIONS_GSPEC, which can be helpful preprocessing to
+make the eventual MESON problem easier, or even provable at all. Here are a
+couple of trivial examples that now work but didn't previously:
+
+  SET_RULE `IMAGE (f:A->B) s = UNIONS {{f x} | x IN s}`;;
+
+  SET_RULE `{a,b} DELETE (a:A) = if a = b then {} else {b}`;;
+
+Fri 22nd Mar 2024               bool.ml
+
+Made a few tiny optimizations to basic rules like CONJUNCT1 by switching
+the implementation from PROVE_HYP to the underlying primitive rules
+DEDUCT_ANTISYM_RULE and EQ_MP. This has the advantage of skipping a check
+that in context we know is redundant (whether the PROVE_HYP is
+non-trivial in the sense that the assumption is not there to start with).
+
 Tue 19th Mar 2024               lib.ml
 
 Made "strings_of_file" and "string_of_file" more robust so they can handle

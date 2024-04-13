@@ -1,0 +1,20 @@
+Proof-checking interface to the Cadical SAT solver. To use this, you need
+binaries for both "cadical" and "lrat-trim" in your PATH. Here's an example
+of how to build them both and copy the binaries to your own bin:
+
+  git clone https://github.com/arminbiere/cadical
+  (cd ./cadical; ./configure && make)
+  cp ./cadical/build/cadical ~/bin
+
+  git clone https://github.com/arminbiere/lrat-trim
+  (cd ./lrat-trim; ./configure && make test)
+  cp ./lrat-trim/lrat-trim ~/bin
+
+Once you then load the files in "Cadical/make.ml", it makes available a
+Cadical-powered tautology prover CADICAL_PROVE for arbitrary propositional
+problems (not necessarily in any normal form) as well as various associated
+functions for processing and interpreting DIMACS .cnf problem files and
+LRAT proofs as HOL statements and refutations. For example:
+
+  # CADICAL_PROVE `(p ==> q) <=> (p <=> p /\ q)`;;
+  val it : thm = |- p ==> q <=> p <=> p /\ q

@@ -469,7 +469,10 @@ let pp_print_term =
 
     and print_binder prec tm =
       let absf = is_gabs tm in
-      let s = if absf then "\\" else name_of(rator tm) in
+      let s,s' = if absf then "\\","\\" else
+                 let bt = rator tm in
+                 let sn = name_of bt in
+                 sn,reverse_interface(sn,type_of bt) in
       let rec collectvs tm =
         if absf then
           if is_abs tm then
@@ -491,8 +494,8 @@ let pp_print_term =
       let vs,bod = collectvs tm in
       ((if prec = 0 then pp_open_hvbox fmt 4
         else (pp_open_hvbox fmt 5; pp_print_string fmt "("));
-       pp_print_string fmt s;
-       (if isalnum s then pp_print_string fmt " " else ());
+       pp_print_string fmt s';
+       (if isalnum s' then pp_print_string fmt " " else ());
        do_list (fun (b,x) ->
          (if b then pp_print_string fmt "(" else ());
          print_term 0 x;

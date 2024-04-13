@@ -622,17 +622,17 @@ let SETUNION = new_specification ["setunion"]
 (* ------------------------------------------------------------------------- *)
 
 let true_def = new_definition
- `true = mk_V(Ur_bool,I_BOOL T)`;;
+ `True = mk_V(Ur_bool,I_BOOL T)`;;
 
 let false_def = new_definition
- `false = mk_V(Ur_bool,I_BOOL F)`;;
+ `False = mk_V(Ur_bool,I_BOOL F)`;;
 
 let boolset = new_definition
  `boolset =
      mk_V(Powerset Ur_bool,I_SET (setlevel Ur_bool) (setlevel Ur_bool))`;;
 
 let IN_BOOL = prove
- (`!x. x <: boolset <=> (x = true) \/ (x = false)`,
+ (`!x. x <: boolset <=> (x = True) \/ (x = False)`,
   REWRITE_TAC[inset; boolset; true_def; false_def] THEN
   SIMP_TAC[MK_V_SET; SUBSET_REFL] THEN
   REWRITE_TAC[setlevel_INJ; setlevel] THEN
@@ -648,7 +648,7 @@ let IN_BOOL = prove
     ASM_MESON_TAC[V_TYBIJ; ELEMENT_IN_LEVEL; PAIR_EQ]]);;
 
 let TRUE_NE_FALSE = prove
- (`~(true = false)`,
+ (`~(True = False)`,
   REWRITE_TAC[true_def; false_def] THEN
   DISCH_THEN(MP_TAC o AP_TERM `dest_V`) THEN
   SUBGOAL_THEN `!b. (I_BOOL b) IN setlevel Ur_bool` ASSUME_TAC THENL
@@ -657,7 +657,7 @@ let TRUE_NE_FALSE = prove
 
 let BOOLEAN_EQ = prove
  (`!x y. x <: boolset /\ y <: boolset /\
-         ((x = true) <=> (y = true))
+         ((x = True) <=> (y = True))
          ==> (x = y)`,
   MESON_TAC[TRUE_NE_FALSE; IN_BOOL]);;
 
@@ -774,15 +774,15 @@ let ABSTRACT_EQ = prove
 (* ------------------------------------------------------------------------- *)
 
 let boolean = new_definition
-  `boolean b = if b then true else false`;;
+  `boolean b = if b then True else False`;;
 
 let holds = new_definition
-  `holds s x <=> (apply s x = true)`;;
+  `holds s x <=> (apply s x = True)`;;
 
 let BOOLEAN_IN_BOOLSET = prove
  (`!b. boolean b <: boolset`,
   REWRITE_TAC[boolean] THEN MESON_TAC[IN_BOOL]);;
 
 let BOOLEAN_EQ_TRUE = prove
- (`!b. (boolean b = true) <=> b`,
+ (`!b. (boolean b = True) <=> b`,
   REWRITE_TAC[boolean] THEN MESON_TAC[TRUE_NE_FALSE]);;
