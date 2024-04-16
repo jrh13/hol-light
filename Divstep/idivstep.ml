@@ -85,6 +85,13 @@ let IDIVSTEP_STAYS_ODD = prove
   ONCE_REWRITE_TAC[GSYM INT_ADD_REM; GSYM INT_SUB_REM] THEN
   ASM_REWRITE_TAC[] THEN CONV_TAC INT_REDUCE_CONV);;
 
+let IDIVSTEP_STAYS_ZERO = prove
+ (`!d f g d' f' g'.
+         g = &0 /\ idivstep(d,f,g) = d',f',g' ==> g' = &0`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_REWRITE_TAC[idivstep] THEN CONV_TAC INT_REDUCE_CONV THEN
+  REWRITE_TAC[PAIR_EQ; INT_MUL_LZERO] THEN INT_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Iterated and componentwise versions of idivstep                           *)
 (* ------------------------------------------------------------------------- *)
@@ -342,6 +349,24 @@ let DIVSTEP_MAT_ADD = prove
   SPEC_TAC(`m:num`,`m:num`) THEN INDUCT_TAC THEN
   REWRITE_TAC[ADD_CLAUSES; divstep_mat; DIVSTEP_DFG_ADD; IMAT_MUL_LID] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[IMAT_MUL_LID; IMAT_MUL_ASSOC]);;
+
+let DIVSTEP_MAT_DIAGONAL = prove
+ (`!d f n.
+        divstep_mat n (d,f,&0) $1$2 = &0 /\
+        divstep_mat n (d,f,&0) $2$1 = &0`,
+  GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
+  ASM_SIMP_TAC[divstep_mat; imat_I; LAMBDA_BETA; DIMINDEX_2; ARITH] THEN
+  SIMP_TAC[DIVSTEP_G_ZERO] THEN CONV_TAC INT_REDUCE_CONV THEN
+  ASM_SIMP_TAC[imat_mul; VECTOR_2; ISUM_2; LAMBDA_BETA; DIMINDEX_2; ARITH] THEN
+  INT_ARITH_TAC);;
+
+let DIVSTEP_MAT_DIAGONAL_1 = prove
+ (`!d f g n. g = &0 ==> divstep_mat n (d,f,g) $1$2 = &0`,
+  MESON_TAC[DIVSTEP_MAT_DIAGONAL]);;
+
+let DIVSTEP_MAT_DIAGONAL_2 = prove
+ (`!d f g n. g = &0 ==> divstep_mat n (d,f,g) $2$1 = &0`,
+  MESON_TAC[DIVSTEP_MAT_DIAGONAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Invariance of divstep_d and divstep_mat under congruences.                *)

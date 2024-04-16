@@ -51,6 +51,6 @@ you are rewriting with ad-hoc set theory lemmas generated like this:
 }
 
 \SEEALSO
-retypecheck, term_of_preterm, type_invention_error.
+print_types_of_subterms, retypecheck, term_of_preterm, type_invention_error.
 
 \ENDDOC

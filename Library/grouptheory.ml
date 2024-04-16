@@ -1006,7 +1006,7 @@ let GROUP_RULE =
     LAND_CONV GROUP_NORM_CONV in
   let rec GROUP_EQ_HYPERNORM_CONV tm =
     let ts = list_of_gtm(lhand tm) in
-    if length ts > 2 &
+    if length ts > 2 &&
        (let p,v = hd ts and q,w = last ts in not(p = q) && v = w)
     then (GROUP_ROTATE_CONV 1 THENC GROUP_EQ_HYPERNORM_CONV) tm
     else REFL tm in
@@ -1877,8 +1877,8 @@ let IMAGE_GROUP_CONJUGATION_BY_MUL = prove
         s SUBSET group_carrier G
         ==> IMAGE (group_conjugation G (group_mul G a b)) s =
             IMAGE (group_conjugation G a) (IMAGE (group_conjugation G b) s)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM IMAGE_o] THEN MATCH_MP_TAC(SET_RULE
-   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM IMAGE_o] THEN
+  MATCH_MP_TAC IMAGE_EQ THEN
   ASM_MESON_TAC[GROUP_CONJUGATION_CONJUGATION; o_THM; SUBSET]);;
 
 let IMAGE_GROUP_CONJUGATION_BY_INV = prove
@@ -4690,6 +4690,27 @@ let SUBGROUP_OF_SETWISE = prove
         group_setmul G s s SUBSET s`,
   REWRITE_TAC[subgroup_of; group_setinv; group_setmul] THEN SET_TAC[]);;
 
+let FINITE_SUBGROUP_OF_SETWISE = prove
+ (`!G s:A->bool.
+        FINITE s
+        ==> (s subgroup_of G <=>
+             s SUBSET group_carrier G /\
+             ~(s = {}) /\
+             group_setmul G s s SUBSET s)`,
+  REWRITE_TAC[SUBGROUP_OF_SETWISE] THEN REPEAT STRIP_TAC THEN
+  EQ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[SUBSET; group_setmul; group_setinv; FORALL_IN_GSPEC] THEN
+  STRIP_TAC THEN RULE_ASSUM_TAC(REWRITE_RULE[GSYM MEMBER_NOT_EMPTY]) THEN
+  SUBGOAL_THEN
+   `!x y:A. x IN s /\ y IN s ==> ?z. z IN s /\ group_mul G x z = y`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN MP_TAC
+     (SPECL [`s:A->bool`;`group_mul G (x:A)`] SURJECTIVE_IFF_INJECTIVE) THEN
+    ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; GROUP_MUL_LCANCEL; IMP_CONJ];
+    ASM_REWRITE_TAC[]] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[GROUP_RID_EQ]; ASM_MESON_TAC[GROUP_LINV_EQ]]);;
+
 let OPPOSITE_GROUP_SETINV = prove
  (`!G s:A->bool.
         group_setinv (opposite_group G) s = group_setinv G s`,
@@ -5855,8 +5876,7 @@ let LEFT_COSET_LEFT_COSET = prove
             left_coset G (group_mul G x y) h`,
   REWRITE_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN
   REWRITE_TAC[LEFT_COSET_AS_IMAGE; GSYM IMAGE_o; o_DEF] THEN
-  MATCH_MP_TAC(SET_RULE
-   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  MATCH_MP_TAC IMAGE_EQ THEN
   ASM_SIMP_TAC[GROUP_MUL_ASSOC; SUBSET]);;
 
 let RIGHT_COSET_RIGHT_COSET = prove
@@ -6218,9 +6238,7 @@ let GROUP_ACTION_LEFT_COSET_MULTIPLICATION = prove
   X_GEN_TAC `a:A` THEN DISCH_TAC THEN X_GEN_TAC `b:A` THEN DISCH_TAC THEN
   REWRITE_TAC[IN_ELIM_THM; GSYM IMAGE_o; o_DEF] THEN
   EXISTS_TAC `group_mul G a b:A` THEN ASM_SIMP_TAC[GROUP_MUL] THEN
-  MATCH_MP_TAC(SET_RULE
-   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
-  ASM_MESON_TAC[GROUP_MUL_ASSOC; SUBSET]);;
+  MATCH_MP_TAC IMAGE_EQ THEN ASM_MESON_TAC[GROUP_MUL_ASSOC; SUBSET]);;
 
 let GROUP_ORBIT_LEFT_COSET_MULTIPLICATION = prove
  (`!G h a:A.
@@ -6861,9 +6879,8 @@ let GROUP_SETINV_RIGHT_COSET = prove
    [REWRITE_TAC[group_setinv; group_setmul;
       SET_RULE `{f x y | P x /\ y IN {a}} = {f x a | P x}`;
       SET_RULE `{f x y | x IN {a} /\ P y} = {f a y | P y}`] THEN
-    REWRITE_TAC[SIMPLE_IMAGE; GSYM IMAGE_o] THEN MATCH_MP_TAC(SET_RULE
-     `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
-    RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+    REWRITE_TAC[SIMPLE_IMAGE; GSYM IMAGE_o] THEN
+    MATCH_MP_TAC IMAGE_EQ THEN RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
     ASM_SIMP_TAC[GROUP_INV_MUL; o_DEF];
     ASM_SIMP_TAC[GROUP_SETINV_SUBGROUP; GROUP_INV]]);;
 
@@ -13953,9 +13970,7 @@ let CARRIER_SUBGROUP_GENERATED_UNIONS_ALT = prove
    `{y | y IN {f x | P x} /\ Q y} = IMAGE f {x | P x /\ Q(f x)}`] THEN
   ONCE_REWRITE_TAC[TAUT `p /\ ~q <=> ~(p ==> q)`] THEN
   SIMP_TAC[RESTRICTION] THEN REWRITE_TAC[NOT_IMP; GSYM IMAGE_o; o_DEF] THEN
-  GEN_REWRITE_TAC RAND_CONV [SIMPLE_IMAGE_GEN] THEN
-  MATCH_MP_TAC(SET_RULE
-   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  GEN_REWRITE_TAC RAND_CONV [SIMPLE_IMAGE_GEN] THEN MATCH_MP_TAC IMAGE_EQ THEN
   REWRITE_TAC[FORALL_IN_GSPEC] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC GROUP_SUM_EQ THEN SIMP_TAC[RESTRICTION]);;
 

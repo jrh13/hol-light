@@ -478,21 +478,21 @@ let mclaurin_atn_rule,MCLAURIN_ATN_RULE =
   let pth = SPECL [x_tm; n_tm; k_tm] MCLAURIN_ATN_APPROX
   and CLEAN_RULE = REWRITE_RULE[real_pow]
   and MATCH_REAL_LE_TRANS = MATCH_MP REAL_LE_TRANS
-  and num_0 = Int 0
-  and num_1 = Int 1 in
+  and num_0 = num 0
+  and num_1 = num 1 in
   let mclaurin_atn_rule k0 p0 =
     if k0 = 0 then failwith "mclaurin_atn_rule: must have |x| <= 1/2" else
-    let k = Int k0
-    and p = Int p0 in
+    let k = num k0
+    and p = num p0 in
     let n = Num.int_of_num(ceiling_num ((p +/ k) // k)) in
     let ns = if n mod 2 = 0 then 0--(n - 1) else 0--(n - 2) in
     map (fun m -> if m mod 2 = 0 then num_0 else
                   (if (m - 1) mod 4 = 0 then I else minus_num)
-                  (num_1 // Int m)) ns
+                  (num_1 // num m)) ns
   and MCLAURIN_ATN_RULE k0 p0 =
     if k0 = 0 then failwith "MCLAURIN_ATN_RULE: must have |x| <= 1/2" else
-    let k = Int k0
-    and p = Int p0 in
+    let k = num k0
+    and p = num p0 in
     let n = ceiling_num ((p +/ k) // k) in
     let th1 = INST [mk_numeral k,k_tm; mk_numeral n,n_tm] pth in
     let th2 = ASSUME (lhand(lhand(concl th1)))
@@ -684,9 +684,9 @@ let rec POLY l x =
 
 let atn_approx_conv,ATN_APPROX_CONV =
   let atn_tm = `atn`
-  and num_0 = Int 0
-  and num_1 = Int 1
-  and num_2 = Int 2 in
+  and num_0 = num 0
+  and num_1 = num 1
+  and num_2 = num 2 in
   let rec log_2 x = if x <=/ num_1 then log_2 (num_2 */ x) -/ num_1
        else if x >/ num_2 then log_2 (x // num_2) +/ num_1
                       else num_1 in
@@ -718,12 +718,12 @@ let atn_approx_conv,ATN_APPROX_CONV =
 (* ------------------------------------------------------------------------- *)
 
 let pi_approx_rule,PI_APPROX_RULE =
-  let const_1_8 = Int 1 // Int 8
-  and const_1_57 = Int 1 // Int 57
-  and const_1_239 = Int 1 // Int 239
-  and const_24 = Int 24
-  and const_8 = Int 8
-  and const_4 = Int 4
+  let const_1_8 = num 1 // num 8
+  and const_1_57 = num 1 // num 57
+  and const_1_239 = num 1 // num 239
+  and const_24 = num 24
+  and const_8 = num 8
+  and const_4 = num 4
   and tm_1_8 = `atn(&1 / &8)`
   and tm_1_57 = `atn(&1 / &57)`
   and tm_1_239 = `atn(&1 / &239)`
@@ -802,14 +802,14 @@ let pi_approx_binary_rule,PI_APPROX_BINARY_RULE =
              ARITH_RULE `SUC p - p = 1`; SUB_REFL] THEN
     UNDISCH_TAC `abs (&2 pow p * r - a) <= inv (&2)` THEN
     CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC REAL_RAT_REDUCE_CONV)
-  and num_2 = Int 2 in
+  and num_2 = num 2 in
   let pi_approx_binary_rule p =
-    let ppow = power_num num_2 (Int p) in
+    let ppow = power_num num_2 (num p) in
     let r = pi_approx_rule (p + 1) in
     let a = round_num (ppow */ r) in
     a // ppow
   and PI_APPROX_BINARY_RULE p =
-    let ppow = power_num num_2 (Int p) in
+    let ppow = power_num num_2 (num p) in
     let th1 = PI_APPROX_RULE (p + 1) in
     let th2 = CONV_RULE(funpow 3 RAND_CONV num_CONV) th1 in
     let r = rat_of_term(rand(rand(lhand(concl th2)))) in
@@ -823,10 +823,10 @@ let pi_approx_binary_rule,PI_APPROX_BINARY_RULE =
 (* ------------------------------------------------------------------------- *)
 
 let ATN_EXPAND_CONV =
-  let num_0 = Int 0
-  and num_1 = Int 1
-  and num_2 = Int 2
-  and eighth = Int 1 // Int 8
+  let num_0 = num 0
+  and num_1 = num 1
+  and num_2 = num 2
+  and eighth = num 1 // num 8
   and atn_tm = `atn`
   and eighth_tm = `&1 / &8`
   and mk_mul = mk_binop `(*)`

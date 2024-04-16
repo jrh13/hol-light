@@ -226,7 +226,7 @@ let GEN_SAT_PROVE solver solvername =
             unsatProveResolve lfn mcth (cl,sk,srl) (* returns p |- F *)
       | None -> UNDISCH(TAUT(mk_imp(stm,false_tm)))) in
     res in
-  fun tm ->
+  let PROP_PROVE tm =
     let sth = presimp_conv (mk_neg tm) in
     let stm = rand(concl sth) in
     if stm = false_tm then triv_rule tm sth else
@@ -254,7 +254,17 @@ let GEN_SAT_PROVE solver solvername =
     if is_imp(concl th)
     then raise (Sat_counterexample
       (EQ_MP (AP_TERM (rator(concl th)) (SYM sth)) th))
-    else main_rule tm stm sth th);;
+    else main_rule tm stm sth th) in
+  fun tm ->
+    if type_of tm <> bool_ty then failwith "GEN_SAT_PROVE" else
+    let pats = filter (not o is_var) (atoms tm) in
+    let bvs = map (genvar o type_of) pats in
+    let tm' = subst (zip bvs pats) tm in
+    try let th' = PROP_PROVE tm' in
+        let th = INST (zip pats bvs) th' in
+        if concl th = tm then th else failwith "GEN_ZSAT_PROVE"
+    with Sat_counterexample cth ->
+            raise (Sat_counterexample(INST (zip pats bvs) cth));;
 
 let SAT_PROVE = GEN_SAT_PROVE minisatp "minisatp";;
 

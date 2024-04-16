@@ -98,6 +98,22 @@ else loads "load_camlp4.ml";;
 
 Topdirs.dir_load Format.std_formatter (Filename.concat (!hol_dir) "pa_j.cmo");;
 
+if version_ge_4_14
+then loads "bignum_zarith.ml"
+else loads "bignum_num.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Bind these to names that are independent of OCaml versions before they    *)
+(* are potentially overwritten by an identifier of the same name. In older   *)
+(* and newer Ocaml versions these are respectively:                          *)
+(*                                                                           *)
+(* Pervasives.sqrt -> Float.sqrt                                             *)
+(* Pervasives.abs_float -> Stdlib.abs_float / Float.abs                      *)
+(* ------------------------------------------------------------------------- *)
+
+let float_sqrt = sqrt;;
+let float_fabs = abs_float;;
+
 (* ------------------------------------------------------------------------- *)
 (* Various tweaks to OCaml and general library functions.                    *)
 (* ------------------------------------------------------------------------- *)

@@ -243,8 +243,8 @@ let opt = {
 let x_list = mk_list ([mk_float (-10) 0; mk_float (-10) 0; mk_float (-10) 0], `:real`);;
 let z_list = mk_list ([mk_float 10 0; mk_float 10 0; mk_float 10 0], `:real`);;
 
-let x_inf = [Informal_float.mk_float (Int (-10)) 0; Informal_float.mk_float (Int (-10)) 0; Informal_float.mk_float (Int (-10)) 0];;
-let z_inf = [Informal_float.mk_float (Int 10) 0; Informal_float.mk_float (Int 10) 0; Informal_float.mk_float (Int 10) 0];;
+let x_inf = [Informal_float.mk_float (num (-10)) 0; Informal_float.mk_float (num (-10)) 0; Informal_float.mk_float (num (-10)) 0];;
+let z_inf = [Informal_float.mk_float (num 10) 0; Informal_float.mk_float (num 10) 0; Informal_float.mk_float (num 10) 0];;
 
 let dom_th = mk_m_center_domain 3 5 x_list z_list;;
 let dom_inf = Informal_taylor.mk_m_center_domain 5 x_inf z_inf;;
@@ -268,8 +268,8 @@ result_stats c;;
 
 (***)
 
-let x_inf = [Informal_float.mk_float (Int 1) 0];;
-let y_inf = [Informal_float.mk_float (Int 3) 0];;
+let x_inf = [Informal_float.mk_float (num 1) 0];;
+let y_inf = [Informal_float.mk_float (num 3) 0];;
 
 let dom_inf = Informal_taylor.mk_m_center_domain 5 x_inf y_inf;;
 

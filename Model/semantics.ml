@@ -153,8 +153,8 @@ let sequent = new_definition
   `asms |= p <=> ALL (\a. a has_type Bool) (CONS p asms) /\
                  !sigma tau. type_valuation tau /\
                              term_valuation tau sigma /\
-                              ALL (\a. semantics sigma tau a = true) asms
-                              ==> (semantics sigma tau p = true)`;;
+                              ALL (\a. semantics sigma tau a = True) asms
+                              ==> (semantics sigma tau p = True)`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Invariance of semantics under alpha-conversion.                           *)
@@ -212,9 +212,9 @@ let BINARY_INFERENCE_RULE = prove
  (`(p1 has_type Bool /\ p2 has_type Bool
    ==> q has_type Bool /\
        !sigma tau. type_valuation tau /\ term_valuation tau sigma /\
-                   (semantics sigma tau p1 = true) /\
-                   (semantics sigma tau p2 = true)
-                  ==> (semantics sigma tau q = true))
+                   (semantics sigma tau p1 = True) /\
+                   (semantics sigma tau p2 = True)
+                  ==> (semantics sigma tau q = True))
    ==> (asl1 |= p1 /\ asl2 |= p2 ==> TERM_UNION asl1 asl2 |= q)`,
   REWRITE_TAC[sequent; ALL] THEN STRIP_TAC THEN STRIP_TAC THEN
   ASM_SIMP_TAC[ALL_BOOL_TERM_UNION] THEN REPEAT STRIP_TAC THEN
@@ -222,7 +222,7 @@ let BINARY_INFERENCE_RULE = prove
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MATCH_MP_TAC) THEN
   ASM_REWRITE_TAC[] THEN CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_REWRITE_TAC[] THEN UNDISCH_TAC
-    `ALL (\a. semantics sigma tau a = true) (TERM_UNION asl1 asl2)` THEN
+    `ALL (\a. semantics sigma tau a = True) (TERM_UNION asl1 asl2)` THEN
   REWRITE_TAC[GSYM ALL_MEM] THEN
   REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM ALL_MEM])) THEN
   REWRITE_TAC[] THEN STRIP_TAC THEN STRIP_TAC THEN
@@ -357,7 +357,7 @@ let ABS_correct = prove
   DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC[TERM_VALUATION_VALMOD] THEN
   SUBGOAL_THEN `ALL (\a. a has_type Bool) asl /\
                 ALL (\a. ~(VFREE_IN (Var x ty) a)) asl /\
-                ALL (\a. semantics sigma tau a = true) asl`
+                ALL (\a. semantics sigma tau a = True) asl`
   MP_TAC THENL [ASM_REWRITE_TAC[GSYM NOT_EX; ETA_AX]; ALL_TAC] THEN
   REWRITE_TAC[AND_ALL] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] ALL_IMP) THEN
@@ -1104,7 +1104,7 @@ let HOL_IS_CONSISTENT = prove
   MP_TAC(SPECL [`Var x Bool`; `x:string`; `Bool`] VARIANT) THEN
   ABBREV_TAC `y = VARIANT (Var x Bool) x Bool` THEN
   REWRITE_TAC[VFREE_IN; term_INJ; NOT_FORALL_THM] THEN DISCH_TAC THEN
-  EXISTS_TAC `((x:string,Bool) |-> false) (((y,Bool) |-> true)
+  EXISTS_TAC `((x:string,Bool) |-> False) (((y,Bool) |-> True)
                         (\(x,ty). @a. a <: typeset (\x. boolset) ty))` THEN
   EXISTS_TAC `\x:string. boolset` THEN
   ASM_REWRITE_TAC[type_valuation; VALMOD; PAIR_EQ; TRUE_NE_FALSE] THEN

@@ -1180,7 +1180,7 @@ parse_as_infix("divides",(12,"right"));;
 overload_interface("divides",`int_divides:int->int->bool`);;
 
 let int_divides = new_definition
-  `a divides b <=> ?x. b = a * x`;;
+  `a divides b <=> ?x:int. b = a * x`;;
 
 let INT_DIVIDES_LE = prove
  (`!x y:int. x divides y ==> abs(x) <= abs(y) \/ y = &0`,
@@ -1779,7 +1779,7 @@ let INT_DIV_CONV,INT_REM_CONV =
   and dtm = `(div)` and mtm = `(rem)` in
   let emod_num x y =
     let r = mod_num x y in
-    if r </ Int 0 then r +/ abs_num y else r in
+    if r </ num 0 then r +/ abs_num y else r in
   let equo_num x y = quo_num (x -/ emod_num x y) y in
   let INT_DIVMOD_CONV x y =
     let k = equo_num x y
@@ -2150,17 +2150,20 @@ let ARITH_RULE =
       Comb(Const("int_of_num",_),n) when not(is_numeral n) -> true
     | _ -> false in
   fun tm ->
-    let th1 = init_conv tm in
-    let tm1 = rand(concl th1) in
-    let avs,bod = strip_forall tm1 in
-    let nim = setify(find_terms is_numimage bod) in
-    let gvs = map (genvar o type_of) nim in
-    let pths = map (fun v -> SPEC (rand v) INT_POS) nim in
-    let ibod = itlist (curry mk_imp o concl) pths bod in
-    let gbod = subst (zip gvs nim) ibod in
-    let th2 = INST (zip nim gvs) (INT_ARITH gbod) in
-    let th3 = GENL avs (rev_itlist (C MP) pths th2) in
-    EQ_MP (SYM th1) th3;;
+    try
+      let th1 = init_conv tm in
+      let tm1 = rand(concl th1) in
+      let avs,bod = strip_forall tm1 in
+      let nim = setify(find_terms is_numimage bod) in
+      let gvs = map (genvar o type_of) nim in
+      let pths = map (fun v -> SPEC (rand v) INT_POS) nim in
+      let ibod = itlist (curry mk_imp o concl) pths bod in
+      let gbod = subst (zip gvs nim) ibod in
+      let th2 = INST (zip nim gvs) (INT_ARITH gbod) in
+      let th3 = GENL avs (rev_itlist (C MP) pths th2) in
+      EQ_MP (SYM th1) th3
+    with Failure msg ->
+      failwith ("ARITH_RULE `" ^ (string_of_term tm) ^ "`: " ^ msg);;
 
 let ARITH_TAC = CONV_TAC(EQT_INTRO o ARITH_RULE);;
 
@@ -2236,10 +2239,13 @@ let INT_ARITH =
   and not_tm = `(~)` in
   let pth = TAUT(mk_eq(mk_neg(mk_neg p_tm),p_tm)) in
   fun tm ->
-    let th0 = INST [tm,p_tm] pth
-    and th1 = init_CONV (mk_neg tm) in
-    let th2 = REAL_ARITH(mk_neg(rand(concl th1))) in
-    EQ_MP th0 (EQ_MP (AP_TERM not_tm (SYM th1)) th2);;
+    try
+      let th0 = INST [tm,p_tm] pth
+      and th1 = init_CONV (mk_neg tm) in
+      let th2 = REAL_ARITH(mk_neg(rand(concl th1))) in
+      EQ_MP th0 (EQ_MP (AP_TERM not_tm (SYM th1)) th2)
+    with Failure m ->
+      failwith ("INT_ARITH `" ^ (string_of_term tm) ^ "`: " ^ m);;
 
 let INT_ARITH_TAC = CONV_TAC(EQT_INTRO o INT_ARITH);;
 
@@ -2328,7 +2334,7 @@ let CONG_DIV2 = prove
   SIMP_TAC[CONG; DIV_MOD]);;
 
 let divides = prove
- (`a divides b <=> ?x. b = a * x`,
+ (`a divides b <=> ?x:num. b = a * x`,
   REWRITE_TAC[num_divides; int_divides] THEN
   EQ_TAC THENL [ALL_TAC; MESON_TAC[INT_OF_NUM_MUL; INT_OF_NUM_EQ]] THEN
   DISCH_THEN(X_CHOOSE_TAC `x:int`) THEN EXISTS_TAC `num_of_int(abs x)` THEN

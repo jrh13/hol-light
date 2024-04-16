@@ -1,11 +1,8 @@
 ###############################################################################
 # Makefile for HOL Light                                                      #
 #                                                                             #
-# Simple "make" just builds the camlp4 syntax extension "pa_j.cmo", which is  #
-# necessary to load the HOL Light core into the OCaml toplevel.               #
-#                                                                             #
-# The later options such as "make hol" create standalone images, but only     #
-# work under Linux when the "ckpt" checkpointing program is installed.        #
+# Simple "make" just builds the camlp4/camlp5 syntax extension "pa_j.cmo",    #
+# which is necessary to load the HOL Light core into the OCaml toplevel.      #
 #                                                                             #
 # See the README file for more detailed information about the build process.  #
 #                                                                             #
@@ -38,15 +35,14 @@ CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-'
 
 # Main target
 
-default: update_database.ml pa_j.cmo;
+default: update_database.ml pa_j.cmo hol.sh;
 
 # Choose an appropriate "update_database.ml" file
 
-update_database.ml:; if test ${OCAML_VERSION} = "4.14" ; \
+update_database.ml:; if [ ${OCAML_VERSION} = "4.14" ] ; \
                      then cp update_database_4.14.ml update_database.ml ; \
                      else cp update_database_${OCAML_UNARY_VERSION}.ml update_database.ml ; \
                      fi
-
 
 # Build the camlp4 syntax extension file (camlp5 for OCaml >= 3.10)
 
@@ -88,6 +84,21 @@ pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx
         else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
         fi
 
+# Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
+
+hol.sh: pa_j.cmo ${HOLSRC} update_database.ml ; \
+        if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
+                if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; \
+                then ocamlmktop -o ocaml-hol ; sed "s^__DIR__^`pwd`^g" hol_4.14.sh > hol.sh ; \
+                else ocamlmktop -o ocaml-hol nums.cma ; sed "s^__DIR__^`pwd`^g" hol_4.sh > hol.sh ; \
+                fi ; \
+                chmod +x hol.sh ; \
+        else \
+                echo 'FAILURE: hol.sh assumes Linux' ; \
+        fi
+
+# TODO: update this and hol.* commands to use one of checkpointing  tools
+# other than ckpt.
 # Build a standalone hol image called "hol" (needs Linux and ckpt program)
 
 hol: pa_j.cmo ${HOLSRC} update_database.ml;                    \
@@ -137,13 +148,12 @@ hol.complex: ./hol.multivariate                                         \
         echo -e 'loadt "Multivariate/complexes.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transcendentals.ml";;\nloadt "Multivariate/realanalysis.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
 
 # Build all those
-
-all: hol hol.multivariate hol.sosa hol.card hol.complex;
+all: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
 
 # Build binaries and copy them to binary directory
 
-install: hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivariate hol.sosa hol.card hol.complex ${BINDIR}
+install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivariate hol.sosa hol.card hol.complex ${BINDIR}
 
 # Clean up all compiled files
 
-clean:; rm -f update_database.ml pa_j.ml pa_j.cmi pa_j.cmo hol hol.multivariate hol.sosa hol.card hol.complex;
+clean:; rm -f update_database.ml pa_j.ml pa_j.cmi pa_j.cmo ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;

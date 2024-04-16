@@ -200,7 +200,7 @@ let pp_print_bitpat,pp_print_bitmatch =
   let f fmt =
     let unword i = function
     | Comb(Const("word",_),a) when is_numeral a ->
-      if dest_numeral a < power_num (Int 2) (dest_finty i)
+      if dest_numeral a < power_num (num 2) (dest_finty i)
       then a
       else failwith "numeral out of range"
     | a -> a in
@@ -567,7 +567,7 @@ let bm_build_tree' =
       match r with
       | None -> Leaf_dt eqth
       | Some(_,i) ->
-        let ii = mk_numeral (Int i) in
+        let ii = mk_numeral (num i) in
         let bit = bit_tm ii e in
         let skip_th sc th =
           let sm, rs' = dest_comb (lhs (concl th)) in
@@ -772,11 +772,11 @@ let rec bitpat_matches p i = match p with
 | Comb(Comb(Const("CONSPAT",_),p),a) ->
   let N = dest_word_ty (type_of a) in
   let n = Num.int_of_num (dest_finty N) in
-  let m = power_num (Int 2) (Int n) in
+  let m = power_num (num 2) (num n) in
   let i' = quo_num i m and a' = mod_num i m in
   let r = match a with
-  | Comb(Const("word1",_),Const("T",_)) -> if a' = Int 1 then None else Some 0
-  | Comb(Const("word1",_),Const("F",_)) -> if a' = Int 0 then None else Some 0
+  | Comb(Const("word1",_),Const("T",_)) -> if a' = num 1 then None else Some 0
+  | Comb(Const("word1",_),Const("F",_)) -> if a' = num 0 then None else Some 0
   | Comb(Const("word1",_),Var(_,_)) -> None
   | Comb(Const("word",_),n) ->
     let n' = dest_numeral n in
@@ -791,7 +791,7 @@ let rec bitpat_matches p i = match p with
     match bitpat_matches p i' with
     | Some j -> Some (j + n)
     | None -> None)
-| Const("NILPAT",_) -> if i = Int 0 then None else
+| Const("NILPAT",_) -> if i = num 0 then None else
   failwith "bitpat_matches: out of range"
 | Abs(_,c) -> bitpat_matches c i
 | Comb(Const("?",_),c) -> bitpat_matches c i
@@ -851,7 +851,7 @@ let inst_bitpat_numeral =
   | Comb(Comb(Const("CONSPAT",_),p),a) ->
     let N = dest_word_ty (type_of a) in
     let n = Num.int_of_num (dest_finty N) in
-    let m = power_num (Int 2) (Int n) in
+    let m = power_num (num 2) (num n) in
     let i' = quo_num i m and a' = mod_num i m in
     let ls, th' = go i' p in
     let p',x = dest_comb (concl th') in let p' = rand p' in
@@ -860,11 +860,11 @@ let inst_bitpat_numeral =
       let ls, b = match a with
       | Const("T",_) -> ls,true
       | Const("F",_) -> ls,false
-      | Var(_,_) -> let b = a' = Int 1 in ((if b then T else F),a)::ls, b
+      | Var(_,_) -> let b = a' = num 1 in ((if b then T else F),a)::ls, b
       | _ -> failwith "inst_bitpat_numeral" in
       ls, PROVE_HYP th' (
         if b then INST [x,ex; p',ep] w1T
-        else if i = Int 0 then INST [p',ep] w1F0
+        else if i = num 0 then INST [p',ep] w1F0
         else INST [x,ex; p',ep] w1F)
     | _ ->
       let thd = dim N in
@@ -936,7 +936,7 @@ let BITMATCH_CONV =
     (match snd (snd (get_dt a tr)) with
     | th::_ ->
       let ps = hd (hyp th) in
-      let ls, th' = inst_bitpat_numeral ps (Int n) in
+      let ls, th' = inst_bitpat_numeral ps (num n) in
       PROVE_HYP th' (INST ls th)
     | _ -> failwith "BITMATCH_CONV")
   | _ -> failwith "BITMATCH_CONV";;
@@ -992,7 +992,7 @@ let BITMATCH_SIMP_CONV asl =
               | Some b, Some c, None when b != c -> r := Some i
               | _ -> ()) a;
             let i = match !r with
-            | Some i -> mk_numeral (Int i)
+            | Some i -> mk_numeral (num i)
             | _ -> fail () in
             let th' = PROVE_HYP th (PROVE_HYP (pat_to_bit true i h)
               (bm_skip_clause (pat_to_bit false i) tm)) in
@@ -1141,7 +1141,7 @@ let bm_seq_numeral = function
     | Comb(Comb(Const("_SEQPATTERN",_),c),cs') ->
       let ps = hd (hyp th) in
       let pats = Array.init sz (fun i -> try
-        Some (bm_skip_clause (pat_to_bit false (mk_numeral (Int i))) tm)
+        Some (bm_skip_clause (pat_to_bit false (mk_numeral (num i))) tm)
       with Failure _ -> None) in
       let f = mk_fun cs' in
       fun n e' ->

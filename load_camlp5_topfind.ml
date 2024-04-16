@@ -5,5 +5,4 @@ Topdirs.dir_use Format.std_formatter "topfind";;
 Topfind.don't_load ["compiler-libs.common"];;
 
 Topfind.load_deeply ["camlp5"];;
-Topfind.load_deeply ["num"];;
 Topdirs.dir_load Format.std_formatter "camlp5o.cma";;

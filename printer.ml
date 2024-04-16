@@ -145,6 +145,15 @@ let typify_universal_set = ref true;;
 let print_all_thm = ref true;;
 
 (* ------------------------------------------------------------------------- *)
+(* Flag controlling whether types of subterms must be printed.               *)
+(* 0: Do not print the types of subterms                                     *)
+(* 1 (defualt) : Only print types containing invented type variables         *)
+(* 2: Print the types of constants and variables                             *)
+(* ------------------------------------------------------------------------- *)
+
+let print_types_of_subterms = ref 1;;
+
+(* ------------------------------------------------------------------------- *)
 (* Get the name of a constant or variable.                                   *)
 (* ------------------------------------------------------------------------- *)
 
@@ -208,9 +217,9 @@ let pp_print_term =
     match snd(get_infix_status s) with
     "right" -> true | _ -> false in
   let rec powerof10 n =
-    if abs_num n </ Int 1 then false
-    else if n =/ Int 1 then true
-    else powerof10 (n // Int 10) in
+    if abs_num n </ num 1 then false
+    else if n =/ num 1 then true
+    else powerof10 (n // num 10) in
   let bool_of_term t =
     match t with
       Const("T",_) -> true
@@ -324,7 +333,7 @@ let pp_print_term =
         let s_den = implode(tl(explode(string_of_num
                         (n_den +/ (mod_num n_num n_den))))) in
         pp_print_string fmt
-         ("#"^s_num^(if n_den = Int 1 then "" else ".")^s_den)
+         ("#"^s_num^(if n_den = num 1 then "" else ".")^s_den)
       with Failure _ -> try
         if s <> "_MATCH" || length args <> 2 then failwith "" else
         let cls = dest_clauses(hd(tl args)) in
@@ -422,7 +431,21 @@ let pp_print_term =
       else if (is_const hop || is_var hop) && args = [] then
         let s' = if parses_as_binder s || can get_infix_status s || is_prefix s
                  then "("^s^")" else s in
-        pp_print_string fmt s'
+        let rec has_invented_typevar (ty:hol_type): bool =
+          if is_vartype ty then (dest_vartype ty).[0] = '?'
+          else List.exists has_invented_typevar (snd (dest_type ty)) in
+        if !print_types_of_subterms = 2 ||
+           (!print_types_of_subterms = 1 && has_invented_typevar (type_of hop))
+        then
+          (pp_open_box fmt 0;
+          pp_print_string fmt "(";
+          pp_print_string fmt s';
+          pp_print_string fmt ":";
+          pp_print_type fmt (type_of hop);
+          pp_print_string fmt ")";
+          pp_close_box fmt ())
+        else
+          pp_print_string fmt s'
       else
         let l,r = dest_comb tm in
         (pp_open_hvbox fmt 0;
@@ -446,7 +469,10 @@ let pp_print_term =
 
     and print_binder prec tm =
       let absf = is_gabs tm in
-      let s = if absf then "\\" else name_of(rator tm) in
+      let s,s' = if absf then "\\","\\" else
+                 let bt = rator tm in
+                 let sn = name_of bt in
+                 sn,reverse_interface(sn,type_of bt) in
       let rec collectvs tm =
         if absf then
           if is_abs tm then
@@ -468,8 +494,8 @@ let pp_print_term =
       let vs,bod = collectvs tm in
       ((if prec = 0 then pp_open_hvbox fmt 4
         else (pp_open_hvbox fmt 5; pp_print_string fmt "("));
-       pp_print_string fmt s;
-       (if isalnum s then pp_print_string fmt " " else ());
+       pp_print_string fmt s';
+       (if isalnum s' then pp_print_string fmt " " else ());
        do_list (fun (b,x) ->
          (if b then pp_print_string fmt "(" else ());
          print_term 0 x;

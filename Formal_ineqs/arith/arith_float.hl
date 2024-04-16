@@ -2411,7 +2411,7 @@ let init_logs () =
 let float_to_log_string tm =
   let s, n_tm, e_tm = dest_float tm in
   let n = (if s = "T" then minus_num else I) (raw_dest_hash n_tm) in
-  let e = raw_dest_hash e_tm -/ Int Float_theory.min_exp in
+  let e = raw_dest_hash e_tm -/ num Float_theory.min_exp in
     string_of_num n ^ "," ^ string_of_num e;;
 
 let log_binop name pp tm1 tm2 =
@@ -2829,7 +2829,7 @@ let dest_float_raw f_tm =
 (* Compares raw representations of two floating-point numbers f1 and f2. *)
 (* Returns -1 if f1 < f2, 0 if f1 = f2, and 1 if f1 > f2.                *)
 let compare_floats_raw =
-  let denorm n e = n */ (Int  Arith_num.arith_base **/ e) in
+  let denorm n e = n */ (num  Arith_num.arith_base **/ e) in
   let cmp n1 e1 n2 e2 =
     if e1 <= e2 then 
       compare_num n1 (denorm n2 (e2 -/ e1))
@@ -4174,7 +4174,7 @@ let print_float fmt tm =
   try
     let s, m_tm, e_tm = Arith_float.dest_float tm in
     let m = Arith_num.raw_dest_hash m_tm and
-	e = Arith_num.raw_dest_hash e_tm -/ Num.num_of_int Float_theory.min_exp in
+	e = Arith_num.raw_dest_hash e_tm -/ num Float_theory.min_exp in
     let s_str = if s = "T" then "-" else "" in
     let m_str = Num.string_of_num m in
     let e_str = if e = num_0 then "" 

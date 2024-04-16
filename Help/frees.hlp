@@ -21,6 +21,6 @@ Clearly in the following term, {x} and {y} are free, whereas {z} is bound:
 }
 
 \SEEALSO
-freesl, free_in, thm_frees, variables.
+atoms, freesl, free_in, thm_frees, variables.
 
 \ENDDOC

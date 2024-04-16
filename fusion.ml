@@ -268,7 +268,7 @@ module Hol : Hol_kernel = struct
 
   let mk_comb(f,a) =
     match type_of f with
-      Tyapp("fun",[ty;_]) when Pervasives.compare ty (type_of a) = 0
+      Tyapp("fun",[ty;_]) when compare ty (type_of a) = 0
         -> Comb(f,a)
     | _ -> failwith "mk_comb: types do not agree"
 
@@ -320,7 +320,7 @@ module Hol : Hol_kernel = struct
     match tm with
       Abs(bv,bod) -> v <> bv && vfree_in v bod
     | Comb(s,t) -> vfree_in v s || vfree_in v t
-    | _ -> Pervasives.compare tm v = 0
+    | _ -> compare tm v = 0
 
 (* ------------------------------------------------------------------------- *)
 (* Finds the type variables (free) in a term.                                *)
@@ -364,7 +364,7 @@ module Hol : Hol_kernel = struct
                     else Abs(v,s') in
     fun theta ->
       if theta = [] then (fun tm -> tm) else
-      if forall (function (t,Var(_,y)) -> Pervasives.compare (type_of t) y = 0
+      if forall (function (t,Var(_,y)) -> compare (type_of t) y = 0
                         | _ -> false) theta
       then vsubst theta else failwith "vsubst: Bad substitution list"
 
@@ -379,7 +379,7 @@ module Hol : Hol_kernel = struct
       match tm with
         Var(n,ty)   -> let ty' = type_subst tyin ty in
                        let tm' = if ty' == ty then tm else Var(n,ty') in
-                       if Pervasives.compare (rev_assocd tm' env tm) tm = 0
+                       if compare (rev_assocd tm' env tm) tm = 0
                        then tm'
                        else raise (Clash tm')
       | Const(c,ty) -> let ty' = type_subst tyin ty in
@@ -431,22 +431,22 @@ module Hol : Hol_kernel = struct
 
   let rec ordav env x1 x2 =
     match env with
-      [] -> Pervasives.compare x1 x2
-    | (t1,t2)::oenv -> if Pervasives.compare x1 t1 = 0
-                       then if Pervasives.compare x2 t2 = 0
+      [] -> compare x1 x2
+    | (t1,t2)::oenv -> if compare x1 t1 = 0
+                       then if compare x2 t2 = 0
                             then 0 else -1
-                       else if Pervasives.compare x2 t2 = 0 then 1
+                       else if compare x2 t2 = 0 then 1
                        else ordav oenv x1 x2
 
   let rec orda env tm1 tm2 =
     if tm1 == tm2 && forall (fun (x,y) -> x = y) env then 0 else
     match (tm1,tm2) with
       Var(x1,ty1),Var(x2,ty2) -> ordav env tm1 tm2
-    | Const(x1,ty1),Const(x2,ty2) -> Pervasives.compare tm1 tm2
+    | Const(x1,ty1),Const(x2,ty2) -> compare tm1 tm2
     | Comb(s1,t1),Comb(s2,t2) ->
           let c = orda env s1 s2 in if c <> 0 then c else orda env t1 t2
     | Abs(Var(_,ty1) as x1,t1),Abs(Var(_,ty2) as x2,t2) ->
-          let c = Pervasives.compare ty1 ty2 in
+          let c = compare ty1 ty2 in
           if c <> 0 then c else orda ((x1,x2)::env) t1 t2
     | Const(_,_),_ -> -1
     | _,Const(_,_) -> 1
@@ -512,7 +512,7 @@ module Hol : Hol_kernel = struct
      match (c1,c2) with
        Comb(Comb(Const("=",_),l1),r1),Comb(Comb(Const("=",_),l2),r2) ->
         (match type_of r1 with
-           Tyapp("fun",[ty;_]) when Pervasives.compare ty (type_of r2) = 0
+           Tyapp("fun",[ty;_]) when compare ty (type_of r2) = 0
              -> Sequent(term_union asl1 asl2,
                         safe_mk_eq (Comb(l1,l2)) (Comb(r1,r2)))
          | _ -> failwith "MK_COMB: types do not agree")
@@ -530,7 +530,7 @@ module Hol : Hol_kernel = struct
 
   let BETA tm =
     match tm with
-      Comb(Abs(v,bod),arg) when Pervasives.compare arg v = 0
+      Comb(Abs(v,bod),arg) when compare arg v = 0
         -> Sequent([],safe_mk_eq tm bod)
     | _ -> failwith "BETA: not a trivial beta-redex"
 
@@ -539,7 +539,7 @@ module Hol : Hol_kernel = struct
 (* ------------------------------------------------------------------------- *)
 
   let ASSUME tm =
-    if Pervasives.compare (type_of tm) bool_ty = 0 then Sequent([tm],tm)
+    if compare (type_of tm) bool_ty = 0 then Sequent([tm],tm)
     else failwith "ASSUME: not a proposition"
 
   let EQ_MP (Sequent(asl1,eq)) (Sequent(asl2,c)) =
@@ -573,7 +573,7 @@ module Hol : Hol_kernel = struct
   let axioms() = !the_axioms
 
   let new_axiom tm =
-    if Pervasives.compare (type_of tm) bool_ty = 0 then
+    if compare (type_of tm) bool_ty = 0 then
       let th = Sequent([],tm) in
        (the_axioms := th::(!the_axioms); th)
     else failwith "new_axiom: Not a proposition"
@@ -597,6 +597,8 @@ module Hol : Hol_kernel = struct
         else let c = new_constant(cname,ty); Const(cname,ty) in
              let dth = Sequent([],safe_mk_eq c r) in
              the_definitions := dth::(!the_definitions); dth
+    | Comb(Comb(Const("=",_),Const(cname,ty)),r) ->
+      failwith ("new_basic_definition: '" ^ cname ^ "' is already defined")
     | _ -> failwith "new_basic_definition"
 
 (* ------------------------------------------------------------------------- *)

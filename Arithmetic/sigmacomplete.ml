@@ -572,12 +572,12 @@ let G1_ROBINSON = prove
        consistent A /\ A |-- robinson
        ==> ?G. PI 1 G /\
                closed G /\
-               true G /\
+               arithtrue G /\
                ~(A |-- G) /\
                (sound_for (SIGMA 1 INTER closed) A ==> ~(A |-- Not G))`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC G1_TRAD THEN
   ASM_REWRITE_TAC[complete_for; INTER; IN_ELIM_THM] THEN
-  X_GEN_TAC `p:form` THEN REWRITE_TAC[IN; true_def] THEN STRIP_TAC THEN
+  X_GEN_TAC `p:form` THEN REWRITE_TAC[IN; arithtrue] THEN STRIP_TAC THEN
   MATCH_MP_TAC modusponens THEN EXISTS_TAC `robinson` THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC PROVES_MONO THEN
   EXISTS_TAC `{}:form->bool` THEN REWRITE_TAC[EMPTY_SUBSET] THEN
@@ -595,10 +595,10 @@ let complete = new_definition
   `complete A <=> !p. closed p ==> A |-- p \/ A |-- Not p`;;
 
 let sound = new_definition
-  `sound A <=> !p. A |-- p ==> true p`;;
+  `sound A <=> !p. A |-- p ==> arithtrue p`;;
 
 let semcomplete = new_definition
-  `semcomplete A <=> !p. true p ==> A |-- p`;;
+  `semcomplete A <=> !p. arithtrue p ==> A |-- p`;;
 
 let generalize = new_definition
   `generalize vs p = ITLIST (!!) vs p`;;
@@ -607,8 +607,8 @@ let closure = new_definition
   `closure p = generalize (list_of_set(FV p)) p`;;
 
 let TRUE_GENERALIZE = prove
- (`!vs p. true(generalize vs p) <=> true p`,
-  REWRITE_TAC[generalize; true_def] THEN
+ (`!vs p. arithtrue(generalize vs p) <=> arithtrue p`,
+  REWRITE_TAC[generalize; arithtrue] THEN
   LIST_INDUCT_TAC THEN REWRITE_TAC[ITLIST; holds] THEN GEN_TAC THEN
   FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [GSYM th]) THEN
   MESON_TAC[VALMOD_REPEAT]);;
@@ -631,7 +631,7 @@ let CLOSED_CLOSURE = prove
   SIMP_TAC[SET_OF_LIST_OF_SET; FV_FINITE; DIFF_EQ_EMPTY]);;
 
 let TRUE_CLOSURE = prove
- (`!p. true(closure p) <=> true p`,
+ (`!p. arithtrue(closure p) <=> arithtrue p`,
   REWRITE_TAC[closure; TRUE_GENERALIZE]);;
 
 let PROVABLE_CLOSURE = prove
@@ -654,8 +654,8 @@ let DEFINABLE_ONEVAR = prove
   MESON_TAC[]);;
 
 let CLOSED_TRUE_OR_FALSE = prove
- (`!p. closed p ==> true p \/ true(Not p)`,
-  REWRITE_TAC[closed; true_def; holds] THEN REPEAT STRIP_TAC THEN
+ (`!p. closed p ==> arithtrue p \/ arithtrue(Not p)`,
+  REWRITE_TAC[closed; arithtrue; holds] THEN REPEAT STRIP_TAC THEN
   ASM_MESON_TAC[HOLDS_VALUATION; NOT_IN_EMPTY]);;
 
 let SEMCOMPLETE_IMP_COMPLETE = prove
@@ -663,15 +663,15 @@ let SEMCOMPLETE_IMP_COMPLETE = prove
   REWRITE_TAC[semcomplete; complete] THEN MESON_TAC[CLOSED_TRUE_OR_FALSE]);;
 
 let SOUND_CLOSED = prove
- (`sound A <=> !p. closed p /\ A |-- p ==> true p`,
+ (`sound A <=> !p. closed p /\ A |-- p ==> arithtrue p`,
   REWRITE_TAC[sound] THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
   MESON_TAC[TRUE_CLOSURE; PROVABLE_CLOSURE; CLOSED_CLOSURE]);;
 
 let SOUND_IMP_CONSISTENT = prove
  (`!A. sound A ==> consistent A`,
   REWRITE_TAC[sound; consistent; CONSISTENT_ALT] THEN
-  SUBGOAL_THEN `~(true False)` (fun th -> MESON_TAC[th]) THEN
-  REWRITE_TAC[true_def; holds]);;
+  SUBGOAL_THEN `~(arithtrue False)` (fun th -> MESON_TAC[th]) THEN
+  REWRITE_TAC[arithtrue; holds]);;
 
 let SEMCOMPLETE_SOUND_EQ_CONSISTENT = prove
  (`!A. semcomplete A ==> (sound A <=> consistent A)`,

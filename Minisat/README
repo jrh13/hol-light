@@ -14,6 +14,18 @@ proof-logging version "MiniSat-p" installed. For downloads, see:
 
   http://minisat.se/MiniSat.html
 
+The recommended version is this one, specifically:
+
+  http://minisat.se/downloads/MiniSat-p_v1.14.2006-Sep-07.src.zip
+
+I found that there can be a few problems compiling MiniSat with
+modern C++ compilers (specifically g++ version 13), possibly
+solved by:
+
+ * Replacing "uint" with "uint32_t"
+
+ * Replacing instances of "throw(whatever)" by "noexcept(false)"
+
 By default, the code will look for MiniSat on your PATH. If it
 doesn't find it, you can explicitly indicate the directory that
 contains the MiniSat binary by changing the assignment of the

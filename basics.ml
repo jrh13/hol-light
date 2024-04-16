@@ -120,7 +120,7 @@ let subst =
           mk_abs(v,ssubst ilist' bod)
     | _ -> tm in
   fun ilist ->
-    let theta = filter (fun (s,t) -> Pervasives.compare s t <> 0) ilist in
+    let theta = filter (fun (s,t) -> compare s t <> 0) ilist in
     if theta = [] then (fun tm -> tm) else
     let ts,xs = unzip theta in
     fun tm ->
@@ -446,3 +446,20 @@ let follow_path =
     | "r"::t -> follow_path t (rand tm)
     | _::t -> follow_path t (body tm) in
   fun s tm -> follow_path (explode s) tm;;
+
+(* ------------------------------------------------------------------------- *)
+(* Considering a term as a propositional formula and returning atoms.        *)
+(* ------------------------------------------------------------------------- *)
+
+let atoms =
+  let rec atoms acc tm =
+    match tm with
+      Comb(Comb(Const("/\\",_),l),r)
+    | Comb(Comb(Const("\\/",_),l),r)
+    | Comb(Comb(Const("==>",_),l),r)
+    | Comb(Comb(Const("=",Tyapp("fun",[Tyapp("bool",[]);_])),l),r) ->
+          atoms (atoms acc l) r
+    | Comb(Const("~",_),l) -> atoms acc l
+    | _ -> (tm |-> ()) acc in
+  fun tm -> if type_of tm <> bool_ty then failwith "atoms: not Boolean"
+            else foldl (fun a x y -> x::a) [] (atoms undefined tm);;

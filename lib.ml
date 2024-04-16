@@ -253,7 +253,7 @@ let index x =
   let rec ind n l =
     match l with
       [] -> failwith "index"
-    | (h::t) -> if Pervasives.compare x h = 0 then n else ind (n + 1) t in
+    | (h::t) -> if compare x h = 0 then n else ind (n + 1) t in
   ind 0;;
 
 (* ------------------------------------------------------------------------- *)
@@ -263,7 +263,7 @@ let index x =
 let rec mem x lis =
   match lis with
     [] -> false
-  | (h::t) -> Pervasives.compare x h = 0 || mem x t;;
+  | (h::t) -> compare x h = 0 || mem x t;;
 
 let insert x l =
   if mem x l then l else x::l;;
@@ -286,12 +286,12 @@ let set_eq l1 l2 = subset l1 l2 && subset l2 l1;;
 
 let rec assoc a l =
   match l with
-    (x,y)::t -> if Pervasives.compare x a = 0 then y else assoc a t
+    (x,y)::t -> if compare x a = 0 then y else assoc a t
   | [] -> failwith "find";;
 
 let rec rev_assoc a l =
   match l with
-    (x,y)::t -> if Pervasives.compare y a = 0 then x else rev_assoc a t
+    (x,y)::t -> if compare y a = 0 then x else rev_assoc a t
   | [] -> failwith "find";;
 
 (* ------------------------------------------------------------------------- *)
@@ -345,7 +345,7 @@ let rec sort cmp lis =
 let rec uniq l =
   match l with
     x::(y::_ as t) -> let t' = uniq t in
-                      if Pervasives.compare x y = 0 then t' else
+                      if compare x y = 0 then t' else
                       if t'==t then l else x::t'
  | _ -> l;;
 
@@ -353,7 +353,7 @@ let rec uniq l =
 (* Convert list into set by eliminating duplicates.                          *)
 (* ------------------------------------------------------------------------- *)
 
-let setify s = uniq (sort (fun x y -> Pervasives.compare x y <= 0) s);;
+let setify s = uniq (sort (fun x y -> compare x y <= 0) s);;
 
 (* ------------------------------------------------------------------------- *)
 (* String operations (surely there is a better way...)                       *)
@@ -381,24 +381,18 @@ let gcd =
 (* Some useful functions on "num" type.                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let num_0 = Int 0
-and num_1 = Int 1
-and num_2 = Int 2
-and num_10 = Int 10;;
+let num_0 = num 0
+and num_1 = num 1
+and num_2 = num 2
+and num_10 = num 10;;
 
-let pow2 n = power_num num_2 (Int n);;
-let pow10 n = power_num num_10 (Int n);;
-
-let numdom r =
-  let r' = Ratio.normalize_ratio (ratio_of_num r) in
-  num_of_big_int(Ratio.numerator_ratio r'),
-  num_of_big_int(Ratio.denominator_ratio r');;
+let pow2 n = power_num num_2 (num n);;
+let pow10 n = power_num num_10 (num n);;
 
 let numerator = fst o numdom
 and denominator = snd o numdom;;
 
-let gcd_num n1 n2 =
-  num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
+(* gcd_num x y is defined in the NumExt module. *)
 
 let lcm_num x y =
   if x =/ num_0 && y =/ num_0 then num_0
@@ -411,7 +405,7 @@ let string_of_num_nary =
     let n0 = mod_num n base and n1 = quo_num n base in
     let d0 = el (Num.int_of_num n0) digits in
     if n1 =/ num_0 then d0 else (string_of_num base n1)^d0 in
-  fun b n -> string_of_num (Int b) n;;
+  fun b n -> string_of_num (num b) n;;
 
 let string_of_num_hex n = "0x" ^ string_of_num_nary 16 n;;
 
@@ -476,12 +470,12 @@ let time f x =
 let rec assocd a l d =
   match l with
     [] -> d
-  | (x,y)::t -> if Pervasives.compare x a = 0 then y else assocd a t d;;
+  | (x,y)::t -> if compare x a = 0 then y else assocd a t d;;
 
 let rec rev_assocd a l d =
   match l with
     [] -> d
-  | (x,y)::t -> if Pervasives.compare y a = 0 then x else rev_assocd a t d;;
+  | (x,y)::t -> if compare y a = 0 then x else rev_assocd a t d;;
 
 (* ------------------------------------------------------------------------- *)
 (* Version of map that avoids rebuilding unchanged subterms.                 *)
@@ -518,9 +512,9 @@ let mergesort ord =
 (* Common measure predicates to use with "sort".                             *)
 (* ------------------------------------------------------------------------- *)
 
-let increasing f x y = Pervasives.compare (f x) (f y) < 0;;
+let increasing f x y = compare (f x) (f y) < 0;;
 
-let decreasing f x y = Pervasives.compare (f x) (f y) > 0;;
+let decreasing f x y = compare (f x) (f y) > 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Polymorphic finite partial functions via Patricia trees.                  *)
@@ -612,7 +606,7 @@ let ran f = setify(foldl (fun a x y -> y::a) [] f);;
 let applyd =
   let rec apply_listd l d x =
     match l with
-      (a,b)::t -> let c = Pervasives.compare x a in
+      (a,b)::t -> let c = compare x a in
                   if c = 0 then b else if c > 0 then apply_listd t d x else d x
     | [] -> d x in
   fun f d x ->
@@ -639,7 +633,7 @@ let undefine =
   let rec undefine_list x l =
     match l with
       (a,b as ab)::t ->
-          let c = Pervasives.compare x a in
+          let c = compare x a in
           if c = 0 then t
           else if c < 0 then l else
           let t' = undefine_list x t in
@@ -680,7 +674,7 @@ let (|->),combine =
   let rec define_list (x,y as xy) l =
     match l with
       (a,b as ab)::t ->
-          let c = Pervasives.compare x a in
+          let c = compare x a in
           if c = 0 then xy::t
           else if c < 0 then xy::l
           else ab::(define_list xy t)
@@ -690,7 +684,7 @@ let (|->),combine =
       [],_ -> l2
     | _,[] -> l1
     | ((x1,y1 as xy1)::t1,(x2,y2 as xy2)::t2) ->
-          let c = Pervasives.compare x1 x2 in
+          let c = compare x1 x2 in
           if c < 0 then xy1::(combine_list op z t1 l2)
           else if c > 0 then xy2::(combine_list op z l1 t2) else
           let y = op y1 y2 and l = combine_list op z t1 t2 in
@@ -820,9 +814,9 @@ let num_of_string =
     "c",12; "C",12; "d",13; "D",13;
     "e",14; "E",14; "f",15; "F",15] in
   let valof b s =
-    let v = Int(assoc s values) in
+    let v = num(assoc s values) in
     if v </ b then v else failwith "num_of_string: invalid digit for base"
-  and two = num_2 and ten = num_10 and sixteen = Int 16 in
+  and two = num_2 and ten = num_10 and sixteen = num 16 in
   let rec num_of_stringlist b l =
     match l with
       [] -> failwith "num_of_string: no digits after base indicator"
@@ -840,19 +834,20 @@ let num_of_string =
 (* ------------------------------------------------------------------------- *)
 
 let strings_of_file filename =
-  let fd = try Pervasives.open_in filename
-           with Sys_error _ ->
-             failwith("strings_of_file: can't open "^filename) in
+  let fd =
+    try open_in filename
+    with Sys_error _ -> failwith("strings_of_file: can't open "^filename) in
   let rec suck_lines acc =
-    try let l = Pervasives.input_line fd in
-        suck_lines (l::acc)
-    with End_of_file -> rev acc in
+    let l = try [input_line fd] with End_of_file -> [] in
+     if l = [] then rev acc else suck_lines(hd l::acc) in
   let data = suck_lines [] in
-  (Pervasives.close_in fd; data);;
+  (close_in fd; data);;
 
 let string_of_file filename =
-  end_itlist (fun s t -> s^"\n"^t) (strings_of_file filename);;
+  let fd = open_in_bin filename in
+  let data = really_input_string fd (in_channel_length fd) in
+  (close_in fd; data);;
 
 let file_of_string filename s =
-  let fd = Pervasives.open_out filename in
+  let fd = open_out filename in
   output_string fd s; close_out fd;;

@@ -727,7 +727,7 @@ let reduction_zero a_tm b_tm =
 
 (* i < 0 *)
 let reduction_neg pp i a_tm b_tm =
-  let i_eq_th, i_num_tm = float_eq_th_of_num (Int (-i)) in
+  let i_eq_th, i_num_tm = float_eq_th_of_num (num (-i)) in
   let z_tm = rand (concl i_eq_th) in
   let two_pi_th, _, (lo_tm, hi_tm) = two_pi_array.(pp) in
   let lo_ge0_th = two_pi_low.(pp) in
@@ -750,7 +750,7 @@ let reduction_neg pp i a_tm b_tm =
 
 (* i > 0 *)
 let reduction_pos pp i a_tm b_tm =
-  let i_eq_th, i_num_tm = float_eq_th_of_num (Int i) in
+  let i_eq_th, i_num_tm = float_eq_th_of_num (num i) in
   let z_tm = rand (concl i_eq_th) in
   let two_pi_th, _, (lo_tm, hi_tm) = two_pi_array.(pp) in
   let lo_ge0_th = two_pi_low.(pp) in

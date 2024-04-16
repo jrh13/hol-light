@@ -13,6 +13,19 @@ Gc.set { (Gc.get()) with Gc.stack_limit = 16777216 };;
 Sys.catch_break true;;
 
 (* ------------------------------------------------------------------------- *)
+(* Set up a printer for num.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let pp_print_num fmt n =
+  Format.pp_open_hbox fmt ();
+  Format.pp_print_string fmt (string_of_num n);
+  Format.pp_close_box fmt ();;
+
+let print_num = pp_print_num Format.std_formatter;;
+
+#install_printer pp_print_num;;
+
+(* ------------------------------------------------------------------------- *)
 (* Set up a quotation expander for the `...` quotes.                         *)
 (* This includes the case `;...` to support miz3, even if that isn't loaded. *)
 (* Other quotations ending in `...:` are treated just as (escaped) strings,  *)
@@ -38,20 +51,3 @@ Quotation.add "tot" (Quotation.ExStr (fun x -> quotexpander));;
 (* ------------------------------------------------------------------------- *)
 
 set_jrh_lexer;;
-
-(* ------------------------------------------------------------------------- *)
-(* Load in the bignum library and set up printing in the toplevel.           *)
-(* ------------------------------------------------------------------------- *)
-
-#load "nums.cma";;
-
-include Num;;
-
-let pp_print_num fmt n =
-  Format.pp_open_hbox fmt ();
-  Format.pp_print_string fmt (string_of_num n);
-  Format.pp_close_box fmt ();;
-
-let print_num = pp_print_num Format.std_formatter;;
-
-#install_printer pp_print_num;;

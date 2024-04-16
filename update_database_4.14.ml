@@ -83,7 +83,7 @@ end
 
 
 let update_database () =
-    theorems := Lookuptheorems.all_theorems() 
+    theorems := Lookuptheorems.all_theorems()
 
 (* ------------------------------------------------------------------------- *)
 (* Put an assignment of a theorem database in the named file.                *)

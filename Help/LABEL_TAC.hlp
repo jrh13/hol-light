@@ -87,6 +87,6 @@ if {asm} is large, and using its number in the assumption list can make proofs
 very brittle under later changes.
 
 \SEEALSO
-ASSUME_TAC, DESTRUCT_TAC, HYP, INTRO_TAC, REMOVE_THEN, USE_THEN.
+ASSUME_TAC, DESTRUCT_TAC, NAME_ASSUMS_TAC, HYP, INTRO_TAC, REMOVE_THEN, USE_THEN.
 
 \ENDDOC

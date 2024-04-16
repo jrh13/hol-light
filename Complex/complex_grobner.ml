@@ -46,7 +46,7 @@ type history =
 
 let grob_var vars tm =
   let res = map (fun i -> if i = tm then 1 else 0) vars in
-  if exists (fun x -> x <> 0) res then [Int 1,res] else failwith "grob_var";;
+  if exists (fun x -> x <> 0) res then [num 1,res] else failwith "grob_var";;
 
 let grob_const =
   let cx_tm = `Cx` in
@@ -54,7 +54,7 @@ let grob_const =
     try let l,r = dest_comb tm in
         if l = cx_tm then
           let x = rat_of_term r in
-          if x =/ Int 0 then [] else [x,map (fun v -> 0) vars]
+          if x =/ num 0 then [] else [x,map (fun v -> 0) vars]
         else failwith ""
     with Failure _ -> failwith "grob_const";;
 
@@ -89,7 +89,7 @@ let rec grob_add l1 l2 =
   | ((c1,m1)::o1,(c2,m2)::o2) ->
         if m1 = m2 then
           let c = c1+/c2 and rest = grob_add o1 o2 in
-          if c =/ Int 0 then rest else (c,m1)::rest
+          if c =/ num 0 then rest else (c,m1)::rest
         else if morder_lt m2 m1 then (c1,m1)::(grob_add o1 l2)
         else (c2,m2)::(grob_add l1 o2);;
 
@@ -106,7 +106,7 @@ let rec grob_mul l1 l2 =
 
 let rec grob_pow vars l n =
   if n < 0 then failwith "grob_pow: negative power"
-  else if n = 0 then [Int 1,map (fun v -> 0) vars]
+  else if n = 0 then [num 1,map (fun v -> 0) vars]
   else grob_mul l (grob_pow vars l (n - 1));;
 
 (* ------------------------------------------------------------------------- *)
@@ -121,7 +121,7 @@ let mdiv (c1,m1) (c2,m2) =
 (* Lowest common multiple of two monomials.                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let mlcm (c1,m1) (c2,m2) = (Int 1,map2 max m1 m2);;
+let mlcm (c1,m1) (c2,m2) = (num 1,map2 max m1 m2);;
 
 (* ------------------------------------------------------------------------- *)
 (* Reduce monomial cm by polynomial pol, returning replacement for cm.       *)
@@ -183,7 +183,7 @@ let monic (pol,hist) =
   if pol = [] then (pol,hist) else
   let c',m' = hd pol in
   (map (fun (c,m) -> (c//c',m)) pol,
-   Mmul((Int 1 // c',map (K 0) m'),hist));;
+   Mmul((num 1 // c',map (K 0) m'),hist));;
 
 (* ------------------------------------------------------------------------- *)
 (* The most popular heuristic is to order critical pairs by LCM monomial.    *)
@@ -344,7 +344,7 @@ let string_of_monomial vars (c,m) =
   let xnstrs = map
     (fun (x,n) -> x^(if n = 1 then "" else "^"^(string_of_int n))) xns in
   if xns = [] then Num.string_of_num c else
-  let basstr = if c =/ Int 1 then "" else (Num.string_of_num c)^" * " in
+  let basstr = if c =/ num 1 then "" else (Num.string_of_num c)^" * " in
   basstr ^ end_itlist (fun s t -> s^" * "^t) xnstrs;;
 
 let string_of_polynomial vars l =
@@ -358,7 +358,7 @@ let string_of_polynomial vars l =
 let rec resolve_proof vars prf =
   match prf with
     Start n ->
-        [n,[Int 1,map (K 0) vars]]
+        [n,[num 1,map (K 0) vars]]
   | Mmul(pol,lin) ->
         let lis = resolve_proof vars lin in
         map (fun (n,p) -> n,grob_cmul pol p) lis

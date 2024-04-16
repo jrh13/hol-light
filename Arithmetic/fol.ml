@@ -87,8 +87,8 @@ let holds = new_recursive_definition form_RECURSION
    (holds v (!! x p) <=> !a. holds ((x|->a) v) p) /\
    (holds v (?? x p) <=> ?a. holds ((x|->a) v) p)`;;
 
-let true_def = new_definition
-  `true p <=> !v. holds v p`;;
+let arithtrue = new_definition
+  `arithtrue p <=> !v. holds v p`;;
 
 let VALMOD = prove
  (`!v x y a. ((x |-> y) v) a = if a = x then y else v(a)`,
@@ -245,9 +245,9 @@ let HOLDS_VALMOD_OTHER = prove
 (* ------------------------------------------------------------------------- *)
 
 let AXIOMS_TRUE = prove
- (`!p. axiom p ==> true p`,
+ (`!p. axiom p ==> arithtrue p`,
   MATCH_MP_TAC axiom_INDUCT THEN
-  REWRITE_TAC[true_def] THEN REPEAT STRIP_TAC THEN REWRITE_TAC[holds] THENL
+  REWRITE_TAC[arithtrue] THEN REPEAT STRIP_TAC THEN REWRITE_TAC[holds] THENL
    [CONV_TAC TAUT;
     CONV_TAC TAUT;
     SIMP_TAC[];
@@ -275,12 +275,12 @@ let AXIOMS_TRUE = prove
     MESON_TAC[]]);;
 
 let THEOREMS_TRUE = prove
- (`!A p. (!q. q IN A ==> true q) /\ A |-- p ==> true p`,
+ (`!A p. (!q. q IN A ==> arithtrue q) /\ A |-- p ==> arithtrue p`,
   GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   DISCH_TAC THEN MATCH_MP_TAC proves_INDUCT THEN
   ASM_SIMP_TAC[TAUT `a \/ b ==> c <=> (a ==> c) /\ (b ==> c)`] THEN
   REWRITE_TAC[IN; AXIOMS_TRUE] THEN
-  SIMP_TAC[holds; true_def]);;
+  SIMP_TAC[holds; arithtrue]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Variant variables for use in renaming substitution.                       *)

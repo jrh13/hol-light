@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  # check PRs
+  pull_request:
+    branches:
+      - master
+
+  # check pushes
+  push:
+    branches:
+      - master
+
+jobs:
+  test1:
+    runs-on: ubuntu-22.04
+    name: OCaml 4.05, Camlp5 7.10
+    
+    steps:
+      - name: Install dependency
+        run: |
+          sudo apt update && sudo apt install -y opam
+          opam init --disable-sandboxing --compiler=4.05.0
+          opam pin -y add camlp5 7.10
+          opam install -y num
+
+      - name: Checkout this repo
+        uses: actions/checkout@v2
+        with:
+          path: hol-light
+
+      - name: Run
+        run: |
+          cd hol-light
+          eval $(opam env)
+          make
+          ./hol.sh | tee log.txt
+          ! grep "Error" log.txt
+
+  test2:
+    runs-on: ubuntu-22.04
+    name: OCaml 4.14, Camlp5 8.02
+    
+    steps:
+      - name: Install dependency
+        run: |
+          sudo apt update && sudo apt install -y opam xdot
+          opam init --disable-sandboxing --compiler=4.14.0
+          opam pin -y add camlp5 8.02.01
+          opam install -y zarith
+
+      - name: Checkout this repo
+        uses: actions/checkout@v2
+        with:
+          path: hol-light
+
+      - name: Run
+        run: |
+          cd hol-light
+          eval $(opam env)
+          make
+          ./hol.sh | tee log.txt
+          ! grep "Error" log.txt

@@ -27,17 +27,17 @@ open Informal_poly;;
 let exp_max_x = 1.0;;
 
 let rec fact n =
-  if sign_num n <= 0 then Int 1 else
+  if sign_num n <= 0 then num 1 else
     n */ fact (pred_num n);;
 
 let exp_pos_tables pp n =
-  let t1 = map (fun i -> fact (Int i)) (0 -- n) in
+  let t1 = map (fun i -> fact (num i)) (0 -- n) in
   let f n = inv_interval pp (mk_num_interval n) in
     map f t1;;
 
 let exp_neg_tables pp n =
-  let t1 = map (fun i -> fact (Int (2 * i))) (0 -- (n / 2)) and
-      t2 = map (fun i -> fact (Int (2 * i + 1))) (0 -- ((n + 1) / 2 - 1)) in
+  let t1 = map (fun i -> fact (num (2 * i))) (0 -- (n / 2)) and
+      t2 = map (fun i -> fact (num (2 * i + 1))) (0 -- ((n + 1) / 2 - 1)) in
   let f n = inv_interval pp (mk_num_interval n) in
     map f t1, map f t2;;
 
@@ -130,7 +130,7 @@ let exp_high_raw pp x =
       exp_neg_high_raw pp (abs_float x);;
 
 let reduce_float x =
-  let f = Pervasives.abs_float (float_of_ifloat x) in
+  let f = float_fabs (float_of_ifloat x) in
     if f <= exp_max_x then
       false, 0
     else

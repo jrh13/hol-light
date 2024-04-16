@@ -227,7 +227,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
   and mul_tm = rator(rator(rand(snd(strip_forall(concl EXP_2)))))
   and exp_tm = rator(rator(lhand(snd(strip_forall(concl EXP_2)))))
   and eq_tm = rator(rator(concl TWO)) in
-  let num_0 = Int 0 and num_1 = Int 1 and num_2 = Int 2 in
+  let num_0 = num 0 and num_1 = num 1 and num_2 = num 2 in
   let a_tm = mk_var("a",num_ty)
   and b_tm = mk_var("b",num_ty)
   and c_tm = mk_var("c",num_ty)
@@ -1050,8 +1050,8 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
             EQ_MP th1 th0
       | (Comb(Const("BIT1",_),mtm),Comb(Const("BIT1",_),ntm)) ->
           if k <= 50 || l <= 50 ||
-             Int k */ Int k <=/ Int l ||
-             Int l */ Int l <= Int k then
+             num k */ num k <=/ num l ||
+             num l */ num l <= num k then
             match (mtm,ntm) with
               (Comb(Const("BIT1",_),Comb(Const("BIT1",_),_)),_) ->
                  let th1 = NUM_ADC_RULE zero_tm tm in
@@ -1127,7 +1127,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
     fun tm ->
       match tm with
         Comb(Comb(Const("*",_),mtm),ntm) ->
-            if Pervasives.compare mtm ntm = 0 then
+            if compare mtm ntm = 0 then
               let th1 = NUM_SQUARE_RULE mtm in
               let ptm = rand(concl th1) in
               EQ_MP (INST [mtm,m_tm;ptm,p_tm] pth_refl) th1
@@ -1169,7 +1169,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
       match tm with
         Comb(Comb(Const("*",_),Comb(Const("NUMERAL",_),mtm)),
           Comb(Const("NUMERAL",_),ntm)) ->
-            if Pervasives.compare mtm ntm = 0 then
+            if compare mtm ntm = 0 then
               let th1 = NUM_SQUARE_RULE mtm in
               let ptm = rand(concl th1) in
               EQ_MP (INST [mtm,m_tm;ptm,p_tm] pth_refl) th1
@@ -1334,8 +1334,8 @@ let NUM_PRE_CONV =
   fun tm -> try let l,r = dest_comb tm in
                 if not (l = pre) then fail() else
                 let x = dest_numeral r in
-                if x =/ Int 0 then tth else
-                let tm' = mk_numeral (x -/ Int 1) in
+                if x =/ num 0 then tth else
+                let tm' = mk_numeral (x -/ num 1) in
                 let th1 = NUM_SUC_CONV (mk_comb(suc,tm')) in
                 MP (INST [tm',m; r,n] pth) th1
             with Failure _ -> failwith "NUM_PRE_CONV";;
@@ -1406,14 +1406,14 @@ let NUM_FACT_CONV =
     REWRITE_TAC[FACT])
   and w = `w:num` and x = `x:num` and y = `y:num` and z = `z:num` in
   let mksuc n =
-    let n' = n -/ (Int 1) in
+    let n' = n -/ (num 1) in
     NUM_SUC_CONV (mk_comb(suc,mk_numeral n')) in
   let rec NUM_FACT_CONV n =
-    if n =/ Int 0 then pth_0 else
+    if n =/ num 0 then pth_0 else
     let th0 = mksuc n in
     let tmx = rand(lhand(concl th0)) in
     let tm0 = rand(concl th0) in
-    let th1 = NUM_FACT_CONV (n -/ Int 1) in
+    let th1 = NUM_FACT_CONV (n -/ num 1) in
     let tm1 = rand(concl th1) in
     let th2 = NUM_MULT_CONV (mk_binop mul tm0 tm1) in
     let tm2 = rand(concl th2) in
@@ -1484,8 +1484,8 @@ let NUM_REDUCE_TAC = CONV_TAC NUM_REDUCE_CONV;;
 let num_CONV =
   let SUC_tm = `SUC` in
   fun tm ->
-    let n = dest_numeral tm -/ Int 1 in
-    if n </ Int 0 then failwith "num_CONV" else
+    let n = dest_numeral tm -/ num 1 in
+    if n </ num 0 then failwith "num_CONV" else
     let tm' = mk_numeral n in
     SYM(NUM_SUC_CONV (mk_comb(SUC_tm,tm')));;
 

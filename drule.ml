@@ -170,7 +170,7 @@ let (term_match:term list -> term -> term -> instantiation) =
 
   let safe_insert ((y,x) as n) l =
     try let z = rev_assoc x l in
-        if Pervasives.compare y z = 0 then l else failwith "safe_insert"
+        if compare y z = 0 then l else failwith "safe_insert"
     with Failure "find" -> n::l in
 
   let mk_dummy =
@@ -181,16 +181,16 @@ let (term_match:term list -> term -> term -> instantiation) =
     match (vtm,ctm) with
       Var(_,_),_ ->
        (try let ctm' = rev_assoc vtm env in
-            if Pervasives.compare ctm' ctm = 0 then sofar
+            if compare ctm' ctm = 0 then sofar
             else failwith "term_pmatch"
         with Failure "find" ->
             if mem vtm lconsts then
-              if Pervasives.compare ctm vtm = 0 then sofar
+              if compare ctm vtm = 0 then sofar
               else failwith "term_pmatch: can't instantiate local constant"
             else safe_inserta (ctm,vtm) insts,homs)
     | Const(vname,vty),Const(cname,cty) ->
-        if Pervasives.compare vname cname = 0 then
-          if Pervasives.compare vty cty = 0 then sofar
+        if compare vname cname = 0 then
+          if compare vty cty = 0 then sofar
           else safe_insert (mk_dummy cty,mk_dummy vty) insts,homs
         else failwith "term_pmatch"
     | Abs(vv,vbod),Abs(cv,cbod) ->
@@ -203,7 +203,7 @@ let (term_match:term list -> term -> term -> instantiation) =
                        not (can (rev_assoc vhop) env) then
         let vty = type_of vtm and cty = type_of ctm in
         let insts' =
-          if Pervasives.compare vty cty = 0 then insts
+          if compare vty cty = 0 then insts
           else safe_insert (mk_dummy cty,mk_dummy vty) insts in
         (insts',(env,ctm,vtm)::homs)
       else
@@ -230,14 +230,14 @@ let (term_match:term list -> term -> term -> instantiation) =
       mapfilter (fun (t,x) ->
         let x' = let xn,xty = dest_var x in
                  mk_var(xn,type_subst tyins xty) in
-        if Pervasives.compare t x' = 0 then fail() else (t,x')) realinsts,
+        if compare t x' = 0 then fail() else (t,x')) realinsts,
       tyins in
 
   let rec term_homatch lconsts tyins (insts,homs) =
     if homs = [] then insts else
     let (env,ctm,vtm) = hd homs in
     if is_var vtm then
-      if Pervasives.compare ctm vtm = 0
+      if compare ctm vtm = 0
        then term_homatch lconsts tyins (insts,tl homs) else
       let newtyins = safe_insert (type_of ctm,snd(dest_var vtm)) tyins
       and newinsts = (ctm,vtm)::insts in
@@ -255,8 +255,8 @@ let (term_match:term list -> term -> term -> instantiation) =
         let vhop' = inst_fn vhop in
         let ni =
           let chop,cargs = strip_comb ctm in
-          if Pervasives.compare cargs pats = 0 then
-            if Pervasives.compare chop vhop = 0
+          if compare cargs pats = 0 then
+            if compare chop vhop = 0
             then insts else safe_inserta (chop,vhop) insts else
           let ginsts = map
             (fun p -> (if is_var p then p else genvar(type_of p)),p) pats in
@@ -463,7 +463,7 @@ let PART_MATCH,GEN_PART_MATCH =
       let fth = INSTANTIATE insts ath in
       if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
       let tm' = partfn (concl fth) in
-      if Pervasives.compare tm' tm = 0 then fth else
+      if compare tm' tm = 0 then fth else
       try SUBS[ALPHA tm' tm] fth
       with Failure _ -> failwith "PART_MATCH: Sanity check failure"
   and GEN_PART_MATCH partfn th =
@@ -481,7 +481,7 @@ let PART_MATCH,GEN_PART_MATCH =
       let fth = itlist (fun v th -> snd(SPEC_VAR th)) fvs eth in
       if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
       let tm' = partfn (concl fth) in
-      if Pervasives.compare tm' tm = 0 then fth else
+      if compare tm' tm = 0 then fth else
       try SUBS[ALPHA tm' tm] fth
       with Failure _ -> failwith "PART_MATCH: Sanity check failure" in
   PART_MATCH,GEN_PART_MATCH;;

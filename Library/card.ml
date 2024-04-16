@@ -1369,9 +1369,10 @@ let CARD_LE_UNIONS2 = prove
    `IMAGE (\(x,y). (g:(A->bool)->C->A) (f x) y)
           ((k:B->bool) *_c (l:C->bool))` THEN
   REWRITE_TAC[CARD_LE_IMAGE] THEN MATCH_MP_TAC CARD_LE_SUBSET THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN
   REWRITE_TAC[SUBSET; IN_UNIONS; IN_IMAGE; mul_c; IN_ELIM_PAIR_THM;
               EXISTS_PAIR_THM] THEN
-  ASM SET_TAC[]);;
+  MESON_TAC[]);;
 
 let CARD_LE_UNIONS = prove
  (`!k:B->bool u:(A->bool)->bool.

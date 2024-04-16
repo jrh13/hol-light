@@ -1140,7 +1140,7 @@ let NUM_ADD2_CONV =
   let add_tm = `(+):num->num->num`
   and two_tm = `2` in
   fun tm ->
-    let m = mk_numeral(dest_numeral tm -/ Int 2) in
+    let m = mk_numeral(dest_numeral tm -/ num 2) in
     let tm' = mk_comb(mk_comb(add_tm,m),two_tm) in
     SYM(NUM_ADD_CONV tm');;
 
@@ -2090,7 +2090,7 @@ let maximas e =
     ";' | maxima | grep '^(%o3)' | sed -e 's/^(%o3) //' >" ^
     filename in
   if Sys.command s <> 0 then failwith "maxima" else
-  let fd = Pervasives.open_in filename in
+  let fd = open_in filename in
   let data = input_line fd in
   close_in fd; Sys.remove filename; data;;
 

@@ -117,7 +117,7 @@ let subst =
           mk_abs(v,ssubst ilist' bod)
     | _ -> tm in
   fun ilist ->
-    let theta = filter (fun (s,t) -> Pervasives.compare s t <> 0) ilist in
+    let theta = filter (fun (s,t) -> compare s t <> 0) ilist in
     if theta = [] then (fun tm -> tm) else
     let ts,xs = unzip theta in
     fun tm ->

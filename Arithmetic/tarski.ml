@@ -319,9 +319,9 @@ let HOLDS_IFF_FIXPOINT = prove
 
 let CARNAP = prove
  (`!x q. ?p. (FV(p) = FV(q) DELETE x) /\
-             true (p <-> qsubst (x,numeral(gform p)) q)`,
+             arithtrue (p <-> qsubst (x,numeral(gform p)) q)`,
   REPEAT GEN_TAC THEN EXISTS_TAC `fixpoint x q` THEN
-  REWRITE_TAC[true_def; HOLDS_IFF_FIXPOINT; FV_FIXPOINT]);;
+  REWRITE_TAC[arithtrue; HOLDS_IFF_FIXPOINT; FV_FIXPOINT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence Tarski's theorem on the undefinability of truth.                    *)
@@ -334,11 +334,11 @@ let definable = new_definition
   `definable s <=> ?p x. !v. holds v p <=> (v(x)) IN s`;;
 
 let TARSKI_THEOREM = prove
- (`~(definable {gform p | true p})`,
+ (`~(definable {gform p | arithtrue p})`,
   REWRITE_TAC[definable; IN_ELIM_THM; NOT_EXISTS_THM] THEN
   MAP_EVERY X_GEN_TAC [`p:form`; `x:num`] THEN DISCH_TAC THEN
   MP_TAC(SPECL [`x:num`; `Not p`] CARNAP) THEN
   DISCH_THEN(X_CHOOSE_THEN `q:form` (MP_TAC o CONJUNCT2)) THEN
-  SIMP_TAC[true_def; holds; HOLDS_QSUBST; FVT_NUMERAL; NOT_IN_EMPTY] THEN
+  SIMP_TAC[arithtrue; holds; HOLDS_QSUBST; FVT_NUMERAL; NOT_IN_EMPTY] THEN
   ONCE_ASM_REWRITE_TAC[] THEN REWRITE_TAC[VALMOD_BASIC; TERMVAL_NUMERAL] THEN
-  REWRITE_TAC[true_def; GFORM_INJ] THEN MESON_TAC[]);;
+  REWRITE_TAC[arithtrue; GFORM_INJ] THEN MESON_TAC[]);;

@@ -31,14 +31,19 @@ fi
 # Standalone examples
 
 echo '### Loading Library/agm.ml'; echo 'loadt "Library/agm.ml";;' | (time $hollight)
+echo '### Loading Library/bdd.ml, Examples/bdd_examples.ml';
+(echo 'loadt "Library/bdd.ml";;'; echo 'loadt "Examples/bdd_examples.ml";;') | (time $hollight)
 echo '### Loading Library/binary.ml'; echo 'loadt "Library/binary.ml";;' | (time $hollight)
 echo '### Loading Library/binomial.ml'; echo 'loadt "Library/binomial.ml";;' | (time $hollight)
+echo '### Loading Examples/bitblast.ml'; echo 'loadt "Examples/bitblast.ml";;' | (time $hollight)
 echo '### Loading Library/bitmatch.ml'; echo 'loadt "Library/bitmatch.ml";;' | (time $hollight)
 echo '### Loading Library/bitsize.ml'; echo 'loadt "Library/bitsize.ml";;' | (time $hollight)
+echo '### Loading Examples/bondy.ml'; echo 'loadt "Examples/bondy.ml";;' | (time $hollight)
 echo '### Loading Examples/borsuk.ml'; echo 'loadt "Examples/borsuk.ml";;' | (time $hollight)
 echo '### Loading Examples/brunn_minkowski.ml'; echo 'loadt "Examples/brunn_minkowski.ml";;' | (time $hollight)
 echo '### Loading Library/card.ml'; echo 'loadt "Library/card.ml";;' | (time $hollight)
 echo '### Loading Examples/combin.ml'; echo 'loadt "Examples/combin.ml";;' | (time $hollight)
+echo '### Loading Examples/complexpolygon.ml'; echo 'loadt "Examples/complexpolygon.ml";;' | (time $hollight)
 echo '### Loading Examples/cong.ml'; echo 'loadt "Examples/cong.ml";;' | (time $hollight)
 echo '### Loading Examples/cooper.ml'; echo 'loadt "Examples/cooper.ml";;' | (time $hollight)
 echo '### Loading Examples/dickson.ml'; echo 'loadt "Examples/dickson.ml";;' | (time $hollight)
@@ -105,6 +110,12 @@ echo '### Loading Library/rstc.ml,reduct.ml';
 
 echo '### Loading Arithmetic/make.ml'; echo 'loadt "Arithmetic/make.ml";;' | (time $hollight)
 echo '### Loading Boyer_Moore/make.ml'; echo 'loadt "Boyer_Moore/make.ml";;' | (time $hollight)
+if which cadical > /dev/null ; then
+    echo '### Loading Cadical/make.ml,Cadical/test.ml';
+    (echo 'loadt "Cadical/make.ml";;'; echo 'loadt "Minisat/taut.ml";;'; echo 'loadt "Cadical/test.ml";;') | (time $hollight)
+else
+    echo '### Error: skip Cadical/make.ml because cadical is not available'
+fi
 echo '### Loading Complex/make.ml'; echo 'loadt "Complex/make.ml";;' | (time $hollight)
 echo '### Loading Divstep/make.ml'; echo 'loadt "Divstep/make.ml";;' | (time $hollight)
 echo '### Loading EC/make.ml'; echo 'loadt "EC/make.ml";;' | (time $hollight)
@@ -117,8 +128,8 @@ echo '### Loading Logic/make.ml'; echo 'loadt "Logic/make.ml";;' | (time $hollig
 echo '### Loading Mizarlight/make.ml'; echo 'loadt "Mizarlight/make.ml";;' | (time $hollight)
 echo '### Loading miz3/make.ml, miz3/test.ml (twice)'; (echo 'loadt "miz3/make.ml";;'; echo 'loadt "miz3/test.ml";;'; echo 'loadt "miz3/test.ml";;') | (time $hollight)
 if which zchaff > /dev/null ; then
-    echo '### Loading Minisat/make.ml,Minisat/taut.ml';
-    (echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;') | (time $hollight)
+    echo '### Loading Minisat/make.ml,Minisat/test.ml';
+    (echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;'; echo 'loadt "Minisat/test.ml";;') | (time $hollight)
 else
     echo '### Error: skip Minisat/make.ml, Minisat/taut.ml because zchaff is not available'
 fi

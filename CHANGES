@@ -8,24 +8,493 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 12th Apr 2024               Cadical/* [new directory]
+
+Added a proof-checking interface to the Cadical SAT solver
+(https://github.com/arminbiere/cadical). This is highly analogous
+to the existing interfaces to Minisat and zchaff in "Minisat/*"
+and uses some very similar code for CNF transformation. Among
+other facilities, this makes available a Cadical-powered tautology
+checker, with the LRAT proof produced by Cadical (it is tidied up
+with lrat-trim in the standard flow) checked in the HOL Light
+kernel. For example:
+
+  # CADICAL_PROVE `(p ==> q) <=> (p <=> p /\ q)`;;
+  val it : thm = |- p ==> q <=> p <=> p /\ q
+
+Thu 11th Apr 2024               Examples/complexpolygon.ml
+
+Added a proof that a polygon with all its vertices on the unit circle
+is closed under complex multiplication iff the vertices are the n'th
+complex roots of unity for some n. This is based on the discussion in
+
+  https://math.stackexchange.com/questions/4892153
+
+in particular the observation from Dario extending Carl Schildkraut's
+proof of the original problem to an equivalence.
+
+Thu 11th Apr 2024               Library/grouptheory.ml
+
+Added a few new miscellaneous theorems:
+
+  BILINEAR_IN_AFFINE_HULL =
+    |- !f s t x y.
+           bilinear f /\ x IN affine hull s /\ y IN affine hull t
+           ==> f x y IN affine hull {f a b | a IN s /\ b IN t}
+
+  BILINEAR_IN_CONVEX_HULL =
+    |- !f s t x y.
+           bilinear f /\ x IN convex hull s /\ y IN convex hull t
+           ==> f x y IN convex hull {f a b | a IN s /\ b IN t}
+
+  FINITE_SUBGROUP_OF_SETWISE =
+    |- !G s.
+           FINITE s
+           ==> (s subgroup_of G <=>
+                s SUBSET group_carrier G /\
+                ~(s = {}) /\
+                group_setmul G s s SUBSET s)
+
+  SIMPLEX_FURTHEST_LT_EXISTS =
+    |- !a s x.
+           x IN convex hull s /\ ~(x IN s)
+           ==> ?y. y IN s /\ norm(x - a) < norm(y - a)
+
+as well as generalizing both SIMPLEX_FURTHEST_LT and SIMPLEX_FURTHEST_LE_EXISTS
+to remove the finiteness assumption (hence perhaps making the "SIMPLEX" in the
+name a bit misleading).
+
+Tue  2nd Apr 2024               printer.ml, bool.ml, Arithmetic/passim, Model/passim
+
+Fixed a bug in the printer where the interface map was not reversed for
+binders. Also made a few minor name changes in the embedded logics to
+avoid using "true" and "false", to make room for using those as alternative
+names for T and F.
+
+Mon  1st Apr 2024               sets.ml
+
+Made a few useful improvements to SET_TAC and SET_RULE. First of all, they now
+deal with conditionals at least to some extent (the previous failure to do so
+was a basic bug). They also use streamlined versions of certain "write away set
+concepts" rules such as UNIONS_GSPEC, which can be helpful preprocessing to
+make the eventual MESON problem easier, or even provable at all. Here are a
+couple of trivial examples that now work but didn't previously:
+
+  SET_RULE `IMAGE (f:A->B) s = UNIONS {{f x} | x IN s}`;;
+
+  SET_RULE `{a,b} DELETE (a:A) = if a = b then {} else {b}`;;
+
+Fri 22nd Mar 2024               bool.ml
+
+Made a few tiny optimizations to basic rules like CONJUNCT1 by switching
+the implementation from PROVE_HYP to the underlying primitive rules
+DEDUCT_ANTISYM_RULE and EQ_MP. This has the advantage of skipping a check
+that in context we know is redundant (whether the PROVE_HYP is
+non-trivial in the sense that the assumption is not there to start with).
+
+Tue 19th Mar 2024               lib.ml
+
+Made "strings_of_file" and "string_of_file" more robust so they can handle
+bigger input files without problems. Previously, the core loop of
+"strings_of_file" was not tail recursive because the body was enclosed in
+a "try...with" block; this is now changed. The "string_of_file" function now
+just uses more basic library functions directly instead of calling
+"strings_of_file" and concatenating the results.
+
+Mon 18th Mar 2024               Library/words.ml, Examples/bitblast.ml [new file]
+
+Added a basic bit-blasting tactic and rule to the word library, using
+BDDs as the backend by default (BITBLAST_TAC and BITBLAST_RULE) but
+providing a more general BITBLAST_THEN that does the reduction followed
+by another tactic (e.g. SAT). The new file "Examples/bitblast.ml" gives
+a number of examples, mainly typical "Hacker's Delight" fare.
+
+Sat 16th Mar 2024               Examples/bondy.ml [new file]
+
+Added a new example, a proof of Bondy's theorem, following the first
+of the two proofs given in Bollobas's "Combinatorics" for Theorem 1 (p4).
+
+Fri 15th Mar 2024               Library/bdd.ml [new file], Examples/bdd_examples.ml [new file]
+
+Added a new file giving a basic implementation (as a HOL derived rule) of
+ordered binary decision diagrams with complement edges, a canonical form for
+Boolean formulas. The style of implementation follows Brace, Rudell and
+Bryant's paper "Efficient implementation of a BDD package" (DAC 1990). This
+implementation is distantly descended from the hol90 implementation in "Binary
+Decision Diagrams as a HOL Derived Rule", but greatly simplified since HOL
+Light handles pointer-eq subterms more efficiently and so we can avoid
+introducing any additional variables.
+
+The two top-level functions are BDD_TAUT just taking a formula and BDD_DEFTAUT
+taking both a list of variables determining the BDD variable order (allowed to
+be empty in which case the default is used) and a formula that is also allowed
+to contain "definitions". The examples in Examples/bdd_examples.ml give an idea
+how to use these options.
+
+Fri 15th Mar 2024               passim
+
+Made a number of explicit type variable choices in theorems (and occasionally
+fixed up or added quantifiers), just so things look tidier.
+
+Thu 14th Mar 2024               Makefile, README, .github/workflows/main.yml, .gitignore [new file], hol_4.14.sh [new file], hol_4.sh [new file]
+
+Added an update from June Lee that automatically creates (as part of
+the default "make" target) a shell script "hol.sh" to run HOL Light
+directly.
+
+Wed 13th Mar 2024               Library/ringtheory.ml
+
+Added a few more ring theory lemmas, mainly basic machinery including the
+usual "Chinese remainder theorem" facts about Z_{m*n}, and also the simple
+but rather obscure fact that Z_n is a von Neumann regular ring iff n is
+squarefree:
+
+  ISOMORPHIC_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           integer_mod_ring (m * n) isomorphic_ring
+           prod_ring (integer_mod_ring m) (integer_mod_ring n) <=>
+           coprime(m,n)
+
+  RING_CARRIER_INTEGER_MOD_RING =
+    |- !n. ring_carrier (integer_mod_ring n) = IMAGE (\x. x rem &n) (:int)
+
+  RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           ring_homomorphism
+           (integer_mod_ring (m * n),
+            prod_ring (integer_mod_ring m) (integer_mod_ring n))
+           (\a. a rem &m,a rem &n)
+
+  RING_ISOMORPHISM_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           ring_isomorphism
+           (integer_mod_ring (m * n),
+            prod_ring (integer_mod_ring m) (integer_mod_ring n))
+           (\a. a rem &m,a rem &n) <=>
+           coprime(m,n)
+
+  RING_OF_INT_PROD_RING =
+    |- !r s n. ring_of_int (prod_ring r s) n = ring_of_int r n,ring_of_int s n
+
+  RING_OF_NUM_PROD_RING =
+    |- !r s n. ring_of_num (prod_ring r s) n = ring_of_num r n,ring_of_num s n
+
+  VNREGULAR_INTEGER_MOD_RING =
+    |- !n. vnregular_ring (integer_mod_ring n) <=> squarefree n
+
+Wed 13th Mar 2024               Library/prime.ml, Library/pocklington.ml
+
+Added a few more number theory lemmas, mainly involving "squarefree":
+
+  FORALL_PRIME_INDEX =
+    |- (!p. prime p ==> (!P. (!x. P (index p x)) <=> (!k. P k))) /\
+       (!p. prime p ==> (!P. (!x. ~(x = 0) ==> P (index p x)) <=> (!k. P k)))
+
+  SQUAREFREE =
+    |- !n. squarefree n <=>
+           ~(n = 0) /\ (!m k. n divides m EXP k ==> n divides m)
+
+  SQUAREFREE_ALT =
+    |- !n. squarefree n <=> ~(n = 0) /\ (!m. n divides m EXP 2 ==> n divides m)
+
+  SQUAREFREE_DIVEXP =
+    |- !n q x. squarefree q /\ q divides x EXP n ==> q divides x
+
+  SQUAREFREE_DIVEXP_EQ =
+    |- !n q x. squarefree q /\ ~(n = 0) ==> (q divides x EXP n <=> q divides x)
+
+  SQUAREFREE_DIVIDES =
+    |- !q n.
+           squarefree q
+           ==> (q divides n <=> (!p. prime p /\ p divides q ==> p divides n))
+
+  SQUAREFREE_GCD =
+    |- !m n. squarefree m \/ squarefree n ==> squarefree (gcd (m,n))
+
+  SQUAREFREE_GCD_SQUARE =
+    |- !n. squarefree n <=> (!x. gcd (x EXP 2,n) divides x)
+
+Tue 12th Mar 2024               sets.ml, passim
+
+Added one basic lemma that was previously regenerated many times via
+SET_RULE
+
+  IMAGE_EQ =
+    |- !f g s. (!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s
+
+as well as a couple of elaborations of "image of a set is <= the set"
+using two different imaging functions:
+
+  CARD_IMAGE_LE2 =
+    |- !f g s.
+           FINITE s /\ (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y)
+           ==> CARD(IMAGE f s) <= CARD(IMAGE g s)
+
+  CARD_IMAGE_LT2 =
+    |- !f g s.
+           FINITE s /\
+           (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y) /\
+           ~(!x y. x IN s /\ y IN s /\ f x = f y ==> g x = g y)
+           ==> CARD(IMAGE f s) < CARD(IMAGE g s)
+
+Mon 11th Mar 2024               basics.ml, Minisat/minisat_prove.ml
+
+Added a function "atoms" to return the set (as a list with no repetitions
+but arbitrary order) of atomic formulas in a term, considering it as a
+propositional formula and any non-propositional subterms as atomic:
+
+  # atoms `x < 1 \/ x > 1 ==> ~(x = 1)`;;
+  val it : term list = [`x < 1`; `x > 1`; `x = 1`]
+
+Fri  1st Mar 2024               Library/words.ml
+
+Added a few more miscellaneous word lemmas:
+
+  BIT_REVERSEFIELDS_1 =
+    |- !x i.
+           bit i (word_reversefields 1 x) <=>
+           i < dimindex (:N) /\ bit (dimindex (:N) - 1 - i) x
+
+  WORD_CLZ_REVERSEFIELDS =
+    |- !x. word_clz (word_reversefields 1 x) = word_ctz x
+
+  WORD_CTZ_EMULATION_POPCOUNT =
+    |- !x. word_ctz x =
+           word_popcount (word_and (word_not x) (word_sub x (word 1)))
+
+  WORD_CTZ_REVERSEFIELDS =
+    |- !x. word_ctz (word_reversefields 1 x) = word_clz x
+
+  WORD_EVENPARITY_POPCOUNT =
+    |- !x. word (bitval (word_evenparity x)) =
+           word_zx (word_not (word (word_popcount x)))
+
+  WORD_MUL_EXPAND =
+    |- !x y.
+           word_mul x y =
+           word
+           (nsum {i | i < dimindex (:N)}
+           (\i. bitval (bit i x) * val (word_shl y i)))
+
+  WORD_MUL_EXPAND_ALT =
+    |- !x y.
+           word_mul x y =
+           word
+           (nsum {i | i < dimindex (:N)}
+           (\i. val
+                (word_and (word_neg (word (bitval (bit i x)))) (word_shl y i))))
+
+  WORD_ODDPARITY_POPCOUNT =
+    |- !x. word (bitval (word_oddparity x)) = word_zx (word (word_popcount x))
+
+  WORD_POPCOUNT_MUL =
+    |- !x y. word_popcount (word_mul x y) <= word_popcount x * word_popcount y
+
+and two new type constructor/destructor utility functions,
+"dest_word_ty" and "mk_word_ty", e.g.
+
+  #  dest_word_ty `:int64`;;
+  val it : num = 64
+
+Fri  1st Mar 2024               printer.ml
+
+Added a new printing option from June Lee, controlled by a flag
+"print_types_of_subterms".
+
+        0 - Behaviour as before, no printing of types
+        1 - prints types of subterms containing invented type variables
+        2 - prints the types of all constants and variables
+
+Thu 29th Feb 2024               Library/words.ml
+
+Augmented BIT_WORD_CONV to handle the two special cases of condition
+and mask words based on "bitval b":
+
+  BIT_WORD_CONV `bit 0 (word(bitval b):byte)`;;
+
+  BIT_WORD_CONV `bit 42 (word_neg(word(bitval b)):int64)`;;
+
+Tue 27th Feb 2024               Minisat/minisat_prove.ml, Minisat/README, Minisat/zc2mso/README
+
+Made the overall GEN_SAT_PROVE, SAT_PROVE and ZSAT_PROVE initially convert
+any non-variable atomic formulas into variables before calling the core
+procedure. This makes things work on more general tautologies where the
+atomic formulas are arbitrary.
+
+Also made a few modernizations to the two README files to better reflect
+the current experience with MiniSat and zchaff.
+
+
+Wed 21st Feb 2024               EC/jacobian.ml
+
+Added some alternative definitions of Jacobian-coordinate elliptic curve
+operations with fewer special case distinctions, "jacobian_add_unexceptional"
+and "jacobian_double_unexceptional". The key theorems still work for these,
+with the exception of using the addition formula for doubling, which still
+needs to be handled separately:
+
+  WEIERSTRASS_OF_JACOBIAN_ADD_UNEXCEPTIONAL =
+    |- !f a b p q.
+          field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+          a IN ring_carrier f /\ b IN ring_carrier f /\
+          jacobian_point f p /\ jacobian_point f q /\
+          ~(jacobian_eq f p q)
+          ==> weierstrass_of_jacobian f (jacobian_add_unexceptional (f,a,b) p q) =
+              weierstrass_add (f,a,b)
+               (weierstrass_of_jacobian f p)
+               (weierstrass_of_jacobian f q)
+
+  WEIERSTRASS_OF_JACOBIAN_DOUBLE_UNEXCEPTIONAL =
+    |- !f a b p.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p
+        ==> weierstrass_of_jacobian f (jacobian_double_unexceptional (f,a,b) p) =
+            weierstrass_add (f,a,b)
+             (weierstrass_of_jacobian f p)
+             (weierstrass_of_jacobian f p)
+
+Wed 21st Feb 2024               calc_rat.ml, class.ml, define.ml, fusion.ml, int.ml, tactics.ml, Library/words.ml, Help/passim
+
+Added an update from June Lee with two new tactics
+
+  NAME_ASSUMS_TAC - names unlabelled assumptions ("H0", "H1" etc.)
+
+  PRINT_GOAL_TAC - prints the current subgoal, useful for debugging
+
+as well as several improvements in the error messages from automated
+rules and tactics.
+
+Wed 21st Feb 2024               Proofrecording/README
+
+Fixed a broken link, thanks to Yiyuan Cao, in the Proofrecording
+documentation, with an updated link to Chantal Keller's code for
+replaying HOL Light proofs in Coq.
+
+Tue 20th Feb 2024               Library/words.ml
+
+Added a few additional word lemmas:
+
+  DIGITSUM_UNIQUE =
+    |- !B b c s n.
+           FINITE s /\ (!i. i IN s ==> b i < B) /\ (!i. i IN s ==> c i < B)
+           ==> (nsum s (\i. B EXP i * b i) = nsum s (\i. B EXP i * c i) <=>
+                (!i. i IN s ==> b i = c i))
+
+  VAL_EXPAND_SUBWORDS =
+    |- !k m x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> nsum {i | i < m}
+               (\i. 2 EXP (k * i) * val (word_subword x (k * i,k))) =
+               val x
+
+  VAL_SUBWORDS_EQ =
+    |- !k m f x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> ((!i. i < m ==> val (word_subword x (k * i,k)) = f i) <=>
+                (!i. i < m ==> f i < 2 EXP k) /\
+                val x = nsum {i | i < m} (\i. 2 EXP (k * i) * f i))
+
+  WORD_SUBWORD_ADD =
+    |- !x y.
+           dimindex (:M) = len /\
+           pos + len <= dimindex (:N) /\
+           val x MOD 2 EXP pos + val y MOD 2 EXP pos < 2 EXP pos
+           ==> word_subword (word_add x y) (pos,len) =
+               word_add (word_subword x (pos,len)) (word_subword y (pos,len))
+
+  WORD_SUBWORDS_EQ =
+    |- !k m f x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> ((!i. i < m ==> val (word_subword x (k * i,k)) = f i) <=>
+                (!i. i < m ==> f i < 2 EXP k) /\
+                word (nsum {i | i < m} (\i. 2 EXP (k * i) * f i)) = x)
+
+Tue 13th Feb 2024               arith.ml
+
+Added a few more conditions for distributing DIV or MOD over addition:
+
+  DIV_ADD_EQ =
+    |- !n x y. x MOD n + y MOD n < n ==> (x + y) DIV n = x DIV n + y DIV n
+
+  DIV_ADD_EQ_EQ =
+    |- !n x y.
+           (x + y) DIV n = x DIV n + y DIV n <=> n = 0 \/ x MOD n + y MOD n < n
+
+  MOD_ADD_EQ =
+    |- !n x y. x MOD n + y MOD n < n ==> (x + y) MOD n = x MOD n + y MOD n
+
+  MOD_ADD_EQ_EQ =
+    |- !n x y.
+           (x + y) MOD n = x MOD n + y MOD n <=> n = 0 \/ x MOD n + y MOD n < n
+
+Tue  6th Feb 2024               Library/words.ml
+
+Added a couple of little word lemmas:
+
+  INT_VAL_WORD_SUB =
+    |- !x y.
+           &(val (word_sub x y)) =
+           (&(val x) - &(val y)) rem &2 pow dimindex(:N)
+
+  IVAL_EQ_VAL =
+    |- !x. val x < 2 EXP (dimindex(:N) - 1) ==> ival x = &(val x)
+
+Mon  5th Feb 2024               Divstep/idivstep.ml
+
+Added a few simple divstep lemmas, noting that once g = 0 the update
+matrix remains diagonal thereafter:
+
+  DIVSTEP_MAT_DIAGONAL =
+    |- d f n. divstep_mat n (d,f,&0) $1$2 = &0 /\
+              divstep_mat n (d,f,&0) $2$1 = &0
+
+  DIVSTEP_MAT_DIAGONAL_1 =
+    |- !d f g n. g = &0 ==> divstep_mat n (d,f,g) $1$2 = &0
+
+  DIVSTEP_MAT_DIAGONAL_2 =
+    |- !d f g n. g = &0 ==> divstep_mat n (d,f,g) $2$1 = &0
+
+  IDIVSTEP_STAYS_ZERO =
+    |- !d f g d' f' g'.
+        g = &0 /\ idivstep(d,f,g) = d',f',g' ==> g' = &0
+
+Fri 12th Jan 2024               preterm.ml, Help/type_invention_error.hlp
+
+Added an update from June Lee to provide more explicit information
+to accompany the type variable invention error triggered when the
+"type_invention_warning" flag is set, e.g.
+
+  # type_invention_error := true;;
+  val it : unit = ()
+  # `f x`;;
+  Exception:
+  Failure "typechecking error (cannot infer type of variables): f, x".
+
+Fri 12th Jan 2024               README, Makefile
+
+Added an update from June Lee which now correctly documents not only
+the use of the DMTCP checkpointer with HOL Light, but also two other
+checkpointing tools, CRIU and selfie.
+
 Fri  3rd Nov 2023               cart.ml, Library/words.ml
 
 Added various lemmas, mostly about machine words and with a focus
 on bounds for "word_popcount" (population count, Hamming weight)
 including its subadditivity (WORD_POPCOUNT_ADD). New theorems:
-  
+
   BITS_OF_WORD_SUBSET =
-    |- !x y. bits_of_word x SUBSET bits_of_word y <=> 
+    |- !x y. bits_of_word x SUBSET bits_of_word y <=>
              (!i. bit i x ==> bit i y)
-  
+
   BITS_OF_WORD_SUBSET_ALT =
     |- !x y.
            bits_of_word x SUBSET bits_of_word y <=>
            (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
-  
+
   BITS_OF_WORD_SUBSET_NUMSEG =
     |- !x. bits_of_word x SUBSET {i | i < dimindex(:N)}
-  
+
   BIT_WORD_JOIN_GEN =
     |- !e h l i.
            l < 2 EXP e
@@ -33,77 +502,77 @@ including its subadditivity (WORD_POPCOUNT_ADD). New theorems:
                 (if i < e
                  then ODD(l DIV 2 EXP i)
                  else ODD(h DIV 2 EXP (i - e))))
-  
+
   NUMSEG_LT_DIMINDEX =
     |- {i | i < dimindex(:N)} = 0..dimindex(:N) - 1
-  
+
   VAL_LE_SUBSET =
     |- !x y. bits_of_word x SUBSET bits_of_word y ==> val x <= val y
-  
+
   WORD_OF_BITS_EMPTY =
     |- word_of_bits {} = word 0
-  
+
   WORD_POPCOUNT_ADD =
     |- !x y. word_popcount(word_add x y) <= word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_ADD_DISJOINT =
     |- !x y.
            word_and x y = word 0
            ==> word_popcount(word_add x y) = word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_ADD_OR =
     |- !x y. word_popcount(word_add x y) <= word_popcount(word_or x y)
-  
+
   WORD_POPCOUNT_AND =
     |- !x y.
            word_popcount(word_and x y) <=
            MIN (word_popcount x) (word_popcount y)
-  
+
   WORD_POPCOUNT_BITVAL =
     |- !b. word_popcount(word(bitval b)) <= 1
-  
+
   WORD_POPCOUNT_BOUND_SIZE =
     |- !x n. val x < 2 EXP n ==> word_popcount x <= n
-  
+
   WORD_POPCOUNT_LE_BITS =
     |- !x y.
            (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
            ==> word_popcount x <= word_popcount y
-  
+
   WORD_POPCOUNT_NSUM =
     |- !x. word_popcount x =
            nsum {i | i < dimindex(:N)} (\i. bitval(bit i x))
-  
+
   WORD_POPCOUNT_OR =
     |- !x y. word_popcount(word_or x y) <= word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_OR_AND =
     |- !x y.
            word_popcount(word_or x y) + word_popcount(word_and x y) =
            word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_OR_DISJOINT =
     |- !x y.
            word_and x y = word 0
            ==> word_popcount(word_or x y) = word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_SHL =
     |- !x n. word_popcount(word_shl x n) <= word_popcount x
-  
+
   WORD_POPCOUNT_USHR =
     |- !x n. word_popcount(word_ushr x n) <= word_popcount x
-  
+
   WORD_POPCOUNT_WORD_OF_BITS =
     |- !s. s SUBSET {i | i < dimindex(:N)}
            ==> word_popcount(word_of_bits s) = CARD s
-  
+
   WORD_POPCOUNT_WORD_OF_BITS_GEN =
     |- !s. word_popcount(word_of_bits s) =
            CARD ({i | i < dimindex(:N)} INTER s)
-  
+
   WORD_POPCOUNT_XOR =
     |- !x y. word_popcount(word_xor x y) <= word_popcount x + word_popcount y
-  
+
   WORD_POPCOUNT_XOR_AND =
     |- !x y.
            word_popcount(word_xor x y) + word_popcount(word_and x y) =
