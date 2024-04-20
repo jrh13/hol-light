@@ -10,17 +10,17 @@
 (* Formal interval evaluation of arithmetic expressions                       *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/float_pow.hl";;
-needs "arith/more_float.hl";;
-needs "trig/exp_eval.hl";;
-needs "trig/log_eval.hl";;
-needs "trig/atn_eval.hl";;
-needs "trig/asn_acs_eval.hl";;
-needs "trig/cos_eval.hl";;
-needs "trig/sin_eval.hl";;
-needs "trig/matan_eval.hl";;
-needs "misc/misc_functions.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/float_pow.hl";;
+needs "Formal_ineqs/arith/more_float.hl";;
+needs "Formal_ineqs/trig/exp_eval.hl";;
+needs "Formal_ineqs/trig/log_eval.hl";;
+needs "Formal_ineqs/trig/atn_eval.hl";;
+needs "Formal_ineqs/trig/asn_acs_eval.hl";;
+needs "Formal_ineqs/trig/cos_eval.hl";;
+needs "Formal_ineqs/trig/sin_eval.hl";;
+needs "Formal_ineqs/trig/matan_eval.hl";;
+needs "Formal_ineqs/misc/misc_functions.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
 module Eval_interval = struct
 

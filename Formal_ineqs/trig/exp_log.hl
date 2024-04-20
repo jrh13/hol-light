@@ -10,7 +10,7 @@
 (* Formal interval evaluation of functions: exp, log (theory)                 *)
 (* -------------------------------------------------------------------------- *)
 
-needs "trig/series.hl";;
+needs "Formal_ineqs/trig/series.hl";;
 
 module Exp_log = struct
 

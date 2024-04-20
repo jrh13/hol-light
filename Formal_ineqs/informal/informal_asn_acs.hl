@@ -11,7 +11,7 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_atn.hl";;
+needs "Formal_ineqs/informal/informal_atn.hl";;
 
 module type Informal_asn_acs_sig =
   sig
@@ -126,7 +126,7 @@ end;;
 
 (*
 
-needs "trig/asn_acs_eval.hl";;
+needs "Formal_ineqs/trig/asn_acs_eval.hl";;
 
 open Informal_asn_acs;;
 

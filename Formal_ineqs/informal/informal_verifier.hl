@@ -11,9 +11,9 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_taylor.hl";;
-needs "verifier/certificate.hl";;
-needs "verifier_options.hl";;
+needs "Formal_ineqs/informal/informal_taylor.hl";;
+needs "Formal_ineqs/verifier/certificate.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
 
 module Informal_verifier = struct
 

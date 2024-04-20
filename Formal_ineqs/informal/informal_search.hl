@@ -10,9 +10,9 @@
 (* Informal certificate search                                                *)
 (* -------------------------------------------------------------------------- *)
 
-needs "informal/informal_taylor.hl";;
-needs "verifier/certificate.hl";;
-needs "verifier_options.hl";;
+needs "Formal_ineqs/informal/informal_taylor.hl";;
+needs "Formal_ineqs/verifier/certificate.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
 
 module Informal_search = struct
 
@@ -226,8 +226,8 @@ end;;
 (*
 (*******************)
 
-needs "informal/informal_taylor.hl";;
-needs "verifier/m_verifier_build.hl";;
+needs "Formal_ineqs/informal/informal_taylor.hl";;
+needs "Formal_ineqs/verifier/m_verifier_build.hl";;
 open M_verifier_build;;
 
 #install_printer Informal_float.print_ifloat;;

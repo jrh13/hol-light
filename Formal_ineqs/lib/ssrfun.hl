@@ -1,5 +1,5 @@
-needs "lib/ssreflect/ssreflect.hl";;
-needs "lib/ssreflect/sections.hl";;
+needs "Formal_ineqs/lib/ssreflect/ssreflect.hl";;
+needs "Formal_ineqs/lib/ssreflect/sections.hl";;
 
 (* Module Ssrfun*)
 module Ssrfun = struct

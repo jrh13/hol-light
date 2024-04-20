@@ -10,7 +10,7 @@
 (* Formal arithmetic of taylor intervals 2                                    *)
 (* -------------------------------------------------------------------------- *)
 
-needs "taylor/m_taylor_arith.hl";;
+needs "Formal_ineqs/taylor/m_taylor_arith.hl";;
 
 
 module M_taylor_arith2 = struct
@@ -1283,8 +1283,8 @@ let eval_m_taylor_matan2 n p_lin p_second taylor1_th =
 end;;
 
 (*
-needs "informal/informal_taylor.hl";;
-needs "verifier/m_verifier_build.hl";;
+needs "Formal_ineqs/informal/informal_taylor.hl";;
+needs "Formal_ineqs/verifier/m_verifier_build.hl";;
 open M_verifier_build;;
 
 #install_printer Informal_float.print_ifloat;;

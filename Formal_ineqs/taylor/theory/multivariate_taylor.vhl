@@ -12,9 +12,9 @@
 (* See https://github.com/monadius/hol-ssreflect                              *)
 (* -------------------------------------------------------------------------- *)
 
-"needs \"lib/ssrbool.hl\"".
-"needs \"lib/ssrnat.hl\"".
-"needs \"taylor/theory/taylor_interval-compiled.hl\"".
+"needs \"Formal_ineqs/lib/ssrbool.hl\"".
+"needs \"Formal_ineqs/lib/ssrnat.hl\"".
+"needs \"Formal_ineqs/taylor/theory/taylor_interval-compiled.hl\"".
 
 module Multivariate_taylor.
 

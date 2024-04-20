@@ -11,7 +11,7 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_atn.hl";;
+needs "Formal_ineqs/informal/informal_atn.hl";;
 
 (* matan *)
 module type Informal_matan_sig =

@@ -10,7 +10,7 @@
 (* Formal verification certificate                                            *)
 (* -------------------------------------------------------------------------- *)
 
-needs "misc/report.hl";;
+needs "Formal_ineqs/misc/report.hl";;
 
 module Certificate = struct
 

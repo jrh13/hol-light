@@ -10,9 +10,9 @@
 (* Special list conversions                                                   *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/more_float.hl";;
-needs "list/list_conversions.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/more_float.hl";;
+needs "Formal_ineqs/list/list_conversions.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
 
 module type List_float_sig = sig

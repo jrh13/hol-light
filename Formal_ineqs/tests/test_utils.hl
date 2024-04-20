@@ -1,8 +1,8 @@
 (* Run hol_test *)
 
-needs "arith/arith_nat.hl";;
+needs "Formal_ineqs/arith/arith_nat.hl";;
 needs "new_arith/nat_arith.hl";;
-needs "arith/arith_float.hl";;
+needs "Formal_ineqs/arith/arith_float.hl";;
 
 #load "nums.cma";;
 #load "unix.cma";;

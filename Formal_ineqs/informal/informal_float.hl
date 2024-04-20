@@ -11,7 +11,7 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_nat.hl";;
+needs "Formal_ineqs/informal/informal_nat.hl";;
 
 (* Floating-point numbers *)
 

@@ -1,4 +1,4 @@
-needs "lib/ssrbool.hl";;
+needs "Formal_ineqs/lib/ssrbool.hl";;
 
 (* Module Ssrnat*)
 module Ssrnat = struct

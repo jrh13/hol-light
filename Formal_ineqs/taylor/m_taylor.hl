@@ -10,15 +10,15 @@
 (* Formal taylor intervals                                                    *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/more_float.hl";;
-needs "arith/eval_interval.hl";;
-needs "list/list_conversions.hl";;
-needs "list/list_float.hl";;
-needs "list/more_list.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/more_float.hl";;
+needs "Formal_ineqs/arith/eval_interval.hl";;
+needs "Formal_ineqs/list/list_conversions.hl";;
+needs "Formal_ineqs/list/list_float.hl";;
+needs "Formal_ineqs/list/more_list.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
-needs "taylor/theory/taylor_interval-compiled.hl";;
-needs "taylor/theory/multivariate_taylor-compiled.hl";;
+needs "Formal_ineqs/taylor/theory/taylor_interval-compiled.hl";;
+needs "Formal_ineqs/taylor/theory/multivariate_taylor-compiled.hl";;
 
 
 module M_taylor = struct

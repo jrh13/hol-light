@@ -17,7 +17,7 @@ load_path := "path to the formal_ineqs directory" :: !load_path;;
 
 (* Change default arithmetic options before loading other libraries *)
 (* (arithmetic options cannot be changed later) *)
-needs "arith_options.hl";;
+needs "Formal_ineqs/arith_options.hl";;
 
 (* Set the base of natural number arithmetic to 200 *)
 Arith_options.base := 200;;
@@ -26,7 +26,7 @@ Arith_options.base := 200;;
 (* Note: the verification library loads Multivariate/realanalysis.ml,
    so it is recommended to use a checkpointed version of HOL Light
    with preloaded realanalysis.ml *)
-needs "verifier/m_verifier_main.hl";;
+needs "Formal_ineqs/verifier/m_verifier_main.hl";;
 
 (*
   Set the level of info/debug printing:
@@ -34,7 +34,7 @@ needs "verifier/m_verifier_main.hl";;
   1 - report important steps (default)
   2 - report everything
 *)
-needs "verifier_options.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
 Verifier_options.info_print_level := 1;;
 
 (* Open the main verification module *)

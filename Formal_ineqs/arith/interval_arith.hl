@@ -10,7 +10,7 @@
 (* Theoretical results for interval arithmetic                                *)
 (* -------------------------------------------------------------------------- *)
 
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
 module Interval_arith = struct
 

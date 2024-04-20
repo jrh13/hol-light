@@ -10,11 +10,11 @@
 (* Formal verification functions                                              *)
 (* -------------------------------------------------------------------------- *)
 
-needs "taylor/m_taylor.hl";;
-needs "verifier/certificate.hl";;
-needs "misc/misc_vars.hl";;
-needs "verifier_options.hl";;
-needs "verifier/m_verifier_build.hl";;
+needs "Formal_ineqs/taylor/m_taylor.hl";;
+needs "Formal_ineqs/verifier/certificate.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
+needs "Formal_ineqs/verifier/m_verifier_build.hl";;
 
 module M_verifier = struct
 

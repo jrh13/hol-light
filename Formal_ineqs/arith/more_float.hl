@@ -10,8 +10,8 @@
 (* Additional floating point procedures                                       *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/arith_float.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/arith_float.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
 module More_float = struct
 

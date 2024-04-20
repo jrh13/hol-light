@@ -11,8 +11,8 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "arith_options.hl";;
-needs "arith/arith_num.hl";;
+needs "Formal_ineqs/arith_options.hl";;
+needs "Formal_ineqs/arith/arith_num.hl";;
 
 
 module Arith_cache = struct

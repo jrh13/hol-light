@@ -10,13 +10,13 @@
 (* Additional test inequalities                                               *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith_options.hl";;
+needs "Formal_ineqs/arith_options.hl";;
 
 (* Arith_options.base := 100;; *)
 
-needs "verifier/m_verifier_main.hl";;
+needs "Formal_ineqs/verifier/m_verifier_main.hl";;
 
-needs "verifier_options.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
 Verifier_options.info_print_level := 2;;
 
 open M_verifier_main;;

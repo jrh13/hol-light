@@ -10,12 +10,12 @@
 (* Informal interval evaluation of arithmetic expressions                     *)
 (* -------------------------------------------------------------------------- *)
 
-needs "informal/informal_exp.hl";;
-needs "informal/informal_log.hl";;
-needs "informal/informal_atn.hl";;
-needs "informal/informal_asn_acs.hl";;
-needs "informal/informal_sin_cos.hl";;
-needs "informal/informal_matan.hl";;
+needs "Formal_ineqs/informal/informal_exp.hl";;
+needs "Formal_ineqs/informal/informal_log.hl";;
+needs "Formal_ineqs/informal/informal_atn.hl";;
+needs "Formal_ineqs/informal/informal_asn_acs.hl";;
+needs "Formal_ineqs/informal/informal_sin_cos.hl";;
+needs "Formal_ineqs/informal/informal_matan.hl";;
 
 
 module Informal_eval_interval = struct

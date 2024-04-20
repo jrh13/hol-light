@@ -11,7 +11,7 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "arith/arith_nat.hl";;
+needs "Formal_ineqs/arith/arith_nat.hl";;
 
 module Num_exp_theory = struct
 

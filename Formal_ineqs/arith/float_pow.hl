@@ -10,7 +10,7 @@
 (* Formal interval evaluation of integer exponents                            *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/arith_float.hl";;
+needs "Formal_ineqs/arith/arith_float.hl";;
 
 module type Float_pow_sig =
   sig

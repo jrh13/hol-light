@@ -11,8 +11,8 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_poly.hl";;
-needs "informal/informal_atn.hl";;
+needs "Formal_ineqs/informal/informal_poly.hl";;
+needs "Formal_ineqs/informal/informal_atn.hl";;
 
 (* sin, cos *)
 module type Informal_sin_cos_sig =

@@ -10,7 +10,7 @@
 (* Formal interval evaluation of functions: matan (theory)                    *)
 (* -------------------------------------------------------------------------- *)
 
-needs "trig/series.hl";;
+needs "Formal_ineqs/trig/series.hl";;
 
 module Matan = struct
 

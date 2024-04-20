@@ -10,11 +10,11 @@
 (* Formal interval evaluation of functions: sin                               *)
 (* -------------------------------------------------------------------------- *)
 
-needs "misc/misc_functions.hl";;
-needs "misc/misc_vars.hl";;
-needs "arith/interval_arith.hl";;
-needs "trig/atn_eval.hl";;
-needs "trig/cos_eval.hl";;
+needs "Formal_ineqs/misc/misc_functions.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/interval_arith.hl";;
+needs "Formal_ineqs/trig/atn_eval.hl";;
+needs "Formal_ineqs/trig/cos_eval.hl";;
 
 module type Sin_eval_sig =
   sig

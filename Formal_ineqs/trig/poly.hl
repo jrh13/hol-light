@@ -10,8 +10,8 @@
 (* Formal interval evaluation of polynomials (theory)                         *)
 (* -------------------------------------------------------------------------- *)
 
-needs "list/more_list.hl";;
-needs "arith/interval_arith.hl";;
+needs "Formal_ineqs/list/more_list.hl";;
+needs "Formal_ineqs/arith/interval_arith.hl";;
 
 module Poly = struct
 

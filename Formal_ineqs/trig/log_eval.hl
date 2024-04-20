@@ -10,9 +10,9 @@
 (* Formal interval evaluation of functions: log                               *)
 (* -------------------------------------------------------------------------- *)
 
-needs "trig/exp_log.hl";;
-needs "trig/poly_eval.hl";;
-needs "trig/exp_eval.hl";;
+needs "Formal_ineqs/trig/exp_log.hl";;
+needs "Formal_ineqs/trig/poly_eval.hl";;
+needs "Formal_ineqs/trig/exp_eval.hl";;
 
 module type Log_eval_sig =
   sig

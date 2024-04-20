@@ -10,10 +10,10 @@
 (* Formal interval evaluation of polynomials                                  *)
 (* -------------------------------------------------------------------------- *)
 
-needs "trig/poly.hl";;
-needs "misc/misc_functions.hl";;
-needs "misc/misc_vars.hl";;
-needs "arith/more_float.hl";;
+needs "Formal_ineqs/trig/poly.hl";;
+needs "Formal_ineqs/misc/misc_functions.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/more_float.hl";;
 
 module Poly_eval = struct
 

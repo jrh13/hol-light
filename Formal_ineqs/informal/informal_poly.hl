@@ -11,7 +11,7 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_interval.hl";;
+needs "Formal_ineqs/informal/informal_interval.hl";;
 
 (* poly *)
 module type Informal_poly_sig =

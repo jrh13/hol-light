@@ -11,9 +11,9 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "misc/misc_functions.hl";;
-needs "misc/misc_vars.hl";;
-needs "arith_options.hl";;
+needs "Formal_ineqs/misc/misc_functions.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
+needs "Formal_ineqs/arith_options.hl";;
 
 
 (* Natural numbers *)

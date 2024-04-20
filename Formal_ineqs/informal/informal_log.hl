@@ -11,8 +11,8 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_interval.hl";;
-needs "informal/informal_exp.hl";;
+needs "Formal_ineqs/informal/informal_interval.hl";;
+needs "Formal_ineqs/informal/informal_exp.hl";;
 
 module type Informal_log_sig =
   sig
@@ -61,7 +61,7 @@ end;;
 
 (*
 
-needs "trig/log_eval.hl";;
+needs "Formal_ineqs/trig/log_eval.hl";;
 
 open Informal_float;;
 open Informal_interval;;

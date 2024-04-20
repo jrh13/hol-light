@@ -10,8 +10,8 @@
 (* Formal interval evaluation of functions: cos                               *)
 (* -------------------------------------------------------------------------- *)
 
-needs "trig/sin_cos.hl";;
-needs "trig/poly_eval.hl";;
+needs "Formal_ineqs/trig/sin_cos.hl";;
+needs "Formal_ineqs/trig/poly_eval.hl";;
 
 module type Cos_bounds_eval_sig =
   sig

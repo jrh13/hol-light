@@ -1,7 +1,7 @@
-needs "lib/ssrbool.hl";;
-needs "lib/ssrnat.hl";;
-needs "arith/interval_arith.hl";;
-needs "trig/matan.hl";;
+needs "Formal_ineqs/lib/ssrbool.hl";;
+needs "Formal_ineqs/lib/ssrnat.hl";;
+needs "Formal_ineqs/arith/interval_arith.hl";;
+needs "Formal_ineqs/trig/matan.hl";;
 needs "Multivariate/realanalysis.ml";;
 
 (* Module Taylor_interval*)

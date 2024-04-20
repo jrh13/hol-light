@@ -11,8 +11,8 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_interval.hl";;
-needs "informal/informal_poly.hl";;
+needs "Formal_ineqs/informal/informal_interval.hl";;
+needs "Formal_ineqs/informal/informal_poly.hl";;
 
 module type Informal_atn_sig =
   sig
@@ -181,7 +181,7 @@ end;;
 
 (*
 
-needs "trig/atn_eval.hl";;
+needs "Formal_ineqs/trig/atn_eval.hl";;
 
 #install_printer print_ifloat;;
 #install_printer print_interval;;

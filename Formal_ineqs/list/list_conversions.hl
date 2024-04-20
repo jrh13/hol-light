@@ -10,8 +10,8 @@
 (* Efficient formal list conversions                                          *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/arith_nat.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/arith_nat.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
 module type List_conversions_sig =
   sig

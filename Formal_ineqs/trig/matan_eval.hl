@@ -10,9 +10,9 @@
 (* Formal interval evaluation of functions: matan, dmatan, ddmatan            *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/more_float.hl";;
-needs "trig/matan.hl";;
-needs "trig/atn_eval.hl";;
+needs "Formal_ineqs/arith/more_float.hl";;
+needs "Formal_ineqs/trig/matan.hl";;
+needs "Formal_ineqs/trig/atn_eval.hl";;
 
 module type Matan_eval_sig =
   sig

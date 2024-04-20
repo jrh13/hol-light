@@ -11,7 +11,7 @@
 (* Formal interval evaluation of functions: atn (theory)                      *)
 (* -------------------------------------------------------------------------- *)
 
-needs "trig/series.hl";;
+needs "Formal_ineqs/trig/series.hl";;
 
 module Atn = struct
 

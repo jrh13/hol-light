@@ -11,9 +11,9 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "arith/arith_nat.hl";;
-needs "arith/num_exp_theory.hl";;
-needs "arith/interval_arith.hl";;
+needs "Formal_ineqs/arith/arith_nat.hl";;
+needs "Formal_ineqs/arith/num_exp_theory.hl";;
+needs "Formal_ineqs/arith/interval_arith.hl";;
 
 module Float_theory = struct
 

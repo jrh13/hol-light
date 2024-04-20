@@ -10,14 +10,14 @@
 (* Main formal verification functions                                         *)
 (* -------------------------------------------------------------------------- *)
 
-needs "verifier/m_verifier.hl";;
-needs "verifier/m_verifier_build.hl";;
-needs "taylor/m_taylor_arith2.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/verifier/m_verifier.hl";;
+needs "Formal_ineqs/verifier/m_verifier_build.hl";;
+needs "Formal_ineqs/taylor/m_taylor_arith2.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
-needs "verifier/certificate.hl";;
-needs "informal/informal_search.hl";;
-needs "informal/informal_verifier.hl";;
+needs "Formal_ineqs/verifier/certificate.hl";;
+needs "Formal_ineqs/informal/informal_search.hl";;
+needs "Formal_ineqs/informal/informal_verifier.hl";;
 
 
 module M_verifier_main = struct

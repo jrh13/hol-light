@@ -11,8 +11,8 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "misc/misc_functions.hl";;
-needs "informal/informal_eval_interval.hl";;
+needs "Formal_ineqs/misc/misc_functions.hl";;
+needs "Formal_ineqs/informal/informal_eval_interval.hl";;
 
 
 module Informal_taylor = struct

@@ -10,12 +10,12 @@
 (* Auxiliary formal verification functions                                    *)
 (* -------------------------------------------------------------------------- *)
 
-needs "arith/eval_interval.hl";;
-needs "arith/more_float.hl";;
-needs "taylor/m_taylor.hl";;
-needs "informal/informal_verifier.hl";;
-needs "verifier_options.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/eval_interval.hl";;
+needs "Formal_ineqs/arith/more_float.hl";;
+needs "Formal_ineqs/taylor/m_taylor.hl";;
+needs "Formal_ineqs/informal/informal_verifier.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
 
 module M_verifier_build = struct

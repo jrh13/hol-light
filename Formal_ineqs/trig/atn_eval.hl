@@ -10,8 +10,8 @@
 (* Formal interval evaluation of functions: atn                               *)
 (* -------------------------------------------------------------------------- *)
 
-needs "trig/atn.hl";;
-needs "trig/poly_eval.hl";;
+needs "Formal_ineqs/trig/atn.hl";;
+needs "Formal_ineqs/trig/poly_eval.hl";;
 
 module type Atn_eval_sig =
   sig

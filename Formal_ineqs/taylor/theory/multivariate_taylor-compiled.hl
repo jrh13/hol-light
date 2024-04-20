@@ -1,6 +1,6 @@
-needs "lib/ssrbool.hl";;
-needs "lib/ssrnat.hl";;
-needs "taylor/theory/taylor_interval-compiled.hl";;
+needs "Formal_ineqs/lib/ssrbool.hl";;
+needs "Formal_ineqs/lib/ssrnat.hl";;
+needs "Formal_ineqs/taylor/theory/taylor_interval-compiled.hl";;
 
 (* Module Multivariate_taylor*)
 module Multivariate_taylor = struct

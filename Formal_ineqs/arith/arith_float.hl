@@ -11,13 +11,13 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "arith/arith_nat.hl";;
-needs "arith/num_exp_theory.hl";;
-needs "arith/float_theory.hl";;
-needs "arith/interval_arith.hl";;
-needs "misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/arith_nat.hl";;
+needs "Formal_ineqs/arith/num_exp_theory.hl";;
+needs "Formal_ineqs/arith/float_theory.hl";;
+needs "Formal_ineqs/arith/interval_arith.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
-needs "tests/log.hl";;
+needs "Formal_ineqs/tests/log.hl";;
 
 (* FLOOR_DIV_DIV *)
 needs "Library/floor.ml";;

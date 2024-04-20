@@ -1,4 +1,4 @@
-# This script updates dependency paths for all files in this porject
+# This script updates dependency paths for all files in this project
 
 import argparse
 import os
@@ -28,12 +28,11 @@ def update_file(path, local_files, args):
         else:
             return m[0]
     text2 = re.sub(r'\b((?:needs|loads|loadt)\s*\\?")([^\\"]+)(\\?")', sub, text)
-    # if text == text2:
-    #     print('No changes')
-    # else:
-    if True:
+    if text == text2:
+        print('No changes')
+    else:
         with open(path, 'w') as f:
-            f.write(text)
+            f.write(text2)
 
 def main():
     args = parse_args()
