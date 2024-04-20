@@ -324,7 +324,7 @@ Sections.end_section "SopTisR";;
 Sections.begin_section "SopTisS";;
 let right_id = new_definition `right_id e op = !x. op x e = x`;;
 let left_zero = new_definition `left_zero z op = !x. op z x = z`;;
-let right_commutative = new_definition
+let right_commutative = new_definition 
 	`right_commutative op = !x y z. op (op x y) z = op (op x z) y`;;
 let left_distributive = new_definition
 	`left_distributive op add = !x y z. op (add x y) z = add (op x z) (op y z)`;;
@@ -340,13 +340,13 @@ Sections.end_section "SopTisS";;
 Sections.begin_section "SopTisT";;
 let left_id = new_definition `left_id e op = !x. op e x = x`;;
 let right_zero = new_definition `right_zero z op = !x. op x z = z`;;
-let left_commutative = new_definition
+let left_commutative = new_definition 
 	`left_commutative op = !x y z. op x (op y z) = op y (op x z)`;;
 let right_distributive = new_definition
 	`right_distributive op add = !x y z. op x (add y z) = add (op x y) (op x z)`;;
-let left_loop = new_definition
+let left_loop = new_definition 
 	`left_loop inv op = !x. cancel (op x) (op (inv x))`;;
-let rev_left_loop = new_definition
+let rev_left_loop = new_definition 
 	`rev_left_loop inv op = !x. cancel (op (inv x)) (op x)`;;
 
 (* Finalization of the section SopTisT *)

@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Informal arithmetic procedures: interval arithmetic         *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal arithmetic procedures: interval arithmetic                        *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
 needs "informal/informal_float.hl";;
@@ -107,7 +113,7 @@ let sqrt_interval pp (lo,hi) =
     (sqrt_float_lo pp lo, sqrt_float_hi pp hi);;
 
 (* mul *)
-let mul_interval pp (l_lo,l_hi) (r_lo,r_hi) =
+let mul_interval pp (l_lo,l_hi) (r_lo,r_hi) = 
   let s1 = sign_float l_lo and
       s2 = sign_float l_hi and
       s3 = sign_float r_lo and
@@ -148,7 +154,7 @@ let mul_interval pp (l_lo,l_hi) (r_lo,r_hi) =
 	  (mul_float_lo pp lo1 lo2, mul_float_hi pp hi1 hi2);;
 
 (* div *)
-let div_interval pp (l_lo,l_hi) (r_lo,r_hi) =
+let div_interval pp (l_lo,l_hi) (r_lo,r_hi) = 
   let s1 = sign_float l_lo and
       s2 = sign_float l_hi and
       s3 = sign_float r_lo and
@@ -216,7 +222,7 @@ let le_interval x (lo, hi) = le_float x lo;;
 let ge_interval x (lo, hi) = le_float hi x;;
 
 (* compare_interval *)
-let compare_interval x (lo, hi) =
+let compare_interval x (lo, hi) = 
   if le_float x lo then -1
   else if le_float hi x then 1
   else 0;;
@@ -235,7 +241,7 @@ open Informal_interval;;
 
 #install_printer print_float;;
 #install_printer print_interval;;
-
+  
 let pp = 3;;
 let n = 41;;
 let mk_test a b = mk_interval (mk_float a 0, mk_float b 0);;

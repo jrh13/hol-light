@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal verification certificate                                            *)
+(* -------------------------------------------------------------------------- *)
+
 needs "misc/report.hl";;
 
 module Certificate = struct
@@ -18,7 +30,7 @@ type mono_status = {
 type result_tree =
   | Result_false of (float list * float list)
       (* function number, raw flag *)
-  | Result_pass of (int * bool)
+  | Result_pass of (int * bool) 
   | Result_pass_mono of mono_status
   | Result_pass_ref of int
   | Result_mono of mono_status list * result_tree
@@ -28,7 +40,7 @@ type result_tree =
 type p_status = {
   pp : int;
 };;
-
+  
 type p_result_tree =
   | P_result_pass of p_status * int * bool
   | P_result_mono of p_status * mono_status list * p_result_tree
@@ -67,11 +79,11 @@ type certificate_stats = {
 };;
 
 let dummy_stats = {
-  pass = 0;
-  pass_raw = 0;
+  pass = 0; 
+  pass_raw = 0; 
   pass_mono = 0;
-  mono = 0;
-  glue = 0;
+  mono = 0; 
+  glue = 0; 
   glue_convex = 0;
 };;
 
@@ -84,7 +96,7 @@ let result_stats result =
       pass_mono = ref 0 and
       pass_raw = ref 0 and
       glue_convex = ref 0 in
-
+    
   let rec count r =
     match r with
       | Result_false _ -> failwith "False result"
@@ -126,7 +138,7 @@ let result_p_stats glue_flag p_result =
 	  count r1; count r2 in
 
   let _ = count p_result in
-  let s = Hashtbl.fold
+  let s = Hashtbl.fold 
     (fun p c s -> (sprintf "p = %d: %d\n" p c) ^ s) p_table "" in
     report s;;
 
@@ -198,7 +210,7 @@ let transform_result x z r =
   (* get_domain *)
   (* Subdivides the given domain (x,z) according to the given path *)
   let domain_hash = Hashtbl.create 1000 in
-  let find_hash, mem_hash, add_hash =
+  let find_hash, mem_hash, add_hash = 
     Hashtbl.find domain_hash, Hashtbl.mem domain_hash, Hashtbl.add domain_hash in
 
   let get_domain path =
@@ -218,7 +230,7 @@ let transform_result x z r =
 		    let ( ++ ), ( / ) = (+.), (/.) in
 		    let yj = (List.nth x j ++ List.nth z j) / 2.0 in
 		    let delta b v = table (fun i -> if i = j && b then yj else List.nth v i) in
-		      if s = "l" then
+		      if s = "l" then 
 			delta false x, delta true z
 		      else
 			delta true x, delta false z
@@ -259,11 +271,11 @@ let transform_result x z r =
 	    let t1 = rec_transform p1 r1 in
 	    let t2 = rec_transform p2 r2 in
 	      Result_glue (j, convex_flag, t1, t2)
-	| Result_pass_mono m ->
+	| Result_pass_mono m -> 
 	    let path' = rev (get_m m :: path) in
 	    let x', z' = get_domain path' in
 	    let _, i = find_domain x' z' in
-	      (*	  let _ = report (sprintf "p = %s, d = %s, found: %d"
+	      (*	  let _ = report (sprintf "p = %s, d = %s, found: %d" 
 			  (domain_str x' z') (path_str path') i) in *)
 	      if i >= 0 then Result_mono ([m], Result_pass_ref (-i)) else r
 	| _ -> r in

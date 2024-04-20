@@ -1,10 +1,16 @@
-(* =========================================================== *)
-(* Theory of multivariate taylor intervals                     *)
-(* Requires SSReflect/HOL Light for translation                *)
-(* See http://code.google.com/p/flyspeck/downloads/list        *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Theory of multivariate taylor intervals                                    *)
+(* Requires SSReflect/HOL Light for translation                               *)
+(* See https://github.com/monadius/hol-ssreflect                              *)
+(* -------------------------------------------------------------------------- *)
 
 "needs \"lib/ssrbool.hl\"".
 "needs \"lib/ssrnat.hl\"".
@@ -30,7 +36,7 @@ module Multivariate_taylor.
 
 "let all_n = define `(all_n n [] s <=> T) /\ (all_n n (CONS h t) s <=> s n h /\ all_n (SUC n) t s)`".
 
-"let m_lin_approx = new_definition `m_lin_approx (f:real^N->real) x f_bounds df_bounds_list <=>
+"let m_lin_approx = new_definition `m_lin_approx (f:real^N->real) x f_bounds df_bounds_list <=> 
 	(lift o f) differentiable at x /\
 	interval_arith (f x) f_bounds /\
 	all_n 1 df_bounds_list (\i int. interval_arith (partial i f x) int)`".
@@ -39,7 +45,7 @@ module Multivariate_taylor.
 
 Section Misc.
 
-Lemma f_lift_neg f : `lift o (\x. --f x) = (\x. --(lift o f) x)`.
+Lemma f_lift_neg f : `lift o (\x. --f x) = (\x. --(lift o f) x)`. 
 by rewrite -eq_ext !o_THM /= LIFT_NEG. Qed.
 
 Lemma f_lift_scale f c : `lift o (\x. c * f x) = (\x. c % (lift o f) x)`.
@@ -100,13 +106,13 @@ Qed.
 
 Hypothesis dg : `g differentiable at x`.
 
-Lemma frechet_add : `frechet_derivative (\x. f x + g x) (at x) =
+Lemma frechet_add : `frechet_derivative (\x. f x + g x) (at x) = 
 	(\y. frechet_derivative f (at x) y + frechet_derivative g (at x) y)`.
 rewrite EQ_SYM_EQ; apply FRECHET_DERIVATIVE_AT; apply HAS_DERIVATIVE_ADD.
 by rewr ETA_AX; rewrite -!FRECHET_DERIVATIVE_WORKS.
 Qed.
 
-Lemma frechet_sub : `frechet_derivative (\x. f x - g x) (at x) =
+Lemma frechet_sub : `frechet_derivative (\x. f x - g x) (at x) = 
 	(\y. frechet_derivative f (at x) y - frechet_derivative g (at x) y)`.
 rewrite EQ_SYM_EQ; apply FRECHET_DERIVATIVE_AT; apply HAS_DERIVATIVE_SUB.
 by rewr ETA_AX; rewrite -!FRECHET_DERIVATIVE_WORKS.
@@ -115,7 +121,7 @@ Qed.
 End MoreFrechet.
 
 
-Lemma differentiable_compose_at f g x :
+Lemma differentiable_compose_at f g x : 
 	`f differentiable at (g x) ==>
 	g differentiable at x ==>
 	(f o g) differentiable at x`.
@@ -153,7 +159,7 @@ by rewrite REAL_LT_MUL2; move: ineq wnx; arith.
 Qed.
 
 
-Lemma has_derivative_x12 y :
+Lemma has_derivative_x12 y : 
 	`(lift o (\x:real^2. x$1 * x$2) has_derivative lift o (\x. y$2 * x$1 + y$1 * x$2)) (at y)`.
 rewrite has_derivative_at; split.
   rewrite linear !o_THM /= !VECTOR_ADD_COMPONENT !VECTOR_MUL_COMPONENT !LIFT_ADD !LIFT_CMUL !LIFT_ADD.
@@ -178,7 +184,7 @@ by case => <-; first rewrite REAL_MUL_SYM; rewrite REAL_LT_LMUL ineq // DIMINDEX
 Qed.
 
 
-Lemma lambda_eq_vsum f : `(\x:A. lambda i. f i x) =
+Lemma lambda_eq_vsum f : `(\x:A. lambda i. f i x) =  
 	(\x. vsum (1..dimindex (:N)) (\i. f i x % (basis i:real^N)))`.
 rewrite -eq_ext /= => x.
 rewrite CART_EQ => i ineq; rewrite "GEN_ALL LAMBDA_BETA" // VSUM_COMPONENT //=.
@@ -228,7 +234,7 @@ by rewrite "ARITH_RULE `~(2 = 1)`" /=; rewr ETA_AX.
 Qed.
 
 
-Lemma has_derivative_mul f g f' g' y :
+Lemma has_derivative_mul f g f' g' y : 
 	`(lift o f has_derivative lift o f') (at y) ==>
 	(lift o g has_derivative lift o g') (at y) ==>
 	(lift o (\x. f x * g x) has_derivative lift o (\x. f' x * g y + f y * g' x)) (at y)`.
@@ -236,7 +242,7 @@ move => df dg.
 have ->: `lift o (\x. f x * g x) = (lift o (\p. p$1 * p$2)) o (\x. vector [f x; g x]:real^2)`.
   by rewrite -eq_ext !o_THM /= => x; rewrite !"GEN_ALL VECTOR_2".
 set q := `vector [f y; g y]:real^2`.
-have ->: `lift o (\x. f' x * g y + f y * g' x) =
+have ->: `lift o (\x. f' x * g y + f y * g' x) = 
 	(lift o (\x:real^2. q$2 * x$1 + q$1 * x$2)) o (\x. vector [f' x; g' x])`.
   by rewrite -eq_ext !o_THM /= -q_def !"GEN_ALL VECTOR_2" REAL_MUL_SYM.
 by apply DIFF_CHAIN_AT => /=; rewrite q_def has_derivative_x12 has_derivative_vector2.
@@ -262,7 +268,7 @@ Lemma frechet_mul f g y :
 	`lift o f differentiable at y ==>
 	lift o g differentiable at y ==>
 	frechet_derivative (lift o (\x. f x * g x)) (at y) =
-		(\x. g y % frechet_derivative (lift o f) (at y) x +
+		(\x. g y % frechet_derivative (lift o f) (at y) x + 
 		     f y % frechet_derivative (lift o g) (at y) x)`.
 rewrite !FRECHET_DERIVATIVE_WORKS [`frechet_derivative _1 _2`]f_eq_lift_drop => df.
 rewrite [`frechet_derivative _1 _2`]f_eq_lift_drop => dg.
@@ -285,7 +291,7 @@ Section Partial.
 Lemma real_derivative_compose_frechet f h t :
 	`(lift o f) differentiable at (h t) ==>
 	(h o drop) differentiable at (lift t) ==>
-	((f o h) has_real_derivative (drop o (frechet_derivative (lift o f) (at (h t)) o
+	((f o h) has_real_derivative (drop o (frechet_derivative (lift o f) (at (h t)) o 
 			frechet_derivative (h o drop) (at (lift t))) o lift) (&1)) (atreal t)`.
 move => diff_f diff_h.
 move: (diff_f) (diff_h); rewrite !FRECHET_DERIVATIVE_WORKS.
@@ -309,7 +315,7 @@ Qed.
 Lemma real_derivative_compose_jacobian f h t :
 	`(lift o f) differentiable at (h t) ==>
 	(h o drop) differentiable at (lift t) ==>
-	((f o h) has_real_derivative (jacobian (lift o f) (at (h t)) **
+	((f o h) has_real_derivative (jacobian (lift o f) (at (h t)) ** 
 				jacobian (h o drop) (at (lift t)))$1$1) (atreal t)`.
 move => df dh.
 move: (real_derivative_compose_frechet df dh).
@@ -320,8 +326,8 @@ Qed.
 
 
 
-Lemma diff_imp_real_diff f h t :
-	`(lift o f) differentiable at (h t) ==>
+Lemma diff_imp_real_diff f h t : 
+	`(lift o f) differentiable at (h t) ==> 
 	(h o drop) differentiable at (lift t) ==>
 	(f o h) real_differentiable atreal t`.
 move => diff_f diff_h.
@@ -339,7 +345,7 @@ by exists `\x. drop x % e`; apply HAS_DERIVATIVE_VMUL_DROP; rewrite HAS_DERIVATI
 Qed.
 
 
-Lemma frechet_direction y e t :
+Lemma frechet_direction y e t : 
 	`frechet_derivative ((\t. y + t % e) o drop) (at (lift t)) = (\x. drop x % e)`.
 rewrite f_unary_drop frechet_add.
   rewrite DIFFERENTIABLE_CONST andTb; apply HAS_DERIVATIVE_IMP_DIFFERENTIABLE.
@@ -350,7 +356,7 @@ Qed.
 
 Lemma real_dir_derivative_frechet f y e t :
 	`(lift o f) differentiable at (y + t % e) ==>
-	((f o (\t. y + t % e)) has_real_derivative
+	((f o (\t. y + t % e)) has_real_derivative 
 		(drop (frechet_derivative (lift o f) (at (y + t % e)) e))) (atreal t)`.
 move => df.
 move: (real_derivative_compose_frechet f `\t. y + t % e` t).
@@ -359,7 +365,7 @@ Qed.
 
 
 Lemma real_dir_derivative_jacobian f y e t : `(lift o f) differentiable at (y + t % e) ==>
-	((f o (\t. y + t % e)) has_real_derivative
+	((f o (\t. y + t % e)) has_real_derivative 
 		drop (jacobian (lift o f) (at (y + t % e)) ** e)) (atreal t)`.
 move => df.
 move: (real_dir_derivative_frechet f e df).
@@ -420,7 +426,7 @@ by rewrite derivative_composition // REAL_MUL_SYM.
 Qed.
 
 
-Lemma projection_has_derivative i net :
+Lemma projection_has_derivative i net : 
 	`i IN 1..dimindex (:N) ==>
 	(lift o (\x:real^N. x$i) has_derivative lift o (\x. x$i)) net`.
 rewrite IN_NUMSEG => ineq.
@@ -577,7 +583,7 @@ End Partial.
 
 Section PartialMonotone.
 
-Lemma derivative_translation f x :
+Lemma derivative_translation f x : 
 	`f real_differentiable atreal x ==>
 	derivative f x = derivative (f o (\t. x + t)) (&0)`.
 move => diff_f.
@@ -589,7 +595,7 @@ Qed.
 
 Implicit Type f : `:real^N->real`.
 
-Lemma partial_increasing_left f j u x z lo :
+Lemma partial_increasing_left f j u x z lo : 
 	`(!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = z$i) ==>
 	u$j = x$j ==>
 	(!y. y IN interval [x,z] ==> (lift o f) differentiable at y) ==>
@@ -636,7 +642,7 @@ have ds : `!t. t IN s ==> (g has_real_derivative (partial j f (y' + t % basis j)
   by rewrite -derivative_translation ?has_derivative_alt -g_def diff_imp_real_diff;
   	rewrite diff_f //= diff_direction.
 have pos: `&0 <= y$j - x$j`; first by move: (y_in j_in); arith.
-have := HAS_REAL_DERIVATIVE_INCREASING_IMP
+have := HAS_REAL_DERIVATIVE_INCREASING_IMP 
 	g `\t. partial j f (y' + t % basis j)` s `&0` `y$j - x$j`.
 rewrite -{1}s_def IS_REALINTERVAL_INTERVAL /=; rewr ds /=; apply.
 rewrite -{2 3}s_def !IN_REAL_INTERVAL pos !REAL_LE_REFL /=.
@@ -644,7 +650,7 @@ by move => t /in_s /partial_pos.
 Qed.
 
 
-Lemma partial_decreasing_left f j u x z hi :
+Lemma partial_decreasing_left f j u x z hi : 
 	`(!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = z$i) ==>
 	u$j = x$j ==>
 	(!y. y IN interval [x,z] ==> (lift o f) differentiable at y) ==>
@@ -685,7 +691,7 @@ by rewrite LINEAR_NEG ?LINEAR_FRECHET_DERIVATIVE // DROP_NEG.
 Qed.
 
 
-Lemma partial_increasing_right f j u x z hi :
+Lemma partial_increasing_right f j u x z hi : 
 	`(!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = x$i) ==>
 	u$j = z$j ==>
 	(!y. y IN interval [x,z] ==> (lift o f) differentiable at y) ==>
@@ -755,8 +761,8 @@ by rewrite -R_def /= !arithH.
 Qed.
 
 
-Lemma real_taylor1_bound f d_bound:
-	`(!t. interval_arith t (&0, &1) ==> f real_differentiable atreal t /\
+Lemma real_taylor1_bound f d_bound: 
+	`(!t. interval_arith t (&0, &1) ==> f real_differentiable atreal t /\ 
 			abs (derivative f t) <= d_bound) ==>
 	abs (f (&1) - f (&0)) <= d_bound`.
 move => df.
@@ -875,7 +881,7 @@ by move: t_in; rewrite IN_REAL_INTERVAL; arith.
 Qed.
 
 
-Lemma diff2_dir f x e t : `diff2 f (x + t % e:real^N) ==>
+Lemma diff2_dir f x e t : `diff2 f (x + t % e:real^N) ==> 
 	nth_diff_strong 2 (f o (\t. x + t % e)) t`.
 Proof.
 rewrite diff2_eq_diff2_on_open nth_diff_strong2_eq => [] [s] [open_s] [xs] df.
@@ -907,7 +913,7 @@ Qed.
 
 Lemma diff2_dir_derivative2 f x e t : `diff2 f (x + t % e:real^N) ==>
 	nth_derivative 2 (f o (\t. x + t % e)) t =
-	sum (1..dimindex (:N)) (\i. sum (1..dimindex (:N))
+	sum (1..dimindex (:N)) (\i. sum (1..dimindex (:N)) 
 		(\j. e$i * e$j * (partial j (partial i f) o (\t. x + t % e)) t))`.
 Proof.
 rewrite diff2_eq_diff2_on_open => [] [s] [open_s] [xs] df.
@@ -929,7 +935,7 @@ Qed.
 
 
 Lemma diff2_has_derivative_partial f i x e t : `diff2 f (x + t % e:real^N) ==>
-	(partial i f o (\t. x + t % e) has_real_derivative
+	(partial i f o (\t. x + t % e) has_real_derivative 
 	sum (1..dimindex (:N)) (\j. e$j * (partial j (partial i f) o (\t. x + t % e)) t)) (atreal t)`.
 rewrite diff2 => [] [s] [open_s] [xs] df.
 by rewrite real_dir_derivative_partial df.
@@ -937,7 +943,7 @@ Qed.
 
 
 Lemma diff2_derivative_partial f i x e t : `diff2 f (x + t % e:real^N) ==>
-	derivative (partial i f o (\t. x + t % e)) t =
+	derivative (partial i f o (\t. x + t % e)) t = 
 		sum (1..dimindex (:N)) (\j. e$j * (partial j (partial i f) o (\t. x + t % e)) t)`.
 by move => df; apply: derivative_unique; exact: diff2_has_derivative_partial. Qed.
 
@@ -1025,7 +1031,7 @@ have F1_der : `!h k. abs h <= r /\ abs k <= r ==>
   have eq: `!y e. (f o (\k. y + k % e)) o (\t. k + t) = f o (\t. (y + k % e) + t % e)`.
     by rewrite -eq_ext !o_THM /= "GEN_ALL VECTOR_ADD_RDISTRIB" "GEN_ALL VECTOR_ADD_ASSOC".
   by rewrite !eq -!partial.
-have Gh: `!h k. abs h <= r /\ abs k <= r ==>
+have Gh: `!h k. abs h <= r /\ abs k <= r ==> 
 		(?t1. G h k = k * derivative (F1 h) t1 /\ abs t1 <= abs k)`.
   move => h k ineq; rewrite -G_def /=.
   have := real_mvt0 `F1 h` `derivative (F1 h)` k.
@@ -1035,7 +1041,7 @@ have Gh: `!h k. abs h <= r /\ abs k <= r ==>
   move => [t1] [t1_ineq] eq.
   by exists t1; rewrite eq; move: t1_ineq ineq; arith.
 have Ghk: `!h k. abs h <= r /\ abs k <= r ==>
-	(?t1 t2. G h k = h * k * partial i (partial j f) (x + t1 % basis j + t2 % basis i)
+	(?t1 t2. G h k = h * k * partial i (partial j f) (x + t1 % basis j + t2 % basis i) 
 		/\ abs t1 <= abs k /\ abs t2 <= abs h)`.
   move => h k ineq.
   move: (Gh h k); rewrite !ineq /= => [] [t1] [eq t1k].
@@ -1072,7 +1078,7 @@ have F2_der : `!h k. abs h <= r /\ abs k <= r ==>
   have eq: `!y e. (f o (\h. y + h % e)) o (\t. h + t) = f o (\t. (y + h % e) + t % e)`.
     by rewrite -eq_ext !o_THM /= "GEN_ALL VECTOR_ADD_RDISTRIB" "GEN_ALL VECTOR_ADD_ASSOC".
   by rewrite !eq -!partial.
-have Gk: `!h k. abs h <= r /\ abs k <= r ==>
+have Gk: `!h k. abs h <= r /\ abs k <= r ==> 
 		(?t3. G h k = h * derivative (F2 k) t3 /\ abs t3 <= abs h)`.
   move => h k ineq; rewrite G_eq /=.
   have := real_mvt0 `F2 k` `derivative (F2 k)` h.
@@ -1082,7 +1088,7 @@ have Gk: `!h k. abs h <= r /\ abs k <= r ==>
   move => [t3] [t3_ineq] eq.
   by exists t3; rewrite eq; move: t3_ineq ineq; arith.
 have Gkh: `!h k. abs h <= r /\ abs k <= r ==>
-	(?t3 t4. G h k = h * k * partial j (partial i f) (x + t4 % basis j + t3 % basis i)
+	(?t3 t4. G h k = h * k * partial j (partial i f) (x + t4 % basis j + t3 % basis i) 
 		/\ abs t3 <= abs h /\ abs t4 <= abs k)`.
   move => h k ineq.
   move: (Gk h k); rewrite !ineq /= => [] [t3] [eq t3h].
@@ -1124,7 +1130,7 @@ have lim0: `(vec 0:real^2) limit_point_of {y | &0 < y$1 /\ &0 < y$2}`.
   rewrite -(REAL_MUL_LINV `&2`) ?REAL_LT_LMUL ?REAL_LT_INV ?andTb; try arith.
   have {2}->: `&2 = sqrt (&2 * &2)`; first by rewrite -REAL_POW_2 POW_2_SQRT_ABS; arith.
   by rewrite SQRT_MONO_LT; arith.
-have lim_ji: `((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial j (partial i f) x))
+have lim_ji: `((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial j (partial i f) x)) 
 		(at (vec 0) within {y | &0 < y$1 /\ &0 < y$2})`.
   rewrite LIM_WITHIN => e e_gt0.
   move: (pc i j); rewrite "GEN_ALL continuous_at" !dist !o_THM => /(_ e_gt0) [d] [d0] e_ineq.
@@ -1144,7 +1150,7 @@ have lim_ji: `((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial
   apply: REAL_LET_TRANS; exists `norm (t2 % basis j:real^N) + norm (t1 % basis i:real^N)`.
   rewrite NORM_TRIANGLE andTb !NORM_MUL !NORM_BASIS // !REAL_MUL_RID.
   by move: t_ineq yr; arith.
-have lim_ij: `((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial i (partial j f) x))
+have lim_ij: `((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial i (partial j f) x)) 
 		(at (vec 0) within {y | &0 < y$1 /\ &0 < y$2})`.
   rewrite LIM_WITHIN => e e_gt0.
   move: (pc j i); rewrite "GEN_ALL continuous_at" !dist !o_THM => /(_ e_gt0) [d] [d0] e_ineq.
@@ -1198,7 +1204,7 @@ by move/ineqs => /=.
 Qed.
 
 
-Lemma domain_width p domain y w : `m_cell_domain domain y (w:real^N) ==>
+Lemma domain_width p domain y w : `m_cell_domain domain y (w:real^N) ==> 
 	p IN interval [domain] ==>
 	!i. i IN 1..dimindex (:N) ==> abs (p$i - y$i) <= w$i`.
 case: domain => x z; rewrite m_cell_domain => ineqs p_in i i_in.
@@ -1206,7 +1212,7 @@ by move: p_in (ineqs i_in); rewrite "GEN_ALL IN_INTERVAL" -IN_NUMSEG => /(_ i_in
 Qed.
 
 
-Lemma sum_swap1 g n : `sum (1..n) (\i. sum (i + 1..n) (\j. g i j)) =
+Lemma sum_swap1 g n : `sum (1..n) (\i. sum (i + 1..n) (\j. g i j)) = 
 			sum (1..n) (\i. sum (1..i - 1) (\j. g j i))`.
 Proof.
 rewrite !SUM_SUM_PRODUCT ?FINITE_NUMSEG //= !IN_NUMSEG.
@@ -1227,14 +1233,14 @@ Qed.
 
 
 (* Computation of the taylor error *)
-Lemma m_taylor_error_eq f domain w error : `diff2c_domain domain f ==>
+Lemma m_taylor_error_eq f domain w error : `diff2c_domain domain f ==> 
 	(m_taylor_error f domain (w:real^N) error <=>
-	(!x. x IN interval [domain] ==>
+	(!x. x IN interval [domain] ==> 
 	sum (1..dimindex (:N)) (\i. w$i * (w$i * abs (partial2 i i f x)
 		+ &2 * sum (1..i - 1) (\j. w$j * abs (partial2 j i f x)))) <= error))`.
 Proof.
 rewrite diff2c_domain m_taylor_error => d2f.
-have eq: `!g1 g2. (!x. x IN interval [domain] ==> g1 x = g2 x) ==>
+have eq: `!g1 g2. (!x. x IN interval [domain] ==> g1 x = g2 x) ==> 
 	((!x. x IN interval [domain] ==> g1 x <= error) <=> (!x. x IN interval [domain] ==> g2 x <= error))`.
   move => g1 g2 eq; split => cond x Px.
     by rewrite -eq // cond.
@@ -1269,7 +1275,7 @@ Lemma diff2_derivative2_bound domain y w p f dd_bound :
 	p IN interval [domain] ==>
 	diff2_domain domain f ==>
 	m_taylor_error f domain w dd_bound ==>
-	(!t. interval_arith t (&0, &1) ==>
+	(!t. interval_arith t (&0, &1) ==> 
 		abs (nth_derivative 2 (f o (\t. y + t % (p - y))) t) <= dd_bound)`.
 Proof.
 rewrite diff2_domain m_taylor_error => domainH p_in df boundedH t t_in.
@@ -1285,7 +1291,7 @@ rewrite -SUM_LMUL SUM_ABS_LE FINITE_NUMSEG andTb => j j_ineq /=.
 by rewrite !REAL_ABS_MUL !REAL_LE_MUL2 ?REAL_LE_MUL !REAL_ABS_POS // VECTOR_SUB_COMPONENT;
 	rewrite (domain_width domainH p_in) // REAL_LE_REFL.
 Qed.
-
+  
 
 Lemma m_taylor_error_lemma domain y w p f dd_bound :
 	`m_cell_domain domain y (w:real^N) ==>
@@ -1372,7 +1378,7 @@ Lemma diff2_derivative_partial_bound domain y w p f i d_bound :
 	p IN interval [domain] ==>
 	diff2_domain domain f ==>
 	m_taylor_partial_error f i domain w d_bound ==>
-	(!t. interval_arith t (&0, &1) ==>
+	(!t. interval_arith t (&0, &1) ==> 
 		abs (derivative (partial i f o (\t. y + t % (p - y))) t) <= d_bound)`.
 Proof.
 rewrite diff2_domain m_taylor_partial_error => domainH p_in df boundedH t t_in.
@@ -1510,7 +1516,7 @@ by rewrite DIFF_CHAIN_AT o_THM -"GEN_ALL HAS_REAL_FRECHET_DERIVATIVE_AT".
 Qed.
 
 
-Lemma diff_uni_compose u f x : `lift o f differentiable at x ==>
+Lemma diff_uni_compose u f x : `lift o f differentiable at x ==> 
 	u real_differentiable atreal (f x) ==>
 	lift o u o f differentiable at x`.
 rewrite !differentiable real_differentiable => [] [f'] df [u'] du.
@@ -1547,7 +1553,7 @@ Proof. by move => /diff2_abs_neg du df; rewrite diff2_uni_compose. Qed.
 (* pow *)
 Lemma diff2_pow_compose n : `diff2 f x ==> diff2 ((\x. x pow n) o f) x`.
 Proof. by move => df; rewrite diff2_uni_compose diff2_pow_x. Qed.
-
+ 
 (* inv *)
 Lemma diff2_inv_compose : `~(f x = &0) ==> diff2 f x ==> diff2 (inv o f) x`.
 Proof. by move => /diff2_inv du df; rewrite diff2_uni_compose. Qed.
@@ -1763,7 +1769,7 @@ move: (open_contains_open_interval open_s xs `basis i:real^N`) => [a] [b] [ab0];
 exists `real_interval (a, b)`; rewrite ab0 REAL_OPEN_REAL_INTERVAL !andTb => y y_in.
 by rewrite !o_THM /= eq // sub IN_IMAGE /=; exists y.
 Qed.
-
+  
 
 Variables i j : `:num`.
 
@@ -1785,7 +1791,7 @@ Proof. by move/(second_partial_scale f `--(&1)`); rewrite -!REAL_NEG_MINUS1. Qed
 (* Binary operations *)
 
 (* add *)
-Lemma second_partial_add f g : `diff2 f x ==> diff2 g x ==>
+Lemma second_partial_add f g : `diff2 f x ==> diff2 g x ==> 
 	partial2 i j (\x. f x + g x) x = partial2 i j f x + partial2 i j g x`.
 Proof.
 rewrite !diff2 => [] [s] [open_s] [xs] df [t] [open_t] [ys] dg.
@@ -1798,14 +1804,14 @@ Qed.
 
 
 (* sub *)
-Lemma second_partial_sub f g : `diff2 f x ==> diff2 g x ==>
+Lemma second_partial_sub f g : `diff2 f x ==> diff2 g x ==> 
 	partial2 i j (\x. f x - g x) x = partial2 i j f x - partial2 i j g x`.
-Proof.
+Proof. 
 by move => d2f d2g; rewrite real_sub second_partial_add ?diff2_neg // second_partial_neg // -real_sub.
 Qed.
 
 (* mul *)
-Lemma second_partial_mul f g : `diff2 f x ==> diff2 g x ==>
+Lemma second_partial_mul f g : `diff2 f x ==> diff2 g x ==> 
 	partial2 i j (\x. f x * g x) x = (partial2 i j f x * g x + partial j f x * partial i g x) +
 		(partial i f x * partial j g x + f x * partial2 i j g x)`.
 rewrite !diff2 => [] [s] [open_s] [xs] df [t] [open_t] [ys] dg.
@@ -1950,7 +1956,7 @@ rewrite open_r -r_def !IN_ELIM_THM /= o_THM LIFT_IN_IMAGE_LIFT; split; last firs
   move => y [z] [] [zs] fzt yz.
   by rewrite second_partial_uni_compose // yz d2s // d2t.
 split; last by exists x.
-rewrite REAL_CONTINUOUS_ADD !REAL_CONTINUOUS_MUL //=; rewr ETA_AX;
+rewrite REAL_CONTINUOUS_ADD !REAL_CONTINUOUS_MUL //=; rewr ETA_AX; 
 	rewrite ?(diff2_imp_partial_cont, d2s) //.
   rewrite andbT -[`nth_derivative 2 u _1`]o_THM; rewr ETA_AX.
   rewrite "GEN_ALL REAL_CONTINUOUS_CONTINUOUS1".
@@ -2208,11 +2214,11 @@ move: (p2f i j) (p2g i j); rewrite -!"GEN_ALL REAL_CONTINUOUS_CONTINUOUS1" => p2
 apply real_cont_at_local.
 move: d2f d2g; rewrite diff2_eq_diff2_on_open => [] [s] [open_s] [xs] d2f.
 rewrite diff2_eq_diff2_on_open => [] [t] [open_t] [xt] d2g.
-exists `(\x. (partial2 j i f x * g x + partial i f x * partial j g x) +
+exists `(\x. (partial2 j i f x * g x + partial i f x * partial j g x) + 
 	partial j f x  * partial i g x + f x * partial2 j i g x)` `s INTER t`.
 rewrite !IN_INTER xs xt OPEN_INTER //=; split; last first.
   by move => y [ys yt]; rewrite second_partial_mul ?d2f ?d2g.
-by rewrite !REAL_CONTINUOUS_ADD // !REAL_CONTINUOUS_MUL; rewr ETA_AX //;
+by rewrite !REAL_CONTINUOUS_ADD // !REAL_CONTINUOUS_MUL; rewr ETA_AX //; 
 	rewrite ?p2gij ?p2fij /= ?diff2_imp_partial_cont ?diff2_imp_cont ?d2f ?d2g.
 Qed.
 
@@ -2408,7 +2414,7 @@ End M_LinApprox.
 	!x. x IN interval [domain] ==> all_n 1 dd_bounds_list
 		(\i list_i. all_n 1 list_i (\j int. interval_arith (partial2 j i f x) int))`".
 
-"let m_taylor_interval =
+"let m_taylor_interval = 
 	new_definition `m_taylor_interval f domain y w f_bounds d_bounds_list dd_bounds_list <=>
 		m_cell_domain domain y w /\
 		diff2c_domain domain f /\
@@ -2641,7 +2647,7 @@ have ->: `f y1 = g (&0)`.
 have y_eq : `y = y1 + (y$j - x$j) % basis j /\ y2 = y1 + (z$j - x$j) % basis j`.
   rewrite !CART_EQ; split => i i_in;
     rewrite VECTOR_ADD_COMPONENT VECTOR_MUL_COMPONENT BASIS_COMPONENT //;
-    case: (EXCLUDED_MIDDLE `i = j`) => /= ij;
+    case: (EXCLUDED_MIDDLE `i = j`) => /= ij; 
     rewrite -?(y1_def, y2_def) !"GEN_ALL LAMBDA_BETA" //= ?REAL_MUL_RID ?REAL_SUB_ADD2 //.
 	by rewrite ij /=; arith.
     by rewrite ij /=; arith.
@@ -2760,7 +2766,7 @@ rewrite derivative_const /= derivative_mul ?REAL_DIFFERENTIABLE_ID ?REAL_DIFFERE
 by rewrite derivative_x derivative_const; arith.
 Qed.
 
-Lemma partial_x k i : `k IN 1..dimindex (:N) ==>
+Lemma partial_x k i : `k IN 1..dimindex (:N) ==> 
 	partial i (\x:real^N. x$k) = (\x. if i = k then &1 else &0)`.
 by move => k_ineq; rewrite partial_x_lemma BASIS_COMPONENT -?IN_NUMSEG //; arith. Qed.
 

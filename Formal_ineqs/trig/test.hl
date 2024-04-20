@@ -41,7 +41,7 @@ let float_interval_halfatn pp x_th =
 
 let float_interval_halfatn4 pp x_th =
   let x_tm = (rand o rator o concl) x_th in
-  let r_th = float_interval_halfatn pp
+  let r_th = float_interval_halfatn pp 
     (float_interval_halfatn pp
        (float_interval_halfatn pp (float_interval_halfatn pp x_th))) in
   let th0 = INST[x_tm, x_var_real] HALFATN4' in

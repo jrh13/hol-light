@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Formal interval evaluation of exp                           *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2014-12-10                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: exp                               *)
+(* -------------------------------------------------------------------------- *)
 
 needs "trig/exp_log.hl";;
 needs "trig/poly_eval.hl";;
@@ -55,7 +61,7 @@ let exp_interval = (th_rule o prove)
    ]);;
 
 let bound_pos_low_trans = prove
-  (`a <= e ==>
+  (`a <= e ==> 
      interval_arith r (&0, a) ==>
      r <= e`,
    REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC);;
@@ -66,7 +72,7 @@ let bound_neg_low_trans = prove(`p1 - x * p2 <= e ==>
 				  &0 <= x /\
 				  x * b <= n /\
 				  r <= a - n
-				  ==> r <= e`,
+				  ==> r <= e`, 
    REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
@@ -80,7 +86,7 @@ let bound_neg_high_trans = prove(`e <= p1 - x * p2 ==>
 				   &0 <= x /\
 				   n <= x * b /\
 				   a - n <= r
-				   ==> e <= r`,
+				   ==> e <= r`, 
    REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
@@ -91,17 +97,17 @@ let bound_neg_high_trans = prove(`e <= p1 - x * p2 ==>
 (* Argument reduction *)
 
 let exp_neg_low = (th_rule o prove)
-  (`r <= exp (-- float_num F n e)
+  (`r <= exp (-- float_num F n e) 
    ==> r <= exp (float_num T n e)`,
    REWRITE_TAC[FLOAT_NEG]);;
 
 let exp_neg_high = (th_rule o prove)
-  (`exp (-- float_num F n e) <= r
+  (`exp (-- float_num F n e) <= r 
    ==> exp (float_num T n e) <= r`,
    REWRITE_TAC[FLOAT_NEG]);;
 
 let exp_pos_high = (th_rule o prove)
-  (`&0 < t /\ t <= exp (--x) /\ inv t <= r
+  (`&0 < t /\ t <= exp (--x) /\ inv t <= r 
    ==> exp x <= r`,
    REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `inv t` THEN ASM_REWRITE_TAC[] THEN
@@ -147,13 +153,13 @@ let exp_reduce_high = (th_rule o prove)
 (* ----------------- *)
 
 let mk_exp_bound_tables exp_bound_th =
-  let exp_bound = (SPEC_ALL o
+  let exp_bound = (SPEC_ALL o 
 		     REWRITE_RULE[poly_f_even; poly_f_odd; GSYM REAL_POW_2; REAL_POW_POW] o
 		     REWRITE_RULE[sum_eq_poly_f] o
 		     REWRITE_RULE[alt_sum_eq_poly_f; real_div]) exp_bound_th in
-  let reduce_rule = CONV_RULE (DEPTH_CONV
+  let reduce_rule = CONV_RULE (DEPTH_CONV 
 				 (FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_MULT_CONV])) in
-  let find_poly_f = rev o find_terms (fun tm -> try (rator o rator) tm = `poly_f`
+  let find_poly_f = rev o find_terms (fun tm -> try (rator o rator) tm = `poly_f` 
 				                with Failure _ -> false) in
     fun pp n ->
       let n_tm = mk_small_numeral n in
@@ -175,13 +181,13 @@ let rec x_pow_over_fact x k =
     x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
 
 (* Computes i such that x^i / i! <= base^(-(p + 1)) and cond(i) *)
-let n_of_p_exp x pp cond =
+let n_of_p_exp x pp cond = 
   let t = (float_of_int Arith_num.arith_base) ** (float_of_int (-pp - 1)) in
   let rec try_i i =
     let _ = if i > 50 then failwith "n_of_p_exp: cannot find i" else () in
       if cond i then
 	let r = x_pow_over_fact x i in
-	  if r <= t then i else try_i (i + 1)
+	  if r <= t then i else try_i (i + 1) 
       else
 	try_i (i + 1)
   in
@@ -252,7 +258,7 @@ let float_exp_neg_low_raw =
       let r_tm = (rand o rator o concl) r_le_an in
       let cmp_1 = EQT_ELIM (float_le x_tm one_float) in
       let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
-      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real;
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
 		     r_tm, r_var_real; x_tm, x_var_real] bound_th in
 	itlist MY_PROVE_HYP [p1_low_th; p2_high_th; xb_le_n; r_le_an; cmp_0; cmp_1] th0;;
 
@@ -275,7 +281,7 @@ let float_exp_neg_high_raw =
       let r_tm = (rand o concl) an_le_r in
       let cmp_1 = EQT_ELIM (float_le x_tm one_float) in
       let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
-      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real;
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
 		     r_tm, r_var_real; x_tm, x_var_real] bound_th in
 	itlist MY_PROVE_HYP [p1_high_th; p2_low_th; n_le_xb; an_le_r; cmp_1; cmp_0] th0;;
 
@@ -365,8 +371,8 @@ let float_exp_hi pp x_tm =
       let hi_tm = rand (concl exp_y) in
       let hi_pow = float_pow_hi pp k hi_tm in
       let high_tm = rand (concl hi_pow) in
-      let th0 = INST[t_tm, t_var_real; k_tm, k_var_num;
-		     y_tm, y_var_real; hi_tm, hi_var_real;
+      let th0 = INST[t_tm, t_var_real; k_tm, k_var_num; 
+		     y_tm, y_var_real; hi_tm, hi_var_real; 
 		     high_tm, high_var_real; x_tm, x_var_real] exp_reduce_high in
 	itlist MY_PROVE_HYP [t_gt0; k_eq; div_th; exp_y; hi_pow] th0;;
 
@@ -387,8 +393,8 @@ let float_exp_lo pp x_tm =
       let lo_pow = float_pow_lo pp k lo_tm in
       let low_tm = rand (rator (concl lo_pow)) in
       let lo_ge0 = EQT_ELIM (float_ge0 lo_tm) in
-      let th0 = INST[t_tm, t_var_real; k_tm, k_var_num;
-		     y_tm, y_var_real; lo_tm, lo_var_real;
+      let th0 = INST[t_tm, t_var_real; k_tm, k_var_num; 
+		     y_tm, y_var_real; lo_tm, lo_var_real; 
 		     low_tm, low_var_real; x_tm, x_var_real] exp_reduce_low in
 	itlist MY_PROVE_HYP [t_gt0; k_eq; div_th; exp_y; lo_pow; lo_ge0] th0;;
 

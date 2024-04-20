@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Informal arithmetic procedures: sin, cos                    *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2014-07-16                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal arithmetic procedures: sin, cos                                   *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
 needs "informal/informal_poly.hl";;
@@ -24,15 +30,15 @@ open Informal_poly;;
 open Informal_atn;;
 
 let rec fact n =
-  if sign_num n <= 0 then num 1 else
-    n */ fact (pred_num n);;
+  if sign_num n <= 0 then Num.num_of_int 1 else
+    n */ fact (n -/ num_1);;
 
 let one = mk_small_num_float 1 and
     neg_one = neg_float (mk_small_num_float 1);;
 
 let cos_tables pp n =
-  let t1 = map (fun i -> fact (num (4 * i))) (0 -- (n / 2)) and
-      t2 = map (fun i -> fact (num (4 * i + 2))) (0 -- ((n + 1) / 2 - 1)) in
+  let t1 = map (fun i -> fact (Num.num_of_int (4 * i))) (0 -- (n / 2)) and
+      t2 = map (fun i -> fact (Num.num_of_int (4 * i + 2))) (0 -- ((n + 1) / 2 - 1)) in
   let f n = inv_interval pp (mk_num_interval n) in
     map f t1, map f t2;;
 
@@ -42,13 +48,13 @@ let rec x_pow_over_fact x k =
     x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
 
 (* Computes i such that x^(2(i + 1))/(2(i + 1))! <= base^(-(p + 1)) and cond(i) *)
-let n_of_p_cos x pp cond =
+let n_of_p_cos x pp cond = 
   let t = (float_of_int Informal_nat.arith_base) ** (float_of_int (-pp - 1)) in
   let rec try_i i =
     let _ = if i > 50 then failwith "n_of_p_cos: cannot find i" else () in
       if cond i then
 	let r = x_pow_over_fact x (2 * (i + 1)) in
-	  if r <= t then i else try_i (i + 1)
+	  if r <= t then i else try_i (i + 1) 
       else
 	try_i (i + 1)
   in
@@ -107,7 +113,7 @@ let pi32_array =
     Array.init (n - 1) (fun i -> if i = 0 then zero_interval else round_interval i pi32);;
 
 (* -pi *)
-let neg_pi_array =
+let neg_pi_array = 
   let n = Array.length pi_approx_array in
     Array.init n (fun i -> neg_interval pi_approx_array.(i));;
 
@@ -151,7 +157,7 @@ let eval_high_neg_pi_0 pp x =
 let eval_low_neg_pi_0 pp x =
   let y = neg_float x in
     eval_low_0_pi pp y;;
-	
+	  
 let eval_high_pi_2pi pp x =
   let pi32_lo = fst (dest_interval pi32_array.(pp)) in
     if le_float x pi32_lo then
@@ -207,7 +213,7 @@ let get_i =
       let k0 = -int_of_float (x /. f_2_pi) in
       let y = x +. float_of_int k0 *. f_2_pi in
 	if y < -.f_pi then k0 + 1
-	else if y > f_pi then k0 - 1
+	else if y > f_pi then k0 - 1 
 	else k0;;
 
 let reduction_zero a b = a, b;;
@@ -331,7 +337,7 @@ let cos_interval pp x_int =
 		    mk_interval (low, one)
 		else
 		  mk_interval (neg_one, one)
-    with Correction_failed ->
+    with Correction_failed -> 
       let _ = warn true (Printf.sprintf "cos_interval: reduction failed") in
 	mk_interval (neg_one, one);;
 
@@ -366,17 +372,17 @@ let n = -10000;;
 let a = 3 and
     b = 5;;
 
-let x = mk_interval (mk_float (num a) 0, mk_float (num b) 0);;
-let y = mk_interval (mk_float (num (-a)) 0, mk_float (num b) 0);;
-let z = mk_interval (mk_float (num (-b)) 0, mk_float (num a) 0);;
-let u = mk_interval (mk_float (num (-3)) 0, mk_float (num (-2)) 0);;
+let x = mk_interval (mk_float (Num.num_of_int a) 0, mk_float (Num.num_of_int b) 0);;
+let y = mk_interval (mk_float (Num.num_of_int (-a)) 0, mk_float (Num.num_of_int b) 0);;
+let z = mk_interval (mk_float (Num.num_of_int (-b)) 0, mk_float (Num.num_of_int a) 0);;
+let u = mk_interval (mk_float (Num.num_of_int (-3)) 0, mk_float (Num.num_of_int (-2)) 0);;
 
 abs_interval x;;
 abs_interval y;;
 abs_interval z;;
 abs_interval u;;
 
-let x = mk_interval (mk_float (num a) 0, mk_float (num b) 0);;
+let x = mk_interval (mk_float (Num.num_of_int a) 0, mk_float (Num.num_of_int b) 0);;
 let x_th = (ASSUME o Interval_arith.mk_interval `x:real` o mk_pair)
   (More_float.mk_float a 0, More_float.mk_float b 0);;
 

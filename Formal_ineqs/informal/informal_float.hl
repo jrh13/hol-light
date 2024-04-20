@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Informal arithmetic procedures: floating-point numbers      *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal arithmetic procedures: floating-point numbers                     *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
 needs "informal/informal_nat.hl";;
@@ -73,7 +79,7 @@ let print_ifloat_fmt fmt (s, n, e) =
   let k = e - min_exp in
   let n_str = string_of_num (dest_nat n) in
   let s_str = if s then "-" else "" in
-  let str =
+  let str = 
     if k = 0 then
       Printf.sprintf "%s%s" s_str n_str
     else
@@ -84,11 +90,11 @@ let print_ifloat = print_ifloat_fmt Format.std_formatter;;
 
 
 (* Creates a floating-point value *)
-let mk_float n e : ifloat =
+let mk_float n e : ifloat = 
   if n < 0 then
-    true, mk_nat (minus_num (num n)), e + min_exp
+    true, mk_nat (minus_num (Num.num_of_int n)), e + min_exp
   else
-    false, mk_nat (num n), e + min_exp;;
+    false, mk_nat (Num.num_of_int n), e + min_exp;;
 
 let mk_num_float n = false, mk_nat n, min_exp;;
 
@@ -107,13 +113,12 @@ let make_float s n e : ifloat = s, mk_nat n, e;;
 let num_of_ifloat =
   let b = num_of_int arith_base in
     fun ((s, n, e) : ifloat) ->
-      let r = (dest_nat n) */ (b **/ num (e - min_exp)) in
+      let r = (dest_nat n) */ (b **/ Num.num_of_int (e - min_exp)) in
 	if s then minus_num r else r;;
 
-let float_of_ifloat f =
+let float_of_ifloat f = 
   let n = num_of_ifloat f in
-  let a = approx_num_exp 30 n in
-    float_of_string a;;
+  Num.float_of_num n;;
 
 let ifloat_of_float =
   let split =
@@ -139,14 +144,14 @@ let ifloat_of_float =
 	    s, t, n
   and extract =
     let b = float_of_int arith_base in
-    let nb = num arith_base in
+    let nb = Num.num_of_int arith_base in
     let rec step k f acc =
       if k <= 0 then acc
       else
 	let d = int_of_float f in
-	  step (k - 1) ((f -. float_of_int d) *. b) (num d +/ (nb */ acc)) in
+	  step (k - 1) ((f -. float_of_int d) *. b) (Num.num_of_int d +/ (nb */ acc)) in
       fun pp f ->
-	step pp f (num 0)
+	step pp f (Num.num_of_int 0)
   in
     fun pp f ->
       let s, x, k = split f in
@@ -220,7 +225,7 @@ let neg_float (s,n,e) = (not s, n, e);;
 (* abs *)
 
 let abs_float (_,n,e) = (false, n, e);;
-
+  
 
 
 (* lt0, gt0 *)
@@ -247,7 +252,7 @@ let lt_float (s1,n1,e1) (s2,n2,e2) =
   if not s1 then
     if s2 then false else num_exp_lt (n1,e1) (n2,e2)
   else
-    if s2 then num_exp_lt (n2,e2) (n1,e1)
+    if s2 then num_exp_lt (n2,e2) (n1,e1) 
     else
       (* TF *)
       if eq0_nat n1 then gt0_nat n2 else true;;
@@ -262,8 +267,8 @@ let le_float (s1,n1,e1) (s2,n2,e2) =
       (* FT *)
       if eq0_nat n2 then eq0_nat n1 else false;;
 	
-
-
+      
+    
 (* min, max *)
 
 let min_float f1 f2 =
@@ -406,7 +411,7 @@ let add_float_hi pp (s1,n1,e1) (s2,n2,e2) =
 	else
 	  let n, e'' = lo_nat pp n' in
 	    (true, n, e' + e'');;
-
+      
 
 (* sub *)
 
@@ -445,7 +450,7 @@ let rec sqrt_float_hi pp (s,n1,e1) =
       let x = (big_int_of_num o dest_nat o denormalize_nat) (n1, p2) in
       let f1' = Big_int.sqrt_big_int x in
       let f1 = (mk_nat o num_of_big_int) f1' in
-      let n, e' =
+      let n, e' = 
 	let ( * ) = Big_int.mult_big_int and
 	    (==) = Big_int.eq_big_int in
 	  hi_nat pp (if f1' * f1' == x then f1 else suc_nat f1) in
@@ -488,7 +493,7 @@ let pow_float_pos_lo pp n (x : ifloat) =
 	      mul_float_lo pp x t in
   let _ = assert (n >= 0) in
     pow n;;
-	
+	  
 let pow_float_hi pp n x =
   match n with
     | 0 -> float1

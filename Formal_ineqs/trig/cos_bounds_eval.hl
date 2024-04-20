@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: cos                               *)
+(* -------------------------------------------------------------------------- *)
+
 needs "trig/sin_cos.hl";;
 needs "trig/poly_eval.hl";;
 
@@ -39,7 +51,7 @@ let bound_high_transformation = prove(`!c x p1 p2 a b m n r. c <= p1 - x * p2 ==
 					interval_arith m (&0, x) /\
 					n <= m * b /\
 					a - n <= r
-					==> c <= r`,
+					==> c <= r`, 
    REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
@@ -53,7 +65,7 @@ let bound_low_transformation = prove(`!c x p1 p2 a b m n r. p1 - x * p2 <= c ==>
 				       interval_arith x (&0, m) /\
 				       m * b <= n /\
 				       r <= a - n
-				       ==> r <= c`,
+				       ==> r <= c`, 
    REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
@@ -63,12 +75,12 @@ let bound_low_transformation = prove(`!c x p1 p2 a b m n r. p1 - x * p2 <= c ==>
 
 
 let mk_cos_bound_tables cos_bound_th =
-  let cos_bound = (SPEC_ALL o
+  let cos_bound = (SPEC_ALL o 
 		     REWRITE_RULE[poly_f_even; poly_f_odd; GSYM REAL_POW_2; REAL_POW_POW] o
 		     REWRITE_RULE[alt_sum_eq_poly_f_even; real_div]) cos_bound_th in
     (* This rule does not simplify factorials *)
   let reduce_rule = CONV_RULE (DEPTH_CONV (FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_MULT_CONV])) in
-  let find_poly_f = rev o find_terms (fun tm ->
+  let find_poly_f = rev o find_terms (fun tm -> 
 				   try (rator o rator) tm = `poly_f` with Failure _ -> false) in
     fun pp n ->
       let n_tm = mk_small_numeral n in
@@ -91,13 +103,13 @@ let rec x_pow_over_fact x k =
 
 
 (* Computes i such that x^(2(i + 1))/(2(i + 1))! <= base^(-(p + 1)) and cond(i) *)
-let n_of_p_cos x pp cond =
+let n_of_p_cos x pp cond = 
   let t = (float_of_int Arith_num.arith_base) ** (float_of_int (-pp - 1)) in
   let rec try_i i =
     let _ = if i > 50 then failwith "n_of_p_cos: cannot find i" else () in
       if cond i then
 	let r = x_pow_over_fact x (2 * (i + 1)) in
-	  if r <= t then i else try_i (i + 1)
+	  if r <= t then i else try_i (i + 1) 
       else
 	try_i (i + 1)
   in
@@ -142,10 +154,10 @@ let float_cos_high_raw =
       let an_le_r_th = float_sub_hi pp a_tm n_tm in
       let r_tm = (rand o concl) an_le_r_th in
       let cmp_1 = float_le r_tm one_float in
-	if (fst o dest_const o rand o concl) cmp_1 = "F" then
+	if (fst o dest_const o rand o concl) cmp_1 = "F" then 
 	  INST[x_tm, x_var_real] cos_high_trivial
-	else
-	  let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; m_tm, m_var_real;
+	else 
+	  let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; m_tm, m_var_real; 
 			 n_tm, n_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
 	    itlist MY_PROVE_HYP [p1_high_th; p2_low_th; x_pow2_low; n_le_mb_th; an_le_r_th] th0;;
 
@@ -169,10 +181,10 @@ let float_cos_low_raw =
       let r_le_an = float_sub_lo pp a_tm n_tm in
       let r_tm = (rand o rator o concl) r_le_an in
       let cmp_1 = float_le neg_one_tm r_tm in
-	if (fst o dest_const o rand o concl) cmp_1 = "F" then
+	if (fst o dest_const o rand o concl) cmp_1 = "F" then 
 	  INST[x_tm, x_var_real] cos_low_trivial
-	else
-	  let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; m_tm, m_var_real;
+	else 
+	  let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; m_tm, m_var_real; 
 			 n_tm, n_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
 	    itlist MY_PROVE_HYP [p1_low_th; p2_high_th; x_pow2_high; mb_le_n; r_le_an] th0;;
 

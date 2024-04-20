@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Formal interval evaluation of log                           *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2014-12-11                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: log                               *)
+(* -------------------------------------------------------------------------- *)
 
 needs "trig/exp_log.hl";;
 needs "trig/poly_eval.hl";;
@@ -64,7 +70,7 @@ let log_reduce = prove
      ASM_SIMP_TAC[LOG_DIV; REAL_EXP_POS_LT; LOG_EXP] THEN REAL_ARITH_TAC);;
 
 let log_reduce_exp_high = prove
-  (`t <= exp k /\ x / t <= r /\ r - &1 <= a /\
+  (`t <= exp k /\ x / t <= r /\ r - &1 <= a /\ 
      &0 < x /\ &0 < t /\
      log (&1 + a) <= hi /\ hi + k <= high
      ==> log x <= high`,
@@ -94,7 +100,7 @@ let log_reduce_exp_high = prove
      MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[]);;
 
 let log_reduce_exp_low = prove
-  (`exp k <= t /\ r <= x / t /\ a <= r - &1 /\
+  (`exp k <= t /\ r <= x / t /\ a <= r - &1 /\ 
      &0 < x /\ -- &1 < a /\
      lo <= log (&1 + a) /\ low <= lo + k
      ==> low <= log x`,
@@ -117,7 +123,7 @@ let log_reduce_exp_low = prove
      MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[REAL_EXP_POS_LT]);;
 
 let log_reduce_simple_high = (th_rule o REWRITE_RULE[GSYM float1_eq] o prove)
-  (`t <= exp b /\ x / t <= r /\ r - &1 <= a /\
+  (`t <= exp b /\ x / t <= r /\ r - &1 <= a /\ 
      &0 < x /\ &0 < t /\
      a + b <= high
      ==> log x <= high`,
@@ -132,7 +138,7 @@ let log_reduce_simple_high = (th_rule o REWRITE_RULE[GSYM float1_eq] o prove)
      ASM_ARITH_TAC);;
 
 let log_reduce_simple_low = (th_rule o prove)
-  (`inv x <= t /\ log t <= r /\
+  (`inv x <= t /\ log t <= r /\ 
      low = --r /\ &0 < x
        ==> low <= log x`,
    REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[REAL_ARITH `a <= b <=> --b <= --a`] THEN

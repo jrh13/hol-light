@@ -17,7 +17,7 @@ let float_interval_halfatn pp x_th =
 
 let float_interval_halfatn4 pp x_th =
   let x_tm = (rand o rator o concl) x_th in
-  let r_th = float_interval_halfatn pp
+  let r_th = float_interval_halfatn pp 
     (float_interval_halfatn pp
        (float_interval_halfatn pp (float_interval_halfatn pp x_th))) in
   let th0 = INST[x_tm, x_var_real] HALFATN4' in
@@ -79,7 +79,7 @@ let bound_low_trans = prove
      x * b <= n /\
      t <= a - n /\
      r <= x * t
-     ==> r <= e`,
+     ==> r <= e`, 
    REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (p1 - x * p2)` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (a - n)` THEN CONJ_TAC THENL [
@@ -91,7 +91,7 @@ let bound_low_trans = prove
      REWRITE_TAC[real_sub] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * b:real` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[]);;
-	
+	 
 let bound_high_trans = prove
   (`e <= x * (p1 - x * p2) ==>
      interval_arith p1 (&0, a) /\
@@ -100,7 +100,7 @@ let bound_high_trans = prove
      n <= x * b /\
      a - n <= t /\
      x * t <= r
-     ==> e <= r`,
+     ==> e <= r`, 
    REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (p1 - x * p2)` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (a - n)` THEN CONJ_TAC THENL [
@@ -113,13 +113,13 @@ let bound_high_trans = prove
      ]);;
 
 let mk_log_bound_tables log_bound_th =
-  let log_bound = (SPEC_ALL o
+  let log_bound = (SPEC_ALL o 
 		     REWRITE_RULE[poly_f_even; poly_f_odd; GSYM REAL_POW_2; REAL_POW_POW] o
 		     REWRITE_RULE[sum_eq_poly_f] o
 		     REWRITE_RULE[alt_sum_eq_poly_f; real_div]) log_bound_th in
-  let reduce_rule = CONV_RULE (DEPTH_CONV
+  let reduce_rule = CONV_RULE (DEPTH_CONV 
 				 (FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_MULT_CONV])) in
-  let find_poly_f = rev o find_terms (fun tm -> try (rator o rator) tm = `poly_f`
+  let find_poly_f = rev o find_terms (fun tm -> try (rator o rator) tm = `poly_f` 
 				                with Failure _ -> false) in
     fun pp n ->
       let n_tm = mk_small_numeral n in
@@ -135,7 +135,7 @@ let mk_log_bound_tables log_bound_th =
 	bound_th, zip cs_tms cs_lists;;
 
 (* Computes i such that x^i / i <= base^(-(p + 1)) and cond(i) *)
-let n_of_p_log x pp cond =
+let n_of_p_log x pp cond = 
   let t = (float_of_int Arith_num.arith_base) ** (float_of_int (-pp - 1)) in
   let rec try_i i =
     let _ = if i > 50 then failwith "n_of_p_exp: cannot find i" else () in
@@ -143,7 +143,7 @@ let n_of_p_log x pp cond =
 (*	let d = float_of_int (2 * i + 1) in *)
 	let d = float_of_int i in
 	let r = (x ** d) /. d in
-	  if r <= t then i else try_i (i + 1)
+	  if r <= t then i else try_i (i + 1) 
       else
 	try_i (i + 1)
   in
@@ -151,10 +151,10 @@ let n_of_p_log x pp cond =
 
 (*
 
-let sq = float_sqrt;;
+let sq = Pervasives.sqrt;;
 let t = sq (1.0 -. 1.0 /. 3.0) -. 1.0;;
-let t = float_sqrt 2.0 -. 1.0;;
-let t = float_sqrt 2.0 /. 2.0 -. 1.0;;
+let t = Pervasives.sqrt 2.0 -. 1.0;;
+let t = Pervasives.sqrt 2.0 /. 2.0 -. 1.0;;
 t /. (2.0 +. t);;
 
 n_of_p_log 0.11 20 (fun i -> true);;
@@ -204,7 +204,7 @@ let log1_pos_low =
       let r_tm = rand (rator (concl r_le_xt)) in
       let cmp_1 = EQT_ELIM (float_lt x_tm one_float) in
       let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
-      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real;
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
 		     t_tm, t_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
 	itlist MY_PROVE_HYP [p1_low_th; p2_high_th; xb_le_n; t_le_an; r_le_xt; cmp_0; cmp_1] th0;;
 
@@ -229,7 +229,7 @@ let log1_pos_high =
       let r_tm = rand (concl xt_le_r) in
       let cmp_1 = EQT_ELIM (float_lt x_tm one_float) in
       let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
-      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real;
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
 		     t_tm, t_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
 	itlist MY_PROVE_HYP [p1_high_th; p2_low_th; n_le_xb; an_le_t; xt_le_r; cmp_1; cmp_0] th0;;
 

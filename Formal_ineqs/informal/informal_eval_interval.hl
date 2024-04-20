@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Informal interval evaluation of arithmetic expressions      *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal interval evaluation of arithmetic expressions                     *)
+(* -------------------------------------------------------------------------- *)
 
 needs "informal/informal_exp.hl";;
 needs "informal/informal_log.hl";;
@@ -32,7 +38,7 @@ let mk_float_interval_decimal pp decimal_tm =
 
 
 (* Unary interval operations *)
-let unary_interval_operations =
+let unary_interval_operations = 
   let table = Hashtbl.create 10 in
   let add = Hashtbl.add in
     add table "real_neg" (fun pp -> neg_interval);
@@ -53,7 +59,7 @@ let unary_interval_operations =
 
 
 (* Binary interval operations *)
-let binary_interval_operations =
+let binary_interval_operations = 
   let table = Hashtbl.create 10 in
   let add = Hashtbl.add in
     add table "real_add" add_interval;
@@ -131,7 +137,7 @@ let eval_constants =
 	match f with
 	  | Int_decimal_const tm -> Int_const (mk_float_interval_decimal pp tm)
 	  | Int_named_const name -> Int_const (c_find name pp)
-	  | Int_pow (n, f1) ->
+	  | Int_pow (n, f1) -> 
 	      (let f1_val = rec_eval f1 in
 		 match f1_val with
 		   | Int_const int -> Int_const (pow_interval pp n int)
@@ -174,7 +180,7 @@ let build_interval_fun =
 	  if ltm = amp_op_real then
 	    let n = dest_numeral r_tm in
 	      Int_const (mk_num_interval n)
-	  else
+	  else 
 	    let r_fun = rec_build r_tm in
 	      Int_unary ((fst o dest_const) ltm, r_fun)
 	else
@@ -244,7 +250,7 @@ let find_and_replace_all f_list acc =
 		if c1 > 1 then expr, (c1, fs) else find_and_replace f2 i f_list
 	  | _ -> f, (0, f_list) in
 	if c > 1 then expr, (c, fs) else f, replace_subexpr f i f_list in
-
+    
   let rec iterate fs acc =
     let i = length acc in
     let expr, (c, fs') = find_and_replace (hd fs) i fs in
@@ -281,7 +287,7 @@ let interval_to_float_interval pp int_th =
   let a, _ = dest_interval int_lo and
       _, b = dest_interval int_hi in
     mk_interval (a, b);;
-		
+		     
 
 (* Adds a new constant approximation to the table of constants *)
 let add_constant_interval int_th =

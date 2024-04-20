@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Informal arithmetic procedures: polynomials                 *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2014-07-16                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal arithmetic procedures: polynomials                                *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
 needs "informal/informal_interval.hl";;
@@ -35,10 +41,10 @@ let rec eval_interval_poly_f pp cs x_int =
 	let r = eval_interval_poly_f pp rest x_int in
 	  add_interval pp first (mul_interval pp x_int r);;
 
-let rec eval_high_poly_f_pos_pos =
+let rec eval_high_poly_f_pos_pos = 
   let zero = mk_small_num_float 0 in
-  let check_pos c =
-    if le_interval zero c then ()
+  let check_pos c = 
+    if le_interval zero c then () 
     else failwith "Informal_poly.eval_high_poly_f_pos_pos: negative coefficient" in
     fun pp cs x ->
       let _ = check_pos (mk_interval (x, x)) in
@@ -59,14 +65,14 @@ let rec eval_high_poly_f_pos_pos =
 let rec eval_low_poly_f_pos_pos =
   let zero = mk_small_num_float 0 in
   let check_pos c =
-    if le_interval zero c then ()
+    if le_interval zero c then () 
     else failwith "Informal_poly.eval_high_poly_f_pos_pos: negative coefficient" in
     fun pp cs x ->
       let _ = check_pos (mk_interval (x, x)) in
       let rec eval cs =
 	match cs with
 	  | [] -> zero
-	  | [first] ->
+	  | [first] -> 
 	      let _ = check_pos first in
 		fst (dest_interval first)
 	  | first :: rest ->

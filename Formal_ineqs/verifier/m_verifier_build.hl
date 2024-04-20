@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Auxiliary formal verification functions                     *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Auxiliary formal verification functions                                    *)
+(* -------------------------------------------------------------------------- *)
 
 needs "arith/eval_interval.hl";;
 needs "arith/more_float.hl";;
@@ -40,7 +46,7 @@ type verification_funs =
 };;
 
 
-(**********************************)
+(**********************************)  
 (* mk_verification_functions *)
 
 let mk_verification_functions_poly pp0 poly_tm =
@@ -49,16 +55,16 @@ let mk_verification_functions_poly pp0 poly_tm =
   let n = get_dim x_tm in
 
   let _ = !info_print_level <= 1 || (report0 (sprintf "Computing partial derivatives (%d)..." n); true) in
-  let partials = map (fun i ->
+  let partials = map (fun i -> 
 			let _ = !info_print_level <= 1 || (report0 (sprintf " %d" i); true) in
 			  gen_partial_poly i new_f) (1--n) in
-  let get_partial i eq_th =
+  let get_partial i eq_th = 
     let partial_i = gen_partial_poly i (rand (concl eq_th)) in
     let pi = (rator o lhand o concl) partial_i in
       REWRITE_RULE[GSYM partial2] (TRANS (AP_TERM pi eq_th) partial_i) in
-  let partials2 = map (fun j ->
+  let partials2 = map (fun j -> 
 			 let th = List.nth partials (j - 1) in
-			   map (fun i ->
+			   map (fun i -> 
 				  let _ = !info_print_level <= 1 || (report0 (sprintf " %d,%d" j i); true) in
 				    get_partial i th) (1--j)) (1--n) in
 
@@ -70,12 +76,12 @@ let mk_verification_functions_poly pp0 poly_tm =
   let second_th = gen_second_bounded_poly_thm new_f partials2 in
 
   let replace_numeral i th =
-    let num_eq = (REWRITE_RULE[Arith_num.NUM_THM] o Arith_nat.NUMERAL_TO_NUM_CONV)
+    let num_eq = (REWRITE_RULE[Arith_num.NUM_THM] o Arith_nat.NUMERAL_TO_NUM_CONV) 
       (mk_small_numeral i) in
       GEN_REWRITE_RULE (LAND_CONV o RATOR_CONV o DEPTH_CONV) [num_eq] th in
 
   let eval0 = mk_eval_function pp0 new_f in
-  let eval1 = map (fun i ->
+  let eval1 = map (fun i -> 
 		     let d_th = List.nth partials (i - 1) in
 		     let eq_th = replace_numeral i d_th in
 		       mk_eval_function_eq pp0 eq_th) (1--n) in
@@ -98,5 +104,5 @@ let mk_verification_functions_poly pp0 poly_tm =
 
 
 	
-
+  
 end;;

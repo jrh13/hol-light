@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Formal taylor intervals                                     *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal taylor intervals                                                    *)
+(* -------------------------------------------------------------------------- *)
 
 needs "arith/more_float.hl";;
 needs "arith/eval_interval.hl";;
@@ -59,7 +65,7 @@ let has_size_array = Array.init (max_dim + 1)
   (fun i -> match i with
      | 0 -> TRUTH
      | 1 -> HAS_SIZE_1
-     | _ -> HAS_SIZE_DIMINDEX_RULE(mk_finty(num i)));;
+     | _ -> HAS_SIZE_DIMINDEX_RULE(mk_finty(Num.num_of_int i)));;
 
 let dimindex_array = Array.init (max_dim + 1) 
   (fun i -> if i < 1 then TRUTH else MATCH_MP DIMINDEX_UNIQUE has_size_array.(i));;

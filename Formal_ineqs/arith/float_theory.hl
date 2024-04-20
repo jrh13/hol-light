@@ -1,9 +1,14 @@
-(* =========================================================== *)
-(* Theoretical results for floating point arithmetic           *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
 
+(* -------------------------------------------------------------------------- *)
+(* Theoretical results for floating point arithmetic                          *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
 needs "arith/arith_nat.hl";;

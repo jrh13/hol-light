@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: atn                               *)
+(* -------------------------------------------------------------------------- *)
+
 needs "trig/atn.hl";;
 needs "trig/poly_eval.hl";;
 
@@ -92,7 +104,7 @@ let halfatn_pos_lo_th = (th_rule o prove)
      ASM_REWRITE_TAC[REAL_LE_LADD; REAL_POW_2]);;
 
 let halfatn4_eq = prove
-  (`halfatn(halfatn(halfatn(halfatn x))) = halfatn4 x`,
+  (`halfatn(halfatn(halfatn(halfatn x))) = halfatn4 x`, 
    REWRITE_TAC[halfatn4; o_THM]);;
 
 let float16 = mk_float 16 0;;
@@ -130,7 +142,7 @@ let atn_interval_th = (th_rule o prove)
        ASM_REWRITE_TAC[ATN_MONO_LE_EQ]
    ]);;
 
-let bound_high_transformation = (PURE_REWRITE_RULE[SYM float16_eq] o
+let bound_high_transformation = (PURE_REWRITE_RULE[SYM float16_eq] o 
 				   GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) [SYM float1_eq] o
 				   prove)
   (`(&0 <= t /\ t < &1 ==> atn t <= t * (p1 - t pow 2 * p2)) ==>
@@ -161,7 +173,7 @@ let bound_high_transformation = (PURE_REWRITE_RULE[SYM float16_eq] o
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `m * b` THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[]);;
 
-let bound_low_transformation = (PURE_REWRITE_RULE[SYM float16_eq] o
+let bound_low_transformation = (PURE_REWRITE_RULE[SYM float16_eq] o 
 				  GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) [SYM float1_eq] o
 				  prove)
   (`(&0 <= t /\ t < &1 ==> t * (p1 - t pow 2 * p2) <= atn t) ==>
@@ -215,7 +227,7 @@ let eval_halfatn_pos_hi pp x_th =
   let c1_th = float_add_lo pp c_tm one_float in
   let f_tm = lhand (concl c1_th) in
   let s, n1_tm, e1_tm = dest_float f_tm in
-  let _ =
+  let _ = 
     if s <> "F" then
       failwith ("eval_halfatn_pos_hi: s <> F: " ^ string_of_term (concl x_th))
     else () in
@@ -247,7 +259,7 @@ let eval_halfatn_pos_lo pp x_th =
   let div_th = float_div_lo pp t_tm r_tm in
   let lo_tm = lhand (concl div_th) in
   let s, n_tm, e_tm = dest_float lo_tm in
-  let _ =
+  let _ = 
     if s <> "F" then
       failwith ("eval_halfatn_pos_lo: s <> F: " ^ string_of_term (concl x_th))
     else () in
@@ -273,19 +285,19 @@ let eval_halfatn4_pos_lo pp x_th =
   let eq_th = INST[x_tm, x_var_real] halfatn4_eq in
   let ltm, bounds = dest_comb (concl th0) in
     EQ_MP (AP_TERM ltm (AP_TERM (rator bounds) eq_th)) th0;;
-
+    
 
 (* ---------------------------------- *)
 (* atn upper/lower bounds             *)
 (* ---------------------------------- *)
 
 let mk_bound_tables bound_th =
-  let bound = (SPEC_ALL o
+  let bound = (SPEC_ALL o 
 		 REWRITE_RULE[poly_f_even; poly_f_odd; GSYM REAL_POW_2; REAL_POW_POW] o
 		 REWRITE_RULE[alt_sum_eq_poly_f_even; alt_sum_eq_poly_f_odd; real_div]) bound_th in
     (* This rule does not simplify factorials *)
   let reduce_rule = CONV_RULE (DEPTH_CONV (FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_MULT_CONV])) in
-  let find_poly_f = rev o find_terms (fun tm ->
+  let find_poly_f = rev o find_terms (fun tm -> 
 					try (rator o rator) tm = `poly_f` with Failure _ -> false) in
     fun pp n ->
       let n_tm = mk_small_numeral n in
@@ -301,14 +313,14 @@ let mk_bound_tables bound_th =
 	bound_th, zip cs_tms cs_lists;;
 
 (* Computes i such that x^(2 * i + 1) / (2 * i + 1) <= base^(-(p + 1)) and cond(i) *)
-let n_of_p_atn x pp cond =
+let n_of_p_atn x pp cond = 
   let t = (float_of_int Arith_num.arith_base) ** (float_of_int (-pp - 1)) in
   let rec try_i i =
     let _ = if i > 50 then failwith "n_of_p_atn: cannot find i" else () in
       if cond i then
 	let d = float_of_int (2 * i + 1) in
 	let r = (x ** d) /. d in
-	  if r <= t then i else try_i (i + 1)
+	  if r <= t then i else try_i (i + 1) 
       else
 	try_i (i + 1)
   in
@@ -357,13 +369,13 @@ let float_atn_pos_high =
       let r16_le_hi = float_mul_hi pp float16 r_tm in
       let hi_tm = rand (concl r16_le_hi) in
       let cmp_1 = float_lt t_tm one_float in
-	if (fst o dest_const o rand o concl) cmp_1 = "F" then
+	if (fst o dest_const o rand o concl) cmp_1 = "F" then 
 	  failwith ("float_atn_pos_high: t >= 1: " ^ string_of_term x_tm)
-	else
+	else 
 	  let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; c_tm, c_var_real;
 			 n_tm, n_var_real; m_tm, m_var_real; r_tm, r_var_real;
 			 x_tm, x_var_real; t_tm, t_var_real; hi_tm, hi_var_real] bound_th in
-	    itlist MY_PROVE_HYP [p1_high; p2_low; t_pow2_low; n_le_mb; an_le_c;
+	    itlist MY_PROVE_HYP [p1_high; p2_low; t_pow2_low; n_le_mb; an_le_c; 
 				 tc_le_r; r16_le_hi; cmp_1; h4] th0;;
 
 (* x_th = |- interval_arith x (&0, x)   *)
@@ -395,13 +407,13 @@ let float_atn_pos_low =
 	    MY_PROVE_HYP h4 th0
 	else
 	  let cmp_1 = float_lt t_tm one_float in
-	    if (fst o dest_const o rand o concl) cmp_1 = "F" then
+	    if (fst o dest_const o rand o concl) cmp_1 = "F" then 
 	      failwith ("float_atn_pos_low: t >= 1: " ^ string_of_term x_tm)
 	    else
 	      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; c_tm, c_var_real;
 			     n_tm, n_var_real; m_tm, m_var_real; r_tm, r_var_real;
 			     x_tm, x_var_real; t_tm, t_var_real; lo_tm, lo_var_real] bound_th in
-		itlist MY_PROVE_HYP [p1_low; p2_high; t_pow2_high; mb_le_n; c_le_an;
+		itlist MY_PROVE_HYP [p1_low; p2_high; t_pow2_high; mb_le_n; c_le_an; 
 				     r_le_tc; lo_le_r16; cmp_1; h4] th0;;
 
 (* Computes an upper bound of atn for a given floating-point number *)

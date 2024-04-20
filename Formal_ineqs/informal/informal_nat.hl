@@ -1,8 +1,14 @@
-(* =========================================================== *)
-(* Informal arithmetic procedures: natural numbers             *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal arithmetic procedures: natural numbers                            *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
 needs "misc/misc_functions.hl";;
@@ -56,11 +62,11 @@ type nat = big_int;;
 
 let arith_base = !Arith_options.base;;
 
-let mk_nat n =
+let mk_nat n = 
   let result = big_int_of_num n in
     if sign_big_int result < 0 then zero_big_int else result;;
 
-let mk_small_nat n =
+let mk_small_nat n = 
   if n < 0 then zero_big_int else big_int_of_int n;;
 
 let dest_nat = num_of_big_int;;
@@ -69,7 +75,7 @@ let eq_nat = eq_big_int;;
 
 let suc_nat = succ_big_int;;
 
-let pre_nat n =
+let pre_nat n = 
   let result = pred_big_int n in
     if sign_big_int result < 0 then zero_big_int else result;;
 
@@ -114,7 +120,7 @@ let normalize_nat =
 	(n, e)
       else
 	normalize q (succ e) in
-    fun n ->
+    fun n -> 
       if sign_big_int n = 0 then (n, 0) else normalize n 0;;
 
 
@@ -125,7 +131,7 @@ let denormalize_nat (n, e) =
 let lo_nat pp =
   let max = power_int_positive_int arith_base pp in
   let rec lo m e =
-    if lt_big_int m max then
+    if lt_big_int m max then 
       (m, e)
     else
       let q = div_big_int m base_nat in
