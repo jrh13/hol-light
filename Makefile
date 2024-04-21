@@ -37,6 +37,15 @@ CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-'
 
 default: update_database.ml pa_j.cmo hol.sh;
 
+# Create a local OPAM switch and install dependencies on it.
+# This will use the latest OCaml version that fully supports features of
+# HOL Light.
+# ledit is installed for line editing of OCaml REPL
+switch:; \
+  opam switch create . ocaml-base-compiler.4.14.0 ; \
+  eval $(opam env) ; \
+  opam install -y zarith camlp5 ledit
+
 # Choose an appropriate "update_database.ml" file
 
 update_database.ml:; if [ ${OCAML_VERSION} = "4.14" ] ; \
