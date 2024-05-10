@@ -1,4 +1,4 @@
-needs "lib/ssrfun.hl";;
+needs "Formal_ineqs/lib/ssrfun.hl";;
 
 (* Module Ssrbool*)
 module Ssrbool = struct

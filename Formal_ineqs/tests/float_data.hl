@@ -1,7 +1,7 @@
 (* hol_log *)
 
-needs "verifier/m_verifier_main.hl";;
-needs "examples_flyspeck.hl";;
+needs "Formal_ineqs/verifier/m_verifier_main.hl";;
+needs "Formal_ineqs/examples_flyspeck.hl";;
 
 open M_verifier_main;;
 

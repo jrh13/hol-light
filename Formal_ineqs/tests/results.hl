@@ -1,6 +1,6 @@
 (* hol_test *)
 
-needs "tests/test_utils.hl";;
+needs "Formal_ineqs/tests/test_utils.hl";;
 
 show_result := true;;
 let rep = 1;;

@@ -1,6 +1,18 @@
-needs "arith/more_float.hl";;
-needs "trig/matan.hl";;
-needs "trig/atn_eval.hl";;
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: matan, dmatan, ddmatan            *)
+(* -------------------------------------------------------------------------- *)
+
+needs "Formal_ineqs/arith/more_float.hl";;
+needs "Formal_ineqs/trig/matan.hl";;
+needs "Formal_ineqs/trig/atn_eval.hl";;
 
 module type Matan_eval_sig =
   sig
@@ -67,12 +79,12 @@ let matan_gt0 = (th_rule o prove)(
     ASM_REWRITE_TAC[]);;
 
 
-let matan_abs1 =
-  let aux_th = (REWRITE_CONV[FLOAT_OF_NUM; min_exp_def] THENC
-		  DEPTH_CONV Arith_nat.NUMERAL_TO_NUM_CONV THENC
+let matan_abs1 = 
+  let aux_th = (REWRITE_CONV[FLOAT_OF_NUM; min_exp_def] THENC 
+		  DEPTH_CONV Arith_nat.NUMERAL_TO_NUM_CONV THENC 
 		  REWRITE_CONV[Arith_num.NUM_THM]) `r1 <= &1 - u` in
     (th_rule o PURE_REWRITE_RULE[SYM (FLOAT_TO_NUM_CONV seven_float); aux_th] o prove)(
-  `!x.
+  `!x. 
     interval_arith x (lo, hi) /\
     interval_arith ((&1 - x / &3) + (x * x) / &5) (a, b) /\
     iabs (lo, hi) = u /\
@@ -83,7 +95,7 @@ let matan_abs1 =
     r2 <= &7 * r1 /\ (&0 < r2 <=> T) /\
     u3 / r2 <= e /\
     low <= a - e /\
-    b + e <= high
+    b + e <= high 
     ==> interval_arith (matan x) (low, high)`,
    REWRITE_TAC[interval_arith; GSYM IMP_IMP; iabs] THEN GEN_TAC THEN REPEAT DISCH_TAC THEN
      SUBGOAL_THEN `abs x <= u` (LABEL_TAC "u") THENL [
@@ -143,14 +155,14 @@ let dmatan_gt0 = (th_rule o prove)(
     ASM_SIMP_TAC[matan_real_derivative_gt0; REAL_MUL_ASSOC]);;
 
 
-let dmatan_abs1 =
-  let aux_conv = (REWRITE_CONV[FLOAT_OF_NUM; min_exp_def] THENC
-		    DEPTH_CONV Arith_nat.NUMERAL_TO_NUM_CONV THENC
+let dmatan_abs1 = 
+  let aux_conv = (REWRITE_CONV[FLOAT_OF_NUM; min_exp_def] THENC 
+		    DEPTH_CONV Arith_nat.NUMERAL_TO_NUM_CONV THENC 
 		    REWRITE_CONV[Arith_num.NUM_THM]) in
   let aux1 = aux_conv `r1 <= &1 - u` and
       aux2 = aux_conv `r2 <= &2 * r1` in
     (th_rule o PURE_REWRITE_RULE[aux1; aux2] o prove)(
-      `!x.
+      `!x. 
 	interval_arith x (lo, hi) /\
 	interval_arith (&2 * (x / &5) - &1 / &3) (a, b) /\
 	iabs (lo, hi) = u /\
@@ -160,7 +172,7 @@ let dmatan_abs1 =
 	r2 <= &2 * r1 /\ (&0 < r2 <=> T) /\
 	u2 / r2 <= e /\
 	low <= a - e /\
-	b + e <= high
+	b + e <= high 
 	==> interval_arith (dmatan x) (low, high)`,
    REWRITE_TAC[interval_arith; GSYM IMP_IMP; iabs; dmatan] THEN GEN_TAC THEN REPEAT DISCH_TAC THEN
      SUBGOAL_THEN `abs x <= u` (LABEL_TAC "u") THENL [
@@ -204,7 +216,7 @@ let dmatan_abs1 =
 (* ddmatan *)
 
 let ddmatan_ge_neg02 = (th_rule o prove)(
-  `!x. interval_arith x (lo, hi) /\
+  `!x. interval_arith x (lo, hi) /\ 
     -- #0.2 <= lo /\
     interval_arith (#0.65) (a, b) /\
     b2 = --b
@@ -244,7 +256,7 @@ let float_interval_matan =
 	  if not flag then
 	    failwith "float_interval_matan: the argument is out of range"
 	  else
-	    let s_th =
+	    let s_th = 
 	      let ( * ) = float_interval_mul pp and
 		  ( / ) = float_interval_div pp and
 		  ( + ) = float_interval_add pp and
@@ -286,7 +298,7 @@ let float_interval_matan =
 	  itlist MY_PROVE_HYP [x_th; lo_gt0; th1] th0;;
 
 
-(* dmatan *)
+(* dmatan *)  
 
 let float_interval_dmatan =
   let e_var_real = `e:real` and
@@ -307,7 +319,7 @@ let float_interval_dmatan =
 	  if not flag then
 	    failwith "float_interval_dmatan: the argument is out of range"
 	  else
-	    let s_th =
+	    let s_th = 
 	      let ( * ) = float_interval_mul pp and
 		  ( / ) = float_interval_div pp and
 		  ( - ) = float_interval_sub pp in
@@ -338,7 +350,7 @@ let float_interval_dmatan =
 	(* inv ((2 * x) * (x + 1)) - atn (sqrt x) / ((2 * x) * (sqrt x)) *)
 	let lo_gt0 = float_gt0 lo_tm in
 	let r = float_interval_sqrt pp x_th in
-	let th1 =
+	let th1 = 
 	  let ( * ) = float_interval_mul pp and
 	      ( / ) = float_interval_div pp and
 	      ( + ) = float_interval_add pp and

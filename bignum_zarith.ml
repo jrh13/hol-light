@@ -102,6 +102,14 @@ module Num = struct
     try Q.of_bigint (Z.of_string s)
     with _ -> failwith "num_of_string"
 
+  let big_int_of_num = Q.to_bigint
+
+  let num_of_big_int = Q.of_bigint
+
+end;;
+
+module Big_int = struct
+  include Big_int_Z
 end;;
 
 let (=/) x y = Num.eq_num x y;;

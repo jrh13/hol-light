@@ -1,4 +1,17 @@
-needs "trig/series.hl";;
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2011 Thomas C. Hales                                    *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: atn (theory)                      *)
+(* -------------------------------------------------------------------------- *)
+
+needs "Formal_ineqs/trig/series.hl";;
 
 module Atn = struct
 
@@ -44,7 +57,7 @@ let halfatn_half = prove
   (`!x t. abs x < t ==> abs (halfatn x) < t / &2`,
    REWRITE_TAC[halfatn; REAL_ABS_DIV] THEN REPEAT STRIP_TAC THEN
      SIMP_TAC[abs_lemma; pos_lemma2; REAL_LT_LDIV_EQ] THEN
-     MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `t:real` THEN
+     MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `t:real` THEN 
      ASM_REWRITE_TAC[REAL_ARITH `t / &2 * a = t * (a / &2)`] THEN
      MATCH_MP_TAC (REAL_ARITH `t * (&1 + &1) <= t * a ==> t <= t * (a / &2)`) THEN
      MATCH_MP_TAC REAL_LE_LMUL THEN
@@ -151,7 +164,7 @@ let halfatn_mono_lt = prove
        ASM_ARITH_TAC;
      ALL_TAC
    ] THEN
-   REPEAT STRIP_TAC THEN
+   REPEAT STRIP_TAC THEN 
    ASM_CASES_TAC `y < &0` THENL [
      ONCE_REWRITE_TAC[REAL_ARITH `a < b <=> --b < --a`] THEN REWRITE_TAC[GSYM halfatn_odd] THEN
        FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
@@ -163,7 +176,7 @@ let halfatn_mono_lt = prove
      ALL_TAC
    ] THEN
    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC);;
-
+     
 let halfatn_mono = prove
   (`!x y. x <= y ==> halfatn x <= halfatn y`,
    REWRITE_TAC[REAL_LE_LT] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[halfatn_mono_lt]);;
@@ -183,7 +196,7 @@ let atn_series_alt_sign = prove
      let f = (\i. (-- &1) pow i / &(2 * i + 1) * x pow (2 * i + 1)) in
        (!n. abs (f (n + 1)) <= abs (f n) /\ f (n + 1) * f n <= &0) /\
 	 ((f ---> &0) sequentially)`,
-   REPEAT STRIP_TAC THEN CONV_TAC let_CONV THEN
+   REPEAT STRIP_TAC THEN CONV_TAC let_CONV THEN 
      REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_DIV] THEN
      REWRITE_TAC[abs_neg_one_pow; ARITH_RULE `2 * (n + 1) + 1 = 2 * n + 3`] THEN
      REWRITE_TAC[REAL_ABS_POW; REAL_ARITH `&1 / a * b = b / a`; REAL_ABS_NUM] THEN
@@ -210,7 +223,7 @@ let atn_series_alt_sign = prove
 	 MAP_EVERY EXISTS_TAC [`atn x`; `0`] THEN
 	 ASM_SIMP_TAC[FROM_0; atn_series]
      ]);;
-
+     
 let atn_poly_bound = prove
   (`!n x. abs x < &1
      ==> abs (atn x - sum (0..n) (\i. (-- &1 pow i / &(2 * i + 1)) * x pow (2 * i + 1)))
@@ -272,7 +285,7 @@ let atn_poly_pos_lower_bound = prove
 
 let atn_halfatn4_pos_upper_bound = prove
   (`!x n. EVEN n /\ &0 <= x
-     ==> atn (halfatn4 x)
+     ==> atn (halfatn4 x) 
           <= sum (0..n) (\i. ((-- &1) pow i / &(2 * i + 1)) * (halfatn4 x) pow (2 * i + 1))`,
    REPEAT STRIP_TAC THEN MATCH_MP_TAC atn_poly_pos_upper_bound THEN
      ASM_SIMP_TAC[halfatn4_pos; halfatn4_bound; REAL_ARITH `abs x < inv (&8) ==> x < &1`]);;
@@ -285,8 +298,8 @@ let atn_halfatn4_pos_lower_bound = prove
      ASM_SIMP_TAC[halfatn4_pos; halfatn4_bound; REAL_ARITH `abs x < inv (&8) ==> x < &1`]);;
 
 let real_taylor_atn_halfatn4 = prove
-  (`!n x. abs (atn(halfatn4 x) -
-		 sum (0..n) (\j. (-- &1 pow j) * halfatn4 x pow (2 * j + 1) / &(2 * j+ 1)))
+  (`!n x. abs (atn(halfatn4 x) - 
+		 sum (0..n) (\j. (-- &1 pow j) * halfatn4 x pow (2 * j + 1) / &(2 * j+ 1))) 
    <= inv (&8 pow (2 * n + 3) * &(2 * n + 3))`,
    REPEAT GEN_TAC THEN ABBREV_TAC `y = halfatn4 x` THEN
      SUBGOAL_THEN `abs y < inv (&8)` ASSUME_TAC THENL [
