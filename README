@@ -24,23 +24,10 @@ Refer to the reference manual for more details of individual functions:
 
                              INSTALLATION
 
-If you use Debian Linux or some other Debian-based Linux distribution
-(Knoppix, Mint, Ubuntu, etc.), there is actually a "hol-light" package,
-thanks to Hendrik Tews, so installation of HOL Light and all its
-prerequisites is as simple as
-
-  sudo apt-get install hol-light
-
-For other OSs, more work is involved. The Objective CAML (OCaml)
-implementation is a prerequisite for running HOL Light. HOL Light
-should work with any recent version of OCaml; I've tried it on at
-least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2, 4.00,
-4.05 and 4.14.
-However, for versions >= 3.10 (in 3.10 there was an incompatible
-change in the camlp4 preprocessor) you will also need to get camlp5
-(version >= 4.07). For versions >= 4.14, you will need to get camlp5
-8.00 and ocamlfind. Installing these items should not be
-too difficult, depending on the platform.
+The Objective CAML (OCaml) implementation is a prerequisite for running
+HOL Light. HOL Light should work with any recent version of OCaml; I've
+tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2,
+4.00, 4.05 and 4.14.
 
  1. OCaml: there are packages for many Linux distributions. For
     example, on a debian derivative like Ubuntu, you may just need
@@ -54,58 +41,17 @@ too difficult, depending on the platform.
 
         http://caml.inria.fr/ocaml/index.en.html
 
- 2. zarith or num: The HOL Light system uses the OCaml "Num" library
-    or "Zarith" library for rational arithmetic. If OCaml 4.14 is used,
-    HOL Light will use Zarith. You can install it using the OCaml package
-    manager "opam" by
+  2. Dependencies: HOL Light uses camlp5 and zarith (num for OCaml
+    version < 4.14). If you have OPAM installed on your machine,
+    running the following command inside this directory will create a local
+    OPAM switch which uses the latest OCaml version that fully supports
+    features of as well as all dependencies installed:
 
-        opam install zarith
+        make switch
+        eval $(opam env)
 
-    If OCaml 4.05 is used, HOL Light will use Num which is included in
-    the core system. If you are using an OCaml version between 4.06 and 4.13,
-    Num must be installed separately because it is no longer included in
-    the core system. You can use "opam" by
-
-        opam install num
-
-    Alternatively you can download the sources from here
-
-        https://github.com/ocaml/num
-
-    and build and install them following the instructions on that
-    page, for example
-
-        git clone https://github.com/ocaml/num mynums
-        cd mynums
-        make all
-        sudo make install [assuming no earlier errors]
-
- 3. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
-    Somtimes you need a recent version of camlp5 to be compatible with
-    your OCaml. For example, OCaml 4.05 is compatible with camlp5 7.10 and
-    OCaml 4.14 is compatible with camlp5 8.02. I recommend downloading
-    the sources for a recent version from
-
-        https://github.com/camlp5/camlp5/releases ('tags' tab has full series)
-
-    and building it in "strict" mode before installing it, thus:
-
-        cd software/camlp5-rel701 [or wherever you unpacked sources to]
-        ./configure --strict
-        make
-        sudo make install       [assuming no earlier errors]
-
-    There are also packages for camlp5, so you may be able to get away
-    with just something like
-
-        sudo apt-get install camlp5
-
-    or
-
-        opam pin add camlp5 <version (e.g., 7.10 for ocaml 4.05)>
-
-    However, you may get a version in "transitional" instead of
-    "strict" mode (do "camlp5 -pmode" to check which you have).
+    To manually install dependencies, the DEPENDENCIES chapter of this document
+    explains it.
 
 Now for HOL Light itself. The instructions below assume a Unix-like
 environment such as Linux [or Cygwin (see www.cygwin.com) under
@@ -254,6 +200,63 @@ kind of thing that might be done, or may be useful in further work.
 
 Thanks to Carl Witty for help with Camlp4 porting and advice on
 checkpointing programs.
+
+        *       *       *       *       *       *       *       *
+
+                             DEPENDENCIES
+
+ 1. zarith or num: The HOL Light system uses the OCaml "Num" library
+    or "Zarith" library for rational arithmetic. If OCaml 4.14 is used,
+    HOL Light will use Zarith. You can install it using the OCaml package
+    manager "opam" by
+
+        opam install zarith
+
+    If OCaml 4.05 is used, HOL Light will use Num which is included in
+    the core system. If you are using an OCaml version between 4.06 and 4.13,
+    Num must be installed separately because it is no longer included in
+    the core system. You can use "opam" by
+
+        opam install num
+
+    Alternatively you can download the sources from here
+
+        https://github.com/ocaml/num
+
+    and build and install them following the instructions on that
+    page, for example
+
+        git clone https://github.com/ocaml/num mynums
+        cd mynums
+        make all
+        sudo make install [assuming no earlier errors]
+
+ 2. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
+    Somtimes you need a recent version of camlp5 to be compatible with
+    your OCaml. For example, OCaml 4.05 is compatible with camlp5 7.10 and
+    OCaml 4.14 is compatible with camlp5 8.02. I recommend downloading
+    the sources for a recent version from
+
+        https://github.com/camlp5/camlp5/releases ('tags' tab has full series)
+
+    and building it in "strict" mode before installing it, thus:
+
+        cd software/camlp5-rel701 [or wherever you unpacked sources to]
+        ./configure --strict
+        make
+        sudo make install       [assuming no earlier errors]
+
+    There are also packages for camlp5, so you may be able to get away
+    with just something like
+
+        sudo apt-get install camlp5
+
+    or
+
+        opam pin add camlp5 <version (e.g., 7.10 for ocaml 4.05)>
+
+    However, you may get a version in "transitional" instead of
+    "strict" mode (do "camlp5 -pmode" to check which you have).
 
         *       *       *       *       *       *       *       *
 
