@@ -442,7 +442,7 @@ let mk_standard_ineq =
 let expr_to_vector_fun =
   let comp_op = `$` in
     fun expr_tm ->
-      let vars = List.sort Pervasives.compare (frees expr_tm) in
+      let vars = List.sort compare (frees expr_tm) in
       let n = length vars in
       let x_var = mk_var ("x", n_vector_type_array.(if n = 0 then 1 else n)) in
       let x_tm = mk_icomb (comp_op, x_var) in
@@ -455,7 +455,7 @@ let expr_to_vector_fun =
 let exprs_to_vector_fun =
   let comp_op = `$` in
     fun expr_tms ->
-      let vars = List.sort Pervasives.compare (unions (map frees expr_tms)) in
+      let vars = List.sort compare (unions (map frees expr_tms)) in
       let n = length vars in
       let x_var = mk_var ("x", n_vector_type_array.(if n = 0 then 1 else n)) in
       let x_tm = mk_icomb (comp_op, x_var) in

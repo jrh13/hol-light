@@ -43,7 +43,7 @@ let report_error =
     fun s ->
       let ec = get_error_count() in
       (inc_error_count(); report_timed (Printf.sprintf "error(%d) --\n%s" ec s); 
-       Pervasives.ignore(get_error_count() < error_max || raise Fatal));;
+       ignore(get_error_count() < error_max || raise Fatal));;
   
 let report_fatal s = 
   ( inc_error_count(); report_timed ("error --\n"^s); raise Fatal);;

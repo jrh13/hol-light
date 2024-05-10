@@ -151,10 +151,10 @@ let n_of_p_log x pp cond =
 
 (*
 
-let sq = Pervasives.sqrt;;
+let sq = float_sqrt;;
 let t = sq (1.0 -. 1.0 /. 3.0) -. 1.0;;
-let t = Pervasives.sqrt 2.0 -. 1.0;;
-let t = Pervasives.sqrt 2.0 /. 2.0 -. 1.0;;
+let t = float_sqrt 2.0 -. 1.0;;
+let t = float_sqrt 2.0 /. 2.0 -. 1.0;;
 t /. (2.0 +. t);;
 
 n_of_p_log 0.11 20 (fun i -> true);;
