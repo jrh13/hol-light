@@ -42,15 +42,13 @@ jobs:
 
   test2:
     runs-on: ubuntu-22.04
-    name: OCaml 4.14, Camlp5 8.02
+    name: OCaml 4.14, Camlp5 8.02 (make switch)
     
     steps:
       - name: Install dependency
         run: |
           sudo apt update && sudo apt install -y opam xdot
-          opam init --disable-sandboxing --compiler=4.14.0
-          opam pin -y add camlp5 8.02.01
-          opam install -y zarith
+          opam init --disable-sandboxing
 
       - name: Checkout this repo
         uses: actions/checkout@v2
@@ -60,6 +58,7 @@ jobs:
       - name: Run
         run: |
           cd hol-light
+          make switch
           eval $(opam env)
           make
           ./hol.sh | tee log.txt
