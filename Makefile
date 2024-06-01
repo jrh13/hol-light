@@ -44,7 +44,8 @@ default: update_database.ml pa_j.cmo hol.sh;
 switch:; \
   opam switch create . ocaml-base-compiler.4.14.0 ; \
   eval $(opam env) ; \
-  opam install -y zarith camlp5 ledit
+  opam install -y zarith ledit ; \
+  opam pin -y add camlp5 8.02.01
 
 # Choose an appropriate "update_database.ml" file
 

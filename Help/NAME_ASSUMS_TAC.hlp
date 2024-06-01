@@ -1,6 +1,6 @@
-\DOC NAME_ASSUMS_LIST
+\DOC NAME_ASSUMS_TAC
 
-\TYPE {NAME_ASSUMS_LIST : tactic}
+\TYPE {NAME_ASSUMS_TAC : tactic}
 
 \SYNOPSIS
 Label unnamed assumptions.
@@ -9,7 +9,7 @@ Label unnamed assumptions.
 assumption.
 
 \DESCRIBE
-{NAME_ASSUMS_LIST} labels unnamed assumptions with "H0", "H1", ....
+{NAME_ASSUMS_TAC} labels unnamed assumptions with "H0", "H1", ....
 It skips named assumptions.
 
 \FAILURE
