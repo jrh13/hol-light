@@ -1271,6 +1271,40 @@ let BIT_LSB_IWORD = prove
   REWRITE_TAC[divides; GSYM EVEN_EXISTS] THEN
   REWRITE_TAC[EVEN_EXP; ARITH; DIMINDEX_NONZERO]);;
 
+let TWOS_COMPLEMENT_GEN = prove
+ (`!p k n x:int.
+        (&n == x) (mod (&2 pow (p + k))) /\
+        n < 2 EXP (p + k) /\ --(&2 pow p) <= x /\ x < &2 pow p
+        ==> n DIV 2 EXP p = (2 EXP k - 1) * bitval(x < &0) /\
+            &n - &2 pow (p + k) * &(bitval(x < &0)) = x`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[bitval] THEN
+  COND_CASES_TAC THEN 
+  ASM_REWRITE_TAC[INT_MUL_RZERO; INT_MUL_RID; INT_EQ_SUB_RADD;
+                  GSYM INT_OF_NUM_CLAUSES; GSYM INT_OF_NUM_DIV] THEN
+  SIMP_TAC[GSYM INT_OF_NUM_SUB; LE_1; EXP_EQ_0; ARITH_EQ;
+           GSYM INT_OF_NUM_POW; INT_ADD_RID] THEN
+  MATCH_MP_TAC(TAUT `q /\ (q ==> p) ==> p /\ q`) THEN
+  (CONJ_TAC THENL
+    [MATCH_MP_TAC INT_CONG_IMP_EQ THEN EXISTS_TAC `(&2:int) pow (p + k)` THEN
+     ASM_REWRITE_TAC[INTEGER_RULE 
+      `(n:int == x + p) (mod p) <=> (n == x) (mod p)`] THEN
+     MATCH_MP_TAC(INT_ARITH
+      `&0 <= x /\ x < p /\ &0 <= y /\ y < p
+        ==> abs(x - y:int) < p`) THEN
+     ASM_REWRITE_TAC[INT_OF_NUM_CLAUSES; LE_0] THEN
+     MP_TAC(SPECL [`p:num`; `p + k:num`; `&2:int`] INT_POW_MONO) THEN
+     CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC[LE_ADD] THEN
+     REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES] THEN
+     INT_ARITH_TAC;
+     DISCH_THEN SUBST1_TAC])
+  THENL [ALL_TAC; REWRITE_TAC[INT_DIV_EQ_0] THEN ASM_INT_ARITH_TAC] THEN
+  SIMP_TAC[INT_POW_ADD; INT_DIV_MUL_ADD; INT_POW_EQ_0; INT_OF_NUM_EQ; ARITH_EQ;
+           INT_ARITH `x + k:int = k - &1 <=> x + &1 = &0`] THEN
+  TRANS_TAC EQ_TRANS `(x + &1 * &2 pow p) div &2 pow p` THEN CONJ_TAC THENL
+   [SIMP_TAC[INT_POW_ADD; INT_DIV_MUL_ADD; INT_POW_EQ_0; INT_OF_NUM_EQ; 
+             ARITH_EQ];
+    REWRITE_TAC[INT_DIV_EQ_0] THEN ASM_INT_ARITH_TAC]);;
+
 let TWOS_COMPLEMENT = prove
  (`!p n x:int.
         (&n == x) (mod (&2 pow p)) /\
@@ -1279,25 +1313,12 @@ let TWOS_COMPLEMENT = prove
         ==> (2 EXP (p - 1) <= n <=> x < &0) /\
             n DIV (2 EXP (p - 1)) = bitval(x < &0) /\
             &n - &2 pow p * &(bitval(x < &0)) = x`,
-  MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC[] THEN
-  X_GEN_TAC `p:num` THEN DISCH_THEN(K ALL_TAC) THEN
-  REWRITE_TAC[NOT_SUC; EXP; SUC_SUB1; INT_POW] THEN
   REPEAT GEN_TAC THEN STRIP_TAC THEN
-  SUBGOAL_THEN `n DIV 2 EXP p < 2` ASSUME_TAC THENL
-   [ASM_SIMP_TAC[RDIV_LT_EQ; EXP_EQ_0; ARITH_EQ] THEN ASM_ARITH_TAC;
-    ALL_TAC] THEN
-  REWRITE_TAC[bitval] THEN COND_CASES_TAC THEN
-  ASM_SIMP_TAC[ARITH_RULE `n < 2 ==> (n = 1 <=> ~(n = 0))`] THEN
-  SIMP_TAC[DIV_EQ_0; EXP_EQ_0; ARITH_EQ; NOT_LE; NOT_LT; CONJ_ASSOC] THEN
-  REWRITE_TAC[INT_MUL_RZERO; INT_MUL_RID; INT_EQ_SUB_RADD] THEN
-  MATCH_MP_TAC(TAUT `(q ==> p) /\ q ==> p /\ q`) THEN
-  (CONJ_TAC THENL
-    [SIMP_TAC[GSYM INT_OF_NUM_CLAUSES];
-     MATCH_MP_TAC INT_CONG_IMP_EQ THEN EXISTS_TAC `(&2:int) * &2 pow p` THEN
-     ASM_REWRITE_TAC[INT_ADD_RID; INTEGER_RULE
-      `(x:int == y + n) (mod n) <=> (x == y) (mod n)`]]) THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[GSYM INT_OF_NUM_CLAUSES]) THEN
-  ASM_INT_ARITH_TAC);;
+  MP_TAC(SPECL [`p - 1`; `1`; `n:num`; `x:int`] TWOS_COMPLEMENT_GEN) THEN
+  CONV_TAC NUM_REDUCE_CONV THEN ASM_SIMP_TAC[LE_1; SUB_ADD; MULT_CLAUSES] THEN
+  DISCH_THEN(MP_TAC o AP_TERM `\x. x = 0` o CONJUNCT1) THEN
+  SIMP_TAC[DIV_EQ_0; EXP_EQ_0; ARITH_EQ; BITVAL_EQ_0] THEN
+  REWRITE_TAC[GSYM NOT_LT] THEN CONV_TAC TAUT);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit operations on `num`.                                                  *)
@@ -7935,6 +7956,63 @@ let VAL_WORD_ADJUST_BINOP_CONV tm =
   BINOP_CONV (VAL_WORD_ADJUST_CONV n) tm;;
 
 (* ------------------------------------------------------------------------- *)
+(* Comparison predicates expressed via the top bit.                          *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_COMPARISON_ULT = prove
+ (`!(x:N word) (y:N word).
+        val x < val y <=>
+        bit (dimindex(:N)-1)
+            (word_or (word_and (word_not x) y)
+                     (word_and (word_or (word_not x) y) (word_sub x y)))`,
+  CONV_TAC WORD_ARITH);;
+
+let WORD_COMPARISON_ULE = prove
+ (`!(x:N word) (y:N word).
+        val x <= val y <=>
+        bit (dimindex(:N)-1)
+            (word_and (word_or (word_not x) y)
+                      (word_or (word_xor x y) (word_not(word_sub y x))))`,
+  CONV_TAC WORD_ARITH);;
+
+let WORD_COMPARISON_ILT = prove
+ (`!(x:N word) (y:N word).
+        ival x < ival y <=>
+        bit (dimindex(:N)-1)
+            (word_or (word_and x (word_not y))
+                     (word_and (word_not(word_xor x y)) (word_sub x y)))`,
+  CONV_TAC WORD_ARITH);;
+
+let WORD_COMPARISON_ILE = prove
+ (`!(x:N word) (y:N word).
+        ival x <= ival y <=>
+        bit (dimindex(:N)-1)
+            (word_and (word_or x (word_not y))
+                      (word_or (word_xor x y) (word_not(word_sub y x))))`,
+  CONV_TAC WORD_ARITH);;
+
+let WORD_COMPARISON_NE = prove
+ (`!(x:N word) (y:N word).
+        ~(x = y) <=>
+        bit (dimindex(:N)-1)
+            (word_or (word_xor x y) (word_neg(word_xor x y)))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[BIT_WORD_OR_NEG; GSYM NOT_LE] THEN
+  SIMP_TAC[DIMINDEX_NONZERO; LT_REFL; ARITH_RULE
+   `~(n = 0) ==> (x <= n - 1 <=> x < n)`] THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_XOR] THEN MESON_TAC[]);;
+
+let WORD_COMPARISON_EQ = prove
+ (`!(x:N word) (y:N word).
+        x = y <=>
+        bit (dimindex(:N)-1)
+            (word_not((word_or (word_xor x y) (word_neg(word_xor x y)))))`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[BIT_WORD_NOT; BIT_WORD_OR_NEG; GSYM NOT_LE] THEN
+  SIMP_TAC[DIMINDEX_NONZERO; LT_REFL; ARITH_RULE
+   `~(n = 0) ==> (x <= n - 1 <=> x < n)`] THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_XOR] THEN MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Convert a natural number atom m = n, m < n etc. to word form.             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -8168,3 +8246,9 @@ let SIMD2 = prove
            ADD_SUB2; ARITH_RULE `i < n ==> i < 2 * n`;
            ARITH_RULE `n + i < 2 * n <=> i < n`;
            ARITH_RULE `~(n + i:num < n)`]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some explicit formulas for comparisons in terms of top bit.               *)
+(* ------------------------------------------------------------------------- *)
+
+

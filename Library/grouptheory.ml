@@ -4668,6 +4668,77 @@ let ISOMORPHIC_COPY_OF_GROUP = prove
   ASM_SIMP_TAC[GROUP_ID]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Direct limits, in the special case where we are just using the            *)
+(* inclusion map I as the monomorphism between rings in the directed family. *)
+(* ------------------------------------------------------------------------- *)
+
+let GROUP_DIRECT_LIMIT = prove
+ (`!c:(A group->bool).
+        ~(c = {}) /\
+        (!g g'. g IN c /\ g' IN c
+                ==> ?G. G IN c /\
+                        group_monomorphism(g,G) I /\
+                        group_monomorphism(g',G) I)
+        ==> ?G. group_carrier G = UNIONS {group_carrier g | g IN c} /\
+                !g. g IN c ==> group_monomorphism(g,G) I`,
+  REPEAT STRIP_TAC THEN
+  MAP_EVERY ABBREV_TAC
+   [`gid:A = let g = @g. g IN c in group_id g`;
+    `ginv = \x:A. let g = @g. g IN c /\ x IN group_carrier g in
+                  group_inv g x`;
+    `mul = \x y:A.
+        let g = @g. g IN c /\ x IN group_carrier g /\ y IN group_carrier g in
+        group_mul g x y`] THEN
+  SUBGOAL_THEN
+   `(!g. g IN c ==> gid:A = group_id g) /\
+    (!g x. g IN c /\ x IN group_carrier g ==> ginv x = group_inv g x) /\
+    (!g x y. g IN c /\ x IN group_carrier g /\ y IN group_carrier g
+              ==> mul x y = group_mul g x y)`
+  MP_TAC THENL
+   [FIRST_ASSUM(MP_TAC o check (is_forall o concl)) THEN
+    REWRITE_TAC[group_monomorphism; group_homomorphism; IMAGE_ID; I_DEF] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+    MAP_EVERY EXPAND_TAC ["gid"; "ginv"; "mul"] THEN
+    CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN MESON_TAC[];
+    REPEAT(FIRST_X_ASSUM(K ALL_TAC o SYM o SYM)) THEN STRIP_TAC] THEN
+  ABBREV_TAC `G = group(UNIONS {group_carrier g:A->bool | g IN c},
+                        gid,ginv,mul)` THEN
+  SUBGOAL_THEN
+   `group_carrier G = UNIONS {group_carrier g | g IN c} /\
+    group_id G :A = gid /\
+    group_inv G = ginv /\
+    group_mul G = mul`
+  MP_TAC THENL
+   [GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o RATOR_CONV) [group_carrier] THEN
+    REWRITE_TAC[group_id; group_inv; group_mul] THEN
+    REWRITE_TAC[PAIR; GSYM PAIR_EQ] THEN EXPAND_TAC "G" THEN
+    REWRITE_TAC[GSYM(CONJUNCT2 group_tybij)] THEN
+    REWRITE_TAC[SET_RULE `x IN s /\ y IN s <=> {x,y} SUBSET s`] THEN
+    REWRITE_TAC[GSYM INSERT_SUBSET] THEN
+    MP_TAC(ISPEC `{group_carrier g:A->bool | g IN c}`
+        FINITE_SUBSET_UNIONS_DIRECTED_EQ) THEN
+    ASM_REWRITE_TAC[SET_RULE `{f x | x IN s} = {} <=> s = {}`] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; EXISTS_IN_GSPEC] THEN ANTS_TAC THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE
+        [group_monomorphism; group_homomorphism; IMAGE_I]) THEN
+      ASM_MESON_TAC[];
+      SIMP_TAC[FINITE_INSERT; FINITE_EMPTY] THEN DISCH_THEN(K ALL_TAC) THEN
+      REWRITE_TAC[INSERT_SUBSET; EXISTS_IN_GSPEC;
+                  UNIONS_GSPEC; EMPTY_SUBSET]] THEN
+    REWRITE_TAC[UNIONS_GSPEC; IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+    ASM_SIMP_TAC[GROUP_MUL; GROUP_ID; GROUP_INV] THEN
+    ASM_SIMP_TAC[GROUP_MUL_ASSOC; GROUP_MUL_RID; GROUP_MUL_LID;
+                 GROUP_MUL_RINV; GROUP_MUL_LINV] THEN
+    ASM_MESON_TAC[MEMBER_NOT_EMPTY; GROUP_ID; GROUP_INV; GROUP_MUL];
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+     (REPEAT_TCL CONJUNCTS_THEN (SUBST_ALL_TAC o SYM))) THEN
+    EXISTS_TAC `G:A group` THEN ASM_REWRITE_TAC[] THEN
+    ASM_REWRITE_TAC[group_monomorphism; group_homomorphism;
+                    IMAGE_ID; I_DEF] THEN
+    ASM SET_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Perform group operations setwise.                                         *)
 (* ------------------------------------------------------------------------- *)
 

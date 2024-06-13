@@ -505,8 +505,7 @@ let pp_print_term =
        print_term 0 (snd(last vs));
        (if fst(last vs) then pp_print_string fmt ")" else ());
        pp_print_string fmt ".";
-       (if length vs = 1 then pp_print_string fmt " "
-        else pp_print_space fmt ());
+       pp_print_space fmt ();
        print_term 0 bod;
        (if prec = 0 then () else pp_print_string fmt ")");
        pp_close_box fmt ())

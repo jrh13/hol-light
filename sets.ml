@@ -347,6 +347,10 @@ let INSERT_RESTRICT = prove
         if P a then a INSERT {x | x IN s /\ P x} else {x | x IN s /\ P x}`,
   REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM SET_TAC[]);;
 
+let UNIV_1 = prove
+ (`(:1) = {one}`,
+  SET_TAC[one]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The empty set.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -1065,6 +1069,10 @@ let SING_GSPEC = prove
    (!a:A. {x | a = x} = {a})`,
   SET_TAC[]);;
 
+let SING_ALT = prove
+ (`!s:A->bool. (?x. s = {x}) <=> ?!x. x IN s`,
+  SET_TAC[]);;
+
 let IN_GSPEC = prove
  (`!s:A->bool. {x | x IN s} = s`,
   SET_TAC[]);;
@@ -1169,6 +1177,16 @@ let UNIONS_OVER_INTERS = prove
   GEN_TAC THEN ONCE_REWRITE_TAC[TAUT `(p <=> q) <=> (~p <=> ~q)`] THEN
   REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; NOT_EXISTS_THM] THEN
   REWRITE_TAC[AND_FORALL_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
+let UNIONS_EQ_INTERS = prove
+ (`!f:(A->bool)->bool. UNIONS f = INTERS f <=> ?s. f = {s}`,
+  REWRITE_TAC[SET_RULE
+   `(?s. f = {s}) <=> ~(f = {}) /\ !s t. s IN f /\ t IN f ==> s = t`] THEN
+  SET_TAC[]);;
+
+let EXISTS_UNIQUE_UNIONS_INTERS = prove
+ (`!P. (?!s:A->bool. P s) <=> UNIONS {s | P s} = INTERS {s | P s}`,
+  REWRITE_TAC[UNIONS_EQ_INTERS] THEN SET_TAC[]);;
 
 let IMAGE_INTERS_SUBSET = prove
  (`!(f:A->B) g. IMAGE f (INTERS g) SUBSET INTERS (IMAGE (IMAGE f) g)`,
@@ -1747,22 +1765,32 @@ let INTERS_IN_CHAIN = prove
     ==> t IN f ==> s INTER t = s \/ s INTER t IN f`) THEN
   ASM SET_TAC[]);;
 
+let FINITE_SUBSET_UNIONS_DIRECTED_EQ = prove
+ (`!f s:A->bool.
+        ~(f = {}) /\
+        (!t u. t IN f /\ u IN f
+               ==> ?v. v IN f /\ t SUBSET v /\ u SUBSET v) /\
+        FINITE s
+        ==> (s SUBSET UNIONS f <=> ?t. t IN f /\ s SUBSET t)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[INSERT_SUBSET] THEN ASM SET_TAC[]);;
+
+let FINITE_SUBSET_UNIONS_CHAIN_EQ = time prove
+ (`!f s:A->bool.
+        ~(f = {}) /\
+        (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t) /\
+        FINITE s
+        ==> (s SUBSET UNIONS f <=> ?t. t IN f /\ s SUBSET t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET_UNIONS_DIRECTED_EQ THEN
+  ASM_MESON_TAC[SUBSET_REFL]);;
+
 let FINITE_SUBSET_UNIONS_CHAIN = prove
  (`!f s:A->bool.
         FINITE s /\ s SUBSET UNIONS f /\ ~(f = {}) /\
         (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t)
         ==> ?t. t IN f /\ s SUBSET t`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`f:(A->bool)->bool`; `s:A->bool`]
-        FINITE_SUBSET_UNIONS) THEN
-  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `t:(A->bool)->bool` THEN
-  ASM_CASES_TAC `t:(A->bool)->bool = {}` THENL
-   [ASM_SIMP_TAC[UNIONS_0] THEN ASM SET_TAC[]; STRIP_TAC] THEN
-  EXISTS_TAC `UNIONS t:A->bool` THEN
-  ASM_REWRITE_TAC[] THEN
-  FIRST_ASSUM(MATCH_MP_TAC o REWRITE_RULE[SUBSET]) THEN
-  MATCH_MP_TAC UNIONS_IN_CHAIN THEN ASM SET_TAC[]);;
+  MESON_TAC[FINITE_SUBSET_UNIONS_CHAIN_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Recursion over finite sets; based on Ching-Tsun's code (archive 713).     *)
@@ -2946,6 +2974,10 @@ let RESTRICTION_EXTENSION = prove
 let RESTRICTION_FIXPOINT = prove
  (`!s f:A->B. RESTRICTION s f = f <=> f IN EXTENSIONAL s`,
   REWRITE_TAC[IN_EXTENSIONAL; FUN_EQ_THM; RESTRICTION] THEN MESON_TAC[]);;
+
+let RESTRICTION_UNIV = prove
+ (`!f:A->B. RESTRICTION UNIV f = f`,
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION; IN_UNIV]);;
 
 let RESTRICTION_RESTRICTION = prove
  (`!s t f:A->B.

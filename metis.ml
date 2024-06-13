@@ -9951,7 +9951,7 @@ let rec unify_fo_ho_term vars fat tm m =
       else (if !verb then Format.printf "Unify!\n%!"; raise Unify)
   | Term.Fn (f, args) ->
       if !verb then Format.printf "fn\n%!";
-      let hf, hargs = try strip_comb tm with _ -> raise Unify in
+      let hf, hargs = try strip_comb tm with Failure _ -> raise Unify in
       if !verb then begin
         Format.printf "hf = %s\n%!" (string_of_term hf);
         Format.printf "is_var: %s\n%!" (if is_var hf then "true" else "false")
@@ -9964,11 +9964,11 @@ let rec unify_fo_ho_term vars fat tm m =
 let unify_fo_ho_atom vars (p, args) htm m =
   if p = "="
   then try let hl, hr = dest_eq htm in itlist2 (unify_fo_ho_term vars) args [hl; hr] m
-       with _ -> raise Unify
+       with Failure _ -> raise Unify
   else unify_fo_ho_term vars (Term.Fn (p, args)) htm m
 
 let unify_fo_ho_literal vars (pol, atom) htm m =
-  let htm' = if pol then htm else try dest_neg htm with _ -> raise Unify in
+  let htm' = if pol then htm else try dest_neg htm with Failure _ -> raise Unify in
   unify_fo_ho_atom vars atom htm' m
 
 end
@@ -10012,7 +10012,7 @@ let RESOLVE atom th1 th2 =
   and (th2', r2) = FRONT (mk_neg atom) th2 in
   let res = RESOLVE_N atom (r1, r2) in
   MP (MP res th1') th2'
-  with _ -> failwith "resolve"
+  with Failure _ -> failwith "resolve"
 
 (* given A,  tm |- C, prove A |- ~tm \/ C or
    given A, ~tm |- C, prove A |-  tm \/ C *)
@@ -10023,7 +10023,7 @@ let DISCH_DISJ =
     let impl = DISCH tm th
     and (tm', IMPL_NOT) =
       try dest_neg tm, IMPL_NOT_L
-      with _ ->    tm, IMPL_NOT_R in
+      with Failure _ ->    tm, IMPL_NOT_R in
     let eq = SPECL [tm'; concl th] IMPL_NOT in
     PURE_ONCE_REWRITE_RULE [eq] impl
 
@@ -10045,9 +10045,8 @@ let term_eq_mod_type t1 t2 tyinsts =
       Format.printf "unified with |tminsts| = %d!\n%!" (List.length tminsts);
       List.iter (fun t1, t2 -> Format.printf "%s <- %s\n%!" (string_of_term t1) (string_of_term t2)) tminsts
     end;
-    assert (tminsts = []);
-    Some tyinsts
-  with _ -> None
+    if tminsts = [] then Some tyinsts else None
+  with Failure _ -> None
 
 let rec match_elems f m = function
     ([], []) -> [m]
@@ -10171,7 +10170,7 @@ let rec hol_of_thm axioms fth =
 
       if hs <> ht then assert (concl hlit' <> hlit);
       (try Metis_rules.DISCH_DISJS [heq; hlit] hlit'
-      with _ -> failwith "equality")
+      with Failure _ -> failwith "equality")
   in
     (* eliminate duplicates in clause *)
     let hth = CONV_RULE DISJ_CANON_CONV hth in
