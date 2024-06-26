@@ -29,7 +29,7 @@ elif type ckpt > /dev/null; then
 else
     make clean; make
     (cd Mizarlight; make clean; make)
-    hollight="ocaml -init hol.ml"
+    hollight=./hol.sh
 fi
 
 make -j $(getconf _NPROCESSORS_ONLN) "HOLLIGHT=$hollight" SHELL=bash \
