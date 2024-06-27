@@ -1,0 +1,8 @@
+These .ml files are copies of the lib/plexer.ml and etc/pa_o.ml files in
+the camlp5 project (https://github.com/camlp5/camlp5) with proper edits to
+enable lexing specific to HOL Light and `..`-style quotation.
+The edited parts are annotated with comments including specific keywords such as
+"JRH" or "HOL Light".
+A user can disable/enable this lexer using `unset_jrh_lexer;;`/`set_jrh_lexer;;`.
+If a file has name 'pa_j_AA_BB.ml', it must be used for OCaml version AA and
+camlp5 version BB. '_BB' is omitted in some old files.

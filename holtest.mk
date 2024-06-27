@@ -1,4 +1,4 @@
-HOLLIGHT:=ocaml -init hol.ml
+HOLLIGHT:=./hol.sh
 
 STANDALONE_EXAMPLES:=\
 	Library/agm \
