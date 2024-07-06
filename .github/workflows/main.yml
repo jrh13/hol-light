@@ -42,7 +42,7 @@ jobs:
 
   test2:
     runs-on: ubuntu-22.04
-    name: OCaml 4.14, Camlp5 8.02 (make switch)
+    name: OCaml 4.14, Camlp5 8.03 (make switch)
     
     steps:
       - name: Install dependency

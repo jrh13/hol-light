@@ -97,7 +97,7 @@ be available for some platforms. First the basic approach:
     This should rebuild all the core HOL Light theories, and terminate after
     a few minutes with the usual OCaml prompt, something like:
 
-                Camlp5 parsing version (HOL-Light) 8.02.00
+                Camlp5 parsing version (HOL-Light) 8.03.00
 
         #
 
@@ -234,7 +234,7 @@ checkpointing programs.
  2. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
     Somtimes you need a recent version of camlp5 to be compatible with
     your OCaml. For example, OCaml 4.05 is compatible with camlp5 7.10 and
-    OCaml 4.14 is compatible with camlp5 8.02. I recommend downloading
+    OCaml 4.14 is compatible with camlp5 8.02 and 8.03. I recommend downloading
     the sources for a recent version from
 
         https://github.com/camlp5/camlp5/releases ('tags' tab has full series)
