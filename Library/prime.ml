@@ -92,6 +92,10 @@ let DIVIDES_RMUL2_EQ = prove
  (`!a b c. ~(c = 0) ==> ((a * c) divides (b * c) <=> a divides b)`,
   NUMBER_TAC);;
 
+let DIVIDES_EQ_ZERO = prove
+ (`!p n. n < p ==> (p divides n <=> n = 0)`,
+  MESON_TAC[DIVIDES_0; DIVIDES_LE_STRONG; NOT_LE; LT]);;
+
 let DIVIDES_CASES = prove
  (`!m n. n divides m ==> m = 0 \/ m = n \/ 2 * n <= m`,
   SIMP_TAC[ARITH_RULE `m = n \/ 2 * n <= m <=> m = n * 1 \/ n * 2 <= m`] THEN

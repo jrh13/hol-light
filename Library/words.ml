@@ -1278,7 +1278,7 @@ let TWOS_COMPLEMENT_GEN = prove
         ==> n DIV 2 EXP p = (2 EXP k - 1) * bitval(x < &0) /\
             &n - &2 pow (p + k) * &(bitval(x < &0)) = x`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[bitval] THEN
-  COND_CASES_TAC THEN 
+  COND_CASES_TAC THEN
   ASM_REWRITE_TAC[INT_MUL_RZERO; INT_MUL_RID; INT_EQ_SUB_RADD;
                   GSYM INT_OF_NUM_CLAUSES; GSYM INT_OF_NUM_DIV] THEN
   SIMP_TAC[GSYM INT_OF_NUM_SUB; LE_1; EXP_EQ_0; ARITH_EQ;
@@ -1286,7 +1286,7 @@ let TWOS_COMPLEMENT_GEN = prove
   MATCH_MP_TAC(TAUT `q /\ (q ==> p) ==> p /\ q`) THEN
   (CONJ_TAC THENL
     [MATCH_MP_TAC INT_CONG_IMP_EQ THEN EXISTS_TAC `(&2:int) pow (p + k)` THEN
-     ASM_REWRITE_TAC[INTEGER_RULE 
+     ASM_REWRITE_TAC[INTEGER_RULE
       `(n:int == x + p) (mod p) <=> (n == x) (mod p)`] THEN
      MATCH_MP_TAC(INT_ARITH
       `&0 <= x /\ x < p /\ &0 <= y /\ y < p
@@ -1301,7 +1301,7 @@ let TWOS_COMPLEMENT_GEN = prove
   SIMP_TAC[INT_POW_ADD; INT_DIV_MUL_ADD; INT_POW_EQ_0; INT_OF_NUM_EQ; ARITH_EQ;
            INT_ARITH `x + k:int = k - &1 <=> x + &1 = &0`] THEN
   TRANS_TAC EQ_TRANS `(x + &1 * &2 pow p) div &2 pow p` THEN CONJ_TAC THENL
-   [SIMP_TAC[INT_POW_ADD; INT_DIV_MUL_ADD; INT_POW_EQ_0; INT_OF_NUM_EQ; 
+   [SIMP_TAC[INT_POW_ADD; INT_DIV_MUL_ADD; INT_POW_EQ_0; INT_OF_NUM_EQ;
              ARITH_EQ];
     REWRITE_TAC[INT_DIV_EQ_0] THEN ASM_INT_ARITH_TAC]);;
 
@@ -8246,9 +8246,3 @@ let SIMD2 = prove
            ADD_SUB2; ARITH_RULE `i < n ==> i < 2 * n`;
            ARITH_RULE `n + i < 2 * n <=> i < n`;
            ARITH_RULE `~(n + i:num < n)`]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Some explicit formulas for comparisons in terms of top bit.               *)
-(* ------------------------------------------------------------------------- *)
-
-

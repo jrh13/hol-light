@@ -8,6 +8,180 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  6th Jul 2024               Makefile, README, pa_j [new directory], pa_j/pa_j_4.xx_8.03.ml
+
+Merged an update from June Lee adding camlp5 8.03 support and making it the
+target version for "make switch", as well as reorganizing this and previous
+pa_j files into a subdirectory with a README to explain how they are put
+together.
+
+Sat  6th Jul 2024               holtest, holtest.ml, holtest_parallel
+
+Merged an update from June Lee making the various HOL test files use the
+"hol.sh" script to invoke HOL Light.
+
+Fri  5th Jul 2024               EC/passim
+
+Added a couple more theorems (easy consequences of existing ones) for
+each one of the various Weierstrass curves, all analogs of the
+following for P-256:
+
+  P256_GROUP_ELEMENT_ORDER =
+    |- !P. P IN group_carrier p256_group
+           ==> group_element_order p256_group P =
+               if P = group_id p256_group then 1 else n_256
+
+  P256_GROUP_ORDER =
+    |- CARD(group_carrier p256_group) = n_256
+
+with the complete list of new theorems being
+
+        P192K1_GROUP_ELEMENT_ORDER
+        P192K1_GROUP_ORDER
+        P192_GROUP_ELEMENT_ORDER
+        P192_GROUP_ORDER
+        P224K1_GROUP_ELEMENT_ORDER
+        P224K1_GROUP_ORDER
+        P224_GROUP_ELEMENT_ORDER
+        P256K1_GROUP_ELEMENT_ORDER
+        P256K1_GROUP_ORDER
+        P256_GROUP_ELEMENT_ORDER
+        P256_GROUP_ORDER
+        P256_GROUP_ORDER
+        P384_GROUP_ELEMENT_ORDER
+        P384_GROUP_ORDER
+        P521_GROUP_ELEMENT_ORDER
+        P521_GROUP_ORDER
+
+Also consistently renamed all the following existing theorems:
+
+        FINITE_GROUP_CARRIER_192   -> FINITE_GROUP_CARRIER_P192
+        FINITE_GROUP_CARRIER_192K1 -> FINITE_GROUP_CARRIER_P192K1
+        FINITE_GROUP_CARRIER_224   -> FINITE_GROUP_CARRIER_P224
+        FINITE_GROUP_CARRIER_224K1 -> FINITE_GROUP_CARRIER_P224K1
+        FINITE_GROUP_CARRIER_256   -> FINITE_GROUP_CARRIER_P256
+        FINITE_GROUP_CARRIER_256K1 -> FINITE_GROUP_CARRIER_P256K1
+        FINITE_GROUP_CARRIER_384   -> FINITE_GROUP_CARRIER_P384
+        FINITE_GROUP_CARRIER_521   -> FINITE_GROUP_CARRIER_P521
+
+Wed  3rd Jul 2024               Library/prime.ml
+
+Added a little lemma that is trivial to construct but handy sometimes:
+
+  DIVIDES_EQ_ZERO = |- !p n. n < p ==> (p divides n <=> n = 0)
+
+Wed  3rd Jul 2024               Library/grouptheory.ml
+
+Added a few elementary group lemmas:
+
+  GROUP_ELEMENT_ORDER_PRIME =
+    |- !G a.
+           prime p /\ group_carrier G HAS_SIZE p /\ a IN group_carrier G
+           ==> group_element_order G a =
+               (if a = group_id G then 1 else CARD (group_carrier G))
+
+  GROUP_POW_MOD_ELEMENT_ORDER =
+    |- !G x n.
+           x IN group_carrier G
+           ==> group_pow G x (n MOD group_element_order G x) = group_pow G x n
+
+  GROUP_POW_MOD_ORDER =
+    |- !G x n.
+           FINITE (group_carrier G) /\ x IN group_carrier G
+           ==> group_pow G x (n MOD CARD (group_carrier G)) = group_pow G x n
+
+  GROUP_ZPOW_INV =
+    |- !G x n.
+           x IN group_carrier G
+           ==> group_zpow G (group_inv G x) n = group_zpow G x (--n)
+
+  GROUP_ZPOW_REM_ELEMENT_ORDER =
+    |- !G x n.
+           x IN group_carrier G
+           ==> group_zpow G x (n rem &(group_element_order G x)) =
+               group_zpow G x n
+
+  GROUP_ZPOW_REM_ORDER =
+    |- !G x n.
+           FINITE (group_carrier G) /\ x IN group_carrier G
+           ==> group_zpow G x (n rem &(CARD (group_carrier G))) =
+               group_zpow G x n
+
+Fri 28th Jun 2024               Library/ringtheory.ml
+
+Added more elementary ring lemmas including characterizations of units and
+nilpotents in polynomial rings:
+
+  IN_SUBRING_PRODUCT =
+    |- !r h f s.
+           h subring_of r /\ (!a. a IN s ==> f a IN h)
+           ==> ring_product r s f IN h
+
+  IN_SUBRING_SUM =
+    |- !r h f s.
+           h subring_of r /\ (!a. a IN s ==> f a IN h) ==> ring_sum r s f IN h
+
+  MONOMIAL_VAR_1 =
+    |- (!v. ~(monomial_var v = monomial_1)) /\
+       (!v. ~(monomial_1 = monomial_var v))
+
+  POLY_EVALUATE_AT_0 =
+    |- !r p.
+           p IN ring_carrier (poly_ring r v)
+           ==> poly_evaluate r p (\x. ring_0 r) = p monomial_1
+
+  POLY_EVAL_AT_0 =
+    |- !r p.
+           p IN ring_carrier (poly_ring r (:1))
+           ==> poly_eval r p (ring_0 r) = p (\v. 0)
+
+  POLY_EXTEND_AT_0 =
+    |- !r s v h p.
+           ring_homomorphism (r,s) h /\ p IN ring_carrier (poly_ring r v)
+           ==> poly_extend (r,s) h (\x. ring_0 s) p = h (p monomial_1)
+
+  POLY_MUL_MONOMIAL_1 =
+    |- !r p q.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_mul r p q monomial_1 =
+               ring_mul r (p monomial_1) (q monomial_1)
+
+  POLY_SUBRING_GENERATED =
+    |- !r s.
+           subring_generated (poly_ring r s)
+           ({poly_const r c | c | c IN ring_carrier r} UNION
+            {poly_var r x | x IN s}) =
+           poly_ring r s
+
+  RING_HOMOMORPHISM_MONOMIAL_1 =
+    |- !r v. ring_homomorphism (poly_ring r v,r) (\p. p monomial_1)
+
+  RING_NILPOTENT_POLY_RING =
+    |- !r s p.
+           ring_nilpotent (poly_ring r s) p <=>
+           p IN ring_carrier (poly_ring r s) /\ (!m. ring_nilpotent r (p m))
+
+  RING_NILPOTENT_SUM =
+    |- !r f s.
+           FINITE s /\ (!i. i IN s ==> ring_nilpotent r (f i))
+           ==> ring_nilpotent r (ring_sum r s f)
+
+  RING_UNIT_POLY_CONST =
+    |- !r s c. ring_unit (poly_ring r s) (poly_const r c) <=> ring_unit r c
+
+  RING_UNIT_POLY_DOMAIN =
+    |- !r s p.
+           integral_domain r
+           ==> (ring_unit (poly_ring r s) p <=>
+                (?c. ring_unit r c /\ p = poly_const r c))
+
+  RING_UNIT_POLY_RING =
+    |- !r s p.
+           ring_unit (poly_ring r s) p <=>
+           p IN ring_carrier (poly_ring r s) /\
+           ring_unit r (p monomial_1) /\
+           (!m. ~(m = monomial_1) ==> ring_nilpotent r (p m))
+
 Sun  9th Jun 2024               Library/ringtheory.ml
 
 Added a slew of further elementary definitions and theorems about rings, in
@@ -18,130 +192,130 @@ is now used for a slightly different theorem. New definitions:
 
   local_ring =
     |- !r. local_ring r <=> (?!j. maximal_ideal r j)
-  
+
   poly_deg =
     |- !p r.
            poly_deg r p =
            (minimal d. !m. ~(p m = ring_0 r) ==> monomial_deg m <= d)
-  
+
   poly_eval =
     |- !r p x. poly_eval r p x = poly_evaluate r p (\v. x)
-  
+
   poly_evaluate =
     |- !r x p. poly_evaluate r p x = poly_extend (r,r) I x p
-  
+
   poly_sub =
     |- !r p1 p2. poly_sub r p1 p2 = (\m. ring_sub r (p1 m) (p2 m))
 
 and theorems:
-  
+
   EUCLIDEAN_POLY_RING =
     |- !f. field f ==> euclidean_ring (poly_ring f (:1))
-  
+
   EXISTS_FUN_FROM_1 =
     |- !P. (?f. P (f one) f) <=> (?z. P z (\v. z))
-  
+
   FIELD_IMP_LOCAL_RING =
     |- !r. field r ==> local_ring r
-  
+
   FORALL_FUN_FROM_1 =
     |- !P. (!f. P (f one) f) <=> (!z. P z (\v. z))
-  
+
   INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD =
     |- quotient_ring integer_ring (ideal_generated integer_ring {&n})
        isomorphic_ring integer_mod_ring n
-  
+
   INTEGER_RING_COSET_IDEAL_GENERATED_SING =
     |- !n. ring_coset integer_ring (ideal_generated integer_ring {n}) = mod n
-  
+
   INTEGER_RING_IDEAL_GENERATED_SING =
     |- !n. ideal_generated integer_ring {n} = {x | n divides x}
-  
+
   IN_POLY_RING_CARRIER =
     |- !r s.
            p IN ring_carrier (poly_ring r s) <=>
            ring_polynomial r p /\ poly_vars r p SUBSET s
-  
+
   IN_RING_COSET =
     |- !r j x y.
            (ring_ideal r j \/ j subring_of r) /\
            x IN ring_carrier r /\
            y IN ring_carrier r
            ==> (x IN ring_coset r j y <=> ring_coset r j x = ring_coset r j y)
-  
+
   IN_RING_POLYNOMIAL_CARRIER_COMPOSE =
     |- !r s f v p.
            ring_homomorphism (r,s) f /\ p IN ring_carrier (poly_ring r v)
            ==> f o p IN ring_carrier (poly_ring s v)
-  
+
   IN_RING_POWERSERIES_CARRIER_COMPOSE =
     |- !r s v f p.
            ring_homomorphism (r,s) f /\ p IN ring_carrier (powser_ring r v)
            ==> f o p IN ring_carrier (powser_ring s v)
-  
+
   ISOMORPHIC_RING_LOCALITY =
     |- !r r'. r isomorphic_ring r' ==> (local_ring r <=> local_ring r')
-  
+
   ISOMORPHIC_SUBCOPY_OF_RING =
     |- !r s.
            ring_carrier r <=_c s
            ==> (?r'. ring_carrier r' SUBSET s /\ r isomorphic_ring r')
-  
+
   LOCAL_IMP_NONTRIVIAL_RING =
     |- !r. local_ring r ==> ~trivial_ring r
-  
+
   LOCAL_POWSER_RING =
     |- !r s. local_ring r ==> local_ring (powser_ring r s)
-  
+
   LOCAL_QUOTIENT_RING =
     |- !r j.
            local_ring r /\ proper_ideal r j ==> local_ring (quotient_ring r j)
-  
+
   LOCAL_RING_EPIMORPHIC_IMAGE =
     |- !r r' f.
            ring_epimorphism (r,r') f /\ local_ring r /\ ~trivial_ring r'
            ==> local_ring r'
-  
+
   LOCAL_RING_IDEAL_NONUNITS =
     |- !r.
            local_ring r <=>
            ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
-  
+
   LOCAL_RING_LOCALIZATION =
     |- !r j.
            prime_ideal r j
            ==> local_ring (ring_localization r (ring_carrier r DIFF j))
-  
+
   MAXIMAL_CONTAINING_IDEAL_EXISTS =
     |- !r a.
            a IN ring_carrier r /\ ~ring_unit r a
            ==> (?j. maximal_ideal r j /\ a IN j)
-  
+
   MAXIMAL_IDEAL_NONUNITS =
     |- !r.
            maximal_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
            ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
-  
+
   MONOMIAL_DEG =
     |- !m. monomial_deg m = nsum (:V) m
-  
+
   MONOMIAL_DEG_LE_POLY_DEG =
     |- !r p m.
            ring_polynomial r p /\ ~(p m = ring_0 r)
            ==> monomial_deg m <= poly_deg r p
-  
+
   MONOMIAL_DEG_UNIVARIATE =
     |- !i. monomial_deg (\v. i) = i
-  
+
   MONOMIAL_VARS_UNIVARIATE =
     |- !i. monomial_vars (\v. i) = (if i = 0 then {} else {one})
-  
+
   PID_POLY_RING =
     |- !f. field f ==> PID (poly_ring f (:1))
-  
+
   POLY_0 =
     |- !r. poly_0 r = (\m. ring_0 r)
-  
+
   POLY_CLAUSES =
     |- (!r. {p | ring_polynomial r p} = ring_carrier (poly_ring r (:V))) /\
        (!r. poly_0 r = ring_0 (poly_ring r (:V))) /\
@@ -150,87 +324,87 @@ and theorems:
        (!r. poly_add r = ring_add (poly_ring r (:V))) /\
        (!r. poly_sub r = ring_sub (poly_ring r (:V))) /\
        (!r. poly_mul r = ring_mul (poly_ring r (:V)))
-  
+
   POLY_CONST_1 =
     |- !r. poly_const r (ring_1 r) = poly_1 r
-  
+
   POLY_DEG_0 =
     |- !r. poly_deg r (poly_0 r) = 0
-  
+
   POLY_DEG_1 =
     |- !r. poly_deg r (poly_1 r) = 0
-  
+
   POLY_DEG_ADD =
     |- !r p q.
            ring_polynomial r p /\
            ring_polynomial r q /\
            ~(poly_deg r p = poly_deg r q)
            ==> poly_deg r (poly_add r p q) = MAX (poly_deg r p) (poly_deg r q)
-  
+
   POLY_DEG_ADD_LE =
     |- !r p q.
            ring_polynomial r p /\ ring_polynomial r q
            ==> poly_deg r (poly_add r p q) <= MAX (poly_deg r p) (poly_deg r q)
-  
+
   POLY_DEG_CONST =
     |- !r c. poly_deg r (poly_const r c) = 0
-  
+
   POLY_DEG_EQ =
     |- !r p n.
            ring_polynomial r p
            ==> (poly_deg r p = n <=>
                 (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n) /\
                 (n = 0 \/ (?m. ~(p m = ring_0 r) /\ monomial_deg m = n)))
-  
+
   POLY_DEG_EQ_0 =
     |- !r p.
            ring_polynomial r p
            ==> (poly_deg r p = 0 <=>
                 (?c. c IN ring_carrier r /\ p = poly_const r c))
-  
+
   POLY_DEG_EQ_0_ALT =
     |- !r p.
            ring_polynomial r p
            ==> (poly_deg r p = 0 <=> p = poly_const r (p monomial_1))
-  
+
   POLY_DEG_GE =
     |- !r p m n.
            ring_polynomial r p /\ ~(p m = ring_0 r) /\ n <= monomial_deg m
            ==> n <= poly_deg r p
-  
+
   POLY_DEG_GE_EQ =
     |- !r p n.
            ring_polynomial r p
            ==> (n <= poly_deg r p <=>
                 n = 0 \/ (?m. ~(p m = ring_0 r) /\ n <= monomial_deg m))
-  
+
   POLY_DEG_HOMOMORPHIC_IMAGE =
     |- !r s f p.
            ring_homomorphism (r,s) f /\ ring_polynomial r p
            ==> poly_deg s (f o p) <= poly_deg r p
-  
+
   POLY_DEG_LE =
     |- !r p n.
            ring_polynomial r p /\
            (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n)
            ==> poly_deg r p <= n
-  
+
   POLY_DEG_LE_EQ =
     |- !r p n.
            ring_polynomial r p
            ==> (poly_deg r p <= n <=>
                 (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n))
-  
+
   POLY_DEG_MONOMIAL_EXISTS =
     |- !r p.
            ring_polynomial r p /\ ~(p = poly_0 r)
            ==> (?m. ~(p m = ring_0 r) /\ monomial_deg m = poly_deg r p)
-  
+
   POLY_DEG_MONOMORPHIC_IMAGE =
     |- !r s f p.
            ring_monomorphism (r,s) f /\ ring_polynomial r p
            ==> poly_deg s (f o p) = poly_deg r p
-  
+
   POLY_DEG_MUL =
     |- !r p q.
            integral_domain r /\
@@ -238,15 +412,15 @@ and theorems:
            ring_polynomial r q /\
            (p = poly_0 r <=> q = poly_0 r)
            ==> poly_deg r (poly_mul r p q) = poly_deg r p + poly_deg r q
-  
+
   POLY_DEG_MUL_LE =
     |- !r p q.
            ring_polynomial r p /\ ring_polynomial r q
            ==> poly_deg r (poly_mul r p q) <= poly_deg r p + poly_deg r q
-  
+
   POLY_DEG_NEG =
     |- !r p. ring_polynomial r p ==> poly_deg r (poly_neg r p) = poly_deg r p
-  
+
   POLY_DEG_RING_ADD_LE =
     |- !r s p q n.
            p IN ring_carrier (poly_ring r s) /\
@@ -254,7 +428,7 @@ and theorems:
            poly_deg r p <= n /\
            poly_deg r q <= n
            ==> poly_deg r (ring_add (poly_ring r s) p q) <= n
-  
+
   POLY_DEG_RING_SUB_LE =
     |- !r s p q n.
            p IN ring_carrier (poly_ring r s) /\
@@ -262,7 +436,7 @@ and theorems:
            poly_deg r p <= n /\
            poly_deg r q <= n
            ==> poly_deg r (ring_sub (poly_ring r s) p q) <= n
-  
+
   POLY_DEG_RING_SUM_LE =
     |- !r s f k n.
            FINITE k /\
@@ -271,41 +445,41 @@ and theorems:
                 ==> f i IN ring_carrier (poly_ring r s) /\
                     poly_deg r (f i) <= n)
            ==> poly_deg r (ring_sum (poly_ring r s) k f) <= n
-  
+
   POLY_DEG_SUB =
     |- !r p q.
            ring_polynomial r p /\
            ring_polynomial r q /\
            ~(poly_deg r p = poly_deg r q)
            ==> poly_deg r (poly_sub r p q) = MAX (poly_deg r p) (poly_deg r q)
-  
+
   POLY_DEG_SUB_LE =
     |- !r p q.
            ring_polynomial r p /\ ring_polynomial r q
            ==> poly_deg r (poly_sub r p q) <= MAX (poly_deg r p) (poly_deg r q)
-  
+
   POLY_DEG_UNIQUE =
     |- !r p n.
            ring_polynomial r p /\
            (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n) /\
            (n = 0 \/ (?m. ~(p m = ring_0 r) /\ monomial_deg m = n))
            ==> poly_deg r p = n
-  
+
   POLY_DEG_VAR =
     |- !r. poly_deg r (poly_var r v) = (if ring_1 r = ring_0 r then 0 else 1)
-  
+
   POLY_DEG_VAR_POW =
     |- !r s i k.
            poly_deg r (ring_pow (poly_ring r s) (poly_var r i) k) =
            (if ring_1 r = ring_0 r then 0 else k)
-  
+
   POLY_DIVIDES_X_MINUS_A =
     |- !r a p.
            a IN ring_carrier r /\ p IN ring_carrier (poly_ring r (:1))
            ==> ring_divides (poly_ring r (:1))
                (poly_sub r (poly_var r one) (poly_const r a))
                (poly_sub r p (poly_const r (poly_eval r p a)))
-  
+
   POLY_DIVIDES_X_MINUS_ROOT =
     |- !r a p.
            a IN ring_carrier r /\
@@ -314,7 +488,7 @@ and theorems:
            ==> ring_divides (poly_ring r (:1))
                (poly_sub r (poly_var r one) (poly_const r a))
                p
-  
+
   POLY_DIVIDES_X_MINUS_ROOT_EQ =
     |- !r a p.
            a IN ring_carrier r /\ p IN ring_carrier (poly_ring r (:1))
@@ -322,7 +496,7 @@ and theorems:
                 (poly_sub r (poly_var r one) (poly_const r a))
                 p <=>
                 poly_eval r p a = ring_0 r)
-  
+
   POLY_DIVISION =
     |- !f p d.
            field f /\
@@ -338,7 +512,7 @@ and theorems:
                     (ring_mul (poly_ring f (:1)) q d)
                     t =
                     p)
-  
+
   POLY_DIVISION_GEN =
     |- !r p d.
            p IN ring_carrier (poly_ring r (:1)) /\
@@ -353,47 +527,47 @@ and theorems:
                     (ring_mul (poly_ring r (:1)) q d)
                     t =
                     p)
-  
+
   POLY_EQ_0_MONOMORPHIC_IMAGE =
     |- !r s f p.
            ring_monomorphism (r,s) f /\ ring_polynomial r p
            ==> (f o p = poly_0 s <=> p = poly_0 r)
-  
+
   POLY_EVAL =
     |- !r p x. poly_eval r p x IN ring_carrier r
-  
+
   POLY_EVALUATE =
     |- !r p x. poly_evaluate r p x IN ring_carrier r
-  
+
   POLY_EVALUATE_0 =
     |- !r x. poly_evaluate r (poly_0 r) x = ring_0 r
-  
+
   POLY_EVALUATE_1 =
     |- !r x. poly_evaluate r (poly_1 r) x = ring_1 r
-  
+
   POLY_EVALUATE_ADD =
     |- !r p q x.
            ring_polynomial r p /\ ring_polynomial r q
            ==> poly_evaluate r (poly_add r p q) x =
                ring_add r (poly_evaluate r p x) (poly_evaluate r q x)
-  
+
   POLY_EVALUATE_CONST =
     |- !r a x. a IN ring_carrier r ==> poly_evaluate r (poly_const r a) x = a
-  
+
   POLY_EVALUATE_EQ =
     |- !r s p x y.
            (!i. i IN s ==> x i IN ring_carrier r) /\
            (!i. i IN s ==> x i = y i) /\
            p IN ring_carrier (poly_ring r s)
            ==> poly_evaluate r p x = poly_evaluate r p y
-  
+
   POLY_EVALUATE_HOMOMORPHIC_IMAGE =
     |- !r s x f v p.
            ring_homomorphism (r,s) f /\
            IMAGE x v SUBSET ring_carrier r /\
            p IN ring_carrier (poly_ring r v)
            ==> f (poly_evaluate r p x) = poly_evaluate s (f o p) (f o x)
-  
+
   POLY_EVALUATE_MUL =
     |- !r p q x.
            ring_polynomial r p /\
@@ -403,60 +577,60 @@ and theorems:
                 ==> x i IN ring_carrier r)
            ==> poly_evaluate r (poly_mul r p q) x =
                ring_mul r (poly_evaluate r p x) (poly_evaluate r q x)
-  
+
   POLY_EVALUATE_SUB =
     |- !r p q x.
            ring_polynomial r p /\ ring_polynomial r q
            ==> poly_evaluate r (poly_sub r p q) x =
                ring_sub r (poly_evaluate r p x) (poly_evaluate r q x)
-  
+
   POLY_EVALUATE_VAR =
     |- !r i x. x i IN ring_carrier r ==> poly_evaluate r (poly_var r i) x = x i
-  
+
   POLY_EVAL_0 =
     |- !r x. poly_eval r (poly_0 r) x = ring_0 r
-  
+
   POLY_EVAL_1 =
     |- !r x. poly_eval r (poly_1 r) x = ring_1 r
-  
+
   POLY_EVAL_ADD =
     |- !r p q x.
            ring_polynomial r p /\ ring_polynomial r q
            ==> poly_eval r (poly_add r p q) x =
                ring_add r (poly_eval r p x) (poly_eval r q x)
-  
+
   POLY_EVAL_CONST =
     |- !r a x. a IN ring_carrier r ==> poly_eval r (poly_const r a) x = a
-  
+
   POLY_EVAL_EXPAND =
     |- !r x p.
            x IN ring_carrier r /\ p IN ring_carrier (poly_ring r (:1))
            ==> poly_eval r p x =
                ring_sum r (0..poly_deg r p)
                (\i. ring_mul r (p (\v. i)) (ring_pow r x i))
-  
+
   POLY_EVAL_HOMOMORPHIC_IMAGE =
     |- !r s x f p.
            ring_homomorphism (r,s) f /\
            x IN ring_carrier r /\
            p IN ring_carrier (poly_ring r (:1))
            ==> f (poly_eval r p x) = poly_eval s (f o p) (f x)
-  
+
   POLY_EVAL_MUL =
     |- !r p q x.
            ring_polynomial r p /\ ring_polynomial r q /\ x IN ring_carrier r
            ==> poly_eval r (poly_mul r p q) x =
                ring_mul r (poly_eval r p x) (poly_eval r q x)
-  
+
   POLY_EVAL_SUB =
     |- !r p q x.
            ring_polynomial r p /\ ring_polynomial r q
            ==> poly_eval r (poly_sub r p q) x =
                ring_sub r (poly_eval r p x) (poly_eval r q x)
-  
+
   POLY_EVAL_VAR =
     |- !r x. x IN ring_carrier r ==> poly_eval r (poly_var r one) x = x
-  
+
   POLY_EXPAND =
     |- !r p.
            p IN ring_carrier (poly_ring r (:1))
@@ -465,7 +639,7 @@ and theorems:
                (\i.
                     ring_mul (poly_ring r (:1)) (poly_const r (p (\v. i)))
                     (ring_pow (poly_ring r (:1)) (poly_var r one) i))
-  
+
   POLY_EXTEND_EQ =
     |- !r r' s h k x y p.
            ring_homomorphism (r,r') h /\
@@ -474,12 +648,12 @@ and theorems:
            (!i. i IN s ==> x i = y i) /\
            p IN ring_carrier (poly_ring r s)
            ==> poly_extend (r,r') h x p = poly_extend (r,r') k y p
-  
+
   POLY_EXTEND_EVALUATE =
     |- !r s f x p.
            ring_homomorphism (r,s) f
            ==> poly_extend (r,s) f x p = poly_evaluate s (f o p) x
-  
+
   POLY_EXTEND_HOMOMORPHIC_IMAGE =
     |- !r s t h v x f p.
            ring_homomorphism (r,s) h /\
@@ -488,7 +662,7 @@ and theorems:
            p IN ring_carrier (poly_ring r v)
            ==> f (poly_extend (r,s) h x p) =
                poly_extend (r,t) (f o h) (f o x) p
-  
+
   POLY_EXTEND_SUB =
     |- !r r' h x p1 p2.
            ring_homomorphism (r,r') h /\
@@ -497,7 +671,7 @@ and theorems:
            ==> poly_extend (r,r') h x (poly_sub r p1 p2) =
                ring_sub r' (poly_extend (r,r') h x p1)
                (poly_extend (r,r') h x p2)
-  
+
   POLY_EXTEND_UNIVARIATE =
     |- !r r' h x p.
            ring_homomorphism (r,r') h /\
@@ -506,23 +680,23 @@ and theorems:
            ==> poly_extend (r,r') h x p =
                ring_sum r' (0..poly_deg r p)
                (\i. ring_mul r' (h (p (\v. i))) (ring_pow r' (x one) i))
-  
+
   POLY_MONOMIALS =
     |- !r s m.
            p IN ring_carrier (poly_ring r s) /\ ~(p m = ring_0 r)
            ==> monomial s m
-  
+
   POLY_MONOMIALS_FINITE =
     |- !r s.
            p IN ring_carrier (poly_ring r s) ==> FINITE {m | ~(p m = ring_0 r)}
-  
+
   POLY_MONOMIAL_IN_CARRIER =
     |- !r s p m. p IN ring_carrier (poly_ring r s) ==> p m IN ring_carrier r
-  
+
   POLY_MUL_0 =
     |- (!r p. ring_polynomial r p ==> poly_mul r p (poly_0 r) = poly_0 r) /\
        (!r q. ring_polynomial r q ==> poly_mul r (poly_0 r) q = poly_0 r)
-  
+
   POLY_RING_CLAUSES =
     |- (!r s.
             ring_carrier (poly_ring r s) =
@@ -533,7 +707,7 @@ and theorems:
        (!r s. ring_add (poly_ring r s) = poly_add r) /\
        (!r s. ring_sub (poly_ring r s) = poly_sub r) /\
        (!r s. ring_mul (poly_ring r s) = poly_mul r)
-  
+
   POLY_ROOT_BOUND =
     |- !r p.
            integral_domain r /\
@@ -542,10 +716,10 @@ and theorems:
            ==> FINITE {x | x IN ring_carrier r /\ poly_eval r p x = ring_0 r} /\
                CARD {x | x IN ring_carrier r /\ poly_eval r p x = ring_0 r} <=
                poly_deg r p
-  
+
   POLY_SUB =
     |- !r p q. poly_sub r p q = poly_add r p (poly_neg r q)
-  
+
   POLY_TOP_MONOMIAL_LE =
     |- !(<<=) r p.
            toset (<<=) /\
@@ -558,7 +732,7 @@ and theorems:
                     (!m'.
                          ~(p m' = ring_0 r) /\ monomial_deg m' = poly_deg r p
                          ==> monomial_le (<<=) m' m))
-  
+
   POLY_TOP_MONOMIAL_LT =
     |- !(<<=) r p.
            toset (<<=) /\
@@ -573,13 +747,13 @@ and theorems:
                          monomial_deg m' = poly_deg r p /\
                          ~(m' = m)
                          ==> monomial_lt (<<=) m' m))
-  
+
   POLY_TOP_NONZERO =
     |- !r p.
            p IN ring_carrier (poly_ring r (:1)) /\
            ~(p = ring_0 (poly_ring r (:1)))
            ==> ~(p (\v. poly_deg r p) = ring_0 r)
-  
+
   POLY_TOP_TAIL =
     |- !r p.
            p IN ring_carrier (poly_ring r (:1)) /\
@@ -595,118 +769,118 @@ and theorems:
                     (poly_deg r p)))
                     q =
                     p)
-  
+
   POLY_VAR_UNIV =
     |- !r i. poly_var r i IN ring_carrier (poly_ring r (:V))
-  
+
   POWSER_MONOMIALS =
     |- !r s m.
            p IN ring_carrier (powser_ring r s) /\ ~(p m = ring_0 r)
            ==> monomial s m
-  
+
   POWSER_MONOMIAL_IN_CARRIER =
     |- !r s p m. p IN ring_carrier (powser_ring r s) ==> p m IN ring_carrier r
-  
+
   POWSER_VAR_UNIV =
     |- !r i. poly_var r i IN ring_carrier (powser_ring r (:V))
-  
+
   PRIME_IDEAL_CONTAINS_NILPOTENTS =
     |- !r j. prime_ideal r j ==> {x | ring_nilpotent r x} SUBSET j
-  
+
   PRIME_IDEAL_NONUNITS =
     |- !r.
            prime_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
            ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
-  
+
   PROPER_IDEAL_NONUNITS =
     |- !r.
            proper_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
            ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
-  
+
   PROPER_IDEAL_SUBSET_NONUNITS =
     |- !r j.
            proper_ideal r j
            ==> j SUBSET {x | x IN ring_carrier r /\ ~ring_unit r x}
-  
+
   RING_COSET_IDEAL_GENERATED_SING =
     |- !r a x.
            a IN ring_carrier r /\ x IN ring_carrier r
            ==> ring_coset r (ideal_generated r {a}) x =
                {y | y IN ring_carrier r /\ ring_divides r a (ring_sub r x y)}
-  
+
   RING_COSET_IDEAL_GENERATED_SING_EQ =
     |- !r a x y.
            a IN ring_carrier r /\ x IN ring_carrier r /\ y IN ring_carrier r
            ==> (ring_coset r (ideal_generated r {a}) x =
                 ring_coset r (ideal_generated r {a}) y <=>
                 ring_divides r a (ring_sub r x y))
-  
+
   RING_COSET_RELATIONAL =
     |- !r j x y.
            (ring_ideal r j \/ j subring_of r) /\
            x IN ring_carrier r /\
            y IN ring_carrier r
            ==> (ring_coset r j x y <=> ring_coset r j x = ring_coset r j y)
-  
+
   RING_EPIMORPHISM_I =
     |- !r. ring_epimorphism (r,r) I
-  
+
   RING_EPIMORPHISM_POLY_EVAL =
     |- !r s x.
            x IN ring_carrier r
            ==> ring_epimorphism (poly_ring r s,r) (\p. poly_eval r p x)
-  
+
   RING_EPIMORPHISM_POLY_EVALUATE =
     |- !r s x.
            IMAGE x s SUBSET ring_carrier r
            ==> ring_epimorphism (poly_ring r s,r) (\p. poly_evaluate r p x)
-  
+
   RING_EPIMORPHISM_POLY_RINGS =
     |- !r s f v.
            ring_epimorphism (r,s) f
            ==> ring_epimorphism (poly_ring r v,poly_ring s v) (\p. f o p)
-  
+
   RING_EPIMORPHISM_POWSER_RINGS =
     |- !r s f v.
            ring_epimorphism (r,s) f
            ==> ring_epimorphism (powser_ring r v,powser_ring s v) (\p. f o p)
-  
+
   RING_HOMOMORPHISM_I =
     |- !r. ring_homomorphism (r,r) I
-  
+
   RING_HOMOMORPHISM_INTEGER_MOD_RINGS =
     |- !p m n.
            ring_homomorphism (integer_mod_ring m,integer_mod_ring n)
            (\x. x rem &n) <=>
            n divides m
-  
+
   RING_HOMOMORPHISM_INTEGER_MOD_RINGS_POW =
     |- !p i j.
            i <= j
            ==> ring_homomorphism
                (integer_mod_ring (p EXP j),integer_mod_ring (p EXP i))
                (\x. x rem &p pow i)
-  
+
   RING_HOMOMORPHISM_POLY_EVAL =
     |- !r s x.
            x IN ring_carrier r
            ==> ring_homomorphism (poly_ring r s,r) (\p. poly_eval r p x)
-  
+
   RING_HOMOMORPHISM_POLY_EVALUATE =
     |- !r s x.
            IMAGE x s SUBSET ring_carrier r
            ==> ring_homomorphism (poly_ring r s,r) (\p. poly_evaluate r p x)
-  
+
   RING_HOMOMORPHISM_POLY_RINGS =
     |- !r s f v.
            ring_homomorphism (r,s) f
            ==> ring_homomorphism (poly_ring r v,poly_ring s v) (\p. f o p)
-  
+
   RING_HOMOMORPHISM_POWSER_RINGS =
     |- !r s f v.
            ring_homomorphism (r,s) f
            ==> ring_homomorphism (powser_ring r v,powser_ring s v) (\p. f o p)
-  
+
   RING_IDEAL_NONUNITS =
     |- !r.
            ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
@@ -717,85 +891,85 @@ and theorems:
                 y IN ring_carrier r /\
                 ~ring_unit r y
                 ==> ~ring_unit r (ring_add r x y))
-  
+
   RING_ISOMORPHISMS_I =
     |- !r. ring_isomorphisms (r,r) (I,I)
-  
+
   RING_ISOMORPHISM_I =
     |- !r. ring_isomorphism (r,r) I
-  
+
   RING_ISOMORPHISM_POLY_RINGS =
     |- !r s f v.
            ring_isomorphism (r,s) f
            ==> ring_isomorphism (poly_ring r v,poly_ring s v) (\p. f o p)
-  
+
   RING_ISOMORPHISM_POWSER_RINGS =
     |- !r s f v.
            ring_isomorphism (r,s) f
            ==> ring_isomorphism (powser_ring r v,powser_ring s v) (\p. f o p)
-  
+
   RING_MONOMORPHISM_I =
     |- !r. ring_monomorphism (r,r) I
-  
+
   RING_MONOMORPHISM_POLY_RINGS =
     |- !r s f v.
            ring_monomorphism (r,s) f
            ==> ring_monomorphism (poly_ring r v,poly_ring s v) (\p. f o p)
-  
+
   RING_MONOMORPHISM_POWSER_RINGS =
     |- !r s f v.
            ring_monomorphism (r,s) f
            ==> ring_monomorphism (powser_ring r v,powser_ring s v) (\p. f o p)
-  
+
   RING_MULTSYS =
     |- (!r s x. ring_multsys r s /\ x IN s ==> x IN ring_carrier r) /\
        (!r s. ring_multsys r s ==> ring_1 r IN s) /\
        (!r s x y. ring_multsys r s /\ x IN s /\ y IN s ==> ring_mul r x y IN s)
-  
+
   RING_NILPOTENT_UNIT =
     |- !r x.
            ring_unit r x /\ ring_nilpotent r x <=>
            trivial_ring r /\ x = ring_0 r
-  
+
   RING_POLYNOMIAL =
     |- !r p. ring_polynomial r p <=> p IN ring_carrier (poly_ring r (:V))
-  
+
   RING_POLYNOMIAL_CARRIER =
     |- !r p.
            ring_polynomial r p <=>
            p IN ring_carrier (poly_ring r (poly_vars r p))
-  
+
   RING_POLYNOMIAL_CARRIER_GEN =
     |- !r s p.
            poly_vars r p SUBSET s
            ==> (ring_polynomial r p <=> p IN ring_carrier (poly_ring r s))
-  
+
   RING_POLYNOMIAL_COMPOSE =
     |- !r s f p.
            ring_homomorphism (r,s) f /\ ring_polynomial r p
            ==> ring_polynomial s (f o p)
-  
+
   RING_POLYNOMIAL_MONOMIAL =
     |- !r p m. ring_polynomial r p /\ ~(p m = ring_0 r) ==> monomial (:V) m
-  
+
   RING_POLYNOMIAL_SUB =
     |- !r p1 p2.
            ring_polynomial r p1 /\ ring_polynomial r p2
            ==> ring_polynomial r (poly_sub r p1 p2)
-  
+
   RING_POWERSERIES_COMPOSE =
     |- !r s f p.
            ring_homomorphism (r,s) f /\ ring_powerseries r p
            ==> ring_powerseries s (f o p)
-  
+
   RING_POWERSERIES_MONOMIAL =
     |- !r p m. ring_powerseries r p /\ ~(p m = ring_0 r) ==> monomial (:V) m
-  
+
   RING_POWERSERIES_SUB =
     |- !r p1 p2.
            ring_powerseries r p1 /\ ring_powerseries r p2
            ==> ring_powerseries r (poly_sub r p1 p2)
-  
+
   RING_SATURATED_MULTSYS_NONPRIME =
     |- !r j.
            prime_ideal r j
@@ -806,7 +980,7 @@ and theorems:
                     ring_mul r x y IN ring_carrier r DIFF j
                     ==> x IN ring_carrier r DIFF j /\
                         y IN ring_carrier r DIFF j)
-  
+
   RING_SUM_CLAUSES_RIGHT =
     |- !r f m n.
            0 < n /\ m <= n
@@ -814,7 +988,7 @@ and theorems:
                (if f n IN ring_carrier r
                 then ring_add r (ring_sum r (m..n - 1) f) (f n)
                 else ring_sum r (m..n - 1) f)
-  
+
   RING_UNIT_LOCALEQUIV_EQ =
     |- !r s a b.
            ring_multsys r s /\
@@ -827,7 +1001,7 @@ and theorems:
            b IN s
            ==> (ring_unit (ring_localization r s) (ring_localequiv r s (a,b)) <=>
                 a IN s)
-  
+
   RING_UNIT_LOCALIZATION =
     |- !r s c.
            ring_multsys r s /\
@@ -838,23 +1012,23 @@ and theorems:
                 ==> x IN s /\ y IN s)
            ==> (ring_unit (ring_localization r s) c <=>
                 (?a b. a IN s /\ b IN s /\ c = ring_localequiv r s (a,b)))
-  
+
   UNIONS_PRIME_IDEALS =
     |- !r.
            UNIONS {j | prime_ideal r j} =
            {x | x IN ring_carrier r /\ ~ring_unit r x}
-  
+
   UNIONS_PROPER_IDEALS =
     |- !r.
            UNIONS {j | proper_ideal r j} =
            {x | x IN ring_carrier r /\ ~ring_unit r x}
-  
+
   UNIQUE_PRIME_IDEAL =
     |- !r.
            (?!j. prime_ideal r j) <=>
            ~trivial_ring r /\
            (!x. x IN ring_carrier r ==> ring_unit r x \/ ring_nilpotent r x)
-  
+
   UNIQUE_PRIME_IDEAL_IMP_LOCAL_RING =
     |- !r. (?!j. prime_ideal r j) ==> local_ring r
 

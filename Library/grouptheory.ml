@@ -596,6 +596,12 @@ let GROUP_INV_ZPOW = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[group_zpow] THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC[GROUP_INV_POW]);;
 
+let GROUP_ZPOW_INV = prove
+ (`!G (x:A) n.
+        x IN group_carrier G
+        ==> group_zpow G (group_inv G x) n = group_zpow G x (--n)`,
+  SIMP_TAC[GSYM GROUP_INV_ZPOW; GSYM GROUP_ZPOW_NEG]);;
+
 let GROUP_ZPOW_MUL = prove
  (`!G (x:A) m n.
         x IN group_carrier G
@@ -8897,6 +8903,22 @@ let GROUP_POW_EQ = prove
              (m == n) (mod (group_element_order G x)))`,
   SIMP_TAC[GSYM GROUP_NPOW; GROUP_ZPOW_EQ; num_congruent]);;
 
+let GROUP_ZPOW_REM_ELEMENT_ORDER = prove
+ (`!G (x:A) n.
+        x IN group_carrier G
+        ==> group_zpow G x (n rem &(group_element_order G x)) =
+            group_zpow G x n`,
+  SIMP_TAC[GROUP_ZPOW_EQ; INT_CONG_LREM] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC INTEGER_RULE);;
+
+let GROUP_POW_MOD_ELEMENT_ORDER = prove
+ (`!G (x:A) n.
+        x IN group_carrier G
+        ==> group_pow G x (n MOD group_element_order G x) =
+            group_pow G x n`,
+  REWRITE_TAC[GSYM GROUP_NPOW; GSYM INT_OF_NUM_REM;
+              GROUP_ZPOW_REM_ELEMENT_ORDER]);;
+
 let GROUP_ELEMENT_ORDER_EQ_0 = prove
  (`!G (x:A).
         x IN group_carrier G
@@ -10178,6 +10200,27 @@ let GROUP_POW_GROUP_ORDER = prove
         x IN group_carrier G /\ FINITE(group_carrier G)
         ==> group_pow G x (CARD(group_carrier G)) = group_id G`,
   SIMP_TAC[GROUP_POW_EQ_ID; GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER]);;
+
+let GROUP_ZPOW_REM_ORDER = prove
+ (`!G (x:A) n.
+        FINITE(group_carrier G) /\ x IN group_carrier G
+        ==> group_zpow G x (n rem &(CARD(group_carrier G))) =
+            group_zpow G x n`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[GROUP_ZPOW_EQ] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `!d:int. (x == y) (mod d) /\ e divides d ==> (x == y) (mod e)`) THEN
+  EXISTS_TAC `&(CARD(group_carrier G:A->bool)):int` THEN
+  ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER; INT_CONG_LREM;
+               GSYM num_divides] THEN
+  CONV_TAC INTEGER_RULE);;
+
+let GROUP_POW_MOD_ORDER = prove
+ (`!G (x:A) n. FINITE(group_carrier G) /\ x IN group_carrier G
+           ==> group_pow G x (n MOD CARD(group_carrier G)) =
+               group_pow G x n`,
+  REWRITE_TAC[GSYM GROUP_NPOW; GSYM INT_OF_NUM_REM;
+              GROUP_ZPOW_REM_ORDER]);;
+
 
 let SUBGROUP_OF_FINITE_CYCLIC_GROUP = prove
  (`!G h a:A.
@@ -11816,6 +11859,14 @@ let CYCLIC_PRIME_ORDER_GROUP = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `group_element_order G (a:A)`) THEN
   ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER] THEN
   ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_1]);;
+
+let GROUP_ELEMENT_ORDER_PRIME = prove
+ (`!G a:A. prime p /\ (group_carrier G) HAS_SIZE p /\ a IN group_carrier G
+           ==> group_element_order G a =
+               if a = group_id G then 1 else CARD(group_carrier G)`,
+  REWRITE_TAC[HAS_SIZE] THEN
+  MESON_TAC[GROUP_ELEMENT_ORDER_ID; SUBGROUP_GENERATED_ELEMENT_ORDER;
+            CYCLIC_PRIME_ORDER_GROUP]);;
 
 let GENERATOR_INTEGER_MOD_GROUP = prove
  (`!n a. subgroup_generated (integer_mod_group n) {a} = integer_mod_group n <=>
