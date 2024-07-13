@@ -728,7 +728,7 @@ let strings_of_file filename =
            with Text_io.Bad_file_name ->
              failwith("strings_of_file: can't open "^filename) in
   let rec suck_lines acc =
-    match Text_io.b_inputLine fd with
+    match Text_io.b_inputLine '\n' fd with
     | Some l -> suck_lines (l::acc)
     | None -> rev acc in
   let data = suck_lines [] in
