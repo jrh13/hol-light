@@ -4,7 +4,7 @@ HOL Light is an interactive theorem prover / proof checker. It is
 written in Objective CAML (OCaml) and uses the toplevel from OCaml as
 its front end. This is the HOL Light homepage:
 
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/index.html
+        https://hol-light.github.io/
 
 and this is the root of the Github code repository:
 
@@ -13,12 +13,12 @@ and this is the root of the Github code repository:
 Basic installation instructions are below. For more detailed information
 on usage, see the Tutorial:
 
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/tutorial.pdf
+        https://hol-light.github.io/tutorial.pdf
 
 Refer to the reference manual for more details of individual functions:
 
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.html (HTML files)
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.pdf (one PDF file)
+        https://hol-light.github.io/references/HTML/reference.html (HTML files)
+        https://hol-light.github.io/references/reference.pdf (one PDF file)
 
         *       *       *       *       *       *       *       *
 
