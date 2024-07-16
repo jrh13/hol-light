@@ -15,6 +15,16 @@ let CADICAL_REFUTE_GEN amap tm =
     "lrat-trim -a "^pratname^" "^lratname^"; "^
     "rm -f "^pratname^") >"^logname in
   let _ = Sys.command command in
+
+  let log_in = open_in logname in
+  let rec check_sat () =
+    try
+      let l = input_line log_in in
+      if l = "s SATISFIABLE" then failwith "Satisfiable"
+      else check_sat()
+    with End_of_file -> close_in log_in; () in
+  let _ = check_sat() in
+
   let res = LRAT_REFUTE_GEN amap cnfname lratname in
   let _ = if !cadical_debugging then 1 else Sys.command
           ("rm -f "^cnfname^" "^lratname^" "^logname) in
