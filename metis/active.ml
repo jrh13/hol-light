@@ -4,10 +4,6 @@
 
 module Active = struct
 
-open Useful;;
-open Order;;
-open Ax_cj
-
 (* ------------------------------------------------------------------------- *)
 (* A type of active clause sets.                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -26,7 +22,7 @@ type parameters = Parameters of {
 
 type active = Active of {
   parameters : parameters;
-  clauses : Clause.clause Intmap.map;
+  clauses : (int, Clause.clause) Mmap.map;
   units : Units.units;
   rewrite : Rewrite.rewrite;
   subsume : Clause.clause Subsume.subsume;
@@ -43,7 +39,7 @@ type active = Active of {
 let getSubsume (Active {subsume}) = subsume;;
 
 let setRewrite active rewrite =
-  {active with rewrite = rewrite};;
+  Active {active with rewrite = rewrite};;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic operations.                                                         *)
@@ -61,10 +57,9 @@ let default = Parameters {
   postfactor = maxSimplify
 };;
 
-open Term_net
 let empty parameters =
-  let clause = parameters.clause in
-  let ordering = clause.ordering in
+  let clause = parameters.Parameters.clause in
+  let ordering = clause.Clause.Parameters.ordering in
   Active {
     parameters = parameters;
     clauses = Intmap.newMap ();
@@ -85,7 +80,7 @@ let clauses (Active {clauses}) =
 ;;
 
 let saturation active =
-  let remove (cl,(cls,subs)) =
+  let remove cl (cls,subs) =
     let lits = Clause.literals cl in
     if Subsume.isStrictlySubsumed subs lits then
       (cls,subs)
@@ -135,16 +130,16 @@ let simplifyActive simp (Active {units; rewrite; subsume}) =
 (* ------------------------------------------------------------------------- *)
 
 let addUnit units cl =
-  let th = Clause.thm cl in
+  let th = cl.Clause.Clause.thm in
   match total Thm.destUnit th with
   | Some lit -> Units.add units (lit,th)
   | None -> units
 ;;
 
 let addRewrite rewrite cl =
-  let th = Clause.thm cl in
+  let th = cl.Clause.Clause.thm in
   match total Thm.destUnitEq th with
-  | Some l_r -> Rewrite.add rewrite (Clause.id cl, (l_r,th))
+  | Some l_r -> Rewrite.add rewrite (cl.Clause.Clause.id, (l_r,th))
   | None -> rewrite
 ;;
 
@@ -160,41 +155,41 @@ let addLiterals literals cl =
 ;;
 
 let addEquations equations cl =
-  let add ((lit,ort,tm),equations) =
+  let add (lit,ort,tm) equations =
     Term_net.insert equations (tm,(cl,lit,ort,tm)) in
   List.foldl add equations (Clause.largestEquations cl)
 ;;
 
 let addSubterms subterms cl =
-  let add ((lit,path,tm),subterms) =
+  let add (lit,path,tm) subterms =
     Term_net.insert subterms (tm,(cl,lit,path,tm)) in
   List.foldl add subterms (Clause.largestSubterms cl)
 ;;
 
 let addAllSubterms allSubterms cl =
-  let add ((_,_,tm),allSubterms) = Term_net.insert allSubterms (tm,(cl,tm)) in
+  let add (_,_,tm) allSubterms = Term_net.insert allSubterms (tm,(cl,tm)) in
   List.foldl add allSubterms (Clause.allSubterms cl)
 ;;
 
 let addClause active cl =
-  let Active {clauses; subsume; literals; equations; subterms; allSubterms} =
-    active in
-  let clauses = Intmap.insert clauses (Clause.id cl, cl)
+  let Active {clauses; subsume; literals; equations; subterms;
+              allSubterms} = active in
+  let clauses = Intmap.insert clauses (cl.Clause.Clause.id, cl)
   and subsume = addSubsume subsume cl
   and literals = addLiterals literals cl
   and equations = addEquations equations cl
   and subterms = addSubterms subterms cl
   and allSubterms = addAllSubterms allSubterms cl in
-  {active with clauses = clauses; subsume = subsume; literals = literals;
-               equations = equations; subterms = subterms;
-               allSubterms = allSubterms}
+  Active {active with clauses = clauses; subsume = subsume;
+                      literals = literals; equations = equations;
+                      subterms = subterms; allSubterms = allSubterms}
 ;;
 
 let addFactorClause active cl =
   let Active {units; rewrite} = active in
   let units = addUnit units cl
   and rewrite = addRewrite rewrite cl in
-  {active with units = units; rewrite = rewrite}
+  Active {active with units = units; rewrite = rewrite}
 ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -202,7 +197,7 @@ let addFactorClause active cl =
 (* ------------------------------------------------------------------------- *)
 
 let deduceResolution literals cl ((_,atm) as lit, acc) =
-  let resolve (cl_lit,acc) =
+  let resolve cl_lit acc =
     match total (Clause.resolve cl_lit) (cl,lit) with
     | Some cl' -> cl' :: acc
     | None -> acc in
@@ -213,7 +208,7 @@ let deduceResolution literals cl ((_,atm) as lit, acc) =
 ;;
 
 let deduceParamodulationWith subterms cl ((lit,ort,tm),acc) =
-  let para (cl_lit_path_tm,acc) =
+  let para cl_lit_path_tm acc =
     match total (Clause.paramodulate (cl,lit,ort,tm)) cl_lit_path_tm with
             Some cl' -> cl' :: acc
           | None -> acc in
@@ -221,7 +216,7 @@ let deduceParamodulationWith subterms cl ((lit,ort,tm),acc) =
 ;;
 
 let deduceParamodulationInto equations cl ((lit,path,tm),acc) =
-  let para (cl_lit_ort_tm,acc) =
+  let para cl_lit_ort_tm acc =
     match total (Clause.paramodulate cl_lit_ort_tm) (cl,lit,path,tm) with
     | Some cl' -> cl' :: acc
     | None -> acc in
@@ -236,8 +231,10 @@ let deduce active cl =
     if Term_net.null equations then [] else Clause.largestSubterms cl in
   let acc = [] in
   let acc = Literal.Set.foldl (deduceResolution literals cl) acc lits in
-  let acc = List.foldl (deduceParamodulationWith subterms cl) acc eqns in
-  let acc = List.foldl (deduceParamodulationInto equations cl) acc subtms in
+  let acc =
+    List.foldl (curry (deduceParamodulationWith subterms cl)) acc eqns in
+  let acc =
+    List.foldl (curry (deduceParamodulationInto equations cl)) acc subtms in
   let acc = List.rev acc in
   acc
 ;;
@@ -247,7 +244,7 @@ let deduce active cl =
 (* ------------------------------------------------------------------------- *)
 
 let clause_rewritables active =
-  let Active {clauses=clauses;rewrite=rewrite} = active in
+  let Active {clauses; rewrite} = active in
   let rewr (id,cl,ids) =
     let cl' = Clause.rewrite rewrite cl in
     if Clause.equalThms cl cl' then ids else Intset.add ids id in
@@ -257,8 +254,8 @@ let clause_rewritables active =
 let orderedRedexResidues (((l,r),_),ort) =
   match ort with
     None -> []
-  | Some Rewrite.Left_to_right -> [(l,r,true)]
-  | Some Rewrite.Right_to_left -> [(r,l,true)]
+  | Some (Rewrite.Left_to_right) -> [(l,r,true)]
+  | Some (Rewrite.Right_to_left) -> [(r,l,true)]
 ;;
 
 let unorderedRedexResidues (((l,r),_),ort) =
@@ -270,7 +267,7 @@ let unorderedRedexResidues (((l,r),_),ort) =
 let rewrite_rewritables active rewr_ids =
   let Active {parameters;rewrite;clauses;allSubterms} = active in
   let Parameters {clause} = parameters in
-  let Clause {ordering} = clause in
+  let Clause.Parameters {ordering} = clause in
   let order = Knuth_bendix_order.compare ordering in
   let addRewr (id,acc) =
     if Intmap.inDomain id clauses then Intset.add acc id else acc in
@@ -282,21 +279,22 @@ let rewrite_rewritables active rewr_ids =
           ord || let tm' = Substitute.subst (Substitute.normalize sub) r in
                  order (tm,tm') = Some Greater in
     let addRed ((cl,tm),acc) =
-      let id = Clause.id cl in
+      let id = cl.Clause.Clause.id in
         if Intset.member id acc then acc
         else if not (isValidRewr tm) then acc
         else Intset.add acc id in
-    List.foldl addRed acc (Term_net.matched allSubterms l) in
+    List.foldl (curry addRed) acc (Term_net.matched allSubterms l) in
   let addEquation redexResidues (id,acc) =
     match Rewrite.peek rewrite id with
     | None -> acc
-    | Some eqn_ort -> Mlist.foldl addReduce acc (redexResidues eqn_ort) in
+    | Some eqn_ort ->
+        List.foldl (curry addReduce) acc (redexResidues eqn_ort) in
   let addOrdered = addEquation orderedRedexResidues in
   let addUnordered = addEquation unorderedRedexResidues in
   let ids = Intset.empty in
-  let ids = Mlist.foldl addRewr ids rewr_ids in
-  let ids = Mlist.foldl addOrdered ids rewr_ids in
-  let ids = Mlist.foldl addUnordered ids rewr_ids in
+  let ids = List.foldl (curry addRewr) ids rewr_ids in
+  let ids = List.foldl (curry addOrdered) ids rewr_ids in
+  let ids = List.foldl (curry addUnordered) ids rewr_ids in
   ids
 ;;
 
@@ -308,30 +306,29 @@ let choose_clause_rewritables active ids = size active <= length ids
 
 let delete active ids =
   if Intset.null ids then active else
-  let idPred id = not (Intset.member id ids) in
-  let clausePred cl = idPred (Clause.id cl) in
-  let Active {clauses; subsume; literals; equations; subterms; allSubterms} =
-    active in
-  let cP1 (x,_) = clausePred x in
-  let cP1_4 (x,_,_,_) = clausePred x in
-  let clauses = Intmap.filter (fun x -> idPred (fst x)) clauses
-  and subsume = Subsume.filter clausePred subsume
-  and literals = Literal_net.filter cP1 literals
-  and equations = Term_net.filter cP1_4 equations
-  and subterms = Term_net.filter cP1_4 subterms
-  and allSubterms = Term_net.filter cP1 allSubterms in
-  {active with clauses = clauses; subsume = subsume;
-               literals = literals; equations = equations;
-               subterms = subterms; allSubterms = allSubterms}
+    let idPred id = not (Intset.member id ids) in
+    let clausePred cl = idPred cl.Clause.Clause.id in
+    let Active {clauses; subsume; literals; equations; subterms; allSubterms} =
+      active in
+    let clauses = Intmap.filter (fun x -> idPred (fst x)) clauses
+    and subsume = Subsume.filter clausePred subsume
+    and literals = Literal_net.filter (fun x,_ -> clausePred x) literals
+    and equations = Term_net.filter (fun x,_,_,_ -> clausePred x) equations
+    and subterms = Term_net.filter (fun x,_,_,_ -> clausePred x) subterms
+    and allSubterms = Term_net.filter (fun x,_ -> clausePred x) allSubterms in
+    Active {active with clauses = clauses; subsume = subsume;
+                        literals = literals; equations = equations;
+                        subterms = subterms; allSubterms = allSubterms}
 ;;
 
-let extract_rewritables (Active {clauses=clauses;rewrite=rewrite} as active) =
+let extract_rewritables active =
+  let Active {clauses; rewrite} = active in
   if Rewrite.isReduced rewrite then (active,[]) else
-  let (rewrite,ids) = Rewrite.reduce' rewrite in
-  let active = setRewrite active rewrite in
-  let ids = rewritables active ids in
-  let cls = Intset.transform (Intmap.get clauses) ids in
-  (delete active ids, cls)
+    let (rewrite,ids) = Rewrite.reduce' rewrite in
+    let active = setRewrite active rewrite in
+    let ids = rewritables active ids in
+    let cls = Intset.transform (Intmap.get clauses) ids in
+    (delete active ids, cls)
 ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -354,7 +351,7 @@ let sort_utilitywise =
   let utility cl =
     match Literal.Set.size (Clause.literals cl) with
     | 0 -> -1
-    | 1 -> if Thm.isUnitEq (Clause.thm cl) then 0 else 1
+    | 1 -> if Thm.isUnitEq cl.Clause.Clause.thm then 0 else 1
     | n -> n in
   sortMap utility Int.compare
 ;;
@@ -375,7 +372,7 @@ let rec post_factor (cl, ((active,subsume,acc) as active_subsume_acc)) =
         factor1 (cl', active_subsume_acc)
 and factor1 (cl, active_subsume_acc) =
   let cls = sort_utilitywise (cl::Clause.factor cl) in
-  List.foldl post_factor active_subsume_acc cls
+  List.foldl (curry post_factor) active_subsume_acc cls
 ;;
 
 let pre_factor (cl, ((active,subsume,_) as active_subsume_acc)) =
@@ -390,7 +387,8 @@ let rec factor' active acc =
   | cls ->
       let cls = sort_utilitywise cls in
       let subsume = getSubsume active in
-      let (active,_,acc) = Mlist.foldl pre_factor (active,subsume,acc) cls in
+      let (active,_,acc) =
+        List.foldl (curry pre_factor) (active,subsume,acc) cls in
       let (active,cls) = extract_rewritables active in
       factor' active acc cls
 ;;
@@ -401,19 +399,20 @@ let factor active cls = factor' active [] cls;;
 (* Create a new active clause set and initialize clauses.                    *)
 (* ------------------------------------------------------------------------- *)
 
-let mk_clause params th =
-  Clause.mk { Clause.parameters = params;
-              Clause.id = Clause.newId ();
-              Clause.thm = th
+let mk_clause params th : Clause.clause =
+  Clause.Clause {
+    parameters = params;
+    id = Clause.newId ();
+    thm = th
   };;
 
-let newActive parameters {axioms_thm; conjecture_thm} =
-  let {clause=clause} = parameters in
+let newActive parameters (Ax_cj.Ax_cj_thm {axioms_thm; conjecture_thm}) =
+  let Parameters {clause} = parameters in
   let mk_clause = mk_clause clause in
   let active = empty parameters in
   let (active,axioms) = factor active (List.map mk_clause axioms_thm) in
   let (active,conjecture) = factor active (List.map mk_clause conjecture_thm) in
-  (active, {axioms_cl = axioms; conjecture_cl = conjecture})
+  (active, Ax_cj.Ax_cj_cl {axioms_cl = axioms; conjecture_cl = conjecture})
 ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -436,4 +435,5 @@ let add active cl =
         (active,cls)
 ;;
 
-end
+end (* struct Active *)
+;;

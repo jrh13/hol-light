@@ -4,8 +4,6 @@
 
 module Atom_net = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -13,7 +11,7 @@ open Useful;;
 let atomToTerm atom = Term.Fn atom;;
 
 let termToAtom = function
-    (Term.Var _) -> raise (Bug "Atom_net.termToAtom")
+  | (Term.Var_ _) -> raise (Bug "Atom_net.termToAtom")
   | (Term.Fn atom) -> atom;;
 
 (* ------------------------------------------------------------------------- *)
@@ -34,7 +32,8 @@ let size = Term_net.size;;
 
 let insert net (atm,a) = Term_net.insert net (atomToTerm atm, a);;
 
-let fromList parm l = Mlist.foldl (fun (atm_a,n) -> insert n atm_a) (newNet parm) l;;
+let fromList parm l =
+  List.foldl (fun atm_a n -> insert n atm_a) (newNet parm) l;;
 
 let filter = Term_net.filter;;
 
@@ -54,4 +53,5 @@ let matched net atm = Term_net.matched net (atomToTerm atm);;
 
 let unify net atm = Term_net.unify net (atomToTerm atm);;
 
-end
+end (* struct Atom_net *)
+;;

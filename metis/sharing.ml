@@ -1,5 +1,4 @@
 module Sharing = struct
 let map = List.map;;
-end
-
-
+end (* struct Sharing *)
+;;

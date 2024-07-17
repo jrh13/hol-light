@@ -2,12 +2,10 @@ module Portable = struct
 
 let pointerEqual (p1, p2) = p1 == p2;;
 
-(* TODO(oskar.abrahamsson) Implement random *)
-
-let randomInt x =
+let randomInt (x: int): int =
   failwith "not implemented: randomInt";;
 
-let randomWord () =
+let randomWord (): Word64.word =
   failwith "not implemented: randomWord";;
 
 let critical x = x;;

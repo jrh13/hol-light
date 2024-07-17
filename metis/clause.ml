@@ -4,9 +4,6 @@
 
 module Clause = struct
 
-open Useful;;
-open Order;;
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -61,12 +58,12 @@ let default = Parameters {
 
 let mk p i t = Clause {parameters = p; id = i; thm = t};;
 
-let equalThms cl cl' = Thm.equal (thm cl) (thm cl');;
+let equalThms cl cl' = Thm.equal cl.Clause.thm cl'.Clause.thm;;
 
 let newClause parameters thm =
     Clause {parameters = parameters; id = newId (); thm = thm};;
 
-let literals cl = Thm.clause (thm cl);;
+let literals cl = Thm.clause cl.Clause.thm;;
 
 let isTautology (Clause {thm}) = Thm.isTautology thm;;
 
@@ -78,10 +75,10 @@ let isContradiction (Clause {thm}) = Thm.isContradiction thm;;
 
 let strictlyLess ordering x_y =
   match Knuth_bendix_order.compare ordering x_y with
-  | Some Less -> true
+  | Some (Less) -> true
   | _ -> false;;
 
-let isLargerTerm (Parameters {ordering=ordering;orderTerms=orderTerms}) l_r =
+let isLargerTerm (Parameters {ordering; orderTerms}) l_r =
   not orderTerms || not (strictlyLess ordering l_r)
 ;;
 
@@ -122,7 +119,8 @@ let largestLiterals (Clause {parameters; thm}) =
   Literal.Set.foldr addLit Literal.Set.empty litSet
 ;;
 
-let largestEquations (Clause {parameters=parameters} as cl) =
+let largestEquations cl =
+  let Clause {parameters} = cl in
   let addEq lit ort ((l,_) as l_r) acc =
     if isLargerTerm parameters l_r then (lit,ort,l) :: acc else acc in
   let addLit (lit,acc) =
@@ -136,7 +134,7 @@ let largestEquations (Clause {parameters=parameters} as cl) =
 ;;
 
 let addLit (lit,acc) =
-  let addTm ((path,tm),acc) = (lit,path,tm) :: acc in
+  let addTm (path,tm) acc = (lit,path,tm) :: acc in
   List.foldl addTm acc (Literal.nonVarTypedSubterms lit)
 ;;
 
@@ -156,20 +154,20 @@ let subsumes (subs : clause Subsume.subsume) cl =
 (* ------------------------------------------------------------------------- *)
 
 let freshVars clause =
-  {clause with thm = Rule.freshVars thm};;
+  Clause {clause with thm = Rule.freshVars clause.Clause.thm};;
 
 let simplify clause =
-  match Rule.simplify clause.thm with
+  match Rule.simplify clause.Clause.thm with
   | None -> None
-  | Some thm -> Some {clause with thm = thm}
+  | Some thm -> Some (Clause {clause with thm = thm})
 ;;
 
 let reduce units clause =
-  {clause with thm = Units.reduce units thm};;
+  Clause {clause with thm = Units.reduce units clause.Clause.thm};;
 
-let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
+let rewrite rewr (Clause {parameters; id; thm}) =
   let simp th =
-    let {ordering=ordering} = parameters in
+    let Parameters {ordering} = parameters in
     let cmp = Knuth_bendix_order.compare ordering in
     Rewrite.rewriteIdRule rewr cmp id th in
   let thm =
@@ -183,16 +181,17 @@ let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
 (* Inference rules: these generate new clause ids.                           *)
 (* ------------------------------------------------------------------------- *)
 
-let factor (Clause {parameters; thm} as cl) =
+let factor cl =
+  let Clause {parameters; thm} = cl in
   let lits = largestLiterals cl in
   let apply sub = newClause parameters (Thm.subst sub thm) in
   List.map apply (Rule.factor' lits)
 ;;
 
 let resolve (cl1,lit1) (cl2,lit2) =
-  let parameters = cl1.parameters
-  and th1 = thm
-  and th2 = cl2.thm in
+  let parameters = cl1.Clause.parameters
+  and th1 = cl1.Clause.thm
+  and th2 = cl2.Clause.thm in
   let sub = Literal.unify Substitute.empty lit1 (Literal.negate lit2) in
   let lit1 = Literal.subst sub lit1 in let lit2 = Literal.negate lit1 in
   let th1 = Thm.subst sub th1
@@ -207,9 +206,9 @@ let resolve (cl1,lit1) (cl2,lit2) =
 ;;
 
 let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
-  let parameters = cl1.parameters
-  and th1 = cl1.thm
-  and th2 = cl2.thm in
+  let parameters = cl1.Clause.parameters
+  and th1 = cl1.Clause.thm
+  and th2 = cl2.Clause.thm in
   let sub = Substitute.unify Substitute.empty tm1 tm2 in
   let lit1 = Literal.subst sub lit1
   and lit2 = Literal.subst sub lit2
@@ -230,6 +229,7 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
   Clause {parameters = parameters; id = newId (); thm = th}
 
 end
+;;
 
 module Ax_cj = struct
 
@@ -244,3 +244,4 @@ type ax_cj_cl  = Ax_cj_cl of {
 };;
 
 end
+;;

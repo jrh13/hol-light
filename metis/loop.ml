@@ -7,20 +7,17 @@ struct
 
 let rec loop res =
   match Resolution.iterate res with
-    Resolution.Decided dec -> Some dec
+  | Resolution.Decided dec -> Some dec
   | Resolution.Undecided res -> loop res
-
-open Ax_cj
+;;
 
 let run rules =
-  let ths = {axioms_thm = rules; conjecture_thm = []} in
+  let ths = Ax_cj_thm {axioms_thm = rules; conjecture_thm = []} in
   let res = Resolution.newResolution Resolution.default ths in
   match loop res with
-    None -> failwith "metis: timeout"
+  | None -> failwith "metis: timeout"
   | Some (Resolution.Contradiction thm) -> thm
   | Some (Resolution.Satisfiable _) ->
       failwith "metis: found satisfiable assignment"
 
-end
-
-end
+end (* struct Loop *)

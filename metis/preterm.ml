@@ -16,7 +16,7 @@ assert
   );;
 
 let list_mk_disjp = function
-    [] -> preterm_of_term `F`
+  | [] -> preterm_of_term `F`
   | h::t -> itlist (curry mk_disjp) t h
 
 (* typechecking a preterm with constants fails,
@@ -24,14 +24,14 @@ let list_mk_disjp = function
    type checking converts the variables back to the corresponding constants
 *)
 let rec unconst_preterm = function
-    Varp (s, pty) -> Varp (s, pty)
+  | Varp (s, pty) -> Varp (s, pty)
   | Constp (s, pty) -> Varp (s, pty)
   | Combp (l, r) -> Combp (unconst_preterm l, unconst_preterm r)
   | Typing (ptm, pty) -> Typing (unconst_preterm ptm, pty)
   | _ -> failwith "unconst_preterm"
 
 let rec env_of_preterm = function
-    Varp (s, pty) -> [(s, pty)]
+  | Varp (s, pty) -> [(s, pty)]
   | Constp (s, pty) -> []
   | Combp (l, r) -> env_of_preterm l @ env_of_preterm r
   | Typing (ptm, pty) -> env_of_preterm ptm
@@ -41,4 +41,3 @@ let env_of_th = env_of_preterm o preterm_of_term o concl
 let env_of_ths = List.concat o List.map env_of_th
 
 end (* struct Preterm *)
-

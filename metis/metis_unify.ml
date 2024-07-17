@@ -1,6 +1,8 @@
 module Metis_unify = struct
 
+(*
 open Metis_prover
+*)
 
 let verb = ref false
 
@@ -10,7 +12,7 @@ let rec unify_fo_ho_term vars fat tm m =
   if !verb then Format.printf "unify_fo_ho_term: fat = %s, tm = %s\n%!"
     (Term.toString fat) (string_of_term tm);
   match fat with
-    Term.Var v when List.mem_assoc v m ->
+  | Term.Var v when List.mem_assoc v m ->
       if !verb then Format.printf "var_assoc\n%!";
       let tm' = List.assoc v m in
       if tm = tm' then m else raise Unify
@@ -31,13 +33,15 @@ let rec unify_fo_ho_term vars fat tm m =
       else raise Unify
 
 let unify_fo_ho_atom vars (p, args) htm m =
-  if p = "="
-  then try let hl, hr = dest_eq htm in itlist2 (unify_fo_ho_term vars) args [hl; hr] m
-       with _ -> raise Unify
+  if p = "=" then
+    try let hl, hr = dest_eq htm in
+        itlist2 (unify_fo_ho_term vars) args [hl; hr] m
+    with _ -> raise Unify
   else unify_fo_ho_term vars (Term.Fn (p, args)) htm m
 
 let unify_fo_ho_literal vars (pol, atom) htm m =
-  let htm' = if pol then htm else try dest_neg htm with _ -> raise Unify in
+  let htm' = if pol then htm else
+             try dest_neg htm with _ -> raise Unify in
   unify_fo_ho_atom vars atom htm' m
 
-end
+end (* struct Metis_unify *)

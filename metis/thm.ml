@@ -4,14 +4,11 @@
 
 module Thm = struct
 
-open Useful;;
-open Order
-
 (* ------------------------------------------------------------------------- *)
 (* An abstract type of first order logic theorems.                           *)
 (* ------------------------------------------------------------------------- *)
 
-type clause = Literal.Set.set;;
+type clause = Literal.literal Mset.set;;
 
 type inferenceType =
     Axiom
@@ -38,14 +35,13 @@ let inference (Thm (_,inf)) = inf;;
 
 let isTautology th =
   let chk = function
-      (_,None) -> None
+    | (_,None) -> None
     | ((pol,atm), Some set) ->
       if (pol && Atom.isRefl atm) || Atom.Set.member atm set then None
-      else Some (Atom.Set.add set atm)
-  in
-      match Literal.Set.foldl chk (Some Atom.Set.empty) (clause th) with
-        Some _ -> false
-      | None -> true;;
+      else Some (Atom.Set.add set atm) in
+  match Literal.Set.foldl chk (Some Atom.Set.empty) (clause th) with
+  | Some _ -> false
+  | None -> true;;
 
 (* Contradictions *)
 
@@ -54,8 +50,8 @@ let isContradiction th = Literal.Set.null (clause th);;
 (* Unit theorems *)
 
 let destUnit (Thm (cl,_)) =
-    if Literal.Set.size cl = 1 then Literal.Set.pick cl
-    else raise (Error "Thm.destUnit");;
+  if Literal.Set.size cl = 1 then Literal.Set.pick cl
+  else raise (Error "Thm.destUnit");;
 
 let isUnit = can destUnit;;
 
@@ -75,7 +71,7 @@ let negateMember lit (Thm (cl,_)) = Literal.Set.negateMember lit cl;;
 (* A total order.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let compare (th1,th2) = Literal.Set.compare (clause th1, clause th2);;
+let compare th1 th2 = Literal.Set.compare (clause th1) (clause th2);;
 
 let equal th1 th2 = Literal.Set.equal (clause th1) (clause th2);;
 
@@ -87,21 +83,19 @@ let freeIn v (Thm (cl,_)) = Literal.Set.freeIn v cl;;
 
 let freeVars (Thm (cl,_)) = Literal.Set.freeVars cl;;
 
-
 (* ------------------------------------------------------------------------- *)
 (* Pretty-printing.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-open Format
-
 let inferenceTypeToString = function
-    Axiom -> "axiom"
+  | Axiom -> "axiom"
   | Assume -> "assume"
   | Subst -> "subst"
   | Factor -> "factor"
   | Resolve -> "resolve"
   | Refl -> "refl"
   | Equality -> "equality"
+;;
 
 let toString (Thm (cl, (infType, ths))) =
   inferenceTypeToString infType ^ ": " ^ Literal.Set.toString cl
@@ -109,10 +103,8 @@ let toString (Thm (cl, (infType, ths))) =
 let rec print_proof (Thm (cl, (infType, ths))) =
   print_string ("Inference: " ^ inferenceTypeToString infType);
   print_break 0 0;
-
   print_string ("Clauses: " ^ Literal.Set.toString cl);
   print_break 0 0;
-
   print_string "Theorems: ";
   if ths = []
   then print_string "<none>"
@@ -120,11 +112,11 @@ let rec print_proof (Thm (cl, (infType, ths))) =
     print_break 0 0;
     open_vbox 2;
     print_break 0 0;
-    List.iter (print_proof) ths;
+    List.app (print_proof) ths;
     close_box ()
   end;
   print_break 0 0
-
+;;
 
 (* ------------------------------------------------------------------------- *)
 (* Primitive rules of inference.                                             *)
@@ -145,7 +137,7 @@ let axiom cl = Thm (cl,(Axiom,[]));;
 (* ------------------------------------------------------------------------- *)
 
 let assume lit =
-    Thm (Literal.Set.fromList [lit; Literal.negate lit], (Assume,[]));;
+  Thm (Literal.Set.fromList [lit; Literal.negate lit], (Assume,[]));;
 
 (* ------------------------------------------------------------------------- *)
 (*    C                                                                      *)
@@ -154,14 +146,12 @@ let assume lit =
 (* ------------------------------------------------------------------------- *)
 
 let subst sub (Thm (cl,inf) as th) =
-      let cl' = Literal.Set.subst sub cl
-    in
-      if Portable.pointerEqual (cl,cl') then th
-      else
-        match inf with
-          (Subst,_) -> Thm (cl',inf)
-        | _ -> Thm (cl',(Subst,[th]))
-    ;;
+ let cl' = Literal.Set.subst sub cl in
+ if Portable.pointerEqual (cl,cl') then th else
+   match inf with
+   | (Subst,_) -> Thm (cl',inf)
+   | _ -> Thm (cl',(Subst,[th]))
+;;
 
 (* ------------------------------------------------------------------------- *)
 (*   L \/ C    ~L \/ D                                                       *)
@@ -173,20 +163,10 @@ let subst sub (Thm (cl,inf) as th) =
 (* ------------------------------------------------------------------------- *)
 
 let resolve lit (Thm (cl1,_) as th1) (Thm (cl2,_) as th2) =
-      let cl1' = Literal.Set.delete cl1 lit
-      and cl2' = Literal.Set.delete cl2 (Literal.negate lit)
-    in
-      Thm (Literal.Set.union cl1' cl2', (Resolve,[th1;th2]))
-    ;;
-
-(*MetisDebug
-let resolve = fun lit -> fun pos -> fun neg ->
-    resolve lit pos neg
-    handle Error err ->
-      raise Error ("Thm.resolve:\nlit = " ^ Literal.toString lit ^
-                   "\npos = " ^ toString pos ^
-                   "\nneg = " ^ toString neg ^ "\n" ^ err);;
-*)
+  let cl1' = Literal.Set.delete cl1 lit
+  and cl2' = Literal.Set.delete cl2 (Literal.negate lit) in
+  Thm (Literal.Set.union cl1' cl2', (Resolve,[th1;th2]))
+;;
 
 (* ------------------------------------------------------------------------- *)
 (*                                                                           *)
@@ -206,17 +186,12 @@ let refl tm = Thm (Literal.Set.singleton (true, Atom.mkRefl tm), (Refl,[]));;
 (* ------------------------------------------------------------------------- *)
 
 let equality lit path t =
-      let s = Literal.subterm lit path
+  let s = Literal.subterm lit path in
+  let lit' = Literal.replace lit (path,t) in
+  let eqLit = Literal.mkNeq (s,t) in
+  let cl = Literal.Set.fromList [eqLit; Literal.negate lit; lit'] in
+  Thm (cl,(Equality,[]))
+;;
 
-      in let lit' = Literal.replace lit (path,t)
-
-      in let eqLit = Literal.mkNeq (s,t)
-
-      in let cl = Literal.Set.fromList [eqLit; Literal.negate lit; lit']
-    in
-      Thm (cl,(Equality,[]))
-    ;;
-
-end
-
-
+end (* struct Thm *)
+;;
