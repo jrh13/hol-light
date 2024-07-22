@@ -256,8 +256,6 @@ loads "metis/units.ml";;
 loads "metis/clause.ml";;
 loads "metis/active.ml";;
 loads "metis/waiting.ml";;
-
-(*
 loads "metis/resolution.ml";;
 loads "metis/loop.ml";;
 loads "metis/metis_debug.ml";;
@@ -267,6 +265,8 @@ loads "metis/metis_path.ml";;
 loads "metis/metis_unify.ml";;
 loads "metis/metis_rules.ml";;
 loads "metis/metis_reconstruct2.ml";;
+
+(*
 loads "metis/metis_generate.ml";;
 *)
 (* ========================================================================= *)

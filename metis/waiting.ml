@@ -94,19 +94,18 @@ let initialModel axioms conjecture parm =
 ;;
 
 let checkModels parms models (fv,cl) =
-  let check ((parm,model),z) =
+  let check (parm,model) z =
     let Model_parameters {maxChecks; weight} = parm in
-    let n = maxChecks in
-    let (vT,vF) = Model.check Model.interpretClause n model fv cl in
+    let (vT,vF) = Model.check Model.interpretClause maxChecks model fv cl in
     Math.pow (1.0 +. Real.fromInt vT /. Real.fromInt (vT + vF), weight) *. z in
   List.foldl check 1.0 (zip parms models)
 ;;
 
 let perturbModels parms models cls =
   let perturb (parm,model) =
-    let {perturbations=perturbations} = parm in
+    let Model_parameters {perturbations} = parm in
     perturbModel model cls perturbations in
-  app perturb (zip parms models)
+  List.app perturb (zip parms models)
 ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -120,7 +119,7 @@ let clauseVariables cl =
 
 let clauseLiterals cl = Real.fromInt (Literal.Set.size cl);;
 
-let clausePriority cl = 1e-12 *. Real.fromInt (Clause.id cl);;
+let clausePriority cl = 1e-12 *. Real.fromInt cl.Clause.Clause.id;;
 
 let clauseWeight parm mods dist mcl cl =
   let Parameters {symbolsWeight; variablesWeight; literalsWeight;
@@ -143,12 +142,12 @@ let add' waiting dist mcls cls =
   let Waiting {parameters; clauses; models} = waiting in
   let Parameters {modelsP} = parameters in
   let dist = dist +. Math.ln (Real.fromInt (length cls)) in
-  let addCl ((mcl,cl),acc) =
+  let addCl (mcl,cl) acc =
     let weight = clauseWeight parameters models dist mcl cl in
     Heap.add acc (weight,(dist,cl)) in
   let clauses = List.foldl addCl clauses (zip mcls cls) in
-  let () = perturbModels modelsP models mcls in
-  Waiting {parameters; clauses; models}
+  perturbModels modelsP models mcls;
+  Waiting {parameters = parameters; clauses = clauses; models = models}
 ;;
 
 let add waiting (dist,cls) =
@@ -165,10 +164,10 @@ let empty parameters axioms conjecture =
   let Parameters {modelsP} = parameters in
   let clauses = Heap.newHeap cmp
   and models = List.map (initialModel axioms conjecture) modelsP in
-  Waiting {parameters; clauses; models}
+  Waiting {parameters = parameters; clauses = clauses; models = models}
 ;;
 
-let newWaiting parameters (Ax_cj_cl {axioms_cl; conjecture_cl}) =
+let newWaiting parameters (Ax_cj.Ax_cj_cl {axioms_cl; conjecture_cl}) =
   let mAxioms = mkModelClauses axioms_cl
   and mConjecture = mkModelClauses conjecture_cl in
   let waiting = empty parameters mAxioms mConjecture in

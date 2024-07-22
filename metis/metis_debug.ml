@@ -24,3 +24,4 @@ let show_types,hide_types =
        failwith ("hide_types: Types are already hidden.");;
 
 end (* struct Metis_debug *)
+;;

@@ -12,6 +12,7 @@ let FRONT lit thm =
   let conc' = list_mk_disj disj' in
   let eq = DISJ_ACI_RULE (mk_eq (conc, conc')) in
   (PURE_ONCE_REWRITE_RULE [eq] thm, rest)
+;;
 
 (* resolve two clauses, where atom has to appear at the first position of
    both clauses: positive in the first and negative in the second clause *)
@@ -25,6 +26,7 @@ let RESOLVE_N =
   | (r1, []) -> SPECL [atom; list_mk_disj r1] RESOLVE_2L
   | ([], r2) -> SPECL [atom; list_mk_disj r2] RESOLVE_2R
   | (r1, r2) -> SPECL [atom; list_mk_disj r1; list_mk_disj r2] RESOLVE_3
+;;
 
 (* resolve two clauses th1 and th2, where atom appears somewhere
    positive in th1 and negative in th2 *)
@@ -37,6 +39,7 @@ let RESOLVE atom th1 th2 =
       let res = RESOLVE_N atom (r1, r2) in
       MP (MP res th1') th2'
   with _ -> failwith "resolve"
+;;
 
 (* given A,  tm |- C, prove A |- ~tm \/ C or
    given A, ~tm |- C, prove A |-  tm \/ C *)
@@ -50,8 +53,11 @@ let DISCH_DISJ =
       with _ ->    tm, IMPL_NOT_R in
     let eq = SPECL [tm'; concl th] IMPL_NOT in
     PURE_ONCE_REWRITE_RULE [eq] impl
+;;
 
 (* given A, tm1, .., tmn |- th, prove A |- ~tm1 \/ .. \/ ~tmn \/ th *)
-let DISCH_DISJS tms th = List.fold_right DISCH_DISJ tms th
+let DISCH_DISJS tms th = List.foldr DISCH_DISJ tms th
+;;
 
 end (* struct Metis_rules *)
+;;

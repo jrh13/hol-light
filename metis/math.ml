@@ -1,12 +1,11 @@
 module Math = struct
 
-let exp x y = failwith "exp";;
+let ln (x: double) = failwith "ln";;
 
-let ln x = failwith "ln";;
+let exp (x: double) = failwith "exp";;
 
 let sqrt = Double.sqrt;;
 
-let pow x y =
-  exp (y * ln x);;
+let pow (x, y) = exp (y *. ln x);;
 
 end (* struct Math *)

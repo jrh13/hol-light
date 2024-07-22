@@ -12,7 +12,7 @@ let rec loop res =
 ;;
 
 let run rules =
-  let ths = Ax_cj_thm {axioms_thm = rules; conjecture_thm = []} in
+  let ths = Ax_cj.Ax_cj_thm {axioms_thm = rules; conjecture_thm = []} in
   let res = Resolution.newResolution Resolution.default ths in
   match loop res with
   | None -> failwith "metis: timeout"
@@ -21,3 +21,4 @@ let run rules =
       failwith "metis: found satisfiable assignment"
 
 end (* struct Loop *)
+;;

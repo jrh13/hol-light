@@ -1,9 +1,5 @@
 module Metis_mapping = struct
 
-(*
-open Metis_prover
-*)
-
 let reset_consts,fol_of_const,hol_of_const =
   Meson.reset_consts,Meson.fol_of_const,Meson.hol_of_const
 ;;
@@ -13,7 +9,7 @@ let preterm_of_const = preterm_of_term o hol_of_const o int_of_string;;
 let prefix s = "__" ^ s;;
 
 let rec preterm_of_fol_term = function
-  | Term.Var x -> Varp (prefix x, dpty)
+  | Term.Var_ x -> Varp (prefix x, dpty)
   | Term.Fn (f, args) ->
       let pf = preterm_of_const f in
       let pargs = List.map preterm_of_fol_term args in
@@ -39,7 +35,6 @@ let preterm_of_eq (s, t) =
   Preterm.mk_eqp (preterm_of_fol_term s, preterm_of_fol_term t)
 ;;
 
-
 let typecheck env =
   term_of_preterm o retypecheck env o Preterm.unconst_preterm;;
 let typecheckl env = function
@@ -59,3 +54,4 @@ let hol_of_clause env =
 let hol_of_substitution env = map dest_eq o typecheckl env o map preterm_of_eq;;
 
 end (* struct Metis_mapping *)
+;;

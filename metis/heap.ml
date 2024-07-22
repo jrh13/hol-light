@@ -33,7 +33,7 @@ let merge cmp =
   mrg
 ;;
 
-let newHeap cmp = Heap (cmp,0,Em);;
+let newHeap cmp = Heap ((fun (x,y) -> cmp x y),0,Em);;
 
 let add (Heap (f,n,a)) x = Heap (f, n + 1, merge f (Tr (1,x,Em,Em), a));;
 
