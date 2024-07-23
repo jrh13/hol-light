@@ -16,8 +16,7 @@ let term_eq_mod_type t1 t2 tyinsts =
           print_newline ()
         end) tminsts
     end;
-    if not (List.null tminsts) then
-      failwith "assert(tminsts = [])";
+    assert (List.null tminsts);
     Some tyinsts
   with _ -> None
 ;;
@@ -29,9 +28,9 @@ let rec match_elems f m = function
       List.map (fun y ->
         match f x y m with
         | Some m' ->
-            (* TODO(oskar): was !=, but that seems to have been left out from
-               parse tree conversion *)
-            match_elems f m' (xs, List.filter ((<>) y) ys)
+            (* NOTE(oskar): Originally, this filtered out duplicates from ys
+               by looking at pointer equality. *)
+            match_elems f m' (xs, ys)
         | None -> []) ys
       |> List.concat
 ;;
@@ -61,7 +60,6 @@ let reorient_tysubst vars sub =
   map (fun (ty, v) -> tysubst sub' ty, v) sub'
 ;;
 
-(* TODO Here *)
 let rec hol_of_thm axioms fth =
   if !metisverb then
     begin
@@ -74,13 +72,12 @@ let rec hol_of_thm axioms fth =
     match Proof.thmToInference fth with
     | Proof.Axiom clause ->
         let clausel = Literal.Set.toList clause in
-        let maxs = List.concat (List.map (fun ax ->
+        let maxs = concat_map (fun ax ->
           let disjs = concl ax |> striplist dest_disj in
           let tmvars = freesl (hyp ax) in
           let ms = match_fo_ho_clause tmvars (clausel, disjs) in
-          map (fun m -> m, ax) ms) axioms) in
-        if not (List.length maxs > 0) then
-          failwith "assert (List.length maxs > 0)";
+          map (fun m -> m, ax) ms) axioms in
+        assert (List.length maxs > 0);
         let tminst =
           List.map (fun v, tm ->
                       mk_var (Metis_mapping.prefix v, type_of tm), tm) in
@@ -102,7 +99,6 @@ let rec hol_of_thm axioms fth =
         let (m, ax) = List.hd maxs in
         INST (tminst m) ax
     (* Caution: the substitution can contain elements such as "x -> f(x)" *)
-    (*
     | Proof.Subst (fsub, fth1) ->
         let th1 = hol_of_thm axioms fth1 in
         if !metisverb then
@@ -193,10 +189,8 @@ let rec hol_of_thm axioms fth =
             print_string (Int.toString (List.length cands));
             print_string " candidates available\n"
           end;
-        if not (List.length cands > 0) then
-          failwith "assert (List.length cands > 0)";
-        if not (let h = List.hd cands in List.all ((=) h) cands) then
-          failwith "assert (let h = List.hd cands in List.for_all ((=) h) cands)";
+        assert (List.length cands > 0);
+        assert (let h = List.hd cands in List.all ((=) h) cands);
         let tyinsts = List.hd cands in
         let tyvars = map hyp axioms |> List.concat |>
           map type_vars_in_term |> List.concat in
@@ -241,11 +235,9 @@ let rec hol_of_thm axioms fth =
             print_string "\n"
           end;
         if hs <> ht then
-          (if not (concl hlit' <> hlit) then
-            failwith "assert (concl hlit' <> hlit)" else ());
+          assert (concl hlit' <> hlit);
         (try Metis_rules.DISCH_DISJS [heq; hlit] hlit'
-        with _ -> failwith "equality") *)
-  in
+        with _ -> failwith "equality") in
   (* eliminate duplicates in clause *)
   let hth = CONV_RULE DISJ_CANON_CONV hth in
   if !metisverb then

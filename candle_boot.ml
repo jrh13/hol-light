@@ -105,6 +105,17 @@ let rec rev_append xs acc =
   | [] -> acc
   | x::xs -> rev_append xs (x::acc);;
 
+let concat_map f =
+  let rec concat acc xs =
+    match acc with
+    | [] -> map xs
+    | a::acc -> a::concat acc xs
+  and map xs =
+    match xs with
+    | [] -> []
+    | x::xs -> concat (f x) xs in
+  map;;
+
 (* ------------------------------------------------------------------------- *
  * Helpful banner
  * ------------------------------------------------------------------------- *)

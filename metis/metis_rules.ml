@@ -56,7 +56,7 @@ let DISCH_DISJ =
 ;;
 
 (* given A, tm1, .., tmn |- th, prove A |- ~tm1 \/ .. \/ ~tmn \/ th *)
-let DISCH_DISJS tms th = List.foldr DISCH_DISJ tms th
+let DISCH_DISJS tms th = List.foldr DISCH_DISJ th tms
 ;;
 
 end (* struct Metis_rules *)

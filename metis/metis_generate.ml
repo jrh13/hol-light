@@ -4,15 +4,11 @@
 
 module Metis_generate = struct
 
-(*
-open Metis_prover
-*)
-
 let metis_name = string_of_int;;
 
 let rec metis_of_term env consts tm =
   if is_var tm && not (mem tm consts) then
-    Term.Var (metis_name (Meson.fol_of_var tm))
+    Term.Var_ (metis_name (Meson.fol_of_var tm))
   else (
     let f,args = strip_comb tm in
     if mem f env then failwith "metis_of_term: higher order" else
@@ -51,3 +47,4 @@ let metis_of_clause th =
 let metis_of_clauses = map metis_of_clause;;
 
 end (* struct Metis_generate *)
+;;

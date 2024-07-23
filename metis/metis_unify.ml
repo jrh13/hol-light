@@ -32,8 +32,7 @@ let rec unify_fo_ho_term vars fat tm m =
         print_string (if is_var hf then "true" else "false");
         print_string "\n"
       end;
-      if not (is_const hf || is_var hf) then
-        failwith "assert (is_const hf || is_var hf)";
+      assert (is_const hf || is_var hf);
       if hf = Metis_mapping.hol_of_const (int_of_string f)
       then itlist2 (unify_fo_ho_term vars) args hargs m
       else raise Unify;;
