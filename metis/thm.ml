@@ -102,9 +102,9 @@ let toString (Thm (cl, (infType, ths))) =
 
 let rec print_proof (Thm (cl, (infType, ths))) =
   print_string ("Inference: " ^ inferenceTypeToString infType);
-  print_break 0 0;
+  print_newline ();
   print_string ("Clauses: " ^ Literal.Set.toString cl);
-  print_break 0 0;
+  print_newline ();
   print_string "Theorems: ";
   if ths = []
   then print_string "<none>"
@@ -115,7 +115,7 @@ let rec print_proof (Thm (cl, (infType, ths))) =
     List.app (print_proof) ths;
     close_box ()
   end;
-  print_break 0 0
+  print_newline ()
 ;;
 
 (* ------------------------------------------------------------------------- *)

@@ -16,7 +16,8 @@ let rec hol_of_term_path tm path = match tm, path with
   | (tm, []) -> tm, ""
   | Term.Fn (f, args), i :: is ->
       let arity = length args in
-      assert (i < arity);
+      if not (i < arity) then
+        raise (Assert "i < arity");
       let (tm', path') = hol_of_term_path (List.nth args i) is in
       let make n c = String.implode (List.tabulate n (fun _ -> c)) in
       (tm', make (arity - i - 1) 'l' ^ "r" ^ path')

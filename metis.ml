@@ -23,25 +23,23 @@
 (* NOTE(oskar): was firstorder.ml *)
 needs "meson.ml";;
 
+(* ========================================================================= *)
+(* Main Metis module.                                                        *)
+(* ========================================================================= *)
+
+module Metis = struct
+
+exception Assert of string;;
+
 (* ------------------------------------------------------------------------- *)
 (* Metis prover.                                                             *)
 (* ------------------------------------------------------------------------- *)
 
-(* This is only used in metis: *)
-exception Assert;;
-let pp_exn exn =
-  match exn with
-  | Assert -> Pretty_printer.token ("assert failed")
-  | _ -> pp_exn exn;;
-
-(*CML
-fun assert b = if not b then raise Assert else ();;
-*)
 let metisverb = ref false;;
 
+loads "metis/real.ml";;
 loads "metis/random.ml";;
 loads "metis/portable.ml";;
-loads "metis/real.ml";;
 loads "metis/math.ml";;
 
 (* Inline the Useful module here, as it's used almost everywhere in Metis: *)
@@ -303,12 +301,6 @@ loads "metis/metis_rules.ml";;
 loads "metis/metis_reconstruct2.ml";;
 loads "metis/metis_generate.ml";;
 
-(* ========================================================================= *)
-(* Main Metis module.                                                        *)
-(* ========================================================================= *)
-
-module Metis = struct
-
 (* ------------------------------------------------------------------------- *)
 (* Some parameters controlling Metis behaviour.                              *)
 (* ------------------------------------------------------------------------- *)
@@ -410,8 +402,10 @@ let SIMPLE_METIS_REFUTE ths =
     print_string "Metis end.\n"
   end;
   let allhyps = List.concat (List.map hyp ths) in
-  assert (forall (fun h -> mem h allhyps) (hyp proof));
-  assert (concl proof = `F`);
+  if not (forall (fun h -> mem h allhyps) (hyp proof)) then
+    raise (Assert "(forall (fun h -> mem h allhyps) (hyp proof))");
+  if not (concl proof = `F`) then
+    raise (Assert "(concl proof = `F`)");
   proof
 ;;
 
@@ -425,6 +419,12 @@ let GEN_METIS_TAC ths =
 
 end (* struct Metis *)
 ;;
+
+let pp_exn e =
+  match e with
+  | Metis.Assert m ->
+      Pretty_printer.token ("Metis.Assert (" ^ m ^ ")")
+  | _ -> pp_exn e;;
 
 (* ========================================================================= *)
 (* Basic Metis refutation procedure and parametrized tactic.                 *)

@@ -7,16 +7,6 @@ let mk_disjp (ps, pt) = Combp (Combp (preterm_of_term `\/`, ps), pt);;
 
 let list_mk_combp (h, t) = rev_itlist (fun x acc -> Combp (acc, x)) t h;;
 
-(*
-assert
-  (
-    list_mk_combp (Varp ("1", dpty), [Varp ("2", dpty); Varp ("3", dpty)])
-  =
-    Combp (Combp (Varp ("1", Ptycon ("", [])), Varp ("2", Ptycon ("", []))),
-      Varp ("3", Ptycon ("", [])))
-  );;
-*)
-
 let list_mk_disjp = function
   | [] -> preterm_of_term `F`
   | h::t -> itlist (curry mk_disjp) t h;;

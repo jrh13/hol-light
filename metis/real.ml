@@ -8,6 +8,7 @@ let compare x y =
   else Equal;;
 
 let fromInt = Double.fromString o Int.toString;;
+let toInt = Option.valOf o Int.fromString o Double.toString;;
 
 let floor x =
   let y = Double.toWord x in
@@ -22,5 +23,6 @@ let floor x =
     Double.fromWord y
   else
     x;;
+let floor x = toInt (floor x);;
 
 end (* struct Real *)

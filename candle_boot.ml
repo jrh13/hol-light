@@ -626,17 +626,8 @@ let () =
   let rec scan level =
     try match next () with
         | None -> None
-        (* Attempt to use token as part of loading directive if it sits at the
-           top level (i.e. not inside parenthesis). The REPL fails and reports
-           and error unless the token is followed by a string literal and then
-           double semicolons. Ideally we should also check that the token sits
-           at the start of the line, but we don't, so odd things such as this:
-             foo needs "bar.ml";;
-           are OK and will cause the file bar.ml to be loaded and appear
-           directly after 'foo' in the token stream.
-         *)
-        | Some (Lexer.T_use | Lexer.T_needs | Lexer.T_loads as tok)
-          when level = 0 ->
+        (* Use token as a loading directive. *)
+        | Some (Lexer.T_use | Lexer.T_needs | Lexer.T_loads as tok) ->
             begin
               let dir = Option.valOf (Lexer.directive_of_token tok) in
               match next_nonspace () with
