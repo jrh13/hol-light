@@ -28,10 +28,7 @@ let rec match_elems f m = function
   | (x :: xs, ys) ->
       List.map (fun y ->
         match f x y m with
-        | Some m' ->
-            (* NOTE(oskar): Originally, this filtered out duplicates from ys
-               by looking at pointer equality. *)
-            match_elems f m' (xs, ys)
+        | Some m' -> match_elems f m' (xs, List.filter (not o (==) y) ys)
         | None -> []) ys
       |> List.concat
 ;;

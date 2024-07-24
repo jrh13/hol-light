@@ -2,20 +2,23 @@
 (* THE WAITING SET OF CLAUSES                                                *)
 (* ========================================================================= *)
 
+(* NOTE This code has been modified to use integer weights, and Num.num
+   instead of floats. *)
+
 module Waiting = struct
 
 (* ------------------------------------------------------------------------- *)
 (* A type of waiting sets of clauses.                                        *)
 (* ------------------------------------------------------------------------- *)
 
-type weight = Real.real;;
+type weight = Num.num;;
 
 type modelParameters = Model_parameters of {
   model : Model.parameters;
   initialPerturbations : int;
   maxChecks : int option;
   perturbations : int;
-  weight : weight
+  weight : int
 };;
 
 type parameters = Parameters of {
@@ -25,7 +28,7 @@ type parameters = Parameters of {
   modelsP : modelParameters list
 };;
 
-type distance = Real.real;;
+type distance = Num.num;;
 
 type waiting = Waiting of {
   parameters : parameters;
@@ -43,14 +46,14 @@ let defaultModels : modelParameters list = [
     initialPerturbations = 100;
     maxChecks = Some 20;
     perturbations = 0;
-    weight = 1.0
+    weight = 1
   }];;
 
 let default : parameters =
   Parameters {
-    symbolsWeight = 1.0;
-    literalsWeight = 1.0;
-    variablesWeight = 1.0;
+    symbolsWeight = num_1;
+    literalsWeight = num_1;
+    variablesWeight = num_1;
     modelsP = defaultModels
 };;
 
@@ -97,8 +100,9 @@ let checkModels parms models (fv,cl) =
   let check (parm,model) z =
     let Model_parameters {maxChecks; weight} = parm in
     let (vT,vF) = Model.check Model.interpretClause maxChecks model fv cl in
-    Math.pow (1.0 +. Real.fromInt vT /. Real.fromInt (vT + vF), weight) *. z in
-  List.foldl check 1.0 (zip parms models)
+    z */ ((num_1 +/ num_of_int vT // num_of_int (vT + vF)) **/
+          num_of_int weight) in
+  List.foldl check num_1 (zip parms models)
 ;;
 
 let perturbModels parms models cls =
@@ -112,25 +116,27 @@ let perturbModels parms models cls =
 (* Clause weights.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let clauseSymbols cl = Real.fromInt (Literal.Set.typedSymbols cl);;
+let clauseSymbols cl = num_of_int (Literal.Set.typedSymbols cl);;
 
 let clauseVariables cl =
-  Real.fromInt (Name.Set.size (Literal.Set.freeVars cl) + 1);;
+  num_of_int (Name.Set.size (Literal.Set.freeVars cl) + 1);;
 
-let clauseLiterals cl = Real.fromInt (Literal.Set.size cl);;
+let clauseLiterals cl = num_of_int (Literal.Set.size cl);;
 
-let clausePriority cl = 1e-12 *. Real.fromInt cl.Clause.Clause.id;;
+let clausePriority cl =
+  num_of_int cl.Clause.Clause.id //
+  num_of_int 1_000_000_000_000;;
 
 let clauseWeight parm mods dist mcl cl =
   let Parameters {symbolsWeight; variablesWeight; literalsWeight;
                   modelsP} = parm in
   let lits = Clause.literals cl in
-  let symbolsW = Math.pow (clauseSymbols lits, symbolsWeight) in
-  let variablesW = Math.pow (clauseVariables lits, variablesWeight) in
-  let literalsW = Math.pow (clauseLiterals lits, literalsWeight) in
+  let symbolsW = clauseSymbols lits **/ symbolsWeight in
+  let variablesW = clauseVariables lits **/ variablesWeight in
+  let literalsW = clauseLiterals lits **/ literalsWeight in
   let modelsW = checkModels modelsP mods mcl in
-  let weight = dist *. symbolsW *. variablesW *. literalsW *. modelsW in
-  let weight = weight +. clausePriority cl in
+  let weight = dist */ symbolsW */ variablesW */ literalsW */ modelsW in
+  let weight = weight +/ clausePriority cl in
   weight
 ;;
 
@@ -138,10 +144,18 @@ let clauseWeight parm mods dist mcl cl =
 (* Adding new clauses.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
+let rat_sqrt s =
+  let rec sqrt n =
+    if n < 1 then s // num_2 else
+      let p = sqrt (n - 1) in
+      (p +/ (s // p)) // num_2 in
+  sqrt 5;;
+
 let add' waiting dist mcls cls =
   let Waiting {parameters; clauses; models} = waiting in
   let Parameters {modelsP} = parameters in
-  let dist = dist +. Math.ln (Real.fromInt (length cls)) in
+  (* let dist = dist +. Math.ln (Real.fromInt (length cls)) in *)
+  let dist = dist +/ rat_sqrt (num_of_int (length cls)) in
   let addCl (mcl,cl) acc =
     let weight = clauseWeight parameters models dist mcl cl in
     Heap.add acc (weight,(dist,cl)) in
@@ -158,7 +172,7 @@ let add waiting (dist,cls) =
     waiting
 ;;
 
-let cmp (w1,_) (w2,_) = Real.compare w1 w2;;
+let cmp (w1,_) (w2,_) = Num.compare w1 w2;;
 
 let empty parameters axioms conjecture =
   let Parameters {modelsP} = parameters in
@@ -174,7 +188,7 @@ let newWaiting parameters (Ax_cj.Ax_cj_cl {axioms_cl; conjecture_cl}) =
   if List.null axioms_cl && List.null conjecture_cl then
     waiting
   else
-    add' waiting 0.0 (mAxioms @ mConjecture) (axioms_cl @ conjecture_cl)
+    add' waiting num_0 (mAxioms @ mConjecture) (axioms_cl @ conjecture_cl)
 ;;
 
 (* ------------------------------------------------------------------------- *)
