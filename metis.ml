@@ -424,6 +424,8 @@ let pp_exn e =
   match e with
   | Metis.Assert m ->
       Pretty_printer.token ("Metis.Assert (" ^ m ^ ")")
+  | Metis.Error m -> Pretty_printer.token ("Metis.Error (" ^ m ^ ")")
+  | Metis.Bug m -> Pretty_printer.token ("Metis.Bug (" ^ m ^ ")")
   | _ -> pp_exn e;;
 
 (* ========================================================================= *)

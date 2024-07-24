@@ -1,8 +1,8 @@
 module Metis_unify = struct
 
-let verb = ref false
+let verb = ref false;;
 
-exception Unify
+exception Unify;;
 
 let rec unify_fo_ho_term vars fat tm m =
   if !verb then
@@ -14,14 +14,14 @@ let rec unify_fo_ho_term vars fat tm m =
       print_newline ()
     end;
   match fat with
-  | Term.Var_ v when can (assoc v) m ->
-      if !verb then print_string "var_assoc\n%!";
+  | Term.Var_ v when List.exists (fun w, _ -> w = v) m ->
+      if !verb then print_string "var_assoc\n";
       let tm' = assoc v m in
       if tm = tm' then m else raise Unify
   | Term.Var_ v ->
       if !verb then print_string "var\n";
       if is_var tm && not (mem tm vars) then (v, tm) :: m
-      else (if !verb then print_string "Unify!"; raise Unify)
+      else (if !verb then print_string "Unify!\n"; raise Unify)
   | Term.Fn (f, args) ->
       if !verb then print_string "fn\n";
       let hf, hargs = try strip_comb tm with _ -> raise Unify in

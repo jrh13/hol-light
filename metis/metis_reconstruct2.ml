@@ -28,9 +28,8 @@ let rec match_elems f m = function
   | (x :: xs, ys) ->
       List.map (fun y ->
         match f x y m with
-        | Some m' -> match_elems f m' (xs, List.filter (not o (==) y) ys)
-        | None -> []) ys
-      |> List.concat
+        | Some m' -> match_elems f m' (xs, List.filter (((<>) y)) ys)
+        | None -> []) ys |> List.concat
 ;;
 
 let match_fo_ho_clause vars =
