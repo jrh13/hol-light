@@ -18,10 +18,12 @@ let size (Mset s) = Map.size s;;
 let pick (Mset s) =
   (* Hack: *)
   let x = ref [] in
-  try Map.mapWithKey (fun k () -> x := [k]; failwith "") s; List.hd (!x)
+  try Map.mapWithKey (fun k _ -> x := [k]; failwith "") s; List.hd (!x)
   with Failure _ -> List.hd (!x)
 ;;
-let equal (Mset s1) (Mset s2) = s1 = s2;;
+let equal (Mset s1) (Mset s2) =
+  Map.isSubmap s1 s2 &&
+  Map.isSubmap s2 s1;;
 let exists f (Mset s) = Map.exists (fun k _ -> f k) s;;
 let fromList cmp l =
   Mset (List.foldr (fun k m -> Map.insert m k the_unit) (Map.empty cmp) l);;
@@ -44,7 +46,6 @@ let firstl f (Mset s) =
     match acc with
     | Some _ -> acc
     | None -> f k) None s;;
-(* TODO Urk: *)
 let transform f (Mset s) =
   Map.foldrWithKey (fun x _ acc -> f x :: acc) [] s;;
 let all p (Mset s) = Map.all (fun k () -> p k) s;;

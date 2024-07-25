@@ -6,6 +6,7 @@ module Loop =
 struct
 
 let rec loop res =
+  Interrupt.poll ();
   match Resolution.iterate res with
   | Resolution.Decided dec -> Some dec
   | Resolution.Undecided res -> loop res

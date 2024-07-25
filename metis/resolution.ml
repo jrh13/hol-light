@@ -72,6 +72,7 @@ let iterate res =
 ;;
 
 let rec loop res =
+  Interrupt.poll ();
   match iterate res with
   | Decided dec -> dec
   | Undecided res -> loop res;;

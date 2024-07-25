@@ -37,7 +37,6 @@ exception Assert of string;;
 
 let metisverb = ref false;;
 
-loads "metis/real.ml";;
 loads "metis/random.ml";;
 loads "metis/portable.ml";;
 loads "metis/math.ml";;
