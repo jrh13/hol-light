@@ -68,10 +68,10 @@ loads "class.ml";;      (* Classical reasoning: Choice and Extensionality    *)
 loads "trivia.ml";;     (* Some very basic theories, e.g. type ":1"          *)
 loads "canon.ml";;      (* Tools for putting terms in canonical forms        *)
 loads "meson.ml";;      (* First order automation: MESON (model elimination) *)
+loads "metis.ml";;      (* More advanced first-order automation: Metis       *)
 
 (*
 loads "firstorder.ml";; (* More utilities for first-order shadow terms       *)
-loads "metis.ml";;      (* More advanced first-order automation: Metis       *)
 loads "thecops.ml";;    (* Connection-based automation: leanCoP and nanoCoP  *)
 *)
 

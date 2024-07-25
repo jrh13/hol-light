@@ -448,15 +448,15 @@ let remark s =
 
 let time f x =
   if not (!report_timing) then f x else
-  let start_time = (* Sys.time() *) Double.fromString "0.0" in
+  let start_time = (* Sys.time() *) 0 in
   try let result = f x in
-      let finish_time = (* Sys.time()*) Double.fromString "0.0" in
-      report("CPU time (user): "^(string_of_float(finish_time -. start_time)));
+      let finish_time = (* Sys.time()*) 0 in
+      report("CPU time (user): "^(string_of_int(finish_time - start_time)));
       result
   with e ->
-      let finish_time = Double.fromString "0.0" (* Sys.time() *) in
+      let finish_time = 0 (* Sys.time() *) in
       print("Failed after (user) CPU time of "^
-            (string_of_float(finish_time -. start_time))^": ");
+            (string_of_int(finish_time - start_time))^": ");
       raise e;;
 
 (* ------------------------------------------------------------------------- *)
