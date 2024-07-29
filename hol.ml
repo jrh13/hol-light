@@ -98,9 +98,8 @@ else loads "load_camlp4.ml";;
 
 Topdirs.dir_load Format.std_formatter (Filename.concat (!hol_dir) "pa_j.cmo");;
 
-if version_ge_4_14
-then loads "bignum_zarith.ml"
-else loads "bignum_num.ml";;
+include Bignum;;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Bind these to names that are independent of OCaml versions before they    *)

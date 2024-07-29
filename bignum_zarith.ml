@@ -2,8 +2,6 @@
 (* Load in the bignum library.                                               *)
 (* ------------------------------------------------------------------------- *)
 
-Topfind.load_deeply ["zarith"];;
-
 (* A wrapper of Zarith that has an interface of Num.
    However, this is different from the real Num library because it supports
    infinity and undef. If exception happens, Failure with the name of the
@@ -19,11 +17,6 @@ module Num = struct
 
   let float_of_num (n:num):float = Q.to_float n
 
-  (* base must be Z.t and exponent
-     must fit in the range of OCaml int type *)
-  let power_num (base:num) (exponent:num):num =
-    let exp_i = int_of_num exponent in
-    Q.of_bigint (Z.pow (Q.to_bigint base) exp_i)
 
   let pow (base:num) (exponent:int):num =
     Q.of_bigint (Z.pow (Q.to_bigint base) exponent)
@@ -106,6 +99,15 @@ module Num = struct
 
   let num_of_big_int = Q.of_bigint
 
+  (* base must be Z.t and exponent
+     must fit in the range of OCaml int type *)
+  let power_num (base:num) (exponent:num):num =
+    let f (base:num) (exponent:num):num =
+      let exp_i = int_of_num exponent in
+      Q.of_bigint (Z.pow (Q.to_bigint base) exp_i) in
+    if ge_num exponent (num_of_int 0) then f base exponent
+    else div_num (num_of_int 1) (f base (minus_num exponent));; 
+
 end;;
 
 module Big_int = struct
@@ -132,6 +134,8 @@ let (<=/) x y = Num.le_num x y;;
 
 let (>=/) x y = Num.ge_num x y;;
 
+let ( **/) x y = Num.power_num x y;;
+
 let pp_print_num fmt (n:Num.num) =
   Format.pp_open_hbox fmt ();
   Format.pp_print_string fmt (Num.string_of_num n);
@@ -139,17 +143,11 @@ let pp_print_num fmt (n:Num.num) =
 
 let print_num = pp_print_num Format.std_formatter;;
 
-#install_printer pp_print_num;;
 
 include Num;;
 
 let num = Num.num_of_int;;
 
-let ( **/) x y =
-  if y >=/ num 0 then Num.power_num x y
-  else num 1 // Num.power_num x (minus_num y);;
-
-let power_num = ( **/);;
 
 module NumExt = struct
   let numdom (r:num):num * num =
@@ -160,4 +158,4 @@ module NumExt = struct
 
 end;;
 
-open NumExt;;
+include NumExt;;

@@ -97,13 +97,22 @@ pa_j.ml: pa_j/pa_j_3.07.ml pa_j/pa_j_3.08.ml pa_j/pa_j_3.09.ml \
         else cp pa_j/pa_j_3.1x_${CAMLP5_UNARY_VERSION}.xx.ml pa_j.ml; \
         fi
 
+# Choose an appropriate bignum library.
+
+bignum.cmo: bignum_zarith.ml bignum_num.ml ; \
+        if test ${OCAML_VERSION} = "4.14" -o ${OCAML_UNARY_VERSION} = "5" ; \
+        then ocamlfind ocamlc -package zarith -c -o bignum.cmo bignum_zarith.ml ; \
+        else ocamlc -c -o bignum.cmo bignum_num.ml ; \
+        fi
+
 # Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
 
-hol.sh: pa_j.cmo ${HOLSRC} update_database.ml ; \
+hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo update_database.ml ; \
         if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
                 if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; \
-                then ocamlmktop -o ocaml-hol ; sed "s^__DIR__^`pwd`^g" hol_4.14.sh > hol.sh ; \
-                else ocamlmktop -o ocaml-hol nums.cma ; sed "s^__DIR__^`pwd`^g" hol_4.sh > hol.sh ; \
+                then ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo ; \
+                     sed "s^__DIR__^`pwd`^g" hol_4.14.sh > hol.sh ; \
+                else ocamlmktop -o ocaml-hol nums.cma bignum.cmo ; sed "s^__DIR__^`pwd`^g" hol_4.sh > hol.sh ; \
                 fi ; \
                 chmod +x hol.sh ; \
         else \
@@ -169,4 +178,4 @@ install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.m
 
 # Clean up all compiled files
 
-clean:; rm -f update_database.ml pa_j.ml pa_j.cmi pa_j.cmo ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
+clean:; rm -f bignum.cmo update_database.ml pa_j.ml pa_j.cmi pa_j.cmo ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
