@@ -2,8 +2,6 @@
 (* Load in the bignum library.                                               *)
 (* ------------------------------------------------------------------------- *)
 
-#load "nums.cma";;
-
 include Num;;
 
 let num = Num.num_of_int;;
@@ -18,4 +16,4 @@ module NumExt = struct
     num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
 end;;
 
-open NumExt;;
+include NumExt;;

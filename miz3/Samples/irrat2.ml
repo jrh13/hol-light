@@ -66,7 +66,7 @@ let NSQRT_2_2 = thm `;
         (2 * m) * 2 * m = 2 * q * q
             ==> (q < 2 * m ==> q * q = 2 * m * m ==> m = 0)
             ==> q = 0
-          by TIMED_TAC 2 (CONV_TAC SOS_RULE);
+          by TIMED_TAC 20 (CONV_TAC SOS_RULE);
         (q < 2 * m ==> q * q = 2 * m * m ==> m = 0) ==> q = 0
           by POP_ASSUM MP_TAC,4 from -;
         thus q = 0 by FIRST_X_ASSUM
@@ -126,7 +126,7 @@ let NSQRT_2_3 = thm `;
       EVEN p by 2,EVEN_MULT;
       consider m such that p = 2*m [3] by EVEN_EXISTS;
       (2*m)*2*m = 2*q*q /\ (q < 2*m /\ q*q = 2*m*m ==> m = 0) ==> q = 0
-        from TIMED_TAC 2 (CONV_TAC SOS_RULE);
+        from TIMED_TAC 20 (CONV_TAC SOS_RULE);
       thus q = 0 by 1,2,3;
     end;
   qed by MATCH_MP_TAC num_WF`;;
