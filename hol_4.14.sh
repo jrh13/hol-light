@@ -15,4 +15,4 @@ if [ -d "${HOLLIGHT_DIR}/_opam" ]; then
   eval $(opam env --switch "${HOLLIGHT_DIR}/" --set-switch)
 fi
 
-${LINE_EDITOR} ${HOLLIGHT_DIR}/ocaml-hol -init ${HOLLIGHT_DIR}/hol.ml
+${LINE_EDITOR} ${HOLLIGHT_DIR}/ocaml-hol -init ${HOLLIGHT_DIR}/hol.ml -I ${HOLLIGHT_DIR}
