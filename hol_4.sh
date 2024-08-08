@@ -15,4 +15,4 @@ if [ -d "${HOLLIGHT_DIR}/_opam" ]; then
   eval $(opam env --switch "${HOLLIGHT_DIR}/" --set-switch)
 fi
 
-${LINE_EDITOR} ${HOLLIGHT_DIR}/ocaml-hol -I `camlp5 -where` camlp5o.cma -init ${HOLLIGHT_DIR}/hol.ml -safe-string
+${LINE_EDITOR} ${HOLLIGHT_DIR}/ocaml-hol -I `camlp5 -where` camlp5o.cma -init ${HOLLIGHT_DIR}/hol.ml -safe-string -I ${HOLLIGHT_DIR}
