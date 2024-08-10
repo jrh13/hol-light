@@ -944,10 +944,3 @@ let top_goal() =
 let top_thm() =
   let (_,[],f)::_ = !current_goalstack in
   f null_inst [];;
-
-(* ------------------------------------------------------------------------- *)
-(* Install the goal-related printers.                                        *)
-(* ------------------------------------------------------------------------- *)
-
-#install_printer pp_print_goal;;
-#install_printer pp_print_goalstack;;

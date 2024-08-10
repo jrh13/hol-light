@@ -569,14 +569,6 @@ let print_qterm = pp_print_qterm std_formatter;;
 let print_thm = pp_print_thm std_formatter;;
 
 (* ------------------------------------------------------------------------- *)
-(* Install all the printers.                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-#install_printer pp_print_qtype;;
-#install_printer pp_print_qterm;;
-#install_printer pp_print_thm;;
-
-(* ------------------------------------------------------------------------- *)
 (* Conversions to string.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
