@@ -19,11 +19,12 @@ BINDIR=${HOME}/bin
 HOLSRC=system.ml lib.ml fusion.ml basics.ml nets.ml preterm.ml          \
        parser.ml printer.ml equal.ml bool.ml drule.ml tactics.ml        \
        itab.ml simp.ml theorems.ml ind_defs.ml class.ml trivia.ml       \
-       canon.ml meson.ml metis.ml quot.ml recursion.ml pair.ml          \
+       canon.ml meson.ml firstorder.ml metis.ml thecops.ml quot.ml      \
+       impconv.ml recursion.ml pair.ml                                  \
        nums.ml arith.ml wf.ml calc_num.ml normalizer.ml grobner.ml      \
        ind_types.ml lists.ml realax.ml calc_int.ml realarith.ml         \
        real.ml calc_rat.ml int.ml sets.ml iterate.ml cart.ml define.ml  \
-       help.ml database.ml update_database.ml
+       help.ml database.ml update_database.ml hol_lib.ml hol_loader.ml
 
 # Some parameters to help decide how to build things
 

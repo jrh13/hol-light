@@ -22,5 +22,3 @@ let pp_print_num fmt n =
   Format.pp_close_box fmt ();;
 
 let print_num = pp_print_num Format.std_formatter;;
-
-#install_printer pp_print_num;;
