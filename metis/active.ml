@@ -312,10 +312,10 @@ let delete active ids =
       active in
     let clauses = Intmap.filter (fun x -> idPred (fst x)) clauses
     and subsume = Subsume.filter clausePred subsume
-    and literals = Literal_net.filter (fun x,_ -> clausePred x) literals
-    and equations = Term_net.filter (fun x,_,_,_ -> clausePred x) equations
-    and subterms = Term_net.filter (fun x,_,_,_ -> clausePred x) subterms
-    and allSubterms = Term_net.filter (fun x,_ -> clausePred x) allSubterms in
+    and literals = Literal_net.filter (fun (x,_) -> clausePred x) literals
+    and equations = Term_net.filter (fun (x,_,_,_) -> clausePred x) equations
+    and subterms = Term_net.filter (fun (x,_,_,_) -> clausePred x) subterms
+    and allSubterms = Term_net.filter (fun (x,_) -> clausePred x) allSubterms in
     Active {active with clauses = clauses; subsume = subsume;
                         literals = literals; equations = equations;
                         subterms = subterms; allSubterms = allSubterms}

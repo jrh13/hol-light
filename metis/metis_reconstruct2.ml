@@ -4,18 +4,18 @@ let term_eq_mod_type t1 t2 tyinsts =
   try
     let _,tminsts,tyinsts = term_type_unify t1 t2 ([], [], tyinsts) in
     if !metisverb then
-    begin
-      print_string "unified with |tminsts| = ";
-      print_string (Int.toString (List.length tminsts));
-      print_string "!\n";
-      List.app (fun t1, t2 ->
-        begin
-          print_string (string_of_term t1);
-          print_string " <- ";
-          print_string (string_of_term t2);
-          print_newline ()
-        end) tminsts
-    end;
+      begin
+        print_string "unified with |tminsts| = ";
+        print_string (Int.toString (List.length tminsts));
+        print_string "!\n";
+        List.app (fun (t1,t2) ->
+          begin
+            print_string (string_of_term t1);
+            print_string " <- ";
+            print_string (string_of_term t2);
+            print_newline ()
+          end) tminsts
+      end;
     if not (List.null tminsts) then
       raise (Assert "tminsts = []");
     Some tyinsts
@@ -77,7 +77,7 @@ let rec hol_of_thm axioms fth =
         if not (List.length maxs > 0) then
           raise (Assert "List.length maxs > 0");
         let tminst =
-          List.map (fun v, tm ->
+          List.map (fun (v, tm) ->
                       mk_var (Metis_mapping.prefix v, type_of tm), tm) in
         if !metisverb then
           begin

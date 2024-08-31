@@ -143,19 +143,19 @@ let symmetricDifference (Set m1) (Set m2) =
 
 let filter pred =
   let mpred (elt,()) = pred elt in
-  fun Set m -> Set (Pmap.filter mpred m)
+  fun (Set m) -> Set (Pmap.filter mpred m)
 ;;
 
 let partition pred =
   let mpred (elt,()) = pred elt in
-  fun Set m ->
+  fun (Set m) ->
     let (m1,m2) = Pmap.partition mpred m in
     (Set m1, Set m2)
 ;;
 
 let app f =
   let mf (elt,()) = f elt in
-  fun Set m -> Pmap.app mf m
+  fun (Set m) -> Pmap.app mf m
 ;;
 
 let foldl f =

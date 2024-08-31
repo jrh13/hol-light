@@ -14,7 +14,7 @@ let rec unify_fo_ho_term vars fat tm m =
       print_newline ()
     end;
   match fat with
-  | Term.Var_ v when List.exists (fun w, _ -> w = v) m ->
+  | Term.Var_ v when List.exists (fun (w,_) -> w = v) m ->
       if !verb then print_string "var_assoc\n";
       let tm' = assoc v m in
       if tm = tm' then m else raise Unify

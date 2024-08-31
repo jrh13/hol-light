@@ -116,8 +116,8 @@ let insert (Subsume {empty; unitn; nonunit}) (cl',a) =
 
 let filter pred (Subsume {empty; unitn; nonunit}) =
   let pred3 (_,_,x) = pred x in
-  let empty = List.filter (fun _,_,x -> pred x) empty in
-  let unitn = Literal_net.filter (fun _,_,x -> pred x) unitn in
+  let empty = List.filter (fun (_,_,x) -> pred x) empty in
+  let unitn = Literal_net.filter (fun (_,_,x) -> pred x) unitn in
   let nonunit =
     let Non_unit {nextId; clauses; fstLits; sndLits} = nonunit in
     let clauses' = Intmap.filter (fun x -> pred3 (snd x)) clauses in

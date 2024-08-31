@@ -367,7 +367,7 @@ let fo_term_match lcs p t =
   in
   let tenv,tyenv = self [] ([],[]) p (Annot.of_term t) in
   let inst = inst tyenv in
-  rev_map (fun t,v -> Annot.to_term t,inst v) tenv,tyenv ;;
+  rev_map (fun (t,v) -> Annot.to_term t,inst v) tenv,tyenv ;;
 
 let GEN_PART_MATCH_ALL =
   let rec match_bvs t1 t2 acc =
@@ -471,7 +471,7 @@ module Fo_nets = struct
 
   let rec filter p (Netnode(edges,tips)) =
     Netnode(
-      List.map (fun l,n -> l,filter p n) edges,
+      List.map (fun (l,n) -> l,filter p n) edges,
       List.filter p tips)
 end ;;
 
@@ -1254,7 +1254,7 @@ let patterns_of_thm = fst o pat_cnv_of_thm
  *)
 let REWRITES_IMPCONV
   (net:((term list -> annot_conv) * (*Tset.t*)term list * thm) Fo_nets.t) avs t =
-  tryfind (fun c,_,_ -> c avs t) (Fo_nets.lookup t net)
+  tryfind (fun (c,_,_) -> c avs t) (Fo_nets.lookup t net)
 
 let extra_basic_rewrites =
   itlist (mk_rewrites false) [NOT_FORALL_THM;NOT_IMP] []
@@ -1676,7 +1676,7 @@ let (DEEP_IMP_REWR_MCONV:thm list->(atomic->annot_mconv) with_context) =
   in
   let rec top_depth c t = SUB_MCONV (top_depth c) t @ c t in
   let REWRITES_IMPCONV (net:((term list -> annot_conv) * (*Tset.t*) term list * thm) Fo_nets.t) avs t =
-    mapfilter (fun c,_,_ -> c avs t) (Fo_nets.lookup t net)
+    mapfilter (fun (c,_,_) -> c avs t) (Fo_nets.lookup t net)
   in
   let rec self net ths =
     let avs = Tset.flat_revmap (Tset.freesl o hyp) ths in
