@@ -1,56 +1,52 @@
 module Mset = struct
-type 'k set = Mset of ('k, unit) Map.map;;
-let the_unit = ();;
-let add (Mset s) x = Mset (Map.insert s x the_unit);;
-let foldr f a (Mset s) =
-  Map.foldrWithKey (fun k _ acc -> f (k, acc)) a s;;
+type 'k set = Mset of 'k Set.set;;
+let add (Mset s) x = Mset (Set.insert x s);;
+let foldr f a (Mset s) = Set.fold (curry f) a s;;
 let foldl = foldr;;
-let member x (Mset s) = Option.isSome (Map.lookup s x);;
-let empty cmp = Mset (Map.empty cmp);;
-let union (Mset s1) (Mset s2) = Mset (Map.union s1 s2);;
+let member x (Mset s) = Set.member x s;;
+let empty cmp = Mset (Set.empty cmp);;
+let union (Mset s1) (Mset s2) = Mset (Set.union s1 s2);;
 let difference (Mset s1) (Mset s2) =
-  Mset (Map.foldrWithKey (fun k _ acc ->
-    if Option.isSome (Map.lookup s1 k) then Map.delete acc k else acc) s1 s2);;
-let toList (Mset s) = List.map fst (Map.toAscList s);;
-let singleton cmp k = Mset (Map.insert (Map.empty cmp) k the_unit);;
-let null (Mset s) = Map.null s;;
-let size (Mset s) = Map.size s;;
+  Mset (Set.fold (fun k acc ->
+    if Set.member k s1 then Set.delete k acc else acc) s1 s2);;
+let toList (Mset s) = Set.toList s;;
+let singleton cmp k = Mset (Set.singleton cmp k);;
+let null (Mset s) = Set.null s;;
+let size (Mset s) = Set.size s;;
 let pick (Mset s) =
   (* Hack: *)
   let x = ref [] in
-  try Map.mapWithKey (fun k _ -> x := [k]; failwith "") s; List.hd (!x)
+  try Set.map (fun k -> x := [k]; failwith "") s; List.hd (!x)
   with Failure _ -> List.hd (!x)
 ;;
 let equal (Mset s1) (Mset s2) =
-  Map.isSubmap s1 s2 &&
-  Map.isSubmap s2 s1;;
-let exists f (Mset s) = Map.exists (fun k _ -> f k) s;;
-let fromList cmp l =
-  Mset (List.foldr (fun k m -> Map.insert m k the_unit) (Map.empty cmp) l);;
-let delete (Mset s) k = Mset (Map.delete s k);;
-let subset (Mset s1) (Mset s2) = Map.isSubmap s1 s2;;
+  Set.isSubset s1 s2 &&
+  Set.isSubset s2 s1;;
+let exists f (Mset s) = Set.exists f s;;
+let fromList cmp l = Mset (Set.fromList cmp l);;
+let delete (Mset s) k = Mset (Set.delete k s);;
+let subset (Mset s1) (Mset s2) = Set.isSubset s1 s2;;
 let intersect cmp (Mset s1) (Mset s2) =
-  Mset (Map.foldrWithKey (fun k _ acc ->
-    if Option.isSome (Map.lookup s2 k) then Map.insert acc k the_unit
-    else acc) (Map.empty cmp) s1);;
+  Mset (Set.fold (fun k acc ->
+    if Set.member k s2 then Set.insert k acc else acc) (Set.empty cmp) s1);;
 let intersectList cmp = function
-  | [] -> Mset (Map.empty cmp)
+  | [] -> Mset (Set.empty cmp)
   | s::ss -> List.foldr (intersect cmp) s ss;;
 let findl p (Mset s) =
-  Map.foldrWithKey (fun k () acc ->
+  Set.fold (fun k acc ->
     match acc with
     | Some _ -> acc
     | None -> if p k then Some k else None) None s;;
 let firstl f (Mset s) =
-  Map.foldrWithKey (fun k () acc ->
+  Set.fold (fun k acc ->
     match acc with
     | Some _ -> acc
     | None -> f k) None s;;
 let transform f (Mset s) =
-  Map.foldrWithKey (fun x _ acc -> f x :: acc) [] s;;
-let all p (Mset s) = Map.all (fun k () -> p k) s;;
+  Set.fold (fun x acc -> f x :: acc) [] s;;
+let all p (Mset s) = Set.all p s;;
 let count p (Mset s) =
-  Map.foldrWithKey (fun x () c -> if p x then c+1 else c) 0 s;;
+  Set.fold (fun x c -> if p x then c+1 else c) 0 s;;
 end (* struct Mset *)
 ;;
 
