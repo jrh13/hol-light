@@ -9,6 +9,7 @@ fi
 
 # Makefile will replace __DIR__ with the path
 export HOLLIGHT_DIR=__DIR__
+export HOLLIGHT_USE_MODULE=__USE_MODULE__
 
 # If a local OPAM is installed, use it
 if [ -d "${HOLLIGHT_DIR}/_opam" ]; then

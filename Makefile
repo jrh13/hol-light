@@ -35,6 +35,15 @@ CAMLP5_BINARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1-4`
 CAMLP5_UNARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1`
 CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-' | cut -c1-6`
 
+# If set to 1, build hol_lib.cmo and make hol.sh to use it.
+# NOTE: This extends the trusted base of HOL Light to include the inliner
+# script, inline_loads.ml. inline_loads.ml is an OCaml program that receives
+# an HOL Light proof and replaces the loads/loadt/needs function invocations
+# with their actual contents. Please turn this flag on only if having this
+# additional trusted base is considered okay.
+
+HOLLIGHT_USE_MODULE?=0
+
 # Main target
 
 default: update_database.ml pa_j.cmo hol.sh;
@@ -106,19 +115,35 @@ bignum.cmo: bignum_zarith.ml bignum_num.ml ; \
         else ocamlc -c -o bignum.cmo bignum_num.ml ; \
         fi
 
+hol_loader.cmo: hol_loader.ml ; \
+        ocamlc -verbose -c hol_loader.ml -o hol_loader.cmo
+
+hol_lib.cmo: inline_load.ml hol_lib.ml hol_loader.cmo ; \
+        ocaml inline_load.ml hol_lib.ml hol_lib_inlined.ml ; \
+        ocamlc -verbose -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" hol_loader.cmo hol_lib_inlined.ml bignum.cmo -o hol_lib.cmo ; \
+        ocamlfind ocamlc -package zarith -linkpkg -a -o hol_lib.cma bignum.cmo hol_loader.cmo hol_lib.cmo
+
 # Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
 
-hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo update_database.ml ; \
-        if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
-                if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; \
-                then ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo ; \
-                     sed "s^__DIR__^`pwd`^g" hol_4.14.sh > hol.sh ; \
-                else ocamlmktop -o ocaml-hol nums.cma bignum.cmo ; sed "s^__DIR__^`pwd`^g" hol_4.sh > hol.sh ; \
-                fi ; \
-                chmod +x hol.sh ; \
-        else \
-                echo 'FAILURE: hol.sh assumes Linux' ; \
-        fi
+hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml
+	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
+		if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; then \
+			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo hol_loader.cmo ; \
+			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g" hol_4.14.sh > hol.sh ; \
+		else \
+			ocamlmktop -o ocaml-hol nums.cma bignum.cmo hol_loader.cmo ; \
+			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g" hol_4.sh > hol.sh ; \
+		fi ; \
+		chmod +x hol.sh ; \
+	else \
+		echo 'FAILURE: hol.sh assumes Linux' ; \
+	fi
+
+# If HOLLIGHT_USE_MODULE is set, add hol_lib.cmo to dependency of hol.sh
+
+ifeq ($(HOLLIGHT_USE_MODULE),1)
+hol.sh: hol_lib.cmo
+endif
 
 # TODO: update this and hol.* commands to use one of checkpointing  tools
 # other than ckpt.
@@ -179,4 +204,8 @@ install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.m
 
 # Clean up all compiled files
 
-clean:; rm -f bignum.cmo update_database.ml pa_j.ml pa_j.cmi pa_j.cmo ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
+clean:; \
+  rm -f bignum.cmo update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
+        hol_lib.cmo hol_lib.cmi hol_lib.cma hol_lib_inlined.ml \
+				hol_loader.cmo hol_loader.cmi \
+        ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex
