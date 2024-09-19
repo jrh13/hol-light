@@ -21,7 +21,12 @@ let hol_version = "2.20++";;
 
 let temp_path = ref "/tmp";;
 
-#use "hol_loader.ml";;
+(* ------------------------------------------------------------------------- *)
+(* Load the load/need functions.                                             *)
+(* ------------------------------------------------------------------------- *)
+
+#load "hol_loader.cmo";;
+include Hol_loader;;
 
 file_loader := fun s -> Toploop.use_file Format.std_formatter s;;
 (* Hide the definition of file_loader of hol_loader.ml.                      *)
@@ -50,7 +55,11 @@ Topdirs.dir_load Format.std_formatter (Filename.concat (!hol_dir) "pa_j.cmo");;
 (* Load the core files.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-loads "hol_lib.ml";;
+let use_module =
+  try Sys.getenv "HOLLIGHT_USE_MODULE" = "1" with Not_found -> false;;
+if use_module
+then loads "hol_lib_use_module.ml"
+else loads "hol_lib.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Install printers.                                                         *)

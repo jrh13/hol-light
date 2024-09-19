@@ -1,6 +1,7 @@
 .DS_Store
 .vscode
 _opam
+*.cma
 *.cmi
 *.cmo
 *.o
@@ -9,3 +10,4 @@ pa_j.ml
 update_database.ml
 ocaml-hol
 hol.sh
+hol_lib_inlined.ml

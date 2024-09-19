@@ -260,6 +260,32 @@ checkpointing programs.
 
         *       *       *       *       *       *       *       *
 
+                         COMPILING HOL LIGHT
+
+Running 'HOLLIGHT_USE_MODULE=1 make' will compile hol_lib.ml and generate
+hol_lib.cmo. This will also create hol.sh which will configure hol.ml to use
+the compiled hol_lib.cmo. Compiling HOL Light will only work on OCaml 4.14
+or above.
+
+To compile an OCaml file that opens Hol_lib, use the following command.
+
+    ocamlfind ocamlc -package zarith -linkpkg -pp \
+      "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . (HOL dir)pa_j.cmo" \
+      -I (HOL dir) (HOL dir)/bignum.cmo (HOL dir)/hol_loader.cmo \
+      (HOL dir)/hol_lib.cmo (input.ml) -o (output.ml)
+
+The load functions (loads/loadt/needs) are not available anymore in this
+approach. Please use 'ocaml inline_loads.ml <input.ml> <output.ml>' to inline
+their invocations.
+
+NOTE: Compiling HOL Light with 'HOLLIGHT_USE_MODULE=1' extends the trusted base
+of HOL Light to include the inliner script, inline_loads.ml. inline_loads.ml is
+an OCaml program that receives an HOL Light proof and replaces the
+loads/loadt/needs function invocations with their actual contents. Please turn
+this flag on only if having this additional trusted base is considered okay.
+
+        *       *       *       *       *       *       *       *
+
 [*] HOL Light uses the OCaml 'num' library for multiple-precision
 rationals. On many platforms, including Linux and native Windows, this
 will be loaded automatically by the HOL root file 'hol.ml'. However,

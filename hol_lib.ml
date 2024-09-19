@@ -11,6 +11,7 @@
 (* ========================================================================= *)
 
 include Bignum;;
+open Hol_loader;;
 
 (* ------------------------------------------------------------------------- *)
 (* Bind these to names that are independent of OCaml versions before they    *)
