@@ -3499,16 +3499,18 @@ let WORD_ARITH_TAC =
    `word_shl (x:N word) 1 = word_add x x`] THEN
   REWRITE_TAC[WORD_ULT; WORD_ULE; WORD_UGT; WORD_UGE;
               WORD_ILT; WORD_ILE; WORD_IGT; WORD_IGE] THEN
-  REWRITE_TAC[irelational2; relational2; GSYM VAL_EQ; INT_IVAL] THEN
+  REWRITE_TAC[irelational2; relational2; GSYM VAL_EQ; INT_IVAL; WORD_VAL;
+              GSYM WORD_MUL; GSYM WORD_ADD; VAL_WORD] THEN
   REWRITE_TAC[INT_GT; INT_GE; GT; GE] THEN
-  REWRITE_TAC[GSYM INT_OF_NUM_LE; GSYM INT_OF_NUM_LT; GSYM INT_OF_NUM_EQ] THEN
-  REWRITE_TAC[GSYM INT_OF_NUM_POW; GSYM INT_OF_NUM_MUL;
-              GSYM INT_OF_NUM_ADD] THEN
+  REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES; GSYM INT_OF_NUM_REM] THEN
   REWRITE_TAC[INT_VAL_WORD_NEG_CASES; INT_VAL_WORD_ADD_CASES;
               INT_VAL_WORD_INT_MIN;
               INT_VAL_WORD_SUB_CASES; INT_IVAL; VAL_WORD_0; VAL_WORD_1] THEN
+  REWRITE_TAC[VAL_WORD; GSYM INT_OF_NUM_REM; GSYM INT_OF_NUM_CLAUSES] THEN
   W(MAP_EVERY (MP_TAC o C ISPEC INT_VAL_BOUND) o find_terms wordy o snd) THEN
-  REWRITE_TAC[CONJUNCT2 TWICE_MSB] THEN INT_ARITH_TAC;;
+  REWRITE_TAC[CONJUNCT2 TWICE_MSB] THEN CONV_TAC(DEPTH_CONV
+   (NUM_RED_CONV ORELSEC DIMINDEX_CONV ORELSEC INT_RED_CONV)) THEN
+  INT_ARITH_TAC;;
 
 let WORD_ARITH tm =
   try
@@ -3519,23 +3521,29 @@ let WORD_ARITH tm =
 let WORD_ARITH_TAC = CONV_TAC WORD_ARITH;;
 
 (* ------------------------------------------------------------------------- *)
-(* Expand "val x" or "val x DIV 2 EXP k" or "val x MOD 2 EXP k"              *)
-(* into a sum over individual bits.                                          *)
+(* Expand a constant into 2 EXP n where possible (e.g. |- 8 = 2 EXP 3)       *)
 (* ------------------------------------------------------------------------- *)
 
-let VAL_EXPAND_CONV =
+let EMPOWER_CONV =
   let rec blog k n =
     if n =/ num_1 then k
     else if n </ num_1 then failwith "Not a power of 2"
     else blog (k + 1) (n // num_2) in
   let exp2 = `(EXP) 2` in
-  let exponentiate_conv tm =
+  fun tm ->
     match tm with
       Comb(l,r) when l = exp2 && is_numeral r -> REFL tm
     | _ -> let th = NUM_REDUCE_CONV tm in
            let k = blog 0 (dest_numeral(rand(concl th))) in
            let tm' = mk_comb(exp2,mk_small_numeral k) in
-           TRANS th (SYM(NUM_REDUCE_CONV tm')) in
+           TRANS th (SYM(NUM_REDUCE_CONV tm'));;
+
+(* ------------------------------------------------------------------------- *)
+(* Expand "val x" or "val x DIV 2 EXP k" or "val x MOD 2 EXP k"              *)
+(* into a sum over individual bits.                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let VAL_EXPAND_CONV =
   let pth_mod = prove
    (`!(x:N word) k.
            val x MOD 2 EXP k =
@@ -3556,11 +3564,11 @@ let VAL_EXPAND_CONV =
    PART_MATCH lhand VAL THENC
    LAND_CONV(RAND_CONV(LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV))
   and div_rule =
-    RAND_CONV exponentiate_conv THENC
+    RAND_CONV EMPOWER_CONV THENC
     PART_MATCH lhand pth_div THENC
     LAND_CONV(RAND_CONV(LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV))
   and mod_rule =
-    RAND_CONV exponentiate_conv THENC
+    RAND_CONV EMPOWER_CONV THENC
     PART_MATCH lhand pth_mod THENC
     RATOR_CONV(LAND_CONV NUM_EQ_CONV) THENC
     GEN_REWRITE_CONV I [COND_CLAUSES] THENC
@@ -8123,6 +8131,18 @@ let WORD_URELATION_EXPAND_CONV =
 (* Basic bit-blasting tactic.                                                *)
 (* ------------------------------------------------------------------------- *)
 
+let VAL_MOD_OR_DIV_CONV =
+  let conv_div = GEN_REWRITE_CONV I [GSYM VAL_WORD_USHR]
+  and conv_mod =
+    RAND_CONV EMPOWER_CONV THENC
+    GEN_REWRITE_CONV I [GSYM VAL_WORD_AND_MASK_WORD] THENC
+    funpow 3 RAND_CONV (LAND_CONV NUM_EXP_CONV THENC NUM_SUB_CONV) in
+  fun tm ->
+    match tm with
+      Comb(Comb(Const("DIV",_),Comb(Const("val",_),_)),n) -> conv_div tm
+    | Comb(Comb(Const("MOD",_),Comb(Const("val",_),_)),n) -> conv_mod tm
+    | _ -> failwith "VAL_MOD_OR_DIV_CONV";;
+
 let BITBLAST_THEN =
   let carrying tm =
     match tm with
@@ -8173,6 +8193,8 @@ let BITBLAST_THEN =
         WORD_CTZ_EMULATION_POPCOUNT; GSYM WORD_CTZ_REVERSEFIELDS] THEN
       CONV_TAC(ONCE_DEPTH_CONV WORD_POPCOUNT_EXPAND_CONV) THEN
       CONV_TAC(ONCE_DEPTH_CONV WORDIFY_WORD_CONV) THEN
+      CONV_TAC(DEPTH_CONV(WORD_RED_CONV ORELSEC NUM_RED_CONV)) THEN
+      CONV_TAC(ONCE_DEPTH_CONV VAL_MOD_OR_DIV_CONV) THEN
       CONV_TAC(ONCE_DEPTH_CONV WORDIFY_ATOM_CONV) THEN
       CONV_TAC(DEPTH_CONV WORD_MUL_EXPAND_CONV) THEN
       REPEAT(W(fun (_,w) ->
