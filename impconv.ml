@@ -61,6 +61,9 @@ let list_of_option = function None -> [] | Some x -> [x] in
 
 let try_list f x = try f x with Failure _ -> [] in
 
+let fail_if_unchanged f x =
+  try f x with Unchanged -> failwith "Unchanged" in
+
 (* A few constants. *)
 let A_ = `A:bool` and B_ = `B:bool` and C_ = `C:bool` and D_ = `D:bool` in
 let T_ = `T:bool` in
@@ -1387,8 +1390,8 @@ let REWRITE_CTXIMPCONV =
 let preprocess = CONJUNCTS o IMPLY_AND
 
 (* Tactic for implicational rewrite. *)
-let IMP_REWRITE_TAC ths =
-  CTXIMPCONV_TAC (REWRITE_CTXIMPCONV (flat (map preprocess ths)))
+let IMP_REWRITE_TAC ths = fail_if_unchanged
+  (CTXIMPCONV_TAC (REWRITE_CTXIMPCONV (flat (map preprocess ths))))
 
 let SEQ_IMP_REWRITE_TAC ths =
   let cnv =
@@ -1399,7 +1402,7 @@ let SEQ_IMP_REWRITE_TAC ths =
         let fcnv = REWRITE_CTXIMPCONV o preprocess in
         REPEAT_UNCHANGED_CTXIMPCONV (map fcnv ths)
   in
-  CTXIMPCONV_TAC cnv
+  fail_if_unchanged (CTXIMPCONV_TAC cnv)
 
 (* Tactic for implicational rewrite with assumptions. *)
 let ASM_IMP_REWRITE_TAC = ASM IMP_REWRITE_TAC
@@ -1430,7 +1433,8 @@ let CASE_REWRITE_CTXIMPCONV =
   ONCE_DEPTH_CTXIMPCONV o CASE_REWR_IMPCONV_OF_CONV o IMPREWR_CTXCONV
 
 (* Tactic version of it. *)
-let CASE_REWRITE_TAC = CTXIMPCONV_TAC o CASE_REWRITE_CTXIMPCONV o preprocess
+let CASE_REWRITE_TAC = fail_if_unchanged
+  (CTXIMPCONV_TAC o CASE_REWRITE_CTXIMPCONV o preprocess)
 
 (*****************************************************************************)
 (* IMPLICATIONAL CONVERSIONS WITH MULTIPLE RESULTS                           *)
@@ -1843,11 +1847,12 @@ let TARGET_REWRITE_IMPCONV : thm list -> term list -> imp_conv =
 let TARGET_REWRITE_TAC sths th =
   let sths' = flat (map preprocess sths) in
   let ths = preprocess th and (+) = THEN_IMPCONV in
-  IMPCONV_TAC
-  (TARGET_REWRITE_IMPCONV sths' (map patterns_of_thm ths)
-    + imp_conv_of_ctx_imp_conv (REWRITE_CTXIMPCONV ths))
+  fail_if_unchanged (IMPCONV_TAC
+    (TARGET_REWRITE_IMPCONV sths' (map patterns_of_thm ths)
+      + imp_conv_of_ctx_imp_conv (REWRITE_CTXIMPCONV ths)))
 
-let HINT_EXISTS_TAC = CTXIMPCONV_TAC (TOP_DEPTH_CTXIMPCONV EXISTS_CTXIMPCONV)
+let HINT_EXISTS_TAC = fail_if_unchanged
+  (CTXIMPCONV_TAC (TOP_DEPTH_CTXIMPCONV EXISTS_CTXIMPCONV))
 
 end in
 
