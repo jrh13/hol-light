@@ -2195,11 +2195,19 @@ let INT_ARITH =
     let DIVREM_ELIM_THM = prove
      (`P (m div n) (m rem n) <=>
        ?q r. (n = &0 /\ q = &0 /\ r = m \/
-              m = q * n + r /\ &0 <= r /\ r < abs n) /\
+              m = q * n + r /\
+              (&0 <= m /\ &0 <= n ==> &0 <= q) /\
+              &0 <= r /\ r + &1 <= abs n) /\
              P q r`,
-      ASM_CASES_TAC `n:int = &0` THEN
-      ASM_METIS_TAC[INT_DIVISION; INT_DIV_0; INT_REM_0; INT_LET_ANTISYM;
-                    INT_DIVMOD_UNIQ; INT_DIVISION_SIMP])
+      REWRITE_TAC[GSYM INT_LT_DISCRETE] THEN
+      ASM_CASES_TAC `n:int = &0` THEN ASM_REWRITE_TAC[] THENL
+       [ASM_REWRITE_TAC[INT_ABS_NUM; INT_LET_ANTISYM] THEN
+        REWRITE_TAC[UNWIND_THM2; GSYM CONJ_ASSOC; RIGHT_EXISTS_AND_THM] THEN
+        REWRITE_TAC[INT_DIV_0; INT_REM_0];
+        EQ_TAC THEN STRIP_TAC THENL
+         [MAP_EVERY EXISTS_TAC [`m div n`; `m rem n`] THEN
+          ASM_SIMP_TAC[INT_DIVISION; INT_LE_DIV];
+          ASM_METIS_TAC[INT_DIVMOD_UNIQ]]]) 
     and BETA2_CONV = RATOR_CONV BETA_CONV THENC BETA_CONV
     and div_tm = `(div):int->int->int`
     and rem_tm = `(rem):int->int->int`
