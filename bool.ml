@@ -482,3 +482,23 @@ let EXISTENCE =
         let ty = snd(dest_var(bndvar abs)) in
         MP (PINST [ty,aty] [abs,P] pth) th
     with Failure _ -> failwith "EXISTENCE";;
+
+(* ------------------------------------------------------------------------- *)
+(* Optionally select more verbose syntax for quantifiers, as well            *)
+(* as the logical constants T (true) and F (false). Enabled by default.      *)
+(* ------------------------------------------------------------------------- *)
+
+let set_verbose_symbols() =
+ (do_list parse_as_binder ["forall"; "exists"; "existsunique"];
+  override_interface("true",`T`);
+  override_interface("false",`F`);
+  override_interface("forall",`(!):(A->bool)->bool`);
+  override_interface("exists",`(?):(A->bool)->bool`);
+  override_interface("existsunique",`(?!):(A->bool)->bool`));;
+
+let unset_verbose_symbols() =
+ (do_list unparse_as_binder ["forall"; "exists"; "existsunique"];
+  do_list remove_interface
+    ["true"; "false"; "forall"; "exists"; "existsunique"]);;
+
+set_verbose_symbols();;

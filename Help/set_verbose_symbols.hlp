@@ -1,0 +1,61 @@
+\DOC set_verbose_symbols
+
+\TYPE {set_verbose_symbols : unit -> unit}
+
+\SYNOPSIS
+Enables more verbose descriptive names for quantifiers and logical constants
+
+\DESCRIBE
+A call to {set_verbose_symbols()} enables a more verbose syntax for the logical
+quantifiers and constants. These are all just interface mappings, the
+underlying constant names in the abstract syntax of the logic being unchanged.
+But the more descriptive names are applied by default when printing and
+are accepted when parsing terms as synonyms of the symbolic names. The new
+names are:
+
+\begin{{itemize}}
+
+\item The universal quantifier `{!}' is now parsed and printed as `{forall}'
+
+\item The existential quantifier `{?}' is now parsed and printed as `{exists}'
+
+\item The exists-unique quantifier `{?!}' is now parsed and printed as
+`{existsunique}'
+
+\item The logical constant `{T}' is now parsed and printed as `{true}'
+
+\item The logical constant `{F}' is now parsed and printed as `{false}'
+
+\end{{itemize}}
+
+The effect can be reverse by a call to the dual function
+{unset_verbose_symbols()}.
+
+\EXAMPLE
+Notice how the printing of theorems changes from using the symbolic names for
+quantifiers
+{
+  # unset_verbose_symbols();;
+  val it : unit = ()
+  # num_Axiom;;
+  val it : thm = |- !e f. ?!fn. fn 0 = e /\ (!n. fn (SUC n) = f (fn n) n)
+}
+\noindent to the more verbose and descriptive names:
+{
+  # set_verbose_symbols();;
+  val it : unit = ()
+  # num_Axiom;;
+  val it : thm =
+    |- forall e f.
+           existsunique fn. fn 0 = e /\ (forall n. fn (SUC n) = f (fn n) n)
+}
+
+\FAILURE
+Only fails if some of the names have already been used for incompatible
+constants.
+
+\SEEALSO
+overload_interface, override_interface, remove_interface,
+the_interface, unset_verbose_symbols.
+
+\ENDDOC
