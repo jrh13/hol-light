@@ -18,6 +18,11 @@ The application of {THEN} to a pair of tactics never fails.
 The resulting tactic fails if {t1} fails when applied to the goal, or if
 {t2} does when applied to any of the resulting subgoals.
 
+If {unset_then_multiple_subgoals} is used, {THEN} is configured to fail
+when {t1} generates more than one subgoal.
+This is useful when one wants to check whether a proof written using {THEN} can
+be syntactically converted to the `e` form.
+
 \EXAMPLE
 Suppose we want to prove the inbuilt theorem {DELETE_INSERT} ourselves:
 {
@@ -61,6 +66,6 @@ If using this several times in succession, remember that {THEN} is
 left-associative.
 
 \SEEALSO
-EVERY, ORELSE, THENL.
+EVERY, ORELSE, THENL, unset_then_multiple_subgoals
 
 \ENDDOC

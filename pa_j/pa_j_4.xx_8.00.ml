@@ -78,6 +78,7 @@ value is_uppercase s = String.uppercase_ascii s = s;
 value is_only_lowercase s = String.lowercase_ascii s = s && not(is_uppercase s);
 
 value jrh_lexer = ref True;
+value then_multiple_subgoals = ref True;
 
 value jrh_identifier find_kwd id =
   let jflag = jrh_lexer.val in
@@ -85,6 +86,10 @@ value jrh_identifier find_kwd id =
     (let _ = jrh_lexer.val := True in ("",find_kwd "true"))
   else if id = "unset_jrh_lexer" then
     (let _ = jrh_lexer.val := False in ("",find_kwd "false"))
+  else if id = "set_then_multiple_subgoals" then
+    (let _ = then_multiple_subgoals.val := True in ("",find_kwd "true"))
+  else if id = "unset_then_multiple_subgoals" then
+    (let _ = then_multiple_subgoals.val := False in ("",find_kwd "false"))
   else
   try ("", find_kwd id) with
    [ Not_found ->
@@ -1229,7 +1234,7 @@ value is_operator = do {
 value translate_operator =
   fun s ->
    match s with
-    [ "THEN" -> "then_"
+    [ "THEN" -> if then_multiple_subgoals.val then "then_" else "then1_"
     | "THENC" -> "thenc_"
     | "THENL" -> "thenl_"
     | "ORELSE" -> "orelse_"
@@ -3559,7 +3564,10 @@ EXTEND
     | f = expr; "upto"; g = expr -> <:expr< ((upto $f$) $g$) >>
     | f = expr; "F_F"; g = expr -> <:expr< ((f_f_ $f$) $g$) >>
     | f = expr; "THENC"; g = expr -> <:expr< ((thenc_ $f$) $g$) >>
-    | f = expr; "THEN"; g = expr -> <:expr< ((then_ $f$) $g$) >>
+    | f = expr; "THEN"; g = expr ->
+      if then_multiple_subgoals.val
+      then <:expr< ((then_ $f$) $g$) >>
+      else <:expr< ((then1_ $f$) $g$) >>
     | f = expr; "THENL"; g = expr -> <:expr< ((thenl_ $f$) $g$) >>
     | f = expr; "ORELSE"; g = expr -> <:expr< ((orelse_ $f$) $g$) >>
     | f = expr; "ORELSEC"; g = expr -> <:expr< ((orelsec_ $f$) $g$) >>
