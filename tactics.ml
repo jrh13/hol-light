@@ -130,7 +130,7 @@ let (VALID:tactic->tactic) =
 (* Various simple combinators for tactics, identity tactic etc.              *)
 (* ------------------------------------------------------------------------- *)
 
-let (THEN),(THENL) =
+let (THEN),(THENL),then1_ =
   let propagate_empty i [] = []
   and propagate_thm th i [] = INSTANTIATE_ALL i th in
   let compose_justs n just1 just2 insts2 i ths =
@@ -161,7 +161,7 @@ let (THEN),(THENL) =
       let _,gls,_ as gstate = tac1 g in
       if gls = [] then tacsequence gstate []
       else tacsequence gstate tac2l in
-  then_,thenl_;;
+  then_,thenl_,(fun tac1 tac2 -> thenl_ tac1 [tac2]);;
 
 let ((ORELSE): tactic -> tactic -> tactic) =
   fun tac1 tac2 g ->

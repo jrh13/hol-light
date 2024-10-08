@@ -1,0 +1,48 @@
+\DOC unset_then_multiple_subgoals
+
+\TYPE {unset_then_multiple_subgoals : (preprocessor keyword)}
+
+\SYNOPSIS
+Updates the HOL Light preprocessor to read {THEN} as an alternative operator
+which fails if the first tactic creates more than one subgoal.
+
+\KEYWORDS
+tactical.
+
+\DESCRIBE
+If a preprocessor reads {unset_then_multiple_subgoals}, it starts to translate
+{t1 THEN t2} into {then1_ t1 t2} which fails when {t1} generates more than one
+subgoal.
+This is useful when one wants to check whether a proof written using {THEN} can
+be syntactically converted to the `e`-`g` form.
+If this setting is on, {t1 THEN t2 THEN ..} and {e(t1);; e(t2);; ...}
+have the same meaning (modulo the validity check).
+After preprocessing, {unset_then_multiple_subgoals} is identical to the {false}
+constant in OCaml.
+To roll back the behavior of {THEN}, use {set_then_multiple_subgoals},
+which is identical to {true} modulo its side effect.
+
+This command is only available for OCaml 4.xx and above.
+
+\EXAMPLE
+{
+  # prove(`x + 1 = 1 + x /\ x + 2 = 2 + x`, CONJ_TAC THEN ARITH_TAC);;
+  val it : thm = |- x + 1 = 1 + x /\ x + 2 = 2 + x
+
+  # unset_then_multiple_subgoals;;
+  val it : bool = false
+  # prove(`x + 1 = 1 + x /\ x + 2 = 2 + x`, CONJ_TAC THEN ARITH_TAC);;
+  Exception: Failure "seqapply: Length mismatch".
+  # prove(`x + 1 = 1 + x /\ x + 2 = 2 + x`, CONJ_TAC THENL [ARITH_TAC; ARITH_TAC]);;
+  val it : thm = |- x + 1 = 1 + x /\ x + 2 = 2 + x
+  # prove(`x + 1 = 1 + x /\ x + 2 = 2 + x`, CONJ_TAC THENL (replicate ARITH_TAC 2));;
+  val it : thm = |- x + 1 = 1 + x /\ x + 2 = 2 + x
+}
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+e, THEN, VALID.
+
+\ENDDOC

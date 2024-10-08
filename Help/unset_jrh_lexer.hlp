@@ -1,0 +1,34 @@
+\DOC unset_jrh_lexer
+
+\TYPE {unset_jrh_lexer : (preprocessor keyword)}
+
+\SYNOPSIS
+Updates the HOL Light preprocessor to respect OCaml's identifier convention.
+
+\DESCRIBE
+If a preprocessor reads {unset_jrh_lexer}, it switches its lexer to
+use OCaml's identifier convention. This makes an identifier starting with a
+capiter letter unusable as the name of a let binding, but enables using it as a
+module constructor.
+Modulo this side effect, {unset_jrh_lexer} is simply identical to {false}.
+The lexer can be enabled again using {set_jrh_lexer}, which is identical to
+{true} after preprocessing.
+
+\EXAMPLE
+{
+  # module OrdInt = struct type t = int let compare = (-) end;;
+  Toplevel input:
+  # module OrdInt = struct type t = int let compare = (-) end;;
+          ^^^^^^
+  Parse error: 'type' or [ext_attributes] expected after 'module' (in
+    [str_item])
+  # unset_jrh_lexer;;
+  val it : bool = false
+  # module OrdInt = struct type t = int let compare = (-) end;;
+  module OrdInt : sig type t = int val compare : int -> int -> int end
+}
+
+\FAILURE
+Never fails.
+
+\ENDDOC
