@@ -10,12 +10,24 @@
 (*              (c) Copyright, Juneyoung Lee 2024                            *)
 (* ========================================================================= *)
 
-if Array.length Sys.argv <> 3 then
-  let _ = Printf.eprintf "inline_load.ml <input.ml> <output.ml>\n" in
+let argn = Array.length Sys.argv;;
+
+if argn < 3 || argn > 4 then
+  let _ = Printf.eprintf "inline_load.ml <input.ml> <output.ml> [-omit-prelude]\n" in
+  let _ = Printf.eprintf "  -omit-prelude: omit 'open Hol_lib;;' and 'open Hol_loader;;'.\n" in
   exit 1;;
+
+try
+  let v = Sys.getenv "HOLLIGHT_DIR" in
+  if v = "" then Printf.printf "Warning: HOLLIGHT_DIR is not set\n%!"
+with Not_found -> Printf.printf "Warning: HOLLIGHT_DIR is not set\n%!";;
 
 let filename = Sys.argv.(1);;
 let fout = open_out (Sys.argv.(2));;
+let omit_prelude = argn >= 4 && Sys.argv.(3) = "-omit-prelude";;
+
+if not omit_prelude then
+  Printf.fprintf fout "open Hol_lib;;\nopen Hol_loader;;\n";;
 
 #use "hol_loader.ml";;
 
@@ -50,14 +62,20 @@ file_loader := fun filename ->
   let open Printf in
   fprintf fout "(* %s *)\n" filename;
   let lines = strings_of_file filename in
+  let fail_if_nonexistent f x = try f x with _ -> failwith x in
   List.iter
     (fun line ->
       match parse_load_statement "loadt" line with
-      | Some (path,line') -> loadt path; fprintf fout "%s\n" line' | None ->
+      | Some (path,line') -> fail_if_nonexistent loadt path; fprintf fout "%s\n" line' | None ->
       (match parse_load_statement "loads" line with
-      | Some (path,line') -> loads path; fprintf fout "%s\n" line' | None ->
+      | Some (path,line') -> begin
+        if path = "update_database.ml"
+        then Printf.printf "Warning: 'loads \"update_database.ml\";;' is omitted\n"
+        else (fail_if_nonexistent loads path; fprintf fout "%s\n" line')
+        end
+      | None ->
       (match parse_load_statement "needs" line with
-      | Some (path,line') -> needs path; fprintf fout "%s\n" line'
+      | Some (path,line') -> fail_if_nonexistent needs path; fprintf fout "%s\n" line'
       | None -> fprintf fout "%s\n" line (* no linebreak needed! *))))
     lines;
   (* add digest *)
