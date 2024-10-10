@@ -156,6 +156,16 @@ let SIZE_SM2_GROUP = prove
     REWRITE_TAC[GSYM num_coprime; ARITH; COPRIME_2] THEN
     DISCH_THEN(MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN ASM_INT_ARITH_TAC]);;
 
+let SM2_GROUP_ORDER = prove
+ (`CARD(group_carrier sm2_group) = n_sm2`,
+  REWRITE_TAC[REWRITE_RULE[HAS_SIZE] SIZE_SM2_GROUP]);;
+
+let SM2_GROUP_ELEMENT_ORDER = prove
+ (`!P. P IN group_carrier sm2_group
+       ==> group_element_order sm2_group P =
+           if P = group_id sm2_group then 1 else n_sm2`,
+  MESON_TAC[SIZE_SM2_GROUP; HAS_SIZE; GROUP_ELEMENT_ORDER_PRIME; PRIME_NSM2]);;
+
 let GENERATED_SM2_GROUP = prove
  (`subgroup_generated sm2_group {g_sm2} = sm2_group`,
   SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;

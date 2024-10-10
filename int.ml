@@ -2207,7 +2207,7 @@ let INT_ARITH =
         EQ_TAC THEN STRIP_TAC THENL
          [MAP_EVERY EXISTS_TAC [`m div n`; `m rem n`] THEN
           ASM_SIMP_TAC[INT_DIVISION; INT_LE_DIV];
-          ASM_METIS_TAC[INT_DIVMOD_UNIQ]]]) 
+          ASM_METIS_TAC[INT_DIVMOD_UNIQ]]])
     and BETA2_CONV = RATOR_CONV BETA_CONV THENC BETA_CONV
     and div_tm = `(div):int->int->int`
     and rem_tm = `(rem):int->int->int`

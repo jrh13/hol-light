@@ -1729,6 +1729,14 @@ let PRIME_POWER_EXISTS = prove
     CONV_TAC(ONCE_DEPTH_CONV EXPAND_CASES_CONV) THEN
     REWRITE_TAC[LT] THEN ARITH_TAC]);;
 
+let PRIME_POWER_EXISTS_ALT = prove
+ (`!n p.
+         prime p
+         ==> ((?i. n = p EXP i) <=>
+              (!d. d divides n ==> d = 1 \/ p divides d))`,
+  SIMP_TAC[PRIME_POWER_EXISTS] THEN
+  MESON_TAC[DIVIDES_TRANS; DIVIDES_PRIME_PRIME; PRIME_FACTOR; PRIME_1]);;
+
 let PRIME_FACTORIZATION_ALT = prove
  (`!n. ~(n = 0) ==> nproduct {p | prime p} (\p. p EXP index p n) = n`,
   MATCH_MP_TAC COMPLETE_FACTOR_INDUCT THEN

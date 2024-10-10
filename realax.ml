@@ -245,7 +245,9 @@ let BOUNDS_IGNORE = prove
         REWRITE_TAC[LE_ADD]]]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Define type of nearly additive functions.                                 *)
+(* Define type of nearly-multiplicative functions. This is equivalent to     *)
+(* being nearly-additive, hence the name, but it is easier to work with this *)
+(* formulation rather than actually derive it from nearly-additivity.        *)
 (* ------------------------------------------------------------------------- *)
 
 let is_nadd = new_definition
@@ -262,7 +264,7 @@ override_interface ("fn",`dest_nadd`);;
 override_interface ("afn",`mk_nadd`);;
 
 (* ------------------------------------------------------------------------- *)
-(* Properties of nearly-additive functions.                                  *)
+(* Properties of nearly-multiplicative / nearly-additive functions.          *)
 (* ------------------------------------------------------------------------- *)
 
 let NADD_CAUCHY = prove

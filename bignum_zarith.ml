@@ -106,7 +106,7 @@ module Num = struct
       let exp_i = int_of_num exponent in
       Q.of_bigint (Z.pow (Q.to_bigint base) exp_i) in
     if ge_num exponent (num_of_int 0) then f base exponent
-    else div_num (num_of_int 1) (f base (minus_num exponent));; 
+    else div_num (num_of_int 1) (f base (minus_num exponent));;
 
 end;;
 

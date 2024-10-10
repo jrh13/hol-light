@@ -92,6 +92,11 @@ let EXISTS_ONE_THM = prove
   GEN_REWRITE_TAC I [TAUT `(p <=> q) <=> (~p <=> ~q)`] THEN
   REWRITE_TAC[NOT_EXISTS_THM; FORALL_ONE_THM]);;
 
+let ETA_ONE = prove
+ (`!f:1->A. (\x. f one) = f`,
+  REWRITE_TAC[FUN_EQ_THM] THEN REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[one] THEN REFL_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Add the type "1" to the inductive type store.                             *)
 (* ------------------------------------------------------------------------- *)

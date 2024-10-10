@@ -8,6 +8,178 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed  9th Oct 2024               Library/ringtheory.ml
+
+Added a number of miscellaneous and simple ring theory lemmas:
+
+        FIELD_HOMOMORPHISM_DIV
+        FIELD_HOMOMORPHISM_INV
+        FINITE_MONOMIAL_VARS
+        FINITE_MONOMIAL_VARS_1
+        IMAGE_POLY_EVAL
+        IMAGE_POLY_EXTEND_1
+        IN_IDEAL_GENERATED_SELF
+        IN_IDEAL_GENERATED_SING
+        IN_IDEAL_GENERATED_SING_EQ
+        ISOMORPHIC_TRANSPORT_OF_RING
+        POLY_DEG_SUBRING_GENERATED
+        POLY_EXTEND_FROM_SUBRING_GENERATED
+        POLY_EXTEND_INTO_SUBRING_GENERATED
+        POLY_SUBRING_GENERATED_1
+        POLY_SUBRING_GENERATED_CLAUSES
+        RING_0_IN_SUBRING_GENERATED
+        RING_1_IN_SUBRING_GENERATED
+        RING_ADD_IN_SUBRING_GENERATED
+        RING_HOMOMORPHISM_INV
+        RING_MONOMORPHISM_INTO_SUBRING
+        RING_MUL_IN_SUBRING_GENERATED
+        RING_NEG_IN_SUBRING_GENERATED
+        RING_POW_IN_SUBRING_GENERATED
+        RING_PRODUCT_SUBRING_GENERATED
+        RING_PRODUCT_SUBRING_GENERATED_GEN
+        RING_SUM_CASES
+        SUBRING_GENERATED_INC_GEN
+
+Wed  9th Oct 2024               EC/ccsm2.ml
+
+Added two more easy theorems by analogy with the earlier additions
+for NIST curves:
+
+  SM2_GROUP_ORDER =
+    |- CARD (group_carrier sm2_group) = n_sm2
+
+  SM2_GROUP_ELEMENT_ORDER =
+    |- !P. P IN group_carrier sm2_group
+           ==> group_element_order sm2_group P =
+               (if P = group_id sm2_group then 1 else n_sm2)
+
+Mon  7th Oct 2024               tactics.ml, pa_j/passim
+
+Merged an update from June Lee that provides an optional change in
+the behaviour of THEN, requiring that first tactic should produce only
+a single subgoal, rather than applying the second tactic to all the
+subgoals regardless of number. This is controlled by an expansion
+in the preprocessor switched by the special identifiers
+
+        set_then_multiple_subgoals
+        unset_then_multiple_subgoals
+
+The default behavior is "set_then_multiple_subgoals", which as before
+allows multiple subgoals.
+
+Tue 24th Sep 2024               bool.ml
+
+Added conveniently packaged interface mappings to set up more friendly
+syntax for the quantifiers. New functions "set_verbose_symbols" and
+"unset_verbose_symbols" enable and disable, respectively, these more
+verbose and descriptive names for some logical symbols:
+
+        F -> false
+        T -> true
+        ! -> forall
+        ? -> exists
+        ?! -> existsunique
+
+This is all done via interface maps. Not only is the underlying term
+structure unchanged (the "actual" names are the symbolic ones) but
+also the original syntax is accepted as an alternative:
+
+  # `exists x. x = 1` = `?x. x = 1`;;
+  val it : bool = true
+
+The new syntax is enabled by default, but can, as explained above,
+be switched off with "unset_verbose_symbols()".
+
+Thu 19th Sep 2024                .gitignore, Makefile, README,  hol.ml,  hol_4.14.sh,  hol_4.sh,  hol_lib.ml,  hol_lib_use_module.ml [new file],  inline_load.ml [new file]
+
+Merged an update from June Lee that enables compilation of HOL Light
+(supported for OCaml >= 4.14). It is controlled by the environment
+variable HOLLIGHT_USE_MODULE, such that doing:
+
+  HOLLIGHT_USE_MODULE=1 make
+
+will build "hol.sh" so that it uses the compiled "hol_lib.cmo".
+
+Thu 19th Sep 2024               impconv.ml
+
+Fix IMP_REWRITE_TAC and related tactics in impconv.ml to raise the
+preferred "Failure" exception rather than "Unchanged", making them
+consistent with the rest of the codebase and in particular compatible
+with tactic combinators like ORELSE. This change is from June Lee.
+
+Wed 18th Sep 2024               int.ml, Library/words.ml
+
+Made a small enhancement to div/rem elimination in INT_ARITH, making it
+handle the common case where divisor and dividend are nonnegative, thus
+being more comparable to ARITH_RULE.
+
+Made some improvements to WORD_ARITH/WORD_ARITH_TAC to further normalize
+constants and as a last resort write away all word expressions using numeric
+values, to widen the scope, e.g.
+
+  WORD_ARITH
+   `!m n. m < 4096 /\ n <= 511
+        ==> word_ule (word_add (word_mul (word n) (word 0x00001000)) (word m))
+                     (word 0x0000000001FFFFFF:int64)`;;
+
+Tue 17th Sep 2024               trivia.ml
+
+Added the special eta-conversion variant for the 1-element type:
+
+  ETA_ONE = |- !f:1->A. (\x. f one) = f
+
+Tue  3rd Sep 2024               Library/words.ml
+
+Made a couple of small improvements to BITBLAST_RULE: do more systematic
+reduction of word constant-expressions in the middle of prenormalization, and
+handle val(x) DIV 2^k and val(x) MOD 2^k in the initial bitwise expansion.
+(The recognition of powers of 2 in arbitrary numeric expressions is broken out
+as a separate conversion EMPOWER_CONV.) For example, this didn't work before
+but now does:
+
+  BITBLAST_RULE
+    `word_and x (word 256):int64 = word 0 <=> val x MOD 512 < 256`;;
+
+Fri 23rd Aug 2024               hol_lib.ml, hol_loader.ml [new files], passim
+
+Merged a refactoring from June Lee that factors out file loading so that it
+can be readily replaced with catenation and module compilation.
+
+Tue  6th Aug 2024               Makefile, bignum_num.ml, bignum_zarith.ml, hol.ml, system.ml, pa_j/passim
+
+Merged an update from June Lee that reorganizes the camlp5 preprocessing in
+various ways so that camlp5r can be used with pa_j.cmo as a standaline
+preprocessor, e.g. as follows:
+
+  ocamlc -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" test.ml
+
+This required several changes:
+
+  * Printing "* HOL-Light syntax in effect *" is redirected to stderr, not
+    stdout, because ocamlc was consuming the log from from stdout too.
+
+  * jrh_lexer is enabled by default.
+
+  * quotexpander is moved to pa_j.ml
+
+  * bignum files had to be separately compiled without using pa_j because
+    they were declaring modules which interfere with the preprocessor.
+
+Thu  1st Aug 2024               Library/prime.ml, Arithmetic/definability.ml
+
+Added a simple variant of an existing theorem PRIME_POWER_EXISTS,
+characterizing prime powers via their divisors:
+
+  PRIME_POWER_EXISTS_ALT =
+    |- !n p.
+           prime p
+           ==> ((?i. n = p EXP i) <=>
+                (!d. d divides n ==> d = 1 \/ p divides d))
+
+Used this to simplify the proof of primepow_DELTA in the arithmetic
+definability material, since it is only a minor elaboration of
+this lemma.
+
 Sat  6th Jul 2024               Makefile, README, pa_j [new directory], pa_j/pa_j_4.xx_8.03.ml
 
 Merged an update from June Lee adding camlp5 8.03 support and making it the
