@@ -37,7 +37,7 @@ CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-'
 
 # If set to 1, build hol_lib.cmo and make hol.sh to use it.
 # NOTE: This extends the trusted base of HOL Light to include the inliner
-# script, inline_loads.ml. inline_loads.ml is an OCaml program that receives
+# script, inline_load.ml. inline_load.ml is an OCaml program that receives
 # an HOL Light proof and replaces the loads/loadt/needs function invocations
 # with their actual contents. Please turn this flag on only if having this
 # additional trusted base is considered okay.
@@ -53,7 +53,7 @@ default: update_database.ml pa_j.cmo hol.sh;
 # HOL Light.
 # ledit is installed for line editing of OCaml REPL
 switch:; \
-	opam update ; \
+  opam update ; \
   opam switch create . ocaml-base-compiler.4.14.0 ; \
   eval $(opam env) ; \
   opam install -y zarith ledit ; \
@@ -115,13 +115,34 @@ bignum.cmo: bignum_zarith.ml bignum_num.ml ; \
         else ocamlc -c -o bignum.cmo bignum_num.ml ; \
         fi
 
+bignum.cmx: bignum_zarith.ml bignum_num.ml ; \
+        if test ${OCAML_VERSION} = "4.14" -o ${OCAML_UNARY_VERSION} = "5" ; \
+        then ocamlfind ocamlopt -package zarith -c -o bignum.cmx bignum_zarith.ml ; \
+        else ocamlopt -c -o bignum.cmx bignum_num.ml ; \
+        fi
+
 hol_loader.cmo: hol_loader.ml ; \
         ocamlc -verbose -c hol_loader.ml -o hol_loader.cmo
 
-hol_lib.cmo: inline_load.ml hol_lib.ml hol_loader.cmo ; \
-        ocaml inline_load.ml hol_lib.ml hol_lib_inlined.ml ; \
-        ocamlc -verbose -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" hol_loader.cmo hol_lib_inlined.ml bignum.cmo -o hol_lib.cmo ; \
+hol_loader.cmx: hol_loader.ml ; \
+        ocamlopt -verbose -c hol_loader.ml -o hol_loader.cmx
+
+hol_lib_inlined.ml: hol_lib.ml inline_load.ml ; \
+        HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml hol_lib.ml hol_lib_inlined.ml -omit-prelude
+
+hol_lib.cmo: pa_j.cmo hol_lib_inlined.ml hol_loader.cmo bignum.cmo ; \
+        ocamlc -verbose -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" hol_loader.cmo hol_lib_inlined.ml bignum.cmo -o hol_lib.cmo
+
+hol_lib.cma: hol_lib.cmo bignum.cmo hol_loader.cmo ; \
         ocamlfind ocamlc -package zarith -linkpkg -a -o hol_lib.cma bignum.cmo hol_loader.cmo hol_lib.cmo
+
+hol_lib.cmx: pa_j.cmo hol_lib_inlined.ml hol_loader.cmx bignum.cmx ; \
+        OCAMLRUNPARAM=l=1000000000 ocamlopt.byte -verbose -c \
+              -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" \
+              hol_lib_inlined.ml hol_loader.cmx bignum.cmx -o hol_lib.cmx
+
+hol_lib.cmxa: hol_lib.cmx hol_loader.cmx bignum.cmx ; \
+        ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx hol_loader.cmx hol_lib.cmx
 
 # Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
 
@@ -140,9 +161,20 @@ hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml
 	fi
 
 # If HOLLIGHT_USE_MODULE is set, add hol_lib.cmo to dependency of hol.sh
+# Also, build unit_tests using OCaml bytecode compiler as well as OCaml native compiler.
 
 ifeq ($(HOLLIGHT_USE_MODULE),1)
 hol.sh: hol_lib.cmo
+unit_tests_inlined.ml: unit_tests.ml inline_load.ml ; \
+        HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml unit_tests.ml unit_tests_inlined.ml
+unit_tests.byte: unit_tests_inlined.ml hol_lib.cmo inline_load.ml hol.sh ; \
+        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmo hol_loader.cmo hol_lib.cmo unit_tests_inlined.ml -o unit_tests.byte
+unit_tests.native: unit_tests_inlined.ml hol_lib.cmx inline_load.ml hol.sh ; \
+        ocamlfind ocamlopt -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmx hol_loader.cmx hol_lib.cmx unit_tests_inlined.ml -o unit_tests.native
+
+default: hol_lib.cma unit_tests.byte unit_tests.native
 endif
 
 # TODO: update this and hol.* commands to use one of checkpointing  tools
@@ -205,7 +237,9 @@ install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.m
 # Clean up all compiled files
 
 clean:; \
-  rm -f bignum.cmo update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
-        hol_lib.cmo hol_lib.cmi hol_lib.cma hol_lib_inlined.ml \
-				hol_loader.cmo hol_loader.cmi \
+  rm -f bignum.c* bignum.o \
+        update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
+        hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
+        hol_loader.c* hol_loader.o \
+        unit_tests_inlined.* unit_tests.native unit_tests.byte \
         ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex

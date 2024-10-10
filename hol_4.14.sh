@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$#" -eq 1 ] && [ "$1" == "-pp" ]; then
+  echo "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I "__DIR__" pa_j.cmo"
+  exit 0
+fi
+
 # The default ocaml REPL does not accept arrow keys.
 # Export LINE_EDITOR to a proper program to enable this before invoking this
 # script. If not set, ledit will be used.

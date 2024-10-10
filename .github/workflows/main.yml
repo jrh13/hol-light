@@ -18,14 +18,14 @@ jobs:
   test1:
     runs-on: ubuntu-22.04
     name: OCaml 4.05, Camlp5 7.10
-    
+
     steps:
       - name: Install dependency
         run: |
           sudo apt update && sudo apt install -y opam
           opam init --disable-sandboxing --compiler=4.05.0
           opam pin -y add camlp5 7.10
-          opam install -y num
+          opam install -y num ledit
 
       - name: Checkout this repo
         uses: actions/checkout@v2
@@ -37,13 +37,14 @@ jobs:
           cd hol-light
           eval $(opam env)
           make
-          ./hol.sh | tee log.txt
+          ./hol.sh 2>&1 | tee log.txt
           ! grep "Error" log.txt
+          grep "Camlp5 parsing version" log.txt
 
   test2:
     runs-on: ubuntu-22.04
     name: OCaml 4.14, Camlp5 8.03 (make switch)
-    
+
     steps:
       - name: Install dependency
         run: |
@@ -61,5 +62,20 @@ jobs:
           make switch
           eval $(opam env)
           make
-          ./hol.sh | tee log.txt
+          ./hol.sh 2>&1 | tee log.txt
           ! grep "Error" log.txt
+          grep "Camlp5 parsing version (HOL-Light)" log.txt
+          cd ..
+
+      - name: Run (HOLLIGHT_USE_MODULE=1)
+        run: |
+          cd hol-light
+          eval $(opam env)
+          make clean
+          export HOLLIGHT_USE_MODULE=1
+          make
+          ./hol.sh 2>&1 | tee log.txt
+          ! grep "Error" log.txt
+          grep "Camlp5 parsing version (HOL-Light)" log.txt
+          ./unit_tests.byte
+          ./unit_tests.native
