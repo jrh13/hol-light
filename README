@@ -27,7 +27,7 @@ Refer to the reference manual for more details of individual functions:
 The Objective CAML (OCaml) implementation is a prerequisite for running
 HOL Light. HOL Light should work with any recent version of OCaml; I've
 tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2,
-4.00, 4.05 and 4.14.
+4.00, 4.05 and 4.14 and 5.2.0.
 
  1. OCaml: there are packages for many Linux distributions. For
     example, on a debian derivative like Ubuntu, you may just need
@@ -142,21 +142,18 @@ have installed. As of 2024, there are three programs you can use.
     HOL Light does not have convenient commands or scripts to exploit DMTCP,
     but you can proceed as follows:
 
-        1. Start ocaml running under the DMTCP coordinator:
+        1. Start hol.sh running under the DMTCP coordinator and wait until
+           HOL Light is loaded:
 
-              dmtcp_launch ocaml
+              dmtcp_launch ./hol.sh
 
-        2. Use ocaml to load HOL Light as usual, for example:
-
-              #use "hol.ml";;
-
-        3. From another terminal, issue the checkpoint command:
+        2. From another terminal, issue the checkpoint command:
 
              dmtcp_command -kc
 
-           This will kill the ocaml process once checkpointing is done.
+           This will kill the process once checkpointing is done.
 
-        4. Step 3 created a checkpoint of the OCaml process and
+        3. Step 2 created a checkpoint of the OCaml process and
            a shell script to invoke it, both in the directory in
            which ocaml was started. Running that should restore
            the OCaml process with all your state and bindings:
@@ -206,7 +203,7 @@ checkpointing programs.
                              DEPENDENCIES
 
  1. zarith or num: The HOL Light system uses the OCaml "Num" library
-    or "Zarith" library for rational arithmetic. If OCaml 4.14 is used,
+    or "Zarith" library for rational arithmetic. If OCaml 4.14 or above is used,
     HOL Light will use Zarith. You can install it using the OCaml package
     manager "opam" by
 
@@ -234,8 +231,8 @@ checkpointing programs.
  2. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
     Somtimes you need a recent version of camlp5 to be compatible with
     your OCaml. For example, OCaml 4.05 is compatible with camlp5 7.10 and
-    OCaml 4.14 is compatible with camlp5 8.02 and 8.03. I recommend downloading
-    the sources for a recent version from
+    OCaml 4.14 and above is compatible with camlp5 8.02 and 8.03. I recommend
+    downloading the sources for a recent version from
 
         https://github.com/camlp5/camlp5/releases ('tags' tab has full series)
 
@@ -269,7 +266,7 @@ HOL Light will only work on OCaml 4.14 or above.
 
 To compile an OCaml file that opens Hol_lib using OCaml bytecode compiler,
 use the following command. For OCaml native compiler, replace ocamlc with
-ocamlopt.
+ocamlopt and .cmo with .cmx.
 
     ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
       -I (HOL dir) (HOL dir)/bignum.cmo (HOL dir)/hol_loader.cmo \
