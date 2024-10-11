@@ -26,14 +26,16 @@ let rec get_simple_type = function
 
 (* Execute any OCaml expression given as a string. *)
 
-let exec = ignore o Toploop.execute_phrase false Format.std_formatter
-  o !Toploop.parse_toplevel_phrase o Lexing.from_string
+let exec s = (ignore o Toploop.execute_phrase false Format.std_formatter
+  o !Toploop.parse_toplevel_phrase o Lexing.from_string) s
 
 (* Evaluate any OCaml expression given as a string. *)
 
 let eval n =
-  exec ("let buf__ = ( " ^ n ^ " );;");
-  Obj.magic (Toploop.getvalue "buf__")
+  if String.contains n '.' then begin
+    exec ("let buf__ = ( " ^ n ^ " );;");
+    Obj.magic (Toploop.getvalue "buf__")
+  end else Obj.magic (Toploop.getvalue n)
 
 (* Register all theorems added since the last update. *)
 end
@@ -75,10 +77,13 @@ let string_of_longident lid =
   String.concat "." (Longident.flatten lid)
 
 let all_theorems () =
-  enum1 None []
-  |> List.map (fun lid ->
-      let s = string_of_longident lid in
-      (s, (Ocaml_typing.eval s : thm)))
+  let _ = Ocaml_typing.exec ("unset_jrh_lexer;;") in
+  let res = enum1 None []
+    |> List.map (fun lid ->
+        let s = string_of_longident lid in
+        (s, (Ocaml_typing.eval s : thm))) in
+  let _ = Ocaml_typing.exec ("set_jrh_lexer;;") in
+  res
 end
 
 

@@ -21,7 +21,7 @@ let e tac =
 
 Topdirs.dir_directory (!hol_dir);;
 
-Topdirs.load_file Format.std_formatter
+Toploop.load_file Format.std_formatter
  (Filename.concat (!hol_dir) "Mizarlight/pa_f.cmo");;
 
 List.iter (fun s -> Hashtbl.add (Pa_j.ht) s true)
