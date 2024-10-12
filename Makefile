@@ -59,12 +59,20 @@ switch:; \
   opam install -y zarith ledit ; \
   opam pin -y add camlp5 8.03.00
 
+switch-5:; \
+  opam update ; \
+  opam switch create . ocaml-base-compiler.5.2.0 ; \
+  eval $(opam env) ; \
+  opam install -y zarith ledit ; \
+  opam pin -y add camlp5 8.03.00
+
 # Choose an appropriate "update_database.ml" file
 
-update_database.ml:; if [ ${OCAML_VERSION} = "4.14" ] ; \
-                     then cp update_database_4.14.ml update_database.ml ; \
-                     else cp update_database_${OCAML_UNARY_VERSION}.ml update_database.ml ; \
-                     fi
+update_database.ml:; \
+  if [ ${OCAML_VERSION} = "4.14" ] ; \
+  then cp update_database/update_database_4.14.ml update_database.ml ; \
+  else cp update_database/update_database_${OCAML_UNARY_VERSION}.ml update_database.ml ; \
+  fi
 
 # Build the camlp4 syntax extension file (camlp5 for OCaml >= 3.10)
 
@@ -174,7 +182,7 @@ unit_tests.native: unit_tests_inlined.ml hol_lib.cmx inline_load.ml hol.sh ; \
         ocamlfind ocamlopt -package zarith -linkpkg -pp "`./hol.sh -pp`" \
         -I . bignum.cmx hol_loader.cmx hol_lib.cmx unit_tests_inlined.ml -o unit_tests.native
 
-default: hol_lib.cma unit_tests.byte unit_tests.native
+default: hol_lib.cma hol_lib.cmxa unit_tests.byte unit_tests.native
 endif
 
 # TODO: update this and hol.* commands to use one of checkpointing  tools
