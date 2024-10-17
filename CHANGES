@@ -8,6 +8,41 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 16th Oct 2024               Library/ringtheory.ml
+
+Fixed identical degenerate-case bugs in the decision procedures
+RING_RULE and INTEGRAL_DOMAIN_RULE (the latter bug being also
+inherited by FIELD_TAC). Previously these would fail if the input
+problem was so trivial that the initial normalization converted
+it to "true", e.g.
+
+  RING_RULE `x:A = ring_1 r ==> x = ring_1 r`;;
+
+  INTEGRAL_DOMAIN_RULE `ring_mul r x z = y ==> ring_mul r x z = y`;;
+
+Wed 16th Oct 2024               int.ml
+
+Fixed a couple of bugs in the handling of div/rem in INT_ARITH that
+were collectively limiting its ability to reason about formulas using
+several div/rem operations with distinct arguments. For example, this
+didn't work before but now does:
+
+ let hbar = prove
+  (`!x. abs x <= &2 pow 15
+        ==> let sqdmulh = (&2 * &0x4ebf * x) div &2 pow 16 in
+            let srshr = (sqdmulh + &2 pow 10) div &2 pow 11 in
+            abs(x - &3329 * srshr) <= &1664`,
+   CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN INT_ARITH_TAC);;
+
+Sat 12th Oct 2024               update_database/passim [new directory]
+
+Merged updates from June Lee completing support for OCaml version 5. As
+well as fixing deprecated functions and adding a new "switch-5" option
+in the Makefile, this enables the use of dynamic updating of the theorem
+search database, which was a significant gap in earlier OCaml 5 support.
+As part of this, the "update_database*.ml" files have been moved to a
+new subdirectory "update_database".
+
 Wed  9th Oct 2024               Library/ringtheory.ml
 
 Added a number of miscellaneous and simple ring theory lemmas:

@@ -7950,11 +7950,13 @@ let RING_RULE =
     GEN_REWRITE_CONV REDEPTH_CONV
      [RIGHT_AND_EXISTS_THM; LEFT_AND_EXISTS_THM] THENC
     GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM DISJ_ASSOC] THENC
-    GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM CONJ_ASSOC] in
+    GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM CONJ_ASSOC]
+  and true_tm = `T` in
   let RING_RULE_BASIC tm =
     let avs,bod = strip_forall tm in
     let th1 = init_conv bod in
     let tm' = rand(concl th1) in
+    if tm' = true_tm then EQT_ELIM th1 else
     let avs',bod' = strip_forall tm' in
     let th2 = end_itlist CONJ (map RING_RING_CORE (conjuncts bod')) in
     let th3 = EQ_MP (SYM th1) (GENL avs' th2) in
@@ -15689,6 +15691,16 @@ let RING_POLYNOMIAL_VAR = prove
   REWRITE_TAC[FINITE_SING; SUBSET; IN_ELIM_THM; IN_SING] THEN
   REWRITE_TAC[poly_var] THEN MESON_TAC[]);;
 
+let POLY_VAR_EQ_CONST = prove
+ (`!(r:A ring) (v:V) c.
+        poly_var r v = poly_const r c <=> trivial_ring r /\ c = ring_0 r`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[poly_var; poly_const; TRIVIAL_RING_10] THEN
+  EQ_TAC THEN SIMP_TAC[COND_ID] THEN
+  GEN_REWRITE_TAC LAND_CONV [FUN_EQ_THM] THEN DISCH_THEN(fun th ->
+    MP_TAC(SPEC `monomial_var (v:V)` th) THEN
+    MP_TAC(SPEC `monomial_1:V->num` th)) THEN
+  REWRITE_TAC[MONOMIAL_VAR_1] THEN MESON_TAC[]);;
+
 let RING_POLYNOMIAL_0 = prove
  (`!r. ring_polynomial r (poly_0 r:(V->num)->A)`,
   REWRITE_TAC[poly_0; RING_POLYNOMIAL_CONST; RING_0]);;
@@ -17122,6 +17134,28 @@ let POLY_SUBRING_GENERATED_1 = prove
   GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM POLY_SUBRING_GENERATED] THEN
   AP_TERM_TAC THEN REWRITE_TAC[UNIV_1] THEN SET_TAC[]);;
 
+let IMAGE_POLY_EXTEND = prove
+ (`!(f:A->B) k l (s:V->bool) a.
+        ring_homomorphism(k,l) f /\
+        (!i. i IN s ==> a i IN ring_carrier l)
+        ==> IMAGE (poly_extend(k,l) f a) (ring_carrier(poly_ring k s)) =
+            ring_carrier
+             (subring_generated l (IMAGE a s UNION IMAGE f (ring_carrier k)))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`poly_ring (k:A ring) (s:V->bool)`; `l:B ring`;
+                 `poly_extend(k,l) (f:A->B) (a:V->B)`;
+                 `{poly_const (k:A ring) c | c | c IN ring_carrier k} UNION
+                  {poly_var k (x:V) | x IN s}`]
+        SUBRING_GENERATED_BY_HOMOMORPHIC_IMAGE) THEN
+  REWRITE_TAC[POLY_SUBRING_GENERATED] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_UNION; FORALL_IN_GSPEC] THEN
+  ASM_SIMP_TAC[RING_HOMOMORPHISM_POLY_EXTEND; POLY_VAR; POLY_CONST] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[IMAGE_UNION; GSYM IMAGE_o; SIMPLE_IMAGE] THEN
+  GEN_REWRITE_TAC RAND_CONV [UNION_COMM] THEN BINOP_TAC THEN
+  MATCH_MP_TAC IMAGE_EQ THEN
+  ASM_SIMP_TAC[POLY_EXTEND_VAR; POLY_EXTEND_CONST; o_THM]);;
+
 let IMAGE_POLY_EXTEND_1 = prove
  (`!(f:A->B) k l a.
         ring_homomorphism(k,l) f /\ a IN ring_carrier l
@@ -17129,19 +17163,9 @@ let IMAGE_POLY_EXTEND_1 = prove
                   (ring_carrier(poly_ring k (:1))) =
             ring_carrier
              (subring_generated l (a INSERT IMAGE f (ring_carrier k)))`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`poly_ring (k:A ring) (:1)`; `l:B ring`;
-                 `poly_extend(k,l) (f:A->B) (\v:1. a)`;
-                 `poly_var k one INSERT
-                  IMAGE (poly_const k) (ring_carrier k:A->bool)`]
-        SUBRING_GENERATED_BY_HOMOMORPHIC_IMAGE) THEN
-  REWRITE_TAC[POLY_SUBRING_GENERATED_1] THEN
-  REWRITE_TAC[SUBSET; FORALL_IN_INSERT; FORALL_IN_IMAGE] THEN
-  ASM_SIMP_TAC[RING_HOMOMORPHISM_POLY_EXTEND; POLY_VAR_UNIV; POLY_CONST] THEN
-  DISCH_THEN(SUBST1_TAC o SYM) THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
-  REWRITE_TAC[IMAGE_CLAUSES; GSYM IMAGE_o] THEN
-  ASM_SIMP_TAC[POLY_EXTEND_VAR] THEN AP_TERM_TAC THEN
-  MATCH_MP_TAC IMAGE_EQ THEN ASM_SIMP_TAC[o_THM; POLY_EXTEND_CONST]);;
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IMAGE_POLY_EXTEND] THEN
+  REWRITE_TAC[UNIV_1; IMAGE_CLAUSES] THEN
+  AP_TERM_TAC THEN AP_TERM_TAC THEN SET_TAC[]);;
 
 let POLY_EXTEND_INTO_SUBRING_GENERATED = prove
  (`!r r' s (h:A->B) v (x:V->B) p.
@@ -19812,6 +19836,21 @@ let RING_UNIT_POLY_RING = prove
       EXISTS_TAC `r:A ring` THEN
       ASM_SIMP_TAC[RING_HOMOMORPHISM_POLY_CONST]]]);;
 
+let FIELD_POLY_RING = prove
+ (`!(r:A ring) (s:V->bool). field(poly_ring r s) <=> field r /\ s = {}`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:V->bool = {}` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_MESON_TAC[ISOMORPHIC_POLY_RING_TRIVIAL; ISOMORPHIC_RING_FIELDNESS];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY])] THEN
+  DISCH_THEN(X_CHOOSE_TAC `x:V`) THEN
+  REWRITE_TAC[FIELD_EQ_ALL_UNITS; GSYM TRIVIAL_RING_10; TRIVIAL_POLY_RING] THEN
+  ASM_CASES_TAC `trivial_ring(r:A ring)` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[RING_UNIT_POLY_RING] THEN
+  DISCH_THEN(MP_TAC o SPEC `poly_var (r:A ring) (x:V)`) THEN
+  ASM_REWRITE_TAC[POLY_VAR] THEN
+  REWRITE_TAC[POLY_RING; GSYM POLY_CONST_0; POLY_VAR_EQ_CONST] THEN
+  ASM_SIMP_TAC[poly_var; MONOMIAL_VAR_1; NOT_IMP; RING_UNIT_0]);;
+
 let RING_UNIT_POWSER_RING = prove
  (`!(r:A ring) (s:V->bool) p.
         ring_unit (powser_ring r s) p <=>
@@ -20423,11 +20462,13 @@ let INTEGRAL_DOMAIN_RULE =
       GEN_REWRITE_CONV REDEPTH_CONV
        [RIGHT_AND_EXISTS_THM; LEFT_AND_EXISTS_THM] THENC
       GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM DISJ_ASSOC] THENC
-      GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM CONJ_ASSOC] in
+      GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM CONJ_ASSOC]
+    and true_tm = `T` in
     let INTEGRAL_DOMAIN_RULE_BASIC tm =
       let avs,bod = strip_forall tm in
       let th1 = init_conv bod in
       let tm' = rand(concl th1) in
+      if tm' = true_tm then EQT_ELIM th1 else
       let avs',bod' = strip_forall tm' in
       let th2 = end_itlist CONJ (map INTEGRAL_DOMAIN_CORE (conjuncts bod')) in
       let th3 = EQ_MP (SYM th1) (GENL avs' th2) in

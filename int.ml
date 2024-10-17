@@ -2218,7 +2218,8 @@ let INT_ARITH =
       let is_div = is_binop div_tm and is_rem = is_binop rem_tm in
       fun tm -> is_div tm || is_rem tm in
     let rec conv tm =
-      try let t = find_term (fun t -> is_divrem t && free_in t tm) tm in
+      try let t = hd(sort free_in
+           (find_terms (fun t -> is_divrem t && free_in t tm) tm)) in
           let x = lhand t and y = rand t in
           let dtm = mk_comb(mk_comb(div_tm,x),y)
           and rtm = mk_comb(mk_comb(rem_tm,x),y) in
@@ -2230,7 +2231,7 @@ let INT_ARITH =
                (funpow 2 BINDER_CONV(RAND_CONV BETA2_CONV))) th1 in
           let th3 = CONV_RULE(RAND_CONV
                      (funpow 2 BINDER_CONV INT_REDUCE_CONV)) th2 in
-          CONV_RULE(RAND_CONV(RAND_CONV conv)) th3
+           CONV_RULE(RAND_CONV(BINDER_CONV(BINDER_CONV(RAND_CONV conv)))) th3
       with Failure _ -> REFL tm in
     let rec topconv tm =
       if is_forall tm || is_exists tm then BINDER_CONV topconv tm
