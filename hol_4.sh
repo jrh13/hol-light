@@ -1,8 +1,16 @@
 #!/bin/bash
 
-if [ "$#" -eq 1 ] && [ "$1" == "-pp" ]; then
-  echo "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I "__DIR__" pa_j.cmo"
-  exit 0
+# Makefile will replace __DIR__ with the path
+export HOLLIGHT_DIR=__DIR__
+
+if [ "$#" -eq 1 ]; then
+  if [ "$1" == "-pp" ]; then
+    echo "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I "__DIR__" pa_j.cmo"
+    exit 0
+  elif [ "$1" == "-dir" ]; then
+    echo "${HOLLIGHT_DIR}"
+    exit 0
+  fi
 fi
 
 # The default ocaml REPL does not accept arrow keys.
@@ -12,8 +20,6 @@ if [ "${LINE_EDITOR}" == "" ]; then
   LINE_EDITOR="ledit"
 fi
 
-# Makefile will replace __DIR__ with the path
-export HOLLIGHT_DIR=__DIR__
 export HOLLIGHT_USE_MODULE=__USE_MODULE__
 
 # If a local OPAM is installed, use it
