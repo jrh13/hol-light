@@ -4034,6 +4034,49 @@ let VAL_WORD_SUBWORD_JOIN = prove
     REWRITE_TAC[MOD_MOD_EXP_MIN] THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
     ASM_ARITH_TAC]);;
 
+let WORD_SUBWORD_JOIN_LOWER = prove
+ (`!(h:M word) (l:N word) pos len.
+        pos + len <= dimindex(:N) /\ dimindex(:N) <= dimindex(:P)
+        ==> word_subword (word_join (h:M word) (l:N word):P word)
+                         (pos,len):Q word =
+            word_subword l (pos,len)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_JOIN] THEN
+  REPEAT STRIP_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  TRY ASM_ARITH_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
+
+let WORD_SUBWORD_JOIN_UPPER = prove
+ (`!(h:M word) (l:N word) pos len.
+        dimindex(:N) <= pos /\ pos + len <= dimindex(:P)
+        ==> word_subword (word_join (h:M word) (l:N word):P word)
+                         (pos,len):Q word =
+            word_subword h (pos - dimindex(:N),len)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_JOIN] THEN
+  REPEAT STRIP_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  TRY ASM_ARITH_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  BINOP_TAC THEN TRY(AP_THM_TAC THEN AP_TERM_TAC) THEN ASM_ARITH_TAC);;
+
+let WORD_SUBWORD_SUBWORD = prove
+ (`!(x:M word) pos1 len1 pos2 len2.
+        len1 <= dimindex(:N) /\ dimindex(:N) <= dimindex(:M)
+        ==> word_subword (word_subword x (pos1,len1):N word)
+                         (pos2,len2):P word =
+            word_subword x (pos1+pos2,MIN len2 (len1-pos2))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD] THEN
+  REWRITE_TAC[GSYM ADD_ASSOC] THEN
+  REPEAT(STRIP_TAC ORELSE EQ_TAC) THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BIT_GUARD]) THEN
+  ASM_ARITH_TAC);;
+
+let WORD_SUBWORD_TRIVIAL = prove
+ (`!(x:N word) n. dimindex(:N) <= n ==> word_subword x (0,n) = x`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; ADD_CLAUSES] THEN
+  ASM_SIMP_TAC[ARITH_RULE `N:num <= n ==> MIN n N = N`]);;
+
 let WORD_SUBWORD_DIMINDEX = prove
  (`!(x:N word) k.
         word_subword x (k,dimindex(:M)):M word = word_zx(word_ushr x k)`,
@@ -4296,6 +4339,69 @@ let BIT_WORD_INSERT = prove
   REWRITE_TAC[ONCE_REWRITE_RULE[MULT_SYM] (GSYM(CONJUNCT2 EXP))] THEN
   REWRITE_TAC[CONG; MOD_MOD_EXP_MIN] THEN
   AP_TERM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
+
+let WORD_SUBWORD_INSERT_OUTER = prove
+ (`!(x:M word) (y:N word) pos1 len1 pos2 len2.
+        pos2 + len2 <= dimindex(:P) /\
+        (pos2 + len2 <= pos1 \/ pos1 + len1 <= pos2)
+        ==> word_subword (word_insert x (pos1,len1) y:P word)
+                         (pos2,len2):Q word =
+            word_subword x (pos2,len2)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_INSERT] THEN
+  REPEAT STRIP_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  TRY ASM_ARITH_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  REPEAT(STRIP_TAC ORELSE EQ_TAC) THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BIT_GUARD]) THEN
+  ASM_ARITH_TAC);;
+
+let WORD_SUBWORD_INSERT_INNER = prove
+ (`!(x:M word) (y:N word) pos1 len1 pos2 len2.
+        pos2 + len2 <= dimindex(:P) /\
+        pos1 <= pos2 /\ pos2 + len2 <= pos1 + len1
+        ==> word_subword (word_insert x (pos1,len1) y:P word)
+                         (pos2,len2):Q word =
+            word_subword y (pos2-pos1,len2)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_INSERT] THEN
+  REPEAT STRIP_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  TRY ASM_ARITH_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  REPEAT(STRIP_TAC ORELSE EQ_TAC) THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BIT_GUARD]) THEN
+  TRY ASM_ARITH_TAC THEN REWRITE_TAC[IMP_CONJ] THEN DISCH_TAC THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Reduce some "simple" subword expressions, those that are simply           *)
+(* equivalent to related ones for subexpresions of the word argument.        *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_SIMPLE_SUBWORD_CONV =
+  let dimarith_conv = DEPTH_CONV(!word_SIZE_CONV ORELSEC NUM_RED_CONV) in
+  let dimarith_rule th =
+    MP th (EQT_ELIM(dimarith_conv(lhand(concl th))))
+  and post_rule =
+     CONV_RULE(RAND_CONV(RAND_CONV(BINOP_CONV dimarith_conv))) in
+  let [rules_join; rules_insert; rules_subword; [rule_trivial]] =
+  map (map (PART_MATCH (lhand o rand)))
+   [[WORD_SUBWORD_JOIN_LOWER; WORD_SUBWORD_JOIN_UPPER];
+    [WORD_SUBWORD_INSERT_OUTER; WORD_SUBWORD_INSERT_INNER];
+    [WORD_SUBWORD_SUBWORD];
+    [WORD_SUBWORD_TRIVIAL]] in
+  fun tm ->
+    match tm with
+      Comb(Comb(Const("word_subword",_),itm),
+           Comb(Comb(Const(",",_),Comb(Const("NUMERAL",_),_)),
+                Comb(Const("NUMERAL",_),_))) ->
+     (match itm with
+        Comb(Comb(Const("word_join",_),_),_) ->
+           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_join)
+      | Comb(Comb(Comb(Const("word_insert",_),_),_),_) ->
+           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_insert)
+      | Comb(Comb(Const("word_subword",_),_),_) ->
+           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_subword)
+      | _ -> dimarith_rule(rule_trivial tm))
+    | _ -> failwith "WORD_SIMPLE_SUBWORD_CONV";;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit recursion equations for "linear" operations.                          *)
