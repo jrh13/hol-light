@@ -27,7 +27,21 @@ Refer to the reference manual for more details of individual functions:
 The Objective CAML (OCaml) implementation is a prerequisite for running
 HOL Light. HOL Light should work with any recent version of OCaml; I've
 tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2,
-4.00, 4.05 and 4.14 and 5.2.0.
+4.00, 4.05, 4.14, 5.1.0 and 5.2.0.
+
+The easiest way to install HOL Light is through OPAM, an OCaml package
+manager. After installing OPAM (https://opam.ocaml.org/doc/Install.html),
+run the following command:
+
+    opam install hol_light
+    # To compile the core module of HOL Light and use, add hol_light_module
+    # opam install hol_light hol_light_module
+
+This will build 'hol.sh' and copy it at the 'bin' path of your OPAM setting,
+making it executable at any location.
+
+To manually build HOL Light, OCaml and a few packages that HOL Light depends on
+are necessary.
 
  1. OCaml: there are packages for many Linux distributions. For
     example, on a debian derivative like Ubuntu, you may just need
@@ -41,13 +55,14 @@ tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2,
 
         http://caml.inria.fr/ocaml/index.en.html
 
-  2. Dependencies: HOL Light uses camlp5 and zarith (num for OCaml
-    version < 4.14). If you have OPAM installed on your machine,
-    running the following command inside this directory will create a local
-    OPAM switch which uses the latest OCaml version that fully supports
-    features of as well as all dependencies installed:
+ 2. Dependencies: Using OPAM (OCaml package manager) is the easiest way to
+    install dependent packages (https://opam.ocaml.org/doc/Install.html).
+    If you have OPAM installed on your machine, running the following command
+    inside this directory will create a local OPAM switch which uses the
+    latest OCaml version that fully supports features of as well as all
+    dependencies installed:
 
-        make switch
+        make switch # or 'make switch-5' for OCaml 5
         eval $(opam env)
 
     To manually install dependencies, the DEPENDENCIES chapter of this document
