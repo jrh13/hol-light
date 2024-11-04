@@ -1749,6 +1749,21 @@ let BIT_WORD_INT_MIN = prove
   REWRITE_TAC[DIMINDEX_GE_1; ARITH_RULE `n - 1 < n <=> 1 <= n`]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Saturating versions of the conversions from N and Z to words.             *)
+(* ------------------------------------------------------------------------- *)
+
+let word_saturate = new_definition
+ `(word_saturate:num->N word) n =
+        if n > val(word_UINT_MAX:N word) then word_UINT_MAX
+        else word n`;;
+
+let iword_saturate = new_definition
+ `(iword_saturate:int->N word) x =
+        if x < ival(word_INT_MIN:N word) then word_INT_MIN
+        else if x > ival(word_INT_MAX:N word) then word_INT_MAX
+        else iword x`;;
+
+(* ------------------------------------------------------------------------- *)
 (* Population count (= number of 1s in a word), as a mathematical number.    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -4372,6 +4387,110 @@ let WORD_SUBWORD_INSERT_INNER = prove
   MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Repetition of a shorter word in a longer one. This uses the argument      *)
+(* word size type as the only indication of word length for the argument.    *)
+(* ------------------------------------------------------------------------- *)
+
+let word_duplicate = new_definition
+ `(word_duplicate:M word->N word) x =
+  word_of_bits {i | bit (i MOD dimindex(:M)) x}`;;
+
+let BIT_WORD_DUPLICATE = prove
+ (`!(x:M word) i.
+        bit i (word_duplicate x:N word) <=>
+        i < dimindex(:N) /\ bit (i MOD dimindex(:M)) x`,
+  REWRITE_TAC[word_duplicate; BIT_WORD_OF_BITS; IN_ELIM_THM]);;
+
+let WORD_DUPLICATE_REFL = prove
+ (`!x:N word. word_duplicate x = x`,
+  SIMP_TAC[WORD_EQ_BITS_ALT; BIT_WORD_DUPLICATE; MOD_LT]);;
+
+let WORD_DUPLICATE_DOUBLE = prove
+ (`!x:M word. (word_duplicate:((M)tybit0)word->N word) (word_join x x) =
+              word_duplicate x`,
+  GEN_TAC THEN REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_DUPLICATE] THEN
+  X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+  ASM_REWRITE_TAC[BIT_WORD_JOIN; DIMINDEX_TYBIT0] THEN
+  MP_TAC(SPECL [`i MOD (2 * dimindex(:M))`; `dimindex(:M)`] MOD_CASES) THEN
+  REWRITE_TAC[MOD_LT_EQ; MULT_EQ_0; DIMINDEX_NONZERO; ARITH_EQ] THEN
+  REWRITE_TAC[ONCE_REWRITE_RULE[MULT_SYM] MOD_MOD] THEN MESON_TAC[]);;
+
+let WORD_SUBWORD_DUPLICATE = prove
+ (`!x pos len.
+        pos MOD dimindex(:M) + len <= dimindex(:M) /\
+        pos + len <= dimindex(:N)
+        ==> word_subword ((word_duplicate:M word->N word) x) (pos,len):P word =
+            word_subword x (pos MOD dimindex(:M),len)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_DUPLICATE] THEN
+  X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+  ASM_REWRITE_TAC[ARITH_RULE `i < MIN m n <=> i < m /\ i < n`] THEN
+  ASM_CASES_TAC `i:num < len` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(TAUT `p /\ (q <=> r) ==> (p /\ q <=> r)`) THEN
+  CONJ_TAC THENL [ASM_ARITH_TAC; AP_THM_TAC THEN AP_TERM_TAC] THEN
+  MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC `pos DIV dimindex(:M)` THEN
+  ASM_ARITH_TAC);;
+
+let VAL_WORD_DUPLICATE = prove
+ (`!x k. dimindex(:N) <= k * dimindex(:M)
+         ==> val((word_duplicate:M word->N word) x) =
+             ((2 EXP (k * dimindex(:M)) - 1) DIV (2 EXP dimindex(:M) - 1) *
+              val x) MOD 2 EXP dimindex(:N)`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM VAL_MOD_REFL] THEN
+  MP_TAC(ISPECL
+   [`\i. i DIV dimindex(:M)`;
+    `\i. 2 EXP i * bitval (bit (i MOD dimindex(:M)) (x:M word))`;
+    `{i | i < k * dimindex(:M)}`; `{i:num | i < k}`]
+   NSUM_GROUP) THEN
+  REWRITE_TAC[FINITE_NUMSEG_LT; SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
+  ANTS_TAC THENL
+   [SIMP_TAC[RDIV_LT_EQ; DIMINDEX_NONZERO; MULT_AC]; ALL_TAC] THEN
+  MATCH_MP_TAC(MESON[MOD_MOD_REFL]
+   `y MOD n = y' /\ x = x' ==> x = y ==> y' MOD n = x' MOD n`) THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[val_def; BINARY_DIGITSUM_MOD; FINITE_NUMSEG_LT] THEN
+    SIMP_TAC[BIT_WORD_DUPLICATE; IN_ELIM_THM] THEN
+    ASM_SIMP_TAC[ARITH_RULE `a:num <= b ==> (i < b /\ i < a <=> i < a)`];
+    ALL_TAC] THEN
+  TRANS_TAC EQ_TRANS
+   `nsum {i | i < k} (\i. 2 EXP (dimindex(:M) * i) * val(x:M word))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_EQ THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    REWRITE_TAC[val_def; GSYM NSUM_LMUL] THEN
+    MATCH_MP_TAC NSUM_EQ_GENERAL_INVERSES THEN
+    EXISTS_TAC `\j. j MOD dimindex(:M)` THEN
+    EXISTS_TAC `\j:num. dimindex(:M) * i + j` THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN
+    SIMP_TAC[MOD_MULT_ADD; DIV_MULT_ADD; DIMINDEX_NONZERO; MOD_LT; DIV_LT;
+             MOD_LT_EQ; ADD_CLAUSES] THEN
+    CONJ_TAC THEN X_GEN_TAC `j:num` THEN STRIP_TAC THENL
+     [TRANS_TAC LTE_TRANS `(i + 1) * dimindex(:M)` THEN
+      ASM_REWRITE_TAC[LE_MULT_RCANCEL; DIMINDEX_NONZERO] THEN ASM_ARITH_TAC;
+      REWRITE_TAC[MULT_ASSOC; GSYM EXP_ADD] THEN ASM_MESON_TAC[DIVISION_SIMP]];
+    REWRITE_TAC[NSUM_RMUL] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `0` THEN
+    REWRITE_TAC[ADD_CLAUSES; ARITH_RULE `0 < e - 1 <=> 2 EXP 1 <= e`] THEN
+    SIMP_TAC[LE_EXP; LE_1; DIMINDEX_NONZERO; ARITH_EQ] THEN
+    CONV_TAC SYM_CONV THEN SPEC_TAC(`k:num`,`k:num`) THEN
+    MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC[NSUM_CLAUSES_NUMSEG_LT] THEN
+    SIMP_TAC[MULT_CLAUSES; EXP; SUB_REFL] THEN X_GEN_TAC `i:num` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[RIGHT_ADD_DISTRIB] THEN
+    SIMP_TAC[GSYM INT_OF_NUM_EQ; GSYM INT_OF_NUM_ADD; GSYM INT_OF_NUM_MUL] THEN
+    SIMP_TAC[GSYM INT_OF_NUM_SUB; LE_1; EXP_EQ_0; ARITH_EQ] THEN
+    REWRITE_TAC[GSYM INT_OF_NUM_POW; EXP_ADD] THEN
+    REWRITE_TAC[ARITH_RULE `i * dimindex(:M) = dimindex(:M) * i`] THEN
+    REWRITE_TAC[INT_POW_ADD] THEN CONV_TAC INT_ARITH]);;
+
+let WORD_DUPLICATE = prove
+ (`!m k. dimindex(:N) <= k * dimindex(:M)
+         ==> (word_duplicate:M word->N word)(word m) =
+             word((2 EXP (k * dimindex(:M)) - 1) DIV
+                  (2 EXP dimindex(:M) - 1) * m MOD 2 EXP dimindex(:M))`,
+  SIMP_TAC[REWRITE_RULE[VAL_WORD_GALOIS] VAL_WORD_DUPLICATE] THEN
+  REWRITE_TAC[VAL_WORD; WORD_MOD_SIZE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Reduce some "simple" subword expressions, those that are simply           *)
 (* equivalent to related ones for subexpresions of the word argument.        *)
 (* ------------------------------------------------------------------------- *)
@@ -4382,11 +4501,12 @@ let WORD_SIMPLE_SUBWORD_CONV =
     MP th (EQT_ELIM(dimarith_conv(lhand(concl th))))
   and post_rule =
      CONV_RULE(RAND_CONV(RAND_CONV(BINOP_CONV dimarith_conv))) in
-  let [rules_join; rules_insert; rules_subword; [rule_trivial]] =
+  let [rules_join; rules_insert; rules_subword; rules_duplicate;
+       [rule_trivial]] =
   map (map (PART_MATCH (lhand o rand)))
    [[WORD_SUBWORD_JOIN_LOWER; WORD_SUBWORD_JOIN_UPPER];
     [WORD_SUBWORD_INSERT_OUTER; WORD_SUBWORD_INSERT_INNER];
-    [WORD_SUBWORD_SUBWORD];
+    [WORD_SUBWORD_SUBWORD]; [WORD_SUBWORD_DUPLICATE];
     [WORD_SUBWORD_TRIVIAL]] in
   fun tm ->
     match tm with
@@ -4400,6 +4520,8 @@ let WORD_SIMPLE_SUBWORD_CONV =
            post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_insert)
       | Comb(Comb(Const("word_subword",_),_),_) ->
            post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_subword)
+      | Comb(Const("word_duplicate",_),_) ->
+           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_duplicate)
       | _ -> dimarith_rule(rule_trivial tm))
     | _ -> failwith "WORD_SIMPLE_SUBWORD_CONV";;
 
@@ -6580,6 +6702,13 @@ let BIT_WORD_CONV =
           RATOR_CONV(LAND_CONV(DEPTH_CONV NUM_RED_CONV)) THENC
           (conv_cond_f ORELSEC
            (conv_cond_t THENC LAND_CONV NUM_SUB_CONV))))) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Const("word_duplicate",_),x))
+      when is_numeral n ->
+        (GEN_REWRITE_CONV I [BIT_WORD_DUPLICATE] THENC
+         LAND_CONV(RAND_CONV (!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+         (conv_and_f ORELSEC
+          (conv_and_t THENC
+           LAND_CONV(RAND_CONV (!word_SIZE_CONV) THENC NUM_MOD_CONV)))) tm
     | Comb(Comb(Const("bit",_),n),x) ->
         let th = ISPECL [x;n] BIT_TRIVIAL in
         let tm = lhand(concl th) in
@@ -6765,6 +6894,70 @@ let WORD_IWORD_CONV tm =
       funpow 2 RAND_CONV INT_REM_CONV THENC
       GEN_REWRITE_CONV RAND_CONV [NUM_OF_INT_OF_NUM]) tm
   | _ -> failwith "WORD_IWORD_CONV";;
+
+let WORD_SATURATE_CONV =
+  let pth = prove
+    (`word_saturate n:N word =
+        (\t. if n < t then word n else word (t - 1)) (2 EXP dimindex(:N))`,
+      REWRITE_TAC[word_saturate; VAL_WORD_UINT_MAX; GT] THEN
+      SIMP_TAC[ARITH_RULE `~(m = 0) ==> (m - 1 < n <=> ~(n < m))`;
+               EXP_EQ_0; ARITH_EQ; COND_SWAP; word_UINT_MAX])
+  and n_tm = `n:num` and n_ty = `:N`
+  and conv_cond_t = GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL COND_CLAUSES)]
+  and conv_cond_f = GEN_REWRITE_CONV I [CONJUNCT2(SPEC_ALL COND_CLAUSES)] in
+  fun tm ->
+    match tm with
+      Comb(Const("word_saturate",
+           Tyapp("fun",[_;Tyapp("word",[nty])])),
+           (Comb(Const("NUMERAL",_),_) as ntm)) ->
+        let th1 = INST [ntm,n_tm] (INST_TYPE [nty,n_ty] pth) in
+        let th2 = (RAND_CONV (!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+                   RATOR_CONV(LAND_CONV NUM_LT_CONV) THENC
+                   (conv_cond_t ORELSEC
+                    (conv_cond_f THENC RAND_CONV NUM_SUB_CONV)))
+                  (rand(concl th1)) in
+        TRANS th1 th2
+    | _ -> failwith "WORD_SATURATE_CONV";;
+
+let IWORD_SATURATE_CONV =
+  let pth = prove
+    (`iword_saturate n:N word =
+        (\t. if n < -- &t then word t
+             else if &t <= n then word(t - 1)
+             else iword n) (2 EXP (dimindex(:N) - 1))`,
+      REWRITE_TAC[iword_saturate; IVAL_WORD_INT_MIN; IVAL_WORD_INT_MAX] THEN
+      REWRITE_TAC[word_INT_MIN; word_INT_MAX] THEN
+      REWRITE_TAC[INT_ARITH `n:int > m - &1 <=> m <= n`] THEN
+      REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES; WORD_IWORD] THEN
+      SIMP_TAC[GSYM INT_OF_NUM_SUB; LE_1; EXP_EQ_0; ARITH_EQ] THEN
+      REWRITE_TAC[GSYM INT_OF_NUM_CLAUSES] THEN
+      REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+      REWRITE_TAC[IWORD_EQ] THEN MATCH_MP_TAC(INTEGER_RULE
+       `&2 * x:int = n ==> (--x == x) (mod n)`) THEN
+      REWRITE_TAC[GSYM(CONJUNCT2 INT_POW)] THEN
+      SIMP_TAC[DIMINDEX_NONZERO; ARITH_RULE `~(n = 0) ==> SUC(n - 1) = n`])
+  and n_tm = `n:int` and n_ty = `:N`
+  and conv_cond_t = GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL COND_CLAUSES)]
+  and conv_cond_f = GEN_REWRITE_CONV I [CONJUNCT2(SPEC_ALL COND_CLAUSES)] in
+  fun tm ->
+    match tm with
+      Comb(Const("iword_saturate",
+           Tyapp("fun",[_;Tyapp("word",[nty])])),ntm) when is_intconst ntm ->
+        let th1 = INST [ntm,n_tm] (INST_TYPE [nty,n_ty] pth) in
+        let th2 = (RAND_CONV
+                    (RAND_CONV
+                      (LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV) THENC
+                     NUM_EXP_CONV) THENC
+                   BETA_CONV THENC
+                   RATOR_CONV(LAND_CONV INT_LT_CONV) THENC
+                   (conv_cond_t ORELSEC
+                    (conv_cond_f THENC
+                     RATOR_CONV(LAND_CONV INT_LE_CONV) THENC
+                     ((conv_cond_t THENC RAND_CONV NUM_SUB_CONV) ORELSEC
+                      (conv_cond_f THENC WORD_IWORD_CONV)))))
+                  (rand(concl th1)) in
+        TRANS th1 th2
+    | _ -> failwith "WORD_SATURATE_CONV";;
 
 let WORD_VAL_CONV tm =
   match tm with
@@ -7476,6 +7669,36 @@ let WORD_INSERT_CONV =
      (RAND_CONV (!word_SIZE_CONV) THENC NUM_EXP_CONV) THENC
     NUM_MOD_CONV);;
 
+let WORD_DUPLICATE_CONV =
+  let m_ty = `:M` and n_ty = `:N` and m_tm = `m:num` and k_tm = `k:num`
+  and pth = prove
+   (`dimindex(:N) <= k * dimindex(:M)
+           ==> (word_duplicate:M word->N word)(word m) =
+               (\t. word((t EXP k - 1) DIV (t - 1) * m MOD t))
+               (2 EXP dimindex(:M))`,
+     SIMP_TAC[WORD_DUPLICATE; EXP_EXP; MULT_SYM]) in
+  fun tm ->
+  match tm with
+    Comb(Const("word_duplicate",Tyapp("fun",[mty;nty])),
+         Comb(Const("word",_),
+              (Comb(Const("NUMERAL",_),_) as mtm))) ->
+        let m = dest_word_ty mty and n = dest_word_ty nty in
+        let k = quo_num (n +/ m -/ num_1) m in
+        let th1 =  INST [mtm,m_tm; mk_numeral k,k_tm]
+                        (INST_TYPE [mk_finty m,m_ty; mk_finty n,n_ty] pth) in
+        let th2 = (BINOP2_CONV
+                    (!word_SIZE_CONV)
+                    (RAND_CONV(!word_SIZE_CONV) THENC NUM_MULT_CONV) THENC
+                   NUM_LE_CONV)
+                  (lhand(concl th1)) in
+        let th3 = MP th1 (EQT_ELIM th2) in
+        let th4 = CONV_RULE(RAND_CONV
+          (RAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_EXP_CONV))) th3 in
+        let th5 = CONV_RULE(RAND_CONV BETA_CONV) th4 in
+        let th6 = CONV_RULE(RAND_CONV(RAND_CONV NUM_REDUCE_CONV)) th5 in
+        CONV_RULE(RAND_CONV WORD_WORD_CONV) th6
+  | _ -> failwith "WORD_DUPLICATE_CONV";;
+
 let WORD_BITS_OF_WORD_CONV =
   let pth = prove
    (`?f. (!i. f i _0 = {} /\
@@ -7860,7 +8083,9 @@ let WORD_JREM_CONV =
 let WORD_RED_CONV =
   let gconv_net = itlist (uncurry net_of_conv)
    [`word(NUMERAL n):N word`,CHANGED_CONV WORD_WORD_CONV;
+    `word_saturate(NUMERAL n):N word`,WORD_SATURATE_CONV;
     `iword i:N word`,WORD_IWORD_CONV;
+    `iword_saturate(n):N word`,IWORD_SATURATE_CONV;
     `val(w:N word)`,WORD_VAL_CONV;
     `ival(w:N word)`,WORD_IVAL_CONV;
     `bit (NUMERAL k) (word(NUMERAL n):N word)`,WORD_BIT_CONV;
@@ -7904,6 +8129,7 @@ let WORD_RED_CONV =
     `word_insert (word(NUMERAL m):M word) (NUMERAL p,NUMERAL q)
                  (word(NUMERAL n):N word):P word`,
                 WORD_INSERT_CONV;
+    `word_duplicate (word(NUMERAL m):M word):N word`,WORD_DUPLICATE_CONV;
     `bits_of_word (word(NUMERAL n):N word)`,WORD_BITS_OF_WORD_CONV;
     `word_popcount (word(NUMERAL n):N word)`,WORD_POPCOUNT_CONV;
     `word_evenparity (word(NUMERAL n):N word)`,WORD_EVENPARITY_CONV;
