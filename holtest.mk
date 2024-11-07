@@ -38,6 +38,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/lagrange_lemma \
 	Examples/lucas_lehmer \
 	Examples/mangoldt \
+	Library/matroids \
 	Examples/mccarthy \
 	Examples/miller_rabin \
 	Examples/misiurewicz \

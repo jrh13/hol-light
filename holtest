@@ -67,6 +67,7 @@ echo '### Loading Examples/kb.ml'; echo 'loadt "Examples/kb.ml";;' | (time $holl
 echo '### Loading Examples/lagrange_lemma.ml'; echo 'loadt "Examples/lagrange_lemma.ml";;' | (time $hollight)
 echo '### Loading Examples/lucas_lehmer.ml'; echo 'loadt "Examples/lucas_lehmer.ml";;' | (time $hollight)
 echo '### Loading Examples/mangoldt.ml'; echo 'loadt "Examples/mangoldt.ml";;' | (time $hollight)
+echo '### Loading Library/matroids.ml'; echo 'loadt "Library/matroids.ml";;' | (time $hollight)
 echo '### Loading Examples/mccarthy.ml'; echo 'loadt "Examples/mccarthy.ml";;' | (time $hollight)
 echo '### Loading Examples/miller_rabin.ml'; echo 'loadt "Examples/miller_rabin.ml";;' | (time $hollight)
 echo '### Loading Examples/misiurewicz.ml'; echo 'loadt "Examples/misiurewicz.ml";;' | (time $hollight)

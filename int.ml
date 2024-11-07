@@ -2191,14 +2191,28 @@ let INT_ARITH =
   let base_CONV = TRY_CONV atom_CONV THENC bub_CONV in
   let NNF_NORM_CONV = GEN_NNF_CONV false
    (base_CONV,fun t -> base_CONV t,base_CONV(mk_neg t)) in
+  let INT_POS_RULE =
+    let x_tm = `x:int` and y_tm = `y:int` and n_tm = `n:num` in
+    let pth_pos = SPEC n_tm INT_POS
+    and pth_add = SPECL [x_tm;y_tm] INT_LE_ADD
+    and pth_mul = SPECL [x_tm;y_tm] INT_LE_MUL
+    and pth_pow = SPECL [x_tm;n_tm] INT_POW_LE in
+    let rec rule tm =
+      match tm with
+        Comb(Const("int_of_num",_),rtm) -> INST[rtm,n_tm] pth_pos
+      | Comb(Comb(Const("int_add",_),ltm),rtm) ->
+            let lth = rule ltm and rth = rule rtm in
+            MP (INST [ltm,x_tm; rtm,y_tm] pth_add) (CONJ lth rth)
+      | Comb(Comb(Const("int_mul",_),ltm),rtm) ->
+            let lth = rule ltm and rth = rule rtm in
+            MP (INST [ltm,x_tm; rtm,y_tm] pth_mul) (CONJ lth rth)
+      | Comb(Comb(Const("int_pow",_),ltm),rtm) ->
+            let lth = rule ltm in
+            MP (INST [ltm,x_tm; rtm,n_tm] pth_pow) lth
+      | _ -> failwith "INT_POS_RULE" in
+    rule in
   let INT_DIVREM_ELIM_CONV =
-    let DIVREM_ELIM_THM = prove
-     (`P (m div n) (m rem n) <=>
-       ?q r. (n = &0 /\ q = &0 /\ r = m \/
-              m = q * n + r /\
-              (&0 <= m /\ &0 <= n ==> &0 <= q) /\
-              &0 <= r /\ r + &1 <= abs n) /\
-             P q r`,
+    let tac =
       REWRITE_TAC[GSYM INT_LT_DISCRETE] THEN
       ASM_CASES_TAC `n:int = &0` THEN ASM_REWRITE_TAC[] THENL
        [ASM_REWRITE_TAC[INT_ABS_NUM; INT_LET_ANTISYM] THEN
@@ -2207,7 +2221,31 @@ let INT_ARITH =
         EQ_TAC THEN STRIP_TAC THENL
          [MAP_EVERY EXISTS_TAC [`m div n`; `m rem n`] THEN
           ASM_SIMP_TAC[INT_DIVISION; INT_LE_DIV];
-          ASM_METIS_TAC[INT_DIVMOD_UNIQ]]])
+          ASM_METIS_TAC[INT_DIVMOD_UNIQ]]] in
+    let DIVREM_ELIM_THM = prove
+     (`P (m div n) (m rem n) <=>
+       ?q r. (n = &0 /\ q = &0 /\ r = m \/
+              m = q * n + r /\
+              &0 <= r /\ r + &1 <= abs n) /\
+             P q r`,
+      tac)
+    and DIVREM_ELIM_THM' = prove
+     (`P (m div n) (m rem n) <=>
+       ?q r. (n = &0 /\ q = &0 /\ r = m \/
+              m = q * n + r /\
+              (&0 <= m /\ &0 <= n ==> &0 <= q) /\
+              &0 <= r /\ r + &1 <= abs n) /\
+             P q r`,
+      tac) in
+    let DIVREM_ELIM_THM_POS = prove
+     (`&0 <= m /\ &0 <= n
+       ==> (P (m div n) (m rem n) <=>
+            ?q r. (n = &0 /\ q = &0 /\ r = m \/
+                   m = q * n + r /\
+                   &0 <= q /\
+                   &0 <= r /\ r + &1 <= n) /\
+                  P q r)`,
+      SIMP_TAC[DIVREM_ELIM_THM'; INT_ABS])
     and BETA2_CONV = RATOR_CONV BETA_CONV THENC BETA_CONV
     and div_tm = `(div):int->int->int`
     and rem_tm = `(rem):int->int->int`
@@ -2226,7 +2264,12 @@ let INT_ARITH =
           let vd = genvar(type_of dtm)
           and vr = genvar(type_of rtm) in
           let p = list_mk_abs([vd;vr],subst[vd,dtm; vr,rtm] tm) in
-          let th1 = INST [p,p_tm; x,m_tm; y,n_tm] DIVREM_ELIM_THM in
+          let th0 = INST [p,p_tm; x,m_tm; y,n_tm] DIVREM_ELIM_THM_POS in
+          let th1 =
+            try let ltm,rtm = dest_conj(lhand(concl th0)) in
+                MP th0
+                 (CONJ (INT_POS_RULE(rand ltm)) (INT_POS_RULE(rand rtm)))
+            with Failure _ -> INST [p,p_tm; x,m_tm; y,n_tm] DIVREM_ELIM_THM in
           let th2 = CONV_RULE(COMB2_CONV(RAND_CONV BETA2_CONV)
                (funpow 2 BINDER_CONV(RAND_CONV BETA2_CONV))) th1 in
           let th3 = CONV_RULE(RAND_CONV

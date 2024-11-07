@@ -6,6 +6,7 @@
 (*       (c) Copyright, Andrea Gabrielli, Marco Maggesi 2016-2017            *)
 (* ========================================================================= *)
 
+needs "Library/matroids.ml";;
 needs "Multivariate/misc.ml";;
 
 (* ------------------------------------------------------------------------- *)
@@ -5073,21 +5074,6 @@ let EQ_SPAN_INSERT_EQ = prove
                 VECTOR_ARITH `(z - k % x) + k % (x - y) = z - k % y`]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Transitivity property.                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let SPAN_TRANS = prove
- (`!x y:real^N s. x IN span(s) /\ y IN span(x INSERT s) ==> y IN span(s)`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(SPECL [`x:real^N`; `(x:real^N) INSERT s`; `y:real^N`]
-         SPAN_BREAKDOWN) THEN
-  ASM_REWRITE_TAC[IN_INSERT] THEN
-  DISCH_THEN(X_CHOOSE_THEN `k:real` STRIP_ASSUME_TAC) THEN
-  SUBST1_TAC(VECTOR_ARITH `y:real^N = (y - k % x) + k % x`) THEN
-  MATCH_MP_TAC SPAN_ADD THEN ASM_SIMP_TAC[SPAN_MUL] THEN
-  ASM_MESON_TAC[SPAN_MONO; SUBSET; IN_INSERT; IN_DELETE]);;
-
-(* ------------------------------------------------------------------------- *)
 (* An explicit expansion is sometimes needed.                                *)
 (* ------------------------------------------------------------------------- *)
 
@@ -5280,123 +5266,123 @@ let INDEPENDENT_BASIS_IMAGE = prove
     ASM_REWRITE_TAC[GSYM numseg]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* This is useful for building a basis step-by-step.                         *)
+(* Definition of dimension, and setup of matroid for Euclidean span.         *)
 (* ------------------------------------------------------------------------- *)
+
+let dim = new_definition
+  `dim (v:real^N->bool) =
+   @n. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\ b HAS_SIZE n`;;
+
+let euclidean_matroid = new_definition
+ `euclidean_matroid = matroid((:real^N),span)`;;
+
+let EUCLIDEAN_MATROID = prove
+ (`matroid_set euclidean_matroid = (:real^N) /\
+   matroid_span euclidean_matroid = (span:(real^N->bool)->(real^N->bool))`,
+  ONCE_REWRITE_TAC[matroid_set; matroid_span] THEN
+  REWRITE_TAC[GSYM PAIR_EQ; euclidean_matroid] THEN
+  REWRITE_TAC[GSYM(CONJUNCT2 matroid_tybij)] THEN
+  REWRITE_TAC[SUBSET_UNIV; IN_UNIV] THEN
+  REWRITE_TAC[SPAN_INC; SPAN_MONO; SPAN_SPAN; IN_SPAN_INSERT] THEN
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [SPAN_EXPLICIT] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  SIMP_TAC[SPAN_FINITE; LEFT_IMP_EXISTS_THM; IN_ELIM_THM] THEN
+  MESON_TAC[]);;
+
+let EUCLIDEAN_MATROID_INDEPENDENT = prove
+ (`matroid_independent (euclidean_matroid:(real^N)matroid) = independent`,
+  SIMP_TAC[independent; dependent; matroid_independent; FUN_EQ_THM] THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID; SUBSET_UNIV] THEN MESON_TAC[]);;
+
+let EUCLIDEAN_MATROID_SPANNING = prove
+ (`!s. matroid_spanning euclidean_matroid s <=> span s = (:real^N)`,
+  REWRITE_TAC[matroid_spanning; EUCLIDEAN_MATROID; SUBSET_UNIV]);;
+
+let EUCLIDEAN_MATROID_SUBSPACE = prove
+ (`matroid_subspace (euclidean_matroid:(real^N)matroid) = subspace`,
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  REWRITE_TAC[matroid_subspace; EUCLIDEAN_MATROID; SUBSET_UNIV] THEN
+  REWRITE_TAC[SPAN_EQ_SELF]);;
+
+let EUCLIDEAN_MATROID_FINITE_DIMENSIONAL = prove
+ (`matroid_finite_dimensional (euclidean_matroid:(real^N)matroid)`,
+  REWRITE_TAC[MATROID_FINITE_DIMENSIONAL; EUCLIDEAN_MATROID] THEN
+  EXISTS_TAC `{basis i :real^N | 1 <= i /\ i <= dimindex(:N)}` THEN
+  REWRITE_TAC[SPAN_STDBASIS; SUBSET_UNIV; FINITE_STDBASIS]);;
+
+let EUCLIDEAN_MATROID_DIMENSION = prove
+ (`matroid_dimension (euclidean_matroid:(real^N)matroid) = dimindex(:N)`,
+  MATCH_MP_TAC MATROID_DIMENSION_UNIQUE THEN
+  EXISTS_TAC `{basis i :real^N | 1 <= i /\ i <= dimindex(:N)}` THEN
+  REWRITE_TAC[matroid_basis; EUCLIDEAN_MATROID_INDEPENDENT; SPAN_STDBASIS;
+    EUCLIDEAN_MATROID_SPANNING; INDEPENDENT_STDBASIS; HAS_SIZE_STDBASIS]);;
+
+let EUCLIDEAN_MATROID_FINITE_DIM = prove
+ (`!s:real^N->bool. matroid_finite_dim euclidean_matroid s`,
+  GEN_TAC THEN MATCH_MP_TAC MATROID_FINITE_DIMENSIONAL_DIM THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID_FINITE_DIMENSIONAL] THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID; SUBSET_UNIV]);;
+
+let EUCLIDEAN_SUBMATROID = prove
+ (`(!s:real^N->bool. matroid_set (submatroid euclidean_matroid s) = span s) /\
+   (!s:real^N->bool. matroid_span (submatroid euclidean_matroid s) = span)`,
+  SIMP_TAC[SUBMATROID_SUBSET; EUCLIDEAN_MATROID; SUBSET_UNIV]);;
+
+let EUCLIDEAN_MATROID_DIM = prove
+ (`matroid_dim (euclidean_matroid:(real^N)matroid) = dim`,
+  REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `s:real^N->bool` THEN
+  REWRITE_TAC[dim] THEN
+  SIMP_TAC[MATROID_DIM_ALT; EUCLIDEAN_MATROID; SUBSET_UNIV] THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID_INDEPENDENT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some linear algebra basics, leaning on matroids in many cases             *)
+(* ------------------------------------------------------------------------- *)
+
+let SPAN_EQ = prove
+ (`!s t:real^N->bool. span s = span t <=> s SUBSET span t /\ t SUBSET span s`,
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+   [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`; `t:real^N->bool`]
+    MATROID_SPAN_EQ) THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID; IN_UNIV; SUBSET_UNIV]);;
+
+let SPAN_EQ_INSERT = prove
+ (`!s x:real^N. span(x INSERT s) = span s <=> x IN span s`,
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+   [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`; `x:real^N`]
+    MATROID_SPAN_INSERT_EQ) THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID; IN_UNIV; SUBSET_UNIV]);;
 
 let INDEPENDENT_INSERT = prove
  (`!a:real^N s. independent(a INSERT s) <=>
                   if a IN s then independent s
                   else independent s /\ ~(a IN span s)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `(a:real^N) IN s` THEN
-  ASM_SIMP_TAC[SET_RULE `x IN s ==> (x INSERT s = s)`] THEN
-  EQ_TAC THENL
-   [DISCH_TAC THEN CONJ_TAC THENL
-     [ASM_MESON_TAC[INDEPENDENT_MONO; SUBSET; IN_INSERT];
-      POP_ASSUM MP_TAC THEN REWRITE_TAC[independent; dependent] THEN
-      ASM_MESON_TAC[IN_INSERT; SET_RULE
-        `~(a IN s) ==> ((a INSERT s) DELETE a = s)`]];
-    ALL_TAC] THEN
-  REWRITE_TAC[independent; dependent; NOT_EXISTS_THM] THEN
-  STRIP_TAC THEN X_GEN_TAC `b:real^N` THEN
-  REWRITE_TAC[IN_INSERT] THEN ASM_CASES_TAC `b:real^N = a` THEN
-  ASM_SIMP_TAC[SET_RULE `~(a IN s) ==> ((a INSERT s) DELETE a = s)`] THEN
-  ASM_SIMP_TAC[SET_RULE
-    `~(a IN s) /\ ~(b = a)
-     ==> ((a INSERT s) DELETE b = a INSERT (s DELETE b))`] THEN
-  ASM_MESON_TAC[IN_SPAN_INSERT; SET_RULE
-    `b IN s ==> (b INSERT (s DELETE b) = s)`]);;
+  MESON_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_INDEPENDENT;
+            MATROID_INDEPENDENT_INSERT; IN_UNIV]);;
 
-(* ------------------------------------------------------------------------- *)
-(* The degenerate case of the Exchange Lemma.                                *)
-(* ------------------------------------------------------------------------- *)
+let SPAN_TRANS = prove
+ (`!x y:real^N s. x IN span(s) /\ y IN span(x INSERT s) ==> y IN span(s)`,
+  REWRITE_TAC[GSYM EUCLIDEAN_MATROID] THEN
+  MESON_TAC[MATROID_SPAN_INSERT_EQ; EUCLIDEAN_MATROID; IN_UNIV; SUBSET_UNIV]);;
 
 let SPANNING_SUBSET_INDEPENDENT = prove
  (`!s t:real^N->bool.
-        t SUBSET s /\ independent s /\ s SUBSET span(t) ==> (s = t)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
-  ASM_REWRITE_TAC[] THEN REWRITE_TAC[SUBSET] THEN
-  X_GEN_TAC `a:real^N` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [independent]) THEN
-  REWRITE_TAC[dependent; NOT_EXISTS_THM] THEN
-  DISCH_THEN(MP_TAC o SPEC `a:real^N`) THEN ASM_REWRITE_TAC[] THEN
-  ASM_MESON_TAC[SPAN_MONO; SUBSET; IN_DELETE]);;
-
-(* ------------------------------------------------------------------------- *)
-(* The general case of the Exchange Lemma, the key to what follows.          *)
-(* ------------------------------------------------------------------------- *)
+        t SUBSET s /\ independent s /\ s SUBSET span(t) ==> s = t`,
+  MP_TAC(ISPEC `euclidean_matroid:(real^N)matroid`
+    MATROID_SPANNING_SUBSET_INDEPENDENT) THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_INDEPENDENT]);;
 
 let EXCHANGE_LEMMA = prove
  (`!s t:real^N->bool.
         FINITE t /\ independent s /\ s SUBSET span t
         ==> ?t'. t' HAS_SIZE (CARD t) /\
                  s SUBSET t' /\ t' SUBSET (s UNION t) /\ s SUBSET (span t')`,
-  REPEAT GEN_TAC THEN
-  WF_INDUCT_TAC `CARD(t DIFF s :real^N->bool)` THEN
-  ASM_CASES_TAC `(s:real^N->bool) SUBSET t` THENL
-   [ASM_MESON_TAC[HAS_SIZE; SUBSET_UNION]; ALL_TAC] THEN
-  ASM_CASES_TAC `t SUBSET (s:real^N->bool)` THENL
-   [ASM_MESON_TAC[SPANNING_SUBSET_INDEPENDENT; HAS_SIZE]; ALL_TAC] THEN
-  STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[SUBSET] o check(is_neg o concl)) THEN
-  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN
-  DISCH_THEN(X_CHOOSE_THEN `b:real^N` STRIP_ASSUME_TAC) THEN
-  ASM_CASES_TAC `s SUBSET span(t DELETE (b:real^N))` THENL
-   [FIRST_X_ASSUM(MP_TAC o
-     SPECL [`t DELETE (b:real^N)`; `s:real^N->bool`]) THEN
-    ASM_REWRITE_TAC[SET_RULE `s DELETE a DIFF t = (s DIFF t) DELETE a`] THEN
-    ASM_SIMP_TAC[CARD_DELETE; FINITE_DIFF; IN_DIFF; FINITE_DELETE;
-                 CARD_EQ_0; ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
-    ANTS_TAC THENL
-     [UNDISCH_TAC `~((s:real^N->bool) SUBSET t)` THEN ASM SET_TAC[];
-      ALL_TAC] THEN
-    DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `(b:real^N) INSERT u` THEN
-    ASM_SIMP_TAC[SUBSET_INSERT; INSERT_SUBSET; IN_UNION] THEN CONJ_TAC THENL
-     [UNDISCH_TAC `(u:real^N->bool) HAS_SIZE CARD(t:real^N->bool) - 1` THEN
-      SIMP_TAC[HAS_SIZE; FINITE_RULES; CARD_CLAUSES] THEN STRIP_TAC THEN
-      COND_CASES_TAC THENL
-       [ASM_MESON_TAC[SUBSET; IN_UNION; IN_DELETE]; ALL_TAC] THEN
-      ASM_MESON_TAC[ARITH_RULE `~(n = 0) ==> (SUC(n - 1) = n)`;
-                    CARD_EQ_0; MEMBER_NOT_EMPTY];
-      ALL_TAC] THEN
-    CONJ_TAC THENL
-     [UNDISCH_TAC `u SUBSET s UNION t DELETE (b:real^N)` THEN SET_TAC[];
-      ASM_MESON_TAC[SUBSET; SPAN_MONO; IN_INSERT]];
-    ALL_TAC] THEN
-  UNDISCH_TAC `~(s SUBSET span (t DELETE (b:real^N)))` THEN
-  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [SUBSET] THEN
-  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN
-  DISCH_THEN(X_CHOOSE_THEN `a:real^N` STRIP_ASSUME_TAC) THEN
-  SUBGOAL_THEN `~(a:real^N = b)` ASSUME_TAC THENL
-    [ASM_MESON_TAC[]; ALL_TAC] THEN
-  SUBGOAL_THEN `~((a:real^N) IN t)` ASSUME_TAC THENL
-   [ASM_MESON_TAC[IN_DELETE; SPAN_CLAUSES]; ALL_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o SPECL
-   [`(a:real^N) INSERT (t DELETE b)`; `s:real^N->bool`]) THEN
-  ANTS_TAC THENL
-   [ASM_SIMP_TAC[SET_RULE
-     `a IN s ==> ((a INSERT (t DELETE b) DIFF s) = (t DIFF s) DELETE b)`] THEN
-    ASM_SIMP_TAC[CARD_DELETE; FINITE_DELETE; FINITE_DIFF; IN_DIFF] THEN
-    ASM_SIMP_TAC[ARITH_RULE `n - 1 < n <=> ~(n = 0)`; CARD_EQ_0;
-                 FINITE_DIFF] THEN
-    UNDISCH_TAC `~((s:real^N->bool) SUBSET t)` THEN ASM SET_TAC[];
-    ALL_TAC] THEN
-  ANTS_TAC THENL
-   [ASM_SIMP_TAC[FINITE_RULES; FINITE_DELETE] THEN
-    REWRITE_TAC[SUBSET] THEN X_GEN_TAC `x:real^N` THEN
-    DISCH_TAC THEN MATCH_MP_TAC SPAN_TRANS THEN EXISTS_TAC `b:real^N` THEN
-    ASM_MESON_TAC[IN_SPAN_DELETE; SUBSET; SPAN_MONO;
-                  SET_RULE `t SUBSET (b INSERT (a INSERT (t DELETE b)))`];
-    ALL_TAC] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:real^N->bool` THEN
-  ASM_SIMP_TAC[HAS_SIZE; CARD_CLAUSES; CARD_DELETE; FINITE_DELETE; IN_DELETE;
-               ARITH_RULE `(SUC(n - 1) = n) <=> ~(n = 0)`;
-               CARD_EQ_0] THEN
-  UNDISCH_TAC `(b:real^N) IN t` THEN ASM SET_TAC[]);;
-
-(* ------------------------------------------------------------------------- *)
-(* This implies corresponding size bounds.                                   *)
-(* ------------------------------------------------------------------------- *)
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`; `t:real^N->bool`]
+   MATROID_STEINITZ_EXCHANGE_FINITE) THEN
+  ASM_REWRITE_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_INDEPENDENT] THEN
+  REWRITE_TAC[SUBSET_UNIV] THEN MATCH_MP_TAC MONO_EXISTS THEN ASM_MESON_TAC[]);;
 
 let INDEPENDENT_SPAN_BOUND = prove
  (`!s t. FINITE t /\ independent s /\ s SUBSET span(t)
@@ -5421,6 +5407,255 @@ let DEPENDENT_BIGGERSET = prove
 let INDEPENDENT_IMP_FINITE = prove
  (`!s:real^N->bool. independent s ==> FINITE s`,
   SIMP_TAC[INDEPENDENT_BOUND]);;
+
+let MAXIMAL_INDEPENDENT_SUBSET_EXTEND = prove
+ (`!s v:real^N->bool.
+        s SUBSET v /\ independent s
+        ==> ?b. s SUBSET b /\ b SUBSET v /\ independent b /\
+                v SUBSET (span b)`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`submatroid euclidean_matroid (v:real^N->bool)`;
+          `s:real^N->bool`; `v:real^N->bool`] MATROID_INTERMEDIATE_BASIS) THEN
+  ASM_SIMP_TAC[MATROID_INDEPENDENT_SUBMATROID; EUCLIDEAN_MATROID; SUBSET_UNIV;
+               MATROID_SPANNING_SUBMATROID; EUCLIDEAN_MATROID_INDEPENDENT;
+               MATROID_BASIS_SUBMATROID;
+               SET_RULE `s SUBSET v ==> s UNION v = v`] THEN
+  ASM_MESON_TAC[SPAN_INC; SUBSET_TRANS]);;
+
+let MAXIMAL_INDEPENDENT_SUBSET = prove
+ (`!v:real^N->bool. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b)`,
+  MP_TAC(SPEC `EMPTY:real^N->bool` MAXIMAL_INDEPENDENT_SUBSET_EXTEND) THEN
+  REWRITE_TAC[EMPTY_SUBSET; INDEPENDENT_EMPTY]);;
+
+let BASIS_EXISTS = prove
+ (`!v. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\
+           b HAS_SIZE (dim v)`,
+  GEN_TAC THEN REWRITE_TAC[dim] THEN CONV_TAC SELECT_CONV THEN
+  MESON_TAC[MAXIMAL_INDEPENDENT_SUBSET; HAS_SIZE; INDEPENDENT_BOUND]);;
+
+let BASIS_EXISTS_FINITE = prove
+ (`!v. ?b. FINITE b /\
+           b SUBSET v /\
+           independent b /\
+           v SUBSET (span b) /\
+           b HAS_SIZE (dim v)`,
+  MESON_TAC[BASIS_EXISTS; INDEPENDENT_IMP_FINITE]);;
+
+let BASIS_SUBSPACE_EXISTS = prove
+ (`!s:real^N->bool.
+        subspace s
+        ==> ?b. FINITE b /\
+                b SUBSET s /\
+                independent b /\
+                span b = s /\
+                b HAS_SIZE dim s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `s:real^N->bool` BASIS_EXISTS) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  ASM_MESON_TAC[SPAN_EQ_SELF; SPAN_MONO; INDEPENDENT_IMP_FINITE]);;
+
+let INDEPENDENT_CARD_LE_DIM = prove
+ (`!v b:real^N->bool.
+        b SUBSET v /\ independent b ==> FINITE b /\ CARD(b) <= dim v`,
+  MESON_TAC[BASIS_EXISTS; INDEPENDENT_SPAN_BOUND; HAS_SIZE;SUBSET_TRANS]);;
+
+let SPAN_CARD_GE_DIM = prove
+ (`!v b:real^N->bool.
+        v SUBSET (span b) /\ FINITE b ==> dim(v) <= CARD(b)`,
+  MESON_TAC[BASIS_EXISTS; INDEPENDENT_SPAN_BOUND; HAS_SIZE;SUBSET_TRANS]);;
+
+let BASIS_CARD_EQ_DIM = prove
+ (`!v b. b SUBSET v /\ v SUBSET (span b) /\ independent b
+         ==> FINITE b /\ (CARD b = dim v)`,
+  MESON_TAC[LE_ANTISYM; INDEPENDENT_CARD_LE_DIM; SPAN_CARD_GE_DIM]);;
+
+let BASIS_HAS_SIZE_DIM = prove
+ (`!v b. independent b /\ span b = v ==> b HAS_SIZE (dim v)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[HAS_SIZE] THEN
+  MATCH_MP_TAC BASIS_CARD_EQ_DIM THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[SPAN_INC]);;
+
+let DIM_SPAN = prove
+ (`!s:real^N->bool. dim(span s) = dim s`,
+  GEN_TAC THEN MP_TAC(ISPECL
+   [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`]
+   MATROID_DIM_SPAN) THEN
+  SIMP_TAC[EUCLIDEAN_MATROID_DIM; EUCLIDEAN_MATROID; SUBSET_UNIV]);;
+
+let DIM_UNIQUE = prove
+ (`!v b. b SUBSET v /\ v SUBSET (span b) /\ independent b /\ b HAS_SIZE n
+         ==> dim v = n`,
+  MESON_TAC[BASIS_CARD_EQ_DIM; HAS_SIZE]);;
+
+let DIM_LE_CARD = prove
+ (`!s. FINITE s ==> dim s <= CARD s`,
+  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC SPAN_CARD_GE_DIM THEN
+  ASM_REWRITE_TAC[SPAN_INC; SUBSET_REFL]);;
+
+let DIM_UNIV = prove
+ (`dim(:real^N) = dimindex(:N)`,
+  MATCH_MP_TAC DIM_UNIQUE THEN
+  EXISTS_TAC `{basis i :real^N | 1 <= i /\ i <= dimindex(:N)}` THEN
+  REWRITE_TAC[SUBSET_UNIV; SPAN_STDBASIS; HAS_SIZE_STDBASIS;
+              INDEPENDENT_STDBASIS]);;
+
+let DIM_SUBSET = prove
+ (`!s t:real^N->bool. s SUBSET t ==> dim(s) <= dim(t)`,
+  MESON_TAC[BASIS_EXISTS; INDEPENDENT_SPAN_BOUND; SUBSET; HAS_SIZE]);;
+
+let DIM_SUBSET_UNIV = prove
+ (`!s:real^N->bool. dim(s) <= dimindex(:N)`,
+  GEN_TAC THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
+  MATCH_MP_TAC DIM_SUBSET THEN REWRITE_TAC[SUBSET_UNIV]);;
+
+let BASIS_HAS_SIZE_UNIV = prove
+ (`!b. independent b /\ span b = (:real^N) ==> b HAS_SIZE (dimindex(:N))`,
+  REWRITE_TAC[GSYM DIM_UNIV; BASIS_HAS_SIZE_DIM]);;
+
+let CARD_GE_DIM_INDEPENDENT = prove
+ (`!v b:real^N->bool.
+        b SUBSET v /\ independent b /\ dim v <= CARD(b)
+        ==> v SUBSET span b`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`euclidean_matroid:(real^N)matroid`; `b:real^N->bool`; `v:real^N->bool`]
+   MATROID_DIM_SPAN_EQ_GEN) THEN
+  MP_TAC(ISPECL [`euclidean_matroid:(real^N)matroid`; `b:real^N->bool`]
+        MATROID_DIM_GE_FINITE_CARD_EQ) THEN
+  ASM_REWRITE_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_DIM; SUBSET_UNIV;
+    EUCLIDEAN_MATROID_FINITE_DIM; EUCLIDEAN_MATROID_INDEPENDENT] THEN
+  ASM_MESON_TAC[SPAN_INC; LE_TRANS; SPAN_MONO]);;
+
+let CARD_LE_DIM_SPANNING = prove
+ (`!v b:real^N->bool.
+        v SUBSET span b /\ FINITE b /\ CARD(b) <= dim v ==> independent b`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`euclidean_matroid:(real^N)matroid`; `b:real^N->bool`]
+        MATROID_DIM_GE_FINITE_CARD_EQ) THEN
+  REWRITE_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_DIM; SUBSET_UNIV;
+              EUCLIDEAN_MATROID_INDEPENDENT; EUCLIDEAN_MATROID_FINITE_DIM] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  ASM_MESON_TAC[DIM_SPAN; SPAN_SPAN; DIM_SUBSET; LE_TRANS]);;
+
+let CARD_EQ_DIM = prove
+ (`!v b. b SUBSET v /\ b HAS_SIZE (dim v)
+         ==> (independent b <=> v SUBSET (span b))`,
+  REWRITE_TAC[HAS_SIZE; GSYM LE_ANTISYM] THEN
+  MESON_TAC[CARD_LE_DIM_SPANNING; CARD_GE_DIM_INDEPENDENT]);;
+
+let INDEPENDENT_BOUND_GENERAL = prove
+ (`!s:real^N->bool. independent s ==> FINITE s /\ CARD(s) <= dim(s)`,
+  MESON_TAC[INDEPENDENT_CARD_LE_DIM; INDEPENDENT_BOUND; SUBSET_REFL]);;
+
+let DEPENDENT_BIGGERSET_GENERAL = prove
+ (`!s:real^N->bool. (FINITE s ==> CARD(s) > dim(s)) ==> dependent s`,
+  MP_TAC INDEPENDENT_BOUND_GENERAL THEN MATCH_MP_TAC MONO_FORALL THEN
+  REWRITE_TAC[GT; GSYM NOT_LE; independent] THEN MESON_TAC[]);;
+
+let DIM_INSERT_0 = prove
+ (`!s:real^N->bool. dim(vec 0 INSERT s) = dim s`,
+  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN
+  REWRITE_TAC[SPAN_INSERT_0]);;
+
+let DIM_EQ_CARD = prove
+ (`!s:real^N->bool. independent s ==> dim s = CARD s`,
+  REPEAT STRIP_TAC THEN MP_TAC
+   (ISPECL [`span s:real^N->bool`; `s:real^N->bool`] BASIS_CARD_EQ_DIM) THEN
+  ASM_SIMP_TAC[SUBSET_REFL; SPAN_INC; DIM_SPAN]);;
+
+let DEPENDENT_EQ_DIM_LT_CARD = prove
+ (`!s:real^N->bool. dependent s <=> FINITE s ==> dim s < CARD s`,
+  GEN_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[GSYM GT; DEPENDENT_BIGGERSET_GENERAL] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[GSYM independent; NOT_IMP] THEN
+  STRIP_TAC THEN MATCH_MP_TAC CARD_LE_DIM_SPANNING THEN
+  EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[SPAN_INC] THEN
+  ASM_ARITH_TAC);;
+
+let INDEPENDENT_EQ_DIM_EQ_CARD = prove
+ (`!s:real^N->bool. independent s <=> FINITE s /\ dim s = CARD s`,
+  GEN_TAC THEN EQ_TAC THEN
+  SIMP_TAC[DIM_EQ_CARD; INDEPENDENT_IMP_FINITE] THEN
+  SIMP_TAC[DEPENDENT_EQ_DIM_LT_CARD; independent; LT_REFL]);;
+
+let SUBSET_LE_DIM = prove
+ (`!s t:real^N->bool. s SUBSET (span t) ==> dim s <= dim t`,
+  MESON_TAC[DIM_SPAN; DIM_SUBSET]);;
+
+let SPAN_EQ_DIM = prove
+ (`!s t. span s = span t ==> dim s = dim t`,
+  MESON_TAC[DIM_SPAN]);;
+
+let DIM_EMPTY = prove
+ (`dim({}:real^N->bool) = 0`,
+  REWRITE_TAC[GSYM EUCLIDEAN_MATROID_DIM; MATROID_DIM_EMPTY]);;
+
+let DIM_INSERT = prove
+ (`!x:real^N s. dim(x INSERT s) = if x IN span s then dim s else dim s + 1`,
+  REWRITE_TAC[GSYM EUCLIDEAN_MATROID_DIM] THEN
+  SIMP_TAC[MATROID_DIM_INSERT; EUCLIDEAN_MATROID_FINITE_DIM; EUCLIDEAN_MATROID;
+           IN_UNIV]);;
+
+let CHOOSE_SUBSPACE_OF_SUBSPACE = prove
+ (`!s:real^N->bool n.
+        n <= dim s ==> ?t. subspace t /\ t SUBSET span s /\ dim t = n`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`; `n:num`]
+   MATROID_CHOOSE_SUBSPACE) THEN
+  ASM_REWRITE_TAC[EUCLIDEAN_MATROID; SUBSET_UNIV; EUCLIDEAN_MATROID_DIM;
+                  EUCLIDEAN_MATROID_SUBSPACE] THEN
+  MESON_TAC[]);;
+
+let SUBSPACE_EXISTS = prove
+ (`!n. n <= dimindex(:N) ==> ?s:real^N->bool. subspace s /\ dim s = n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CHOOSE_SUBSPACE_OF_SUBSPACE) THEN
+  MESON_TAC[]);;
+
+let DIM_EQ_SPAN = prove
+ (`!s t:real^N->bool. s SUBSET t /\ dim t <= dim s ==> span s = span t`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`; `t:real^N->bool`]
+   MATROID_DIM_EQ_SPAN) THEN
+  ASM_REWRITE_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_FINITE_DIM;
+                  EUCLIDEAN_MATROID_DIM; SUBSET_UNIV]);;
+
+let DIM_EQ_FULL = prove
+ (`!s:real^N->bool. dim s = dimindex(:N) <=> span s = (:real^N)`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN EQ_TAC THEN
+  SIMP_TAC[DIM_UNIV] THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM SPAN_UNIV] THEN MATCH_MP_TAC DIM_EQ_SPAN THEN
+  ASM_REWRITE_TAC[SUBSET_UNIV; DIM_UNIV] THEN
+  ASM_MESON_TAC[LE_REFL; DIM_SPAN]);;
+
+let DIM_PSUBSET = prove
+ (`!s t:real^N->bool. span s PSUBSET span t ==> dim s < dim t`,
+  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN
+  SIMP_TAC[PSUBSET; DIM_SUBSET; LT_LE] THEN
+  MESON_TAC[EQ_IMP_LE; DIM_EQ_SPAN; SPAN_SPAN]);;
+
+let LOWDIM_EXPAND_DIMENSION = prove
+ (`!s:real^N->bool n.
+        dim s <= n /\ n <= dimindex(:N)
+        ==> ?t. dim(t) = n /\ span s SUBSET span t`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+    [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`; `n:num`]
+    MATROID_LOWDIM_EXPAND_DIMENSION) THEN
+  ASM_SIMP_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_DIMENSION;
+               EUCLIDEAN_MATROID_FINITE_DIM; EUCLIDEAN_MATROID_DIM]);;
+
+let LOWDIM_EXPAND_BASIS = prove
+ (`!s:real^N->bool n.
+        dim s <= n /\ n <= dimindex(:N)
+        ==> ?b. b HAS_SIZE n /\ independent b /\ span s SUBSET span b`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+    [`euclidean_matroid:(real^N)matroid`; `s:real^N->bool`; `n:num`]
+    MATROID_LOWDIM_EXPAND_BASIS) THEN
+  ASM_SIMP_TAC[EUCLIDEAN_MATROID; EUCLIDEAN_MATROID_INDEPENDENT;
+               EUCLIDEAN_MATROID_DIMENSION; EUCLIDEAN_MATROID_FINITE_DIM;
+               EUCLIDEAN_MATROID_DIM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Explicit formulation of independence.                                     *)
@@ -5494,38 +5729,6 @@ let INDEPENDENT_3 = prove
   MESON_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Hence we can create a maximal independent subset.                         *)
-(* ------------------------------------------------------------------------- *)
-
-let MAXIMAL_INDEPENDENT_SUBSET_EXTEND = prove
- (`!s v:real^N->bool.
-        s SUBSET v /\ independent s
-        ==> ?b. s SUBSET b /\ b SUBSET v /\ independent b /\
-                v SUBSET (span b)`,
-  REPEAT GEN_TAC THEN
-  WF_INDUCT_TAC `dimindex(:N) - CARD(s:real^N->bool)` THEN
-  REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC `v SUBSET (span(s:real^N->bool))` THENL
-   [ASM_MESON_TAC[SUBSET_REFL]; ALL_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [SUBSET]) THEN
-  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN
-  DISCH_THEN(X_CHOOSE_THEN `a:real^N` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `(a:real^N) INSERT s`) THEN
-  REWRITE_TAC[IMP_IMP] THEN ANTS_TAC THENL
-   [ALL_TAC; MESON_TAC[INSERT_SUBSET]] THEN
-  SUBGOAL_THEN `independent ((a:real^N) INSERT s)` ASSUME_TAC THENL
-   [ASM_REWRITE_TAC[INDEPENDENT_INSERT; COND_ID]; ALL_TAC] THEN
-  ASM_REWRITE_TAC[INSERT_SUBSET] THEN
-  MATCH_MP_TAC(ARITH_RULE `(b = a + 1) /\ b <= n ==> n - b < n - a`) THEN
-  ASM_SIMP_TAC[CARD_CLAUSES; INDEPENDENT_BOUND] THEN
-  ASM_MESON_TAC[SPAN_SUPERSET; ADD1]);;
-
-let MAXIMAL_INDEPENDENT_SUBSET = prove
- (`!v:real^N->bool. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b)`,
-  MP_TAC(SPEC `EMPTY:real^N->bool` MAXIMAL_INDEPENDENT_SUBSET_EXTEND) THEN
-  REWRITE_TAC[EMPTY_SUBSET; INDEPENDENT_EMPTY]);;
-
-(* ------------------------------------------------------------------------- *)
 (* A kind of closed graph property for linearity.                            *)
 (* ------------------------------------------------------------------------- *)
 
@@ -5537,204 +5740,6 @@ let LINEAR_SUBSPACE_GRAPH = prove
   REWRITE_TAC[IN_ELIM_THM; PASTECART_INJ; UNWIND_THM1; PASTECART_ADD;
               GSYM PASTECART_CMUL] THEN
   MESON_TAC[VECTOR_MUL_LZERO]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Notion of dimension.                                                      *)
-(* ------------------------------------------------------------------------- *)
-
-let dim = new_definition
-  `dim v = @n. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\
-                   b HAS_SIZE n`;;
-
-let BASIS_EXISTS = prove
- (`!v. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\
-           b HAS_SIZE (dim v)`,
-  GEN_TAC THEN REWRITE_TAC[dim] THEN CONV_TAC SELECT_CONV THEN
-  MESON_TAC[MAXIMAL_INDEPENDENT_SUBSET; HAS_SIZE; INDEPENDENT_BOUND]);;
-
-let BASIS_EXISTS_FINITE = prove
- (`!v. ?b. FINITE b /\
-           b SUBSET v /\
-           independent b /\
-           v SUBSET (span b) /\
-           b HAS_SIZE (dim v)`,
-  MESON_TAC[BASIS_EXISTS; INDEPENDENT_IMP_FINITE]);;
-
-let BASIS_SUBSPACE_EXISTS = prove
- (`!s:real^N->bool.
-        subspace s
-        ==> ?b. FINITE b /\
-                b SUBSET s /\
-                independent b /\
-                span b = s /\
-                b HAS_SIZE dim s`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPEC `s:real^N->bool` BASIS_EXISTS) THEN
-  MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN
-  ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
-  ASM_MESON_TAC[SPAN_EQ_SELF; SPAN_MONO; INDEPENDENT_IMP_FINITE]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Consequences of independence or spanning for cardinality.                 *)
-(* ------------------------------------------------------------------------- *)
-
-let INDEPENDENT_CARD_LE_DIM = prove
- (`!v b:real^N->bool.
-        b SUBSET v /\ independent b ==> FINITE b /\ CARD(b) <= dim v`,
-  MESON_TAC[BASIS_EXISTS; INDEPENDENT_SPAN_BOUND; HAS_SIZE;SUBSET_TRANS]);;
-
-let SPAN_CARD_GE_DIM = prove
- (`!v b:real^N->bool.
-        v SUBSET (span b) /\ FINITE b ==> dim(v) <= CARD(b)`,
-  MESON_TAC[BASIS_EXISTS; INDEPENDENT_SPAN_BOUND; HAS_SIZE;SUBSET_TRANS]);;
-
-let BASIS_CARD_EQ_DIM = prove
- (`!v b. b SUBSET v /\ v SUBSET (span b) /\ independent b
-         ==> FINITE b /\ (CARD b = dim v)`,
-  MESON_TAC[LE_ANTISYM; INDEPENDENT_CARD_LE_DIM; SPAN_CARD_GE_DIM]);;
-
-let BASIS_HAS_SIZE_DIM = prove
- (`!v b. independent b /\ span b = v ==> b HAS_SIZE (dim v)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[HAS_SIZE] THEN
-  MATCH_MP_TAC BASIS_CARD_EQ_DIM THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
-  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[SPAN_INC]);;
-
-let DIM_UNIQUE = prove
- (`!v b. b SUBSET v /\ v SUBSET (span b) /\ independent b /\ b HAS_SIZE n
-         ==> (dim v = n)`,
-  MESON_TAC[BASIS_CARD_EQ_DIM; HAS_SIZE]);;
-
-let DIM_LE_CARD = prove
- (`!s. FINITE s ==> dim s <= CARD s`,
-  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC SPAN_CARD_GE_DIM THEN
-  ASM_REWRITE_TAC[SPAN_INC; SUBSET_REFL]);;
-
-(* ------------------------------------------------------------------------- *)
-(* More lemmas about dimension.                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let DIM_UNIV = prove
- (`dim(:real^N) = dimindex(:N)`,
-  MATCH_MP_TAC DIM_UNIQUE THEN
-  EXISTS_TAC `{basis i :real^N | 1 <= i /\ i <= dimindex(:N)}` THEN
-  REWRITE_TAC[SUBSET_UNIV; SPAN_STDBASIS; HAS_SIZE_STDBASIS;
-              INDEPENDENT_STDBASIS]);;
-
-let DIM_SUBSET = prove
- (`!s t:real^N->bool. s SUBSET t ==> dim(s) <= dim(t)`,
-  MESON_TAC[BASIS_EXISTS; INDEPENDENT_SPAN_BOUND; SUBSET; HAS_SIZE]);;
-
-let DIM_SUBSET_UNIV = prove
- (`!s:real^N->bool. dim(s) <= dimindex(:N)`,
-  GEN_TAC THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
-  MATCH_MP_TAC DIM_SUBSET THEN REWRITE_TAC[SUBSET_UNIV]);;
-
-let BASIS_HAS_SIZE_UNIV = prove
- (`!b. independent b /\ span b = (:real^N) ==> b HAS_SIZE (dimindex(:N))`,
-  REWRITE_TAC[GSYM DIM_UNIV; BASIS_HAS_SIZE_DIM]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Converses to those.                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-let CARD_GE_DIM_INDEPENDENT = prove
- (`!v b:real^N->bool.
-        b SUBSET v /\ independent b /\ dim v <= CARD(b)
-        ==> v SUBSET (span b)`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `!a:real^N. ~(a IN v /\ ~(a IN span b))` MP_TAC THENL
-   [ALL_TAC; SET_TAC[]] THEN
-  X_GEN_TAC `a:real^N` THEN STRIP_TAC THEN
-  SUBGOAL_THEN `independent((a:real^N) INSERT b)` ASSUME_TAC THENL
-   [ASM_MESON_TAC[INDEPENDENT_INSERT]; ALL_TAC] THEN
-  MP_TAC(ISPECL [`v:real^N->bool`; `(a:real^N) INSERT b`]
-                INDEPENDENT_CARD_LE_DIM) THEN
-  ASM_SIMP_TAC[INSERT_SUBSET; CARD_CLAUSES; INDEPENDENT_BOUND] THEN
-  ASM_MESON_TAC[SPAN_SUPERSET; SUBSET; ARITH_RULE
-    `x <= y ==> ~(SUC y <= x)`]);;
-
-let CARD_LE_DIM_SPANNING = prove
- (`!v b:real^N->bool.
-        v SUBSET (span b) /\ FINITE b /\ CARD(b) <= dim v
-        ==> independent b`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[independent; dependent] THEN
-  DISCH_THEN(X_CHOOSE_THEN `a:real^N` STRIP_ASSUME_TAC) THEN
-  SUBGOAL_THEN `dim(v:real^N->bool) <= CARD(b DELETE (a:real^N))` MP_TAC THENL
-   [ALL_TAC;
-    ASM_SIMP_TAC[CARD_DELETE] THEN MATCH_MP_TAC
-     (ARITH_RULE `b <= n /\ ~(b = 0) ==> ~(n <= b - 1)`) THEN
-    ASM_SIMP_TAC[CARD_EQ_0] THEN ASM_MESON_TAC[MEMBER_NOT_EMPTY]] THEN
-  MATCH_MP_TAC SPAN_CARD_GE_DIM THEN ASM_SIMP_TAC[FINITE_DELETE] THEN
-  REWRITE_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC SPAN_TRANS THEN EXISTS_TAC `a:real^N` THEN
-  ASM_SIMP_TAC[SET_RULE `a IN b ==> (a INSERT (b DELETE a) = b)`] THEN
-  ASM_MESON_TAC[SUBSET]);;
-
-let CARD_EQ_DIM = prove
- (`!v b. b SUBSET v /\ b HAS_SIZE (dim v)
-         ==> (independent b <=> v SUBSET (span b))`,
-  REWRITE_TAC[HAS_SIZE; GSYM LE_ANTISYM] THEN
-  MESON_TAC[CARD_LE_DIM_SPANNING; CARD_GE_DIM_INDEPENDENT]);;
-
-(* ------------------------------------------------------------------------- *)
-(* More general size bound lemmas.                                           *)
-(* ------------------------------------------------------------------------- *)
-
-let INDEPENDENT_BOUND_GENERAL = prove
- (`!s:real^N->bool. independent s ==> FINITE s /\ CARD(s) <= dim(s)`,
-  MESON_TAC[INDEPENDENT_CARD_LE_DIM; INDEPENDENT_BOUND; SUBSET_REFL]);;
-
-let DEPENDENT_BIGGERSET_GENERAL = prove
- (`!s:real^N->bool. (FINITE s ==> CARD(s) > dim(s)) ==> dependent s`,
-  MP_TAC INDEPENDENT_BOUND_GENERAL THEN MATCH_MP_TAC MONO_FORALL THEN
-  REWRITE_TAC[GT; GSYM NOT_LE; independent] THEN MESON_TAC[]);;
-
-let DIM_SPAN = prove
- (`!s:real^N->bool. dim(span s) = dim s`,
-  GEN_TAC THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THENL
-   [ALL_TAC;
-    MATCH_MP_TAC DIM_SUBSET THEN MESON_TAC[SUBSET; SPAN_SUPERSET]] THEN
-  MP_TAC(ISPEC `s:real^N->bool` BASIS_EXISTS) THEN
-  REWRITE_TAC[HAS_SIZE] THEN STRIP_TAC THEN
-  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
-  MATCH_MP_TAC SPAN_CARD_GE_DIM THEN ASM_REWRITE_TAC[] THEN
-  GEN_REWRITE_TAC RAND_CONV [GSYM SPAN_SPAN] THEN
-  MATCH_MP_TAC SPAN_MONO THEN ASM_REWRITE_TAC[]);;
-
-let DIM_INSERT_0 = prove
- (`!s:real^N->bool. dim(vec 0 INSERT s) = dim s`,
-  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN
-  REWRITE_TAC[SPAN_INSERT_0]);;
-
-let DIM_EQ_CARD = prove
- (`!s:real^N->bool. independent s ==> dim s = CARD s`,
-  REPEAT STRIP_TAC THEN MP_TAC
-   (ISPECL [`span s:real^N->bool`; `s:real^N->bool`] BASIS_CARD_EQ_DIM) THEN
-  ASM_SIMP_TAC[SUBSET_REFL; SPAN_INC; DIM_SPAN]);;
-
-let DEPENDENT_EQ_DIM_LT_CARD = prove
- (`!s:real^N->bool. dependent s <=> FINITE s ==> dim s < CARD s`,
-  GEN_TAC THEN EQ_TAC THEN
-  REWRITE_TAC[GSYM GT; DEPENDENT_BIGGERSET_GENERAL] THEN
-  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
-  REWRITE_TAC[GSYM independent; NOT_IMP] THEN
-  STRIP_TAC THEN MATCH_MP_TAC CARD_LE_DIM_SPANNING THEN
-  EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[SPAN_INC] THEN
-  ASM_ARITH_TAC);;
-
-let INDEPENDENT_EQ_DIM_EQ_CARD = prove
- (`!s:real^N->bool. independent s <=> FINITE s /\ dim s = CARD s`,
-  GEN_TAC THEN EQ_TAC THEN
-  SIMP_TAC[DIM_EQ_CARD; INDEPENDENT_IMP_FINITE] THEN
-  SIMP_TAC[DEPENDENT_EQ_DIM_LT_CARD; independent; LT_REFL]);;
-
-let SUBSET_LE_DIM = prove
- (`!s t:real^N->bool. s SUBSET (span t) ==> dim s <= dim t`,
-  MESON_TAC[DIM_SPAN; DIM_SUBSET]);;
-
-let SPAN_EQ_DIM = prove
- (`!s t. span s = span t ==> dim s = dim t`,
-  MESON_TAC[DIM_SPAN]);;
 
 let SPANS_IMAGE = prove
  (`!f b v. linear f /\ v SUBSET (span b)
@@ -5753,33 +5758,6 @@ let DIM_LINEAR_IMAGE_LE = prove
 (* Some stepping theorems.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let DIM_EMPTY = prove
- (`dim({}:real^N->bool) = 0`,
-  MATCH_MP_TAC DIM_UNIQUE THEN EXISTS_TAC `{}:real^N->bool` THEN
-  REWRITE_TAC[SUBSET_REFL; SPAN_EMPTY; INDEPENDENT_EMPTY; HAS_SIZE_0;
-              EMPTY_SUBSET]);;
-
-let DIM_INSERT = prove
- (`!x:real^N s. dim(x INSERT s) = if x IN span s then dim s else dim s + 1`,
-  REPEAT GEN_TAC THEN COND_CASES_TAC THENL
-   [MATCH_MP_TAC SPAN_EQ_DIM THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
-    ASM_MESON_TAC[SPAN_TRANS; SUBSET; SPAN_MONO; IN_INSERT];
-    ALL_TAC] THEN
-  X_CHOOSE_THEN `b:real^N->bool` STRIP_ASSUME_TAC
-   (ISPEC `span s:real^N->bool` BASIS_EXISTS) THEN
-  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN
-  MATCH_MP_TAC DIM_UNIQUE THEN
-  EXISTS_TAC `(x:real^N) INSERT b` THEN REPEAT CONJ_TAC THENL
-   [REWRITE_TAC[INSERT_SUBSET] THEN
-    ASM_MESON_TAC[SUBSET; SPAN_MONO; IN_INSERT; SPAN_SUPERSET];
-    REWRITE_TAC[SUBSET; SPAN_BREAKDOWN_EQ] THEN
-    ASM_MESON_TAC[SUBSET];
-    REWRITE_TAC[INDEPENDENT_INSERT] THEN
-    ASM_MESON_TAC[SUBSET; SPAN_SUPERSET; SPAN_MONO; SPAN_SPAN];
-    RULE_ASSUM_TAC(REWRITE_RULE[HAS_SIZE]) THEN
-    ASM_SIMP_TAC[HAS_SIZE; CARD_CLAUSES; FINITE_INSERT; ADD1] THEN
-    ASM_MESON_TAC[SUBSET; SPAN_SUPERSET; SPAN_MONO; SPAN_SPAN]]);;
-
 let DIM_SING = prove
  (`!x. dim{x} = if x = vec 0 then 0 else 1`,
   REWRITE_TAC[DIM_INSERT; DIM_EMPTY; SPAN_EMPTY; IN_SING; ARITH]);;
@@ -5793,38 +5771,6 @@ let DIM_EQ_0 = prove
     MATCH_MP_TAC(ARITH_RULE `!m. m = 0 /\ n <= m ==> n = 0`) THEN
     EXISTS_TAC `dim{vec 0:real^N}` THEN ASM_SIMP_TAC[DIM_SUBSET]] THEN
   ASM_REWRITE_TAC[DIM_SING; ARITH]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Choosing a subspace of a given dimension.                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let CHOOSE_SUBSPACE_OF_SUBSPACE = prove
- (`!s:real^N->bool n.
-        n <= dim s ==> ?t. subspace t /\ t SUBSET span s /\ dim t = n`,
-  GEN_TAC THEN INDUCT_TAC THENL
-   [DISCH_TAC THEN EXISTS_TAC `{vec 0:real^N}` THEN
-    REWRITE_TAC[SUBSPACE_TRIVIAL; DIM_SING; SING_SUBSET; SPAN_0];
-    DISCH_THEN(fun th -> POP_ASSUM MP_TAC THEN ASSUME_TAC th) THEN
-    ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
-    DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
-    ASM_CASES_TAC `span (s:real^N->bool) SUBSET span t` THENL
-     [SUBGOAL_THEN `dim(s:real^N->bool) = dim(t:real^N->bool)` MP_TAC THENL
-       [ALL_TAC; ASM_ARITH_TAC] THEN MATCH_MP_TAC SPAN_EQ_DIM THEN
-      MATCH_MP_TAC SUBSET_ANTISYM THEN ASM_REWRITE_TAC[] THEN
-      MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN ASM_REWRITE_TAC[SUBSPACE_SPAN];
-      FIRST_ASSUM(X_CHOOSE_THEN `y:real^N` STRIP_ASSUME_TAC o MATCH_MP(SET_RULE
-       `~(s SUBSET t) ==> ?a. a IN s /\ ~(a IN t)`)) THEN
-      EXISTS_TAC `span((y:real^N) INSERT t)` THEN
-      REWRITE_TAC[SUBSPACE_SPAN] THEN CONJ_TAC THENL
-       [MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN
-        ASM_REWRITE_TAC[SUBSPACE_SPAN] THEN ASM SET_TAC[];
-        ASM_REWRITE_TAC[DIM_SPAN; DIM_INSERT; ADD1]]]]);;
-
-let SUBSPACE_EXISTS = prove
- (`!n. n <= dimindex(:N) ==> ?s:real^N->bool. subspace s /\ dim s = n`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP CHOOSE_SUBSPACE_OF_SUBSPACE) THEN
-  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relation between bases and injectivity/surjectivity of map.               *)
@@ -5959,16 +5905,6 @@ let ORTHOGONAL_BASIS_EXISTS = prove
     ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN MATCH_MP_TAC SPAN_CARD_GE_DIM THEN
     ASM_REWRITE_TAC[] THEN
     ASM_MESON_TAC[SPAN_SPAN; SPAN_MONO; SUBSET_TRANS; SPAN_INC]]);;
-
-let SPAN_EQ = prove
- (`!s t. span s = span t <=> s SUBSET span t /\ t SUBSET span s`,
-  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
-  MESON_TAC[SUBSET_TRANS; SPAN_SPAN; SPAN_MONO; SPAN_INC]);;
-
-let SPAN_EQ_INSERT = prove
- (`!s x. span(x INSERT s) = span s <=> x IN span s`,
-  REWRITE_TAC[SPAN_EQ; INSERT_SUBSET] THEN
-  MESON_TAC[SPAN_INC; SUBSET; SET_RULE `s SUBSET (x INSERT s)`]);;
 
 let SPAN_SPECIAL_SCALE = prove
  (`!s a x:real^N.
@@ -6928,31 +6864,6 @@ let RANK_DIM_IM = prove
   AP_TERM_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM SPAN_SPAN] THEN
   REWRITE_TAC[SPAN_STDBASIS]);;
 
-let DIM_EQ_SPAN = prove
- (`!s t:real^N->bool. s SUBSET t /\ dim t <= dim s ==> span s = span t`,
-  REPEAT STRIP_TAC THEN
-  X_CHOOSE_THEN `b:real^N->bool` STRIP_ASSUME_TAC
-   (ISPEC `span s:real^N->bool` BASIS_EXISTS) THEN
-  MP_TAC(ISPECL [`span t:real^N->bool`; `b:real^N->bool`]
-    CARD_GE_DIM_INDEPENDENT) THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[HAS_SIZE]) THEN
-  ASM_REWRITE_TAC[DIM_SPAN] THEN
-  ASM_MESON_TAC[SPAN_MONO; SPAN_SPAN; SUBSET_TRANS; SUBSET_ANTISYM]);;
-
-let DIM_EQ_FULL = prove
- (`!s:real^N->bool. dim s = dimindex(:N) <=> span s = (:real^N)`,
-  GEN_TAC THEN ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN EQ_TAC THEN
-  SIMP_TAC[DIM_UNIV] THEN DISCH_TAC THEN
-  GEN_REWRITE_TAC RAND_CONV [GSYM SPAN_UNIV] THEN MATCH_MP_TAC DIM_EQ_SPAN THEN
-  ASM_REWRITE_TAC[SUBSET_UNIV; DIM_UNIV] THEN
-  ASM_MESON_TAC[LE_REFL; DIM_SPAN]);;
-
-let DIM_PSUBSET = prove
- (`!s t. (span s) PSUBSET (span t) ==> dim s < dim t`,
-  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN
-  SIMP_TAC[PSUBSET; DIM_SUBSET; LT_LE] THEN
-  MESON_TAC[EQ_IMP_LE; DIM_EQ_SPAN; SPAN_SPAN]);;
-
 let RANK_BOUND = prove
  (`!A:real^M^N. rank(A) <= MIN (dimindex(:M)) (dimindex(:N))`,
   GEN_TAC THEN REWRITE_TAC[ARITH_RULE `x <= MIN a b <=> x <= a /\ x <= b`] THEN
@@ -7324,41 +7235,6 @@ let LINEAR_SINGULAR_IMAGE_HYPERPLANE = prove
   GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   ASM_SIMP_TAC[LINEAR_SINGULAR_INTO_HYPERPLANE] THEN
   SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[]);;
-
-let LOWDIM_EXPAND_DIMENSION = prove
- (`!s:real^N->bool n.
-        dim s <= n /\ n <= dimindex(:N)
-        ==> ?t. dim(t) = n /\ span s SUBSET span t`,
-  GEN_TAC THEN
-  GEN_REWRITE_TAC (BINDER_CONV o LAND_CONV o LAND_CONV) [LE_EXISTS] THEN
-  SIMP_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM; IMP_CONJ] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  REWRITE_TAC[RIGHT_FORALL_IMP_THM; LEFT_FORALL_IMP_THM; EXISTS_REFL] THEN
-  INDUCT_TAC THENL [MESON_TAC[ADD_CLAUSES; SUBSET_REFL]; ALL_TAC] THEN
-  REWRITE_TAC[ARITH_RULE `s + SUC d <= n <=> s + d < n`] THEN
-  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
-  ASM_SIMP_TAC[LT_IMP_LE; LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `t:real^N->bool` THEN STRIP_TAC THEN
-  REWRITE_TAC[ADD_CLAUSES] THEN FIRST_X_ASSUM(SUBST_ALL_TAC o SYM) THEN
-  SUBGOAL_THEN `~(span t = (:real^N))` MP_TAC THENL
-   [REWRITE_TAC[GSYM DIM_EQ_FULL] THEN ASM_ARITH_TAC; ALL_TAC] THEN
-  REWRITE_TAC[EXTENSION; IN_UNIV; NOT_FORALL_THM; LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `a:real^N` THEN DISCH_TAC THEN
-  EXISTS_TAC `(a:real^N) INSERT t` THEN ASM_REWRITE_TAC[DIM_INSERT; ADD1] THEN
-  MATCH_MP_TAC SUBSET_TRANS THEN EXISTS_TAC `span(t:real^N->bool)` THEN
-  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC SPAN_MONO THEN SET_TAC[]);;
-
-let LOWDIM_EXPAND_BASIS = prove
- (`!s:real^N->bool n.
-        dim s <= n /\ n <= dimindex(:N)
-        ==> ?b. b HAS_SIZE n /\ independent b /\ span s SUBSET span b`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN
-  FIRST_ASSUM(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC o
-    MATCH_MP LOWDIM_EXPAND_DIMENSION) THEN
-  MP_TAC(ISPEC `t:real^N->bool` BASIS_EXISTS) THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `b:real^N->bool` THEN
-  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  ASM_MESON_TAC[SPAN_SPAN; SUBSET_TRANS; SPAN_MONO]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Orthogonal bases, Gram-Schmidt process, and related theorems.             *)

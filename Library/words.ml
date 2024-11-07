@@ -4431,6 +4431,22 @@ let WORD_SUBWORD_DUPLICATE = prove
   MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC `pos DIV dimindex(:M)` THEN
   ASM_ARITH_TAC);;
 
+let WORD_SUBWORD_DUPLICATE_DUPLICATE = prove
+ (`!x pos len.
+        pos MOD dimindex(:M) = 0 /\ dimindex(:P) <= len /\
+        pos + len <= dimindex(:N)
+        ==> word_subword ((word_duplicate:M word->N word) x) (pos,len):P word =
+            word_duplicate x`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_DUPLICATE] THEN
+  X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+  ASM_REWRITE_TAC[ARITH_RULE `i < MIN m n <=> i < m /\ i < n`] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN
+  MATCH_MP_TAC(TAUT `p /\ (q <=> r) ==> (p /\ q <=> r)`) THEN
+  CONJ_TAC THENL [ASM_ARITH_TAC; AP_THM_TAC THEN AP_TERM_TAC] THEN
+  ONCE_REWRITE_TAC[GSYM MOD_ADD_MOD] THEN
+  ASM_REWRITE_TAC[ADD_CLAUSES; MOD_MOD_REFL]);;
+
 let VAL_WORD_DUPLICATE = prove
  (`!x k. dimindex(:N) <= k * dimindex(:M)
          ==> val((word_duplicate:M word->N word) x) =
@@ -4500,13 +4516,16 @@ let WORD_SIMPLE_SUBWORD_CONV =
   let dimarith_rule th =
     MP th (EQT_ELIM(dimarith_conv(lhand(concl th))))
   and post_rule =
-     CONV_RULE(RAND_CONV(RAND_CONV(BINOP_CONV dimarith_conv))) in
+     CONV_RULE(RAND_CONV(RAND_CONV(BINOP_CONV dimarith_conv)))
+  and triv_rule =
+     GEN_REWRITE_RULE (RAND_CONV o TRY_CONV) [WORD_DUPLICATE_REFL] in
   let [rules_join; rules_insert; rules_subword; rules_duplicate;
-       [rule_trivial]] =
+       [rule_duplicate]; [rule_trivial]] =
   map (map (PART_MATCH (lhand o rand)))
    [[WORD_SUBWORD_JOIN_LOWER; WORD_SUBWORD_JOIN_UPPER];
     [WORD_SUBWORD_INSERT_OUTER; WORD_SUBWORD_INSERT_INNER];
     [WORD_SUBWORD_SUBWORD]; [WORD_SUBWORD_DUPLICATE];
+    [WORD_SUBWORD_DUPLICATE_DUPLICATE];
     [WORD_SUBWORD_TRIVIAL]] in
   fun tm ->
     match tm with
@@ -4521,7 +4540,9 @@ let WORD_SIMPLE_SUBWORD_CONV =
       | Comb(Comb(Const("word_subword",_),_),_) ->
            post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_subword)
       | Comb(Const("word_duplicate",_),_) ->
-           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_duplicate)
+         (try triv_rule(dimarith_rule(rule_duplicate tm))
+          with Failure _ ->
+           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_duplicate))
       | _ -> dimarith_rule(rule_trivial tm))
     | _ -> failwith "WORD_SIMPLE_SUBWORD_CONV";;
 

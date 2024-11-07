@@ -8,6 +8,138 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu  7th Nov 2024               Multivariate/vectors.ml, Library/matroids.ml [new file]
+
+Factored the material about linear dependence, span and dimension
+out of the specific setting of vectors in R^n and set it up as a
+general theory of "matroids". These don't have all the finiteness
+assumptions common in matroid theory, but could be considered as
+"finitary" (matroid span is assumed to have finite character).
+The setup roughly follows Pete Clark's "Field Theory" notes, 11.4:
+
+      http://alpha.math.uga.edu/~pete/FieldTheory.pdf
+
+Wed  6th Nov 2024               Library/words.ml
+
+Added one more theorem relating subwords and duplication, which is also
+now exploited inside WORD_SIMPLE_SUBWORD_CONV:
+
+  WORD_SUBWORD_DUPLICATE_DUPLICATE =
+    |- !x pos len.
+         pos MOD dimindex (:M) = 0 /\
+         dimindex (:P) <= len /\
+         pos + len <= dimindex (:N)
+         ==> word_subword (word_duplicate x) (pos,len) = word_duplicate x
+
+Wed  6th Nov 2024               int.ml
+
+Slightly refined the improvements to div/rem elimination made recently,
+to avoid exponential blowups while preserving the ability to deduce
+nonnegativity of the quotient in "easy" cases.
+
+Fri  1st Nov 2024               Library/words.ml
+
+Added both unsigned and signed *saturating* conversions from N and Z to
+machine words, which rather than wrapping modulo 2^wordsize as the main
+"word" and "iword" do, saturate at the extremal values of that size:
+
+  word_saturate =
+   |- word_saturate n =
+      if n > val word_UINT_MAX then word_UINT_MAX else word n
+
+  iword_saturate =
+    |- iword_saturate x =
+       if x < ival word_INT_MIN then word_INT_MIN
+       else if x > ival word_INT_MAX then word_INT_MAX
+       else iword x
+
+Also added a natural "word_duplicate" operation, a kind of iterated
+word_join inferring relative sizes and hence number of duplicates from
+the types.
+
+  word_duplicate =
+    |- (word_duplicate:M word->N word) x =
+       word_of_bits {i | bit (i MOD dimindex (:M)) x
+
+There are also a few elementary lemmas about it:
+
+  BIT_WORD_DUPLICATE =
+    |- !x i.
+           bit i (word_duplicate x) <=>
+           i < dimindex(:N) /\ bit (i MOD dimindex(:M)) x
+
+  VAL_WORD_DUPLICATE =
+    |- !x k.
+           dimindex(:N) <= k * dimindex(:M)
+           ==> val (word_duplicate x) =
+               ((2 EXP (k * dimindex(:M)) - 1) DIV (2 EXP dimindex(:M) - 1) *
+                val x) MOD
+               2 EXP dimindex(:N)
+
+  WORD_DUPLICATE =
+    |- !m k.
+           dimindex(:N) <= k * dimindex(:M)
+           ==> word_duplicate (word m) =
+               word
+               ((2 EXP (k * dimindex(:M)) - 1) DIV (2 EXP dimindex(:M) - 1) *
+                m MOD 2 EXP dimindex(:M))
+
+  WORD_DUPLICATE_DOUBLE =
+    |- !x. word_duplicate (word_join x x) = word_duplicate x
+
+  WORD_DUPLICATE_REFL =
+    |- !x. word_duplicate x = x
+
+  WORD_SUBWORD_DUPLICATE =
+    |- !x pos len.
+           pos MOD dimindex(:M) + len <= dimindex(:M) /\
+           pos + len <= dimindex(:N)
+           ==> word_subword (word_duplicate x) (pos,len) =
+               word_subword x (pos MOD dimindex(:M),len)
+
+The relevant conversions like BIT_WORD_CONV, SIMPLE_WORD_SUBWORD_CONV
+and WORD_RED_CONV have all been updated to take these three new operations
+into account.
+
+Tue 22nd Oct 2024               Library/words.ml
+
+Added several new lemmas for "simple subwords of composite word
+expressions":
+
+    WORD_SUBWORD_INSERT_INNER
+    WORD_SUBWORD_INSERT_OUTER
+    WORD_SUBWORD_JOIN_LOWER
+    WORD_SUBWORD_JOIN_UPPER
+    WORD_SUBWORD_SUBWORD
+    WORD_SUBWORD_TRIVIAL
+
+as well as a new conversion WORD_SIMPLE_SUBWORD_CONV that packages
+them up into a simplifying function, e.g.
+
+  # WORD_SIMPLE_SUBWORD_CONV `word_subword (x:int16) (0,16):int16`;;
+  val it : thm = |- word_subword x (0,16) = x
+
+  # WORD_SIMPLE_SUBWORD_CONV
+   `word_subword (word_join (x:int16) (y:int16):int32) (0,16):int16`;;
+  val it : thm = |- word_subword (word_join x y) (0,16) = word_subword y (0,16)
+
+  # WORD_SIMPLE_SUBWORD_CONV
+   `word_subword (word_subword (x:int64) (32,32):int32) (0,16):int16`;;
+  val it : thm =
+    |- word_subword (word_subword x (32,32)) (0,16) = word_subword x (32,16)
+
+Tue 22nd Oct 2024               README, hol.ml, hol_4.sh, hol_4.14.sh, opam [new file], META [new file]
+
+Added updates from June Lee with new files containing metadata for
+opam, as well as appropriately updated instructions in README to
+reflect that fact that now HOL Light can indeed now be installed via
+opam.
+
+This update also increases the version string to "3.0.0+" to reflect
+the freezing of a release of that name on the github page and adds a
+new option "-dir" to the hol.sh script that will print the HOL Light
+directory.
+
 Wed 16th Oct 2024               Library/ringtheory.ml
 
 Fixed identical degenerate-case bugs in the decision procedures

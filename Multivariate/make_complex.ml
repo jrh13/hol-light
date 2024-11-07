@@ -9,6 +9,7 @@ loadt "Library/floor.ml";;              (* Useful here and there            *)
 loadt "Multivariate/misc.ml";;          (* Background stuff                 *)
 loadt "Library/iter.ml";;               (* n-fold iteration of function     *)
 loadt "Library/grouptheory.ml";;        (* Groups, to support homology      *)
+loadt "Library/matroids.ml";;           (* Generalized linear dependence    *)
 loadt "Library/binomial.ml";;           (* For Leibniz deriv formula etc.   *)
 
 (* ------------------------------------------------------------------------- *)
