@@ -373,20 +373,35 @@ let REAL_INT_ABS_CONV =
     REWRITE_TAC[REAL_ABS_NEG; REAL_ABS_NUM]) in
   GEN_REWRITE_CONV I [pth];;
 
+let real_int_red_conv_list = 
+  [`x <= y`,REAL_INT_LE_CONV;
+   `x < y`,REAL_INT_LT_CONV;
+   `x >= y`,REAL_INT_GE_CONV;
+   `x > y`,REAL_INT_GT_CONV;
+   `x:real = y`,REAL_INT_EQ_CONV;
+   `--x`,CHANGED_CONV REAL_INT_NEG_CONV;
+   `abs(x)`,REAL_INT_ABS_CONV;
+   `x + y`,REAL_INT_ADD_CONV;
+   `x - y`,REAL_INT_SUB_CONV;
+   `x * y`,REAL_INT_MUL_CONV;
+   `x pow n`,REAL_INT_POW_CONV];;
+
 let REAL_INT_RED_CONV =
-  let gconv_net = itlist (uncurry net_of_conv)
-    [`x <= y`,REAL_INT_LE_CONV;
-     `x < y`,REAL_INT_LT_CONV;
-     `x >= y`,REAL_INT_GE_CONV;
-     `x > y`,REAL_INT_GT_CONV;
-     `x:real = y`,REAL_INT_EQ_CONV;
-     `--x`,CHANGED_CONV REAL_INT_NEG_CONV;
-     `abs(x)`,REAL_INT_ABS_CONV;
-     `x + y`,REAL_INT_ADD_CONV;
-     `x - y`,REAL_INT_SUB_CONV;
-     `x * y`,REAL_INT_MUL_CONV;
-     `x pow n`,REAL_INT_POW_CONV]
+  let gconv_net = itlist (uncurry net_of_conv) real_int_red_conv_list
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
 let REAL_INT_REDUCE_CONV = DEPTH_CONV REAL_INT_RED_CONV;;
+
+let real_int_compute_add_convs =
+  let convlist = map (fun pat,the_conv ->
+    let c,args = strip_comb pat in (c,length args,the_conv))
+    real_int_red_conv_list in
+  fun (compset:Compute.compset) ->
+    itlist (fun newc () -> Compute.add_conv newc compset) convlist ();;
+
+let REAL_INT_COMPUTE_CONV =
+  let cs = Compute.bool_compset () in
+  Compute.set_skip cs `COND: bool -> A -> A -> A` (Some 1);
+  real_int_compute_add_convs cs;
+  Compute.WEAK_CBV_CONV cs;;

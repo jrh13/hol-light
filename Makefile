@@ -20,7 +20,7 @@ HOLSRC=system.ml lib.ml fusion.ml basics.ml nets.ml preterm.ml          \
        parser.ml printer.ml equal.ml bool.ml drule.ml tactics.ml        \
        itab.ml simp.ml theorems.ml ind_defs.ml class.ml trivia.ml       \
        canon.ml meson.ml firstorder.ml metis.ml thecops.ml quot.ml      \
-       impconv.ml recursion.ml pair.ml                                  \
+       impconv.ml recursion.ml pair.ml compute.ml                       \
        nums.ml arith.ml wf.ml calc_num.ml normalizer.ml grobner.ml      \
        ind_types.ml lists.ml realax.ml calc_int.ml realarith.ml         \
        real.ml calc_rat.ml int.ml sets.ml iterate.ml cart.ml define.ml  \
@@ -135,7 +135,7 @@ hol_loader.cmo: hol_loader.ml ; \
 hol_loader.cmx: hol_loader.ml ; \
         ocamlopt -verbose -c hol_loader.ml -o hol_loader.cmx
 
-hol_lib_inlined.ml: hol_lib.ml inline_load.ml ; \
+hol_lib_inlined.ml: ${HOLSRC} inline_load.ml ; \
         HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml hol_lib.ml hol_lib_inlined.ml -omit-prelude
 
 hol_lib.cmo: pa_j.cmo hol_lib_inlined.ml hol_loader.cmo bignum.cmo ; \
