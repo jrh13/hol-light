@@ -386,28 +386,43 @@ let REAL_RAT_MIN_CONV =
 (* Everything.                                                               *)
 (* ------------------------------------------------------------------------- *)
 
+let real_rat_red_conv_list =
+  [`x <= y`,REAL_RAT_LE_CONV;
+   `x < y`,REAL_RAT_LT_CONV;
+   `x >= y`,REAL_RAT_GE_CONV;
+   `x > y`,REAL_RAT_GT_CONV;
+   `x:real = y`,REAL_RAT_EQ_CONV;
+   `--x`,CHANGED_CONV REAL_RAT_NEG_CONV;
+   `real_sgn(x)`,REAL_RAT_SGN_CONV;
+   `abs(x)`,REAL_RAT_ABS_CONV;
+   `inv(x)`,REAL_RAT_INV_CONV;
+   `x + y`,REAL_RAT_ADD_CONV;
+   `x - y`,REAL_RAT_SUB_CONV;
+   `x * y`,REAL_RAT_MUL_CONV;
+   `x / y`,CHANGED_CONV REAL_RAT_DIV_CONV;
+   `x pow n`,REAL_RAT_POW_CONV;
+   `max x y`,REAL_RAT_MAX_CONV;
+   `min x y`,REAL_RAT_MIN_CONV];;
+
 let REAL_RAT_RED_CONV =
-  let gconv_net = itlist (uncurry net_of_conv)
-    [`x <= y`,REAL_RAT_LE_CONV;
-     `x < y`,REAL_RAT_LT_CONV;
-     `x >= y`,REAL_RAT_GE_CONV;
-     `x > y`,REAL_RAT_GT_CONV;
-     `x:real = y`,REAL_RAT_EQ_CONV;
-     `--x`,CHANGED_CONV REAL_RAT_NEG_CONV;
-     `real_sgn(x)`,REAL_RAT_SGN_CONV;
-     `abs(x)`,REAL_RAT_ABS_CONV;
-     `inv(x)`,REAL_RAT_INV_CONV;
-     `x + y`,REAL_RAT_ADD_CONV;
-     `x - y`,REAL_RAT_SUB_CONV;
-     `x * y`,REAL_RAT_MUL_CONV;
-     `x / y`,CHANGED_CONV REAL_RAT_DIV_CONV;
-     `x pow n`,REAL_RAT_POW_CONV;
-     `max x y`,REAL_RAT_MAX_CONV;
-     `min x y`,REAL_RAT_MIN_CONV]
+  let gconv_net = itlist (uncurry net_of_conv) real_rat_red_conv_list
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
 let REAL_RAT_REDUCE_CONV = DEPTH_CONV REAL_RAT_RED_CONV;;
+
+let real_rat_compute_add_convs =
+  let convlist = map (fun pat,the_conv ->
+    let c,args = strip_comb pat in (c,length args,the_conv))
+    real_rat_red_conv_list in
+  fun (compset:Compute.compset) ->
+    itlist (fun newc () -> Compute.add_conv newc compset) convlist ();;
+
+let REAL_RAT_COMPUTE_CONV =
+  let cs = Compute.bool_compset () in
+  Compute.set_skip cs `COND: bool -> A -> A -> A` (Some 1);
+  real_rat_compute_add_convs cs;
+  Compute.WEAK_CBV_CONV cs;;
 
 (* ------------------------------------------------------------------------- *)
 (* Real normalizer dealing with rational constants.                          *)

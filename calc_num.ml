@@ -1450,30 +1450,45 @@ let NUM_REL_CONV =
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
+let num_red_conv_list =
+  [`SUC(NUMERAL n)`,NUM_SUC_CONV;
+   `PRE(NUMERAL n)`,NUM_PRE_CONV;
+   `FACT(NUMERAL n)`,NUM_FACT_CONV;
+   `NUMERAL m < NUMERAL n`,NUM_LT_CONV;
+   `NUMERAL m <= NUMERAL n`,NUM_LE_CONV;
+   `NUMERAL m > NUMERAL n`,NUM_GT_CONV;
+   `NUMERAL m >= NUMERAL n`,NUM_GE_CONV;
+   `NUMERAL m = NUMERAL n`,NUM_EQ_CONV;
+   `EVEN(NUMERAL n)`,NUM_EVEN_CONV;
+   `ODD(NUMERAL n)`,NUM_ODD_CONV;
+   `NUMERAL m + NUMERAL n`,NUM_ADD_CONV;
+   `NUMERAL m - NUMERAL n`,NUM_SUB_CONV;
+   `NUMERAL m * NUMERAL n`,NUM_MULT_CONV;
+   `(NUMERAL m) EXP (NUMERAL n)`,NUM_EXP_CONV;
+   `(NUMERAL m) DIV (NUMERAL n)`,NUM_DIV_CONV;
+   `(NUMERAL m) MOD (NUMERAL n)`,NUM_MOD_CONV;
+   `MAX (NUMERAL m) (NUMERAL n)`,NUM_MAX_CONV;
+   `MIN (NUMERAL m) (NUMERAL n)`,NUM_MIN_CONV];;
+
 let NUM_RED_CONV =
-  let gconv_net = itlist (uncurry net_of_conv)
-    [`SUC(NUMERAL n)`,NUM_SUC_CONV;
-     `PRE(NUMERAL n)`,NUM_PRE_CONV;
-     `FACT(NUMERAL n)`,NUM_FACT_CONV;
-     `NUMERAL m < NUMERAL n`,NUM_LT_CONV;
-     `NUMERAL m <= NUMERAL n`,NUM_LE_CONV;
-     `NUMERAL m > NUMERAL n`,NUM_GT_CONV;
-     `NUMERAL m >= NUMERAL n`,NUM_GE_CONV;
-     `NUMERAL m = NUMERAL n`,NUM_EQ_CONV;
-     `EVEN(NUMERAL n)`,NUM_EVEN_CONV;
-     `ODD(NUMERAL n)`,NUM_ODD_CONV;
-     `NUMERAL m + NUMERAL n`,NUM_ADD_CONV;
-     `NUMERAL m - NUMERAL n`,NUM_SUB_CONV;
-     `NUMERAL m * NUMERAL n`,NUM_MULT_CONV;
-     `(NUMERAL m) EXP (NUMERAL n)`,NUM_EXP_CONV;
-     `(NUMERAL m) DIV (NUMERAL n)`,NUM_DIV_CONV;
-     `(NUMERAL m) MOD (NUMERAL n)`,NUM_MOD_CONV;
-     `MAX (NUMERAL m) (NUMERAL n)`,NUM_MAX_CONV;
-     `MIN (NUMERAL m) (NUMERAL n)`,NUM_MIN_CONV]
+  let gconv_net = itlist (uncurry net_of_conv) num_red_conv_list
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
 let NUM_REDUCE_CONV = DEPTH_CONV NUM_RED_CONV;;
+
+let num_compute_add_convs =
+  let convlist = map (fun pat,the_conv ->
+    let c,args = strip_comb pat in (c,length args,the_conv))
+    num_red_conv_list in
+  fun (compset:Compute.compset) ->
+    itlist (fun newc () -> Compute.add_conv newc compset) convlist ();;
+
+let NUM_COMPUTE_CONV =
+  let cs = Compute.bool_compset () in
+  Compute.set_skip cs `COND: bool -> A -> A -> A` (Some 1);
+  num_compute_add_convs cs;
+  Compute.WEAK_CBV_CONV cs;;
 
 let NUM_REDUCE_TAC = CONV_TAC NUM_REDUCE_CONV;;
 

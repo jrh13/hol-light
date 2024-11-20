@@ -1800,8 +1800,7 @@ let INT_DIV_CONV,INT_REM_CONV =
                  CONJUNCT2(INT_DIVMOD_CONV (dest_intconst l) (dest_intconst r))
              with Failure _ -> failwith "INT_MOD_CONV");;
 
-let INT_RED_CONV =
-  let gconv_net = itlist (uncurry net_of_conv)
+let int_red_conv_list =
     [`x <= y`,INT_LE_CONV;
      `x < y`,INT_LT_CONV;
      `x >= y`,INT_GE_CONV;
@@ -1817,11 +1816,27 @@ let INT_RED_CONV =
      `x rem y`,INT_REM_CONV;
      `x pow n`,INT_POW_CONV;
      `max x y`,INT_MAX_CONV;
-     `min x y`,INT_MIN_CONV]
+     `min x y`,INT_MIN_CONV];;
+
+let INT_RED_CONV =
+  let gconv_net = itlist (uncurry net_of_conv) int_red_conv_list
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
 let INT_REDUCE_CONV = DEPTH_CONV INT_RED_CONV;;
+
+let int_compute_add_convs =
+  let convlist = map (fun pat,the_conv ->
+    let c,args = strip_comb pat in (c,length args,the_conv))
+    int_red_conv_list in
+  fun (compset:Compute.compset) ->
+    itlist (fun newc () -> Compute.add_conv newc compset) convlist ();;
+
+let INT_COMPUTE_CONV =
+  let cs = Compute.bool_compset () in
+  Compute.set_skip cs `COND: bool -> A -> A -> A` (Some 1);
+  int_compute_add_convs cs;
+  Compute.WEAK_CBV_CONV cs;;
 
 (* ------------------------------------------------------------------------- *)
 (* Integer analogs of the usual even/odd combining theorems EVEN_ADD etc.    *)

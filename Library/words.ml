@@ -8101,77 +8101,92 @@ let WORD_JREM_CONV =
   RAND_CONV (LAND_CONV WORD_JDIV_CONV THENC WORD_MUL_CONV) THENC
   WORD_SUB_CONV;;
 
+let word_red_conv_list =
+ [`word(NUMERAL n):N word`,CHANGED_CONV WORD_WORD_CONV;
+  `word_saturate(NUMERAL n):N word`,WORD_SATURATE_CONV;
+  `iword i:N word`,WORD_IWORD_CONV;
+  `iword_saturate(n):N word`,IWORD_SATURATE_CONV;
+  `val(w:N word)`,WORD_VAL_CONV;
+  `ival(w:N word)`,WORD_IVAL_CONV;
+  `bit (NUMERAL k) (word(NUMERAL n):N word)`,WORD_BIT_CONV;
+  `word(NUMERAL m):N word = word(NUMERAL n)`,WORD_EQ_CONV;
+  `word_ult (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ULT_CONV;
+  `word_ule (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ULE_CONV;
+  `word_ugt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UGT_CONV;
+  `word_uge (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UGE_CONV;
+  `word_ilt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ILT_CONV;
+  `word_ile (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ILE_CONV;
+  `word_igt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IGT_CONV;
+  `word_ige (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IGE_CONV;
+  `word_neg (word(NUMERAL n):N word)`,WORD_NEG_CONV;
+  `word_add (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ADD_CONV;
+  `word_mul (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_MUL_CONV;
+  `word_sub (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_SUB_CONV;
+  `word_udiv (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UDIV_CONV;
+  `word_umod (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMOD_CONV;
+  `word_umax (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMAX_CONV;
+  `word_umin (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMIN_CONV;
+  `word_imax (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IMAX_CONV;
+  `word_imin (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IMIN_CONV;
+  `word_shl (word(NUMERAL m):N word) (NUMERAL n)`,WORD_SHL_CONV;
+  `word_ushr (word(NUMERAL m):N word) (NUMERAL n)`,WORD_USHR_CONV;
+  `word_ishr (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ISHR_CONV;
+  `word_not (word(NUMERAL n):N word)`,WORD_NOT_CONV;
+  `word_and (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_AND_CONV;
+  `word_or (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_OR_CONV;
+  `word_xor (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_XOR_CONV;
+  `word_rol (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ROL_CONV;
+  `word_ror (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ROR_CONV;
+  `word_zx (word(NUMERAL n):N word)`,WORD_ZX_CONV;
+  `word_sx (word(NUMERAL n):N word)`,WORD_SX_CONV;
+  `word_sxfrom (NUMERAL m) (word(NUMERAL n):N word)`,WORD_SXFROM_CONV;
+  `word_cand (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_CAND_CONV;
+  `word_cor (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_COR_CONV;
+  `word_join (word(NUMERAL m):M word) (word(NUMERAL n):N word)`,
+              WORD_JOIN_CONV;
+  `word_subword (word(NUMERAL m):M word) (NUMERAL p,NUMERAL q):N word`,
+              WORD_SUBWORD_CONV;
+  `word_insert (word(NUMERAL m):M word) (NUMERAL p,NUMERAL q)
+               (word(NUMERAL n):N word):P word`,
+              WORD_INSERT_CONV;
+  `word_duplicate (word(NUMERAL m):M word):N word`,WORD_DUPLICATE_CONV;
+  `bits_of_word (word(NUMERAL n):N word)`,WORD_BITS_OF_WORD_CONV;
+  `word_popcount (word(NUMERAL n):N word)`,WORD_POPCOUNT_CONV;
+  `word_evenparity (word(NUMERAL n):N word)`,WORD_EVENPARITY_CONV;
+  `word_oddparity (word(NUMERAL n):N word)`,WORD_ODDPARITY_CONV;
+  `word_ctz (word(NUMERAL n):N word)`,WORD_CTZ_CONV;
+  `word_clz (word(NUMERAL n):N word)`,WORD_CLZ_CONV;
+  `word_bytereverse (word(NUMERAL n):((((N)tybit0)tybit0)tybit0)word)`,
+              WORD_BYTEREVERSE_CONV;
+  `word_reversefields (NUMERAL b) (word(NUMERAL n):N word)`,
+              WORD_REVERSEFIELDS_CONV;
+  `word_jshl (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHL_CONV;
+  `word_jshr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHR_CONV;
+  `word_jushr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JUSHR_CONV;
+  `word_jrol (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JROL_CONV;
+  `word_jror (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JROR_CONV;
+  `word_jdiv (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JDIV_CONV;
+  `word_jrem (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JREM_CONV];;
+
 let WORD_RED_CONV =
-  let gconv_net = itlist (uncurry net_of_conv)
-   [`word(NUMERAL n):N word`,CHANGED_CONV WORD_WORD_CONV;
-    `word_saturate(NUMERAL n):N word`,WORD_SATURATE_CONV;
-    `iword i:N word`,WORD_IWORD_CONV;
-    `iword_saturate(n):N word`,IWORD_SATURATE_CONV;
-    `val(w:N word)`,WORD_VAL_CONV;
-    `ival(w:N word)`,WORD_IVAL_CONV;
-    `bit (NUMERAL k) (word(NUMERAL n):N word)`,WORD_BIT_CONV;
-    `word(NUMERAL m):N word = word(NUMERAL n)`,WORD_EQ_CONV;
-    `word_ult (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ULT_CONV;
-    `word_ule (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ULE_CONV;
-    `word_ugt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UGT_CONV;
-    `word_uge (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UGE_CONV;
-    `word_ilt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ILT_CONV;
-    `word_ile (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ILE_CONV;
-    `word_igt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IGT_CONV;
-    `word_ige (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IGE_CONV;
-    `word_neg (word(NUMERAL n):N word)`,WORD_NEG_CONV;
-    `word_add (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ADD_CONV;
-    `word_mul (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_MUL_CONV;
-    `word_sub (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_SUB_CONV;
-    `word_udiv (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UDIV_CONV;
-    `word_umod (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMOD_CONV;
-    `word_umax (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMAX_CONV;
-    `word_umin (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMIN_CONV;
-    `word_imax (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IMAX_CONV;
-    `word_imin (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IMIN_CONV;
-    `word_shl (word(NUMERAL m):N word) (NUMERAL n)`,WORD_SHL_CONV;
-    `word_ushr (word(NUMERAL m):N word) (NUMERAL n)`,WORD_USHR_CONV;
-    `word_ishr (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ISHR_CONV;
-    `word_not (word(NUMERAL n):N word)`,WORD_NOT_CONV;
-    `word_and (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_AND_CONV;
-    `word_or (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_OR_CONV;
-    `word_xor (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_XOR_CONV;
-    `word_rol (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ROL_CONV;
-    `word_ror (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ROR_CONV;
-    `word_zx (word(NUMERAL n):N word)`,WORD_ZX_CONV;
-    `word_sx (word(NUMERAL n):N word)`,WORD_SX_CONV;
-    `word_sxfrom (NUMERAL m) (word(NUMERAL n):N word)`,WORD_SXFROM_CONV;
-    `word_cand (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_CAND_CONV;
-    `word_cor (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_COR_CONV;
-    `word_join (word(NUMERAL m):M word) (word(NUMERAL n):N word)`,
-                WORD_JOIN_CONV;
-    `word_subword (word(NUMERAL m):M word) (NUMERAL p,NUMERAL q):N word`,
-                WORD_SUBWORD_CONV;
-    `word_insert (word(NUMERAL m):M word) (NUMERAL p,NUMERAL q)
-                 (word(NUMERAL n):N word):P word`,
-                WORD_INSERT_CONV;
-    `word_duplicate (word(NUMERAL m):M word):N word`,WORD_DUPLICATE_CONV;
-    `bits_of_word (word(NUMERAL n):N word)`,WORD_BITS_OF_WORD_CONV;
-    `word_popcount (word(NUMERAL n):N word)`,WORD_POPCOUNT_CONV;
-    `word_evenparity (word(NUMERAL n):N word)`,WORD_EVENPARITY_CONV;
-    `word_oddparity (word(NUMERAL n):N word)`,WORD_ODDPARITY_CONV;
-    `word_ctz (word(NUMERAL n):N word)`,WORD_CTZ_CONV;
-    `word_clz (word(NUMERAL n):N word)`,WORD_CLZ_CONV;
-    `word_bytereverse (word(NUMERAL n):((((N)tybit0)tybit0)tybit0)word)`,
-                WORD_BYTEREVERSE_CONV;
-    `word_reversefields (NUMERAL b) (word(NUMERAL n):N word)`,
-                WORD_REVERSEFIELDS_CONV;
-    `word_jshl (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHL_CONV;
-    `word_jshr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHR_CONV;
-    `word_jushr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JUSHR_CONV;
-    `word_jrol (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JROL_CONV;
-    `word_jror (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JROR_CONV;
-    `word_jdiv (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JDIV_CONV;
-    `word_jrem (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JREM_CONV]
-  (basic_net()) in
+  let gconv_net = itlist (uncurry net_of_conv) word_red_conv_list (basic_net()) in
   REWRITES_CONV gconv_net;;
 
-let WORD_REDUCE_CONV = DEPTH_CONV WORD_RED_CONV;;
+let WORD_REDUCE_CONV =
+  DEPTH_CONV WORD_RED_CONV;;
+
+let word_compute_add_convs =
+  let convlist = map (fun pat,the_conv ->
+    let c,args = strip_comb pat in (c,length args,the_conv))
+    word_red_conv_list in
+  fun (compset:Compute.compset) ->
+    itlist (fun newc () -> Compute.add_conv newc compset) convlist ();;
+
+let WORD_COMPUTE_CONV =
+  let cs = Compute.bool_compset () in
+  Compute.set_skip cs `COND: bool -> A -> A -> A` (Some 1);
+  word_compute_add_convs cs;
+  Compute.WEAK_CBV_CONV cs;;
 
 (* ------------------------------------------------------------------------- *)
 (* Alternative returning signed words.                                       *)
