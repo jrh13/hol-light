@@ -27,3 +27,14 @@ assert (rhs (concl (NUM_COMPUTE_CONV `(\x. x + (1 + 2)) (3 + 4)`))
 (* Arguments are reduced when the fn is a constant. *)
 assert (rhs (concl (NUM_COMPUTE_CONV `(unknown_fn:num->num) (1+2)`))
         = `(unknown_fn:num->num) 3`);;
+
+
+(* ------------------------------------------------------------------------- *)
+(* Test check_axioms.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+new_axiom `k = 1`;;
+try
+  check_axioms (); (* check_axioms must raise Failure *)
+  assert false;
+with Failure _ -> () | Assert_failure _ as e -> raise e;;
