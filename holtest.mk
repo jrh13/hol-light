@@ -173,6 +173,7 @@ GREAT_100_THEOREMS:= \
 	100/stirling \
 	100/subsequence \
 	100/thales \
+	100/transcendence \
 	100/triangular \
 	100/two_squares \
 	100/wilson

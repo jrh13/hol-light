@@ -8,6 +8,50 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 21st Dec 2024       100/transcendence.ml [new file]
+
+Added a development of transcendence theory from Daniel J. Bernstein,
+currently a verbatim copy of the original:
+
+  https://cr.yp.to/2024/transcendence-20241221.ml
+
+This, among other results, re-proves the transcendence of e (using a
+different approach from "100/e_is_transcendental.ml") and proves the
+transcendence of pi:
+
+  e_is_transcendental =
+    |- ~algebraic_number (cexp (Cx (&1)))
+
+  pi_is_transcendental =
+    |- ~algebraic_number (Cx pi)
+
+as well as the full Lindemann theorem, which easily implies both of
+those and more:
+
+  zero_sum_algebraic_exp_algebraic =
+    |- forall S B.
+        FINITE S /\
+        S SUBSET algebraic_number /\
+        (forall s. s IN S ==> algebraic_number (B s)) /\
+        ring_sum complex_ring S (\s. B s * cexp s) = Cx (&0)
+        ==> (forall s. s IN S ==> B s = Cx (&0))
+
+This more general theorem is also commonly known as Hermite-Lindemann
+or Lindemann-Weierstrass; see the notes near the top of the file for some
+historical notes and overview of the proofs.
+
+Wed 20th Nov 2024       Makefile, calc_int.ml, calc_num.ml, calc_rat.ml, int.ml, unit_tests.ml, Library/words.ml
+
+Merged an update from June Lee adding conversions xxx_COMPUTE_CONV analogous
+to the existing xxx_REDUCE_CONV but using the call-by-value computational
+machinery in compute.ml:
+
+        NUM_COMPUTE_CONV - natural numbers (type `:num`)
+        INT_COMPUTE_CONV - integers (type `:int`)
+        REAL_INT_COMPUTE_CONV - integer-valued reals (type `:real`)
+        REAL_RAT_COMPUTE_CONV - rational-valued reals (type `:real`)
+        WORD_COMPUTE_CONV - machine words (type `:N word` for specific N)
+
 Thu  7th Nov 2024               Multivariate/vectors.ml, Library/matroids.ml [new file]
 
 Factored the material about linear dependence, span and dimension

@@ -225,6 +225,7 @@ echo '### Loading 100/reciprocity.ml'; echo 'loadt "100/reciprocity.ml";;' | (ti
 echo '### Loading 100/stirling.ml'; echo 'loadt "100/stirling.ml";;' | (time $hollight)
 echo '### Loading 100/subsequence.ml'; echo 'loadt "100/subsequence.ml";;' | (time $hollight)
 echo '### Loading 100/thales.ml'; echo 'loadt "100/thales.ml";;' | (time $hollight)
+echo '### Loading 100/transcendence.ml'; echo 'loadt "100/transcendence.ml";;' | (time $hollight)
 echo '### Loading 100/triangular.ml'; echo 'loadt "100/triangular.ml";;' | (time $hollight)
 echo '### Loading 100/two_squares.ml'; echo 'loadt "100/two_squares.ml";;' | (time $hollight)
 echo '### Loading 100/wilson.ml'; echo 'loadt "100/wilson.ml";;' | (time $hollight)
