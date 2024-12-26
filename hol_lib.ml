@@ -100,3 +100,15 @@ loads "sets.ml";;       (* Basic set theory                                  *)
 loads "iterate.ml";;    (* Iterated operations                               *)
 loads "cart.ml";;       (* Finite Cartesian products                         *)
 loads "define.ml";;     (* Support for general recursive definitions         *)
+
+
+(* ------------------------------------------------------------------------- *)
+(* Checks that no axiom other than those allowed by core libs are introduced *)
+(* ------------------------------------------------------------------------- *)
+
+let check_axioms () =
+  let basic_axioms = [INFINITY_AX; SELECT_AX; ETA_AX] in
+  let l = filter (fun th -> not (mem th basic_axioms)) (axioms()) in
+  if l <> [] then
+    let msg = "[" ^ (String.concat ", " (map string_of_thm l)) ^ "]" in
+    failwith ("check_axioms: " ^ msg);;
