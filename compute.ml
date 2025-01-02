@@ -18,6 +18,7 @@ module type Compute_sig = sig
 
   val new_compset : thm list -> compset
   val bool_compset : unit -> compset
+  val basic_compset : unit -> compset
 
   val add_thms : thm list -> compset -> unit
   val add_conv : term * int * conv -> compset -> unit
@@ -188,7 +189,8 @@ let check_arg_form trm =
     else if is_const t then
       (free, Papp (t, List.rev stk))
     else
-      failwith ("check_arg_form: lambda abstraction not allowed on lhs")
+      failwith ("check_arg_form: lambda abstraction not allowed on lhs: `"
+        ^ (string_of_term trm) ^ "`")
   in
   match chk trm [] [] with
     | (fv, Papp (head, args)) -> (List.rev fv, head, args)
@@ -758,9 +760,28 @@ let bool_redns =
 let bool_compset () =
   let base = from_list bool_redns in
   let () = set_skip base `COND: bool -> A -> A -> A` None in
-          (* change last parameter to SOME 1 to stop CBV_CONV looking at
-             conditionals' branches before the guard is fully true or false *)
+  (* Invoke set_skip again with last parameter set to Some 1 to stop CBV_CONV
+     looking at conditionals' branches before the guard is fully true or false
+  *)
   base;;
+
+let basic_compset () =
+  let basic_rws0 = basic_rewrites() in
+  (* Remove rewrite rules that cause the "lambda abstraction not allowed in
+     lhs" error. *)
+  let lhs_lambda_rules = map SPEC_ALL [SELECT_REFL;FORALL_SIMP;EXISTS_SIMP] in
+  let basic_rws = List.filter (fun th ->
+    not (mem th lhs_lambda_rules)) basic_rws0 in
+  let cs = new_compset (List.map lazyfy_thm basic_rws) in
+  List.iter (fun _,(pat,the_conv) ->
+    let cst,args = strip_comb pat in
+    add_conv (cst,length args,the_conv) cs) (basic_convs());
+  add_conv (`LET:(A->B)->A->B`,2,let_CONV) cs;
+  set_skip cs `COND: bool -> A -> A -> A` None;
+  (* Invoke set_skip again with last parameter set to Some 1 to stop CBV_CONV
+     looking at conditionals' branches before the guard is fully true or false
+  *)
+  cs;;
 
 let the_compset = bool_compset();;
 
