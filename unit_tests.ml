@@ -30,6 +30,44 @@ assert (rhs (concl (NUM_COMPUTE_CONV `(unknown_fn:num->num) (1+2)`))
 
 
 (* ------------------------------------------------------------------------- *)
+(* Test basic_compset.                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let open Compute in
+  let cs = basic_compset() in
+  let cv = CBV_CONV cs in
+  let wcv = WEAK_CBV_CONV cs in begin
+
+  (* Generalized abstraction *)
+  assert (rhs (concl (wcv `(\((x,y),(z,w)). x + y + z + w) ((1,2),(3,4))`)) =
+          `1 + 2 + 3 + 4`);
+  assert (rhs (concl (cv `(\((x,y),(z,w)). x + y + z + w) ((1,2),(3,4))`)) =
+          `1 + 2 + 3 + 4`);
+
+  (* Abstraction body is not reduced if WEAK_CBV is used *)
+  assert (rhs (concl (wcv
+          `(\((x,y),(z,w)):(num#num)#(num#num). true /\ true)`)) =
+        `(\((x,y),(z,w)):(num#num)#(num#num). true /\ true)`);
+  assert (rhs (concl (cv
+          `(\((x,y),(z,w)):(num#num)#(num#num). true /\ true)`)) =
+          `(\((x,y),(z,w)):(num#num)#(num#num). true)`);
+
+  (* Match *)
+  assert (
+    rhs (concl (wcv `match [1;2;3;4;5] with [] -> [] | CONS x (CONS y z) -> z`)) =
+    `[3; 4; 5]`);
+  assert (
+    rhs (concl (cv `match [1;2;3;4;5] with [] -> [] | CONS x (CONS y z) -> z`)) =
+    `[3; 4; 5]`);
+
+  (* Let *)
+  assert (rhs (concl (wcv `let x = 1 in x + 2`)) = `1 + 2`);
+  assert (rhs (concl (cv `let x = 1 in x + 2`)) = `1 + 2`);
+  end;;
+
+
+(* ------------------------------------------------------------------------- *)
 (* Test check_axioms.                                                        *)
 (* ------------------------------------------------------------------------- *)
 
