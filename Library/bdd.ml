@@ -32,10 +32,7 @@ let mk_vtable n =
 (* Handling of unique table.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let USIZE = 100000;;
-let UHASH = 1024;;
-
-let BDD_1 = USIZE + 1;;
+let BDD_1 = max_int;;
 let BDD_0 = -BDD_1;;
 
 let btm_of_int =
@@ -43,11 +40,11 @@ let btm_of_int =
   let rec btm_of_int uarray n =
      if n < 0 then mk_neg(btm_of_int uarray (-n)) else
      if n = BDD_1 then true_tm else
-     rand(rator(concl(snd(Array.get uarray n)))) in
+     rand(rator(concl(snd(apply (!uarray) n)))) in
   btm_of_int;;
 
 let lookup_triple varray (uarray,unext,uhash) ((v,y,n) as tr) =
-  try Hashtbl.find uhash tr with Not_Found ->
+  try apply (!uhash) tr with Not_Found ->
   let ytm = btm_of_int uarray y
   and ntm = btm_of_int uarray n
   and vtm = Array.get varray v
@@ -55,15 +52,15 @@ let lookup_triple varray (uarray,unext,uhash) ((v,y,n) as tr) =
   let ltm = mk_cond(vtm,ytm,ntm) in
   let dth = REFL ltm in
   (unext := m + 1;
-   Array.set uarray m (tr,dth);
-   Hashtbl.add uhash tr m;
+   uarray := (m |-> (tr,dth)) (!uarray);
+   uhash := (tr |-> m) (!uhash);
    m);;
 
 let bdd_expand uarray b =
   if b < 0 then
-    let (v,l,r) = fst(Array.get uarray (-b)) in
+    let (v,l,r) = fst(apply (!uarray) (-b)) in
     (v,-l,-r)
-  else fst(Array.get uarray b);;
+  else fst(apply (!uarray) b);;
 
 let BDD_EXPAND =
   let pth1 = TAUT
@@ -80,7 +77,7 @@ let BDD_EXPAND =
   and b2_tm = `b2:bool` in
   let rec BDD_EXPAND uarray b =
     if b < 0 then
-      let def = snd(Array.get uarray (-b)) in
+      let def = snd(apply (!uarray) (-b)) in
       let (v,(y,n)) = dest_cond(rand(concl def)) in
       let pth =
         if is_neg y then
@@ -90,7 +87,7 @@ let BDD_EXPAND =
           if is_neg n then INST [v,v_tm; y,b1_tm; rand n,b2_tm] pth2
           else INST [v,v_tm; y,b1_tm; n,b2_tm] pth1 in
       TRANS (AP_TERM neg_tm def) pth
-    else snd(Array.get uarray b) in
+    else snd(apply (!uarray) b) in
   BDD_EXPAND;;
 
 let BDD_LOOKUP =
@@ -111,28 +108,25 @@ let BDD_LOOKUP =
        l,0)
     else if l < 0 then
       let i = lookup_triple varray utable (v,-l,-r) in
-      let dth = snd(Array.get (tfst utable) i) in
+      let dth = snd(apply(!(tfst utable)) i) in
       let (ctm,(vtm,(ltm,rtm))) = (I F_F dest_cond) (dest_eq(concl dth)) in
       if r < 0 then
         (MP (INST [ctm,b_tm;vtm,v_tm;ltm,l_tm;rtm,r_tm] pth2) dth,-i,i)
       else
         (MP (INST [ctm,b_tm;vtm,v_tm;ltm,l_tm;rand rtm,r_tm] pth3) dth,-i,i)
     else let i = lookup_triple varray utable (v,l,r) in
-         let dth = snd(Array.get (tfst utable) i) in
+         let dth = snd(apply (!(tfst utable)) i) in
          (dth,i,i) in
   BDD_LOOKUP;;
 
 let mk_utable() =
-  (Array.make USIZE ((0,0,0),TRUTH),
+  (ref(0 |=> ((0,0,0),TRUTH)),
    ref 1,
-   (Hashtbl.create UHASH :(int*int*int,int)Hashtbl.t));;
+   ref undefined);;
 
 (* ------------------------------------------------------------------------- *)
 (* Handling of computed table.                                               *)
 (* ------------------------------------------------------------------------- *)
-
-let CSIZE = 200000;;
-let CHASH = 1024;;
 
 let bdd_and =
   let pth1 = TAUT `~T /\ r1 <=> ~T`
@@ -164,7 +158,7 @@ let bdd_and =
   and r3_tm = `r3:bool`
   and v_tm = `v:bool`
   and lookup_pair (carray,cnext,chash) (l,r) =
-     try let i = Hashtbl.find chash (l,r) in (fst(Array.get carray i),i)
+     try let i = apply (!chash) (l,r) in (fst(apply (!carray) i),i)
      with Not_Found -> failwith "lookup_pair" in
   let rec bdd_and (varray,utable,((carray,cnext,chash) as ctable)) (l,r) =
     try lookup_pair ctable (l,r) with Failure _ ->
@@ -225,27 +219,27 @@ let bdd_and =
           (c,xth,[abs(r);jc],[jy;jn]) in
     let m = !cnext in
     (cnext := m + 1;
-     Array.set carray m ((ans,(thm,uargs,cargs)));
-     Hashtbl.add chash (l,r) m;
+     carray := (m |-> (ans,(thm,uargs,cargs))) (!carray);
+     chash := ((l,r) |-> m) (!chash);
      (ans,m))
 
   and bdd_ands (varray,utable,ctable) (l,r) =
     if (l:int) <= r then
       let (ans,i) = bdd_and (varray,utable,ctable) (l,r) in
-      let th = tfst(snd(Array.get (tfst ctable) i)) in
+      let th = tfst(snd(apply (!(tfst ctable)) i)) in
       (th,ans,i)
     else
       let (ans,i) = bdd_and (varray,utable,ctable) (r,l) in
-      let th = tfst(snd(Array.get (tfst ctable) i)) in
+      let th = tfst(snd(apply (!(tfst ctable)) i)) in
       let ((ltm,rtm),ctm) = (dest_conj F_F I) (dest_eq(concl th)) in
       let eth = INST [rtm,l1_tm; ltm,r1_tm] pth8 in
       (TRANS eth th,ans,i) in
   bdd_and;;
 
 let mk_ctable() =
-  (Array.make CSIZE (0,(TRUTH,([]:int list),([]:int list))),
+  (ref undefined,
    ref 0,
-   (Hashtbl.create CHASH :(int*int,int)Hashtbl.t));;
+   ref undefined);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic BDD-constructing operations for the logical connectives.            *)
@@ -264,7 +258,7 @@ let BDD_VAR =
     let u = lookup_triple (tfst vtable) utable (v,BDD_1,BDD_0) in
     let ltm = btm_of_int (tfst utable) u in
     let sth = INST [ltm,x_tm; tm,v_tm] pth in
-    let th = snd(Array.get (tfst utable) u) in
+    let th = snd(apply (!(tfst utable)) u) in
     (u,MP sth th);;
 
 let BDD_NEG =
@@ -289,12 +283,12 @@ let BDD_AND =
       let (i3,j) = bdd_and (tfst vtable,utable,ctable) (i2,i1) in
       let sth = INST [btm_of_int (tfst utable) i1,t1_tm;
                       btm_of_int (tfst utable) i2,t2_tm] pth
-      and th = tfst(snd(Array.get (tfst ctable) j)) in
+      and th = tfst(snd(apply (!(tfst ctable)) j)) in
       (i3,TRANS (MK_COMB(AP_TERM and_tm th1,th2))
                 (TRANS sth th))
     else
       let (i3,j) = bdd_and (tfst vtable,utable,ctable) (i1,i2) in
-      let th = tfst(snd(Array.get (tfst ctable) j)) in
+      let th = tfst(snd(apply (!(tfst ctable)) j)) in
       (i3,TRANS (MK_COMB(AP_TERM and_tm th1,th2)) th);;
 
 let BDD_OR =
