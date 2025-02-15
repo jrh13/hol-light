@@ -18,11 +18,16 @@ let BITBLAST tm =
 
 (****
 
+needs "Cadical/make.ml";;
 needs "Minisat/make.ml";;
 
 let BITBLAST_BDD tm =
   let th = (ONCE_DEPTH_CONV EXPAND_CASES_CONV THENC NUM_REDUCE_CONV) tm in
   EQ_MP (SYM th) (BITBLAST_RULE (rand(concl th)))
+and BITBLAST_CADICAL tm =
+  let th = (ONCE_DEPTH_CONV EXPAND_CASES_CONV THENC NUM_REDUCE_CONV) tm in
+  let th' = prove(rand(concl th),BITBLAST_THEN (CONV_TAC o K CADICAL_PROVE)) in
+  EQ_MP (SYM th) th'
 and BITBLAST_MINISAT tm =
   let th = (ONCE_DEPTH_CONV EXPAND_CASES_CONV THENC NUM_REDUCE_CONV) tm in
   let th' = prove(rand(concl th),BITBLAST_THEN (CONV_TAC o K SAT_PROVE)) in
@@ -34,9 +39,10 @@ and BITBLAST_ZCHAFF tm =
 
 let BITBLAST tm =
   let th1 = (*** Already reports time ***) BITBLAST_BDD tm in
-  let th2 = time BITBLAST_MINISAT tm in
-  let th3 = time BITBLAST_ZCHAFF tm in
-  if concl th1 = tm && concl th2 = tm && concl th3 = tm
+  let th2 = time BITBLAST_CADICAL tm in
+  let th3 = time BITBLAST_MINISAT tm in
+  let th4 = time BITBLAST_ZCHAFF tm in
+  if concl th1 = tm && concl th2 = tm && concl th3 = tm && concl th4 = tm
   then th1 else failwith "BITBLAST: Sanity check failure";;
 
 *****)
@@ -515,3 +521,55 @@ BITBLAST
          (if val(word_and x MASK1) < val(word_and x (word_not MASK1))
           then 1 else 0)) =
     word_clz x`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Reversing bits in a byte; Sean Anderson's refinment of Schroeppel's idea. *)
+(* https://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64Bits*)
+(* ------------------------------------------------------------------------- *)
+
+BITBLAST
+ `!x:byte.
+     let f = word_mul (word_zx x) (word 0x80200802:int64) in
+     let s = word_and f (word 0x0884422110) in
+     let m = word_mul s (word 0x0101010101) in
+     let l = word_ushr m 32 in
+     word_zx l = word_reversefields 1 x`;;
+
+BITBLAST
+ `!x:byte.
+     let f = word_mul (word_zx x) (word 0x80200802:int64) in
+     let s = word_and f (word 0x0884422110) in
+     let m = word_mul s (word 0x0101010101) in
+     let l = word_and (word_ushr m 32) (word 0xFF) in
+     l = word_zx(word_reversefields 1 x)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Reversing bits 7..1 in a byte but leaving bit 0 unchanged.                *)
+(* This looks ad-hoc but is relevant to ML-KEM standard bit reversal.        *)
+(* ------------------------------------------------------------------------- *)
+
+BITBLAST
+ `!x:byte.
+     let f = word_mul (word_zx x) (word 0x40100401:int64) in
+     let s = word_and f (word 0x884422011) in
+     let m = word_mul s (word 0x0101010101) in
+     let l = word_ushr m 32 in
+     word_zx l =
+     word_or (word_and x (word 1))
+        (word_shl
+          (word_zx(word_reversefields 1 (word_zx (word_ushr x 1):7 word))) 1)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* A simple reciprocal multiplication example. This corresponds to the       *)
+(* bounds for the "reduce32" function in the ML-DSA reference code:          *)
+(* https://github.com/pq-crystals/kyber/blob/main/ref/reduce.c               *)
+(* ------------------------------------------------------------------------- *)
+
+BITBLAST
+ `!a:int32.
+    let ML_DSA_Q = &8380417 in
+    let t = word_ishr (word_add a (word_shl (word 1) 22)) 23 in
+    let r = word_sub a (word_mul t (iword ML_DSA_Q)) in
+    ival(a) < &0x7fc00000
+    ==> ival(a) - ML_DSA_Q * ival t = ival r /\
+        --(&6283009) <= ival r /\ ival r <= &6283008`;;
