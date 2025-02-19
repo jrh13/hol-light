@@ -22,6 +22,6 @@ This is a sort of inverse to the indexing into a string by {el}:
 }
 
 \SEEALSO
-el, find.
+el, find, find_index.
 
 \ENDDOC

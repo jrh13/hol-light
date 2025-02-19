@@ -249,12 +249,17 @@ let rec chop_list n l =
   try let m,l' = chop_list (n-1) (tl l) in (hd l)::m,l'
   with Failure _ -> failwith "chop_list";;
 
-let index x =
+let find_index p =
   let rec ind n l =
     match l with
-      [] -> failwith "index"
-    | (h::t) -> if compare x h = 0 then n else ind (n + 1) t in
+      [] -> None
+    | (h::t) -> if p h then Some n else ind (n + 1) t in
   ind 0;;
+
+let index x l =
+  match find_index ((=) 0 o compare x) l with
+  | Some n -> n
+  | None -> failwith "index";;
 
 (* ------------------------------------------------------------------------- *)
 (* "Set" operations on lists.                                                *)
