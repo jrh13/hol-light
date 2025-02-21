@@ -27,4 +27,9 @@ if [ -d "${HOLLIGHT_DIR}/_opam" ]; then
   eval $(opam env --switch "${HOLLIGHT_DIR}/" --set-switch)
 fi
 
-${LINE_EDITOR} ${HOLLIGHT_DIR}/ocaml-hol -init ${HOLLIGHT_DIR}/hol.ml -I ${HOLLIGHT_DIR}
+# If a custom hol.ml is given, use it. This variable is used by make-checkpoint.sh .
+if [ "${HOL_ML_PATH}" == "" ]; then
+  HOL_ML_PATH="${HOLLIGHT_DIR}/hol.ml"
+fi
+
+${LINE_EDITOR} ${HOLLIGHT_DIR}/ocaml-hol -init ${HOL_ML_PATH} -I ${HOLLIGHT_DIR}
