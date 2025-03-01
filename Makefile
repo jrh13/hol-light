@@ -63,7 +63,7 @@ switch-5:; \
   opam update ; \
   opam switch create . ocaml-base-compiler.5.2.0 ; \
   eval $(opam env) ; \
-  opam install -y zarith ledit ; \
+  opam install -y zarith ledit menhir ; \
   opam pin -y add camlp5 8.03.00
 
 # Choose an appropriate "update_database.ml" file
@@ -235,6 +235,9 @@ hol.complex: ./hol.multivariate                                         \
         update_database.ml;                                             \
         echo -e 'loadt "Multivariate/complexes.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transcendentals.ml";;\nloadt "Multivariate/realanalysis.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
 
+tptp:
+	cd SCTPTP && make
+
 # Build all those
 all: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
 
@@ -250,4 +253,5 @@ clean:; \
         hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
         hol_loader.c* hol_loader.o \
         unit_tests_inlined.* unit_tests.native unit_tests.byte \
-        ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex
+        ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex && \
+  cd SCTPTP && make clean
