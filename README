@@ -1,3 +1,34 @@
+                        SC-TPTP / HOL LIGHT
+
+This is a version of HOL Light that has been extended to include support for
+exporting first-order problems to the SC-TPTP format, solving the problem with
+first-order ATPs (egg, Goeland, Prover9), and reconstructing the proof within
+HOL Light.
+
+The extension is within the `SCTPTP` directory.
+
+To use the tools, you need to 
+
+1. Build HOL Light with the default instructions (see README below). We only
+   support the OCaml 5 based installation. The switch creation in the default
+   `make switch-5` command additionally installs `menhir` compared to HOL Light.
+2. Build the SC-TPTP tools by running `make sctptp` in the root directory. This
+   simply calls `make` in the `SCTPTP` directory.
+3. Obtain the SC-TPTP proof producing versions of the solvers you wish to prove.
+   The respective tactics with otherwise crash with an error code (127) if the
+   executable is not found.
+4. Run HOL Light by loading `hol.ml`, which is changed to load the SCTPTP tools,
+   or manually type `#use "SCTPTP/tptp_top.ml";;` in the OCaml toplevel.
+
+By default, the functions `EGG`, `GOELAND`, and `PROVER9` are available.
+Additionally, the function `sctptp_tac` is also available, to construct your own
+insantiations for differnet provers, of which the first three are just partial
+instantiations. 
+
+The default README for HOL Light follows.
+
+        *       *       *       *       *       *       *       *
+
                              HOL LIGHT
 
 HOL Light is an interactive theorem prover / proof checker. It is
