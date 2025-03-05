@@ -52,10 +52,6 @@ export HOL_ML_PATH=${init_ml_path}
 current_dir=$(dirname -- "$( readlink -f -- "$0"; )")
 hol_sh_path="${current_dir}/hol.sh"
 HOLLIGHT_DIR="$(${hol_sh_path} -dir)"
-if [ "$HOLLIGHT_DIR" != "$current_dir" ] ; then
-  echo "make-checkpoint.sh is not in HOLLIGHT_DIR"
-  exit 1
-fi
 
 
 function checkpoint_after_load () {
