@@ -10,6 +10,10 @@ The function {loadt} takes a string indicating an OCaml file name as
 argument and loads it. If the filename is relative, it is found on the load
 path {load_path}, and it is then loaded, updating the list of loaded files.
 
+Additional paths can be added to {load_path} by setting the
+{HOLLIGHT_LOAD_PATH} environment variable. Each path must be separated by
+an OS-specific delimiter (':' for Unix and ';' for Windows).
+
 \FAILURE
 {loadt} will fail if the file named by the argument does not exist in
 the search path. It will of course fail if the file is not a valid OCaml
