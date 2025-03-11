@@ -67,8 +67,7 @@ let new_paths:string list =
     (* Is it inside a quotation ("..." or '...')? *)
     if !quote <> None then
       (* Is p[i] closing the quotation? *)
-      if (p.[i] = '\'' || p.[i] = '"') && !quote = Some p.[i]
-      then quote := None
+      if !quote = Some p.[i] then quote := None
       else ()
     else
 
