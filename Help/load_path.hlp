@@ -12,6 +12,10 @@ filenames. An initial dollar sign {$} in each path is interpreted as a
 reference to the current setting of {hol_dir}. To get an actual {$} character
 at the start of the filename, use two dollar signs {$$}.
 
+Additional paths can be added to {load_path} by setting the
+{HOLLIGHT_LOAD_PATH} environment variable. Each path must be separated by
+an OS-specific delimiter (':' for Unix and ';' for Windows).
+
 \FAILURE
 Not applicable.
 
