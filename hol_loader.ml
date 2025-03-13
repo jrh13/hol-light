@@ -47,6 +47,47 @@ let hol_expand_directory s =
 
 let load_path = ref ["."; "$"];;
 
+(* Read the HOLLIGHT_LOAD_PATH env variable *)
+let p = try Sys.getenv "HOLLIGHT_LOAD_PATH" with Not_found -> "" in
+let new_paths:string list =
+  (* Separator, to split p into multiple paths *)
+  let sep = if Sys.win32 then ';' else (* Cygwin and Unix *) ':' in
+
+  (* Tokenize. Avoid using Str.regexp which needs to load the Str module *)
+  let prev_idx = ref 0 in
+  let escaped = ref false in
+  let quote = ref None (* either Some '\'' or Some '"' *) in
+  let l = String.length p in
+  let new_paths = ref [] in
+
+  for i = 0 to l - 1 do
+    (* Was p[i-1] a backslash ('\\')? *)
+    if !escaped then escaped := false else
+
+    (* Is it inside a quotation ("..." or '...')? *)
+    if !quote <> None then
+      (* Is p[i] closing the quotation? *)
+      if !quote = Some p.[i] then quote := None
+      else ()
+    else
+
+    (* Is it a separator (':' or ';')? *)
+    if p.[i] = sep then begin
+      new_paths := !new_paths @ [String.sub p !prev_idx (i - !prev_idx)];
+      prev_idx := i + 1
+    end else if p.[i] = '\\' then
+      (* escaping the next character *)
+      escaped := true
+    else if (p.[i] = '\'' || p.[i] = '"') then
+      (* it is opening a quotation *)
+      quote := Some p.[i]
+    else ()
+  done;
+  (* add the remaining string *)
+  new_paths := !new_paths @ [String.sub p !prev_idx (l - !prev_idx)];
+  !new_paths in
+load_path := !load_path @ new_paths;;
+
 let loaded_files = ref [];;
 
 let file_on_path p s =
