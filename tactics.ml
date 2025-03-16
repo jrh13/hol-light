@@ -820,6 +820,7 @@ let (pp_print_goalstack:Format.formatter->goalstack->unit) =
 let print_goal = pp_print_goal Format.std_formatter;;
 let print_goalstack = pp_print_goalstack Format.std_formatter;;
 let PRINT_GOAL_TAC: tactic = fun gl -> print_goal gl; ALL_TAC gl;;
+let REMARK_TAC (s:string): tactic = fun gl -> remark s; ALL_TAC gl;;
 
 (* ------------------------------------------------------------------------- *)
 (* Convert a tactic into a refinement on head subgoal in current state.      *)

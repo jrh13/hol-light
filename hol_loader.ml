@@ -99,7 +99,14 @@ let file_on_path p s =
 let load_on_path p s =
   let s' = file_on_path p s in
   let fileid = (Filename.basename s',Digest.file s') in
-  (use_file s'; loaded_files := fileid::(!loaded_files));;
+  let old_loaded_files = !loaded_files in
+  try
+    use_file s'; loaded_files := fileid::(!loaded_files)
+  with f ->
+    (* Exception in use_file implies that s' could not be loaded and
+       use_file_raise_failure was true. Rollback any updates in
+       loaded_files. *)
+    (loaded_files := old_loaded_files; raise f);;
 
 let loads s = load_on_path ["$"] s;;
 

@@ -147,7 +147,7 @@ let print_all_thm = ref true;;
 (* ------------------------------------------------------------------------- *)
 (* Flag controlling whether types of subterms must be printed.               *)
 (* 0: Do not print the types of subterms                                     *)
-(* 1 (defualt) : Only print types containing invented type variables         *)
+(* 1 (default) : Only print types containing invented type variables         *)
 (* 2: Print the types of constants and variables                             *)
 (* ------------------------------------------------------------------------- *)
 

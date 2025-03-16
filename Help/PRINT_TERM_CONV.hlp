@@ -1,0 +1,17 @@
+\DOC PRINT_TERM_CONV
+
+\TYPE {PRINT_TERM_CONV : conv}
+
+\SYNOPSIS
+Prints the term to standard output.
+
+\DESCRIBE
+The conversion {PRINT_TERM_CONV} prints the current term to standard output.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+print_term, PRINT_GOAL_TAC, REMARK_TAC
+
+\ENDDOC

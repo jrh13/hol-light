@@ -339,3 +339,9 @@ let CACHE_CONV =
               with Failure _ ->
                   let th = conv tm in
                   (net := enter [] (tm,ALPHA_HACK th) (!net); th);;
+
+(* ------------------------------------------------------------------------- *)
+(* A printer.                                                                *)
+(* ------------------------------------------------------------------------- *)
+
+let PRINT_TERM_CONV t = Format.printf "%a\n" pp_print_qterm t; ALL_CONV t;;

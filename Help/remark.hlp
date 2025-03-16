@@ -26,6 +26,6 @@ Never fails.
 }
 
 \SEEALSO
-report, verbose.
+report, verbose, REMARK_TAC.
 
 \ENDDOC

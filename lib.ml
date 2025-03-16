@@ -464,8 +464,9 @@ let time f x =
       result
   with e ->
       let finish_time = Sys.time() in
-      Format.print_string("Failed after (user) CPU time of "^
-                          (string_of_float(finish_time -. start_time))^": ");
+      let msg = Printexc.to_string e in
+      report("Failed after (user) CPU time of "^
+             (string_of_float(finish_time -. start_time))^": "^msg);
       raise e;;
 
 (* ------------------------------------------------------------------------- *)
