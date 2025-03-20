@@ -69,12 +69,12 @@ else loads "hol_lib.ml";;
 
 #install_printer pp_print_fpf;;
 
-#install_printer pp_print_qtype;;
-#install_printer pp_print_qterm;;
-#install_printer pp_print_thm;;
+#install_printer pp_print_colored_qtype;;
+#install_printer pp_print_colored_qterm;;
+#install_printer pp_print_colored_thm;;
 
-#install_printer pp_print_goal;;
-#install_printer pp_print_goalstack;;
+#install_printer pp_print_colored_goal;;
+#install_printer pp_print_colored_goalstack;;
 
 (* ------------------------------------------------------------------------- *)
 (* The help system.                                                          *)

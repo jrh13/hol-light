@@ -1,0 +1,21 @@
+\DOC pp_print_colored_qterm
+
+\TYPE {pp_print_colored_qterm : formatter -> term -> unit}
+
+\SYNOPSIS
+Prints a term with surrounding quotes and colors to formatter.
+
+\DESCRIBE
+The call {pp_print_colored_qterm fmt tm} prints the colored representation of the
+term {tm} to the formatter {fmt}, in the form {`tm`}.
+To print without colors, use {pp_print_qterm}.
+
+For its color configuration, see {pp_print_colored_term}.
+
+\FAILURE
+Should never fail unless the formatter does.
+
+\SEEALSO
+pp_print_colored_term, pp_print_term, pp_print_qterm, print_qterm, print_term.
+
+\ENDDOC

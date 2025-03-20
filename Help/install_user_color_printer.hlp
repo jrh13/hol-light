@@ -1,0 +1,33 @@
+\DOC install_user_color_printer
+
+\TYPE {install_user_color_printer : string * (formater -> term -> unit) -> unit}
+
+\SYNOPSIS
+Install a user-defined color printing function into the HOL Light term printer.
+
+\DESCRIBE
+The call {install_user_color_printer(s,pr)} sets up {pr} inside the HOL Light
+toplevel printer. When a term is to be color-printed, on each subterm encountered,
+{pr} will be tried first.
+if it fails with {Failure ...}, HOL Light will try its non-coloring user printer
+registered with {install_user_printer}.
+If it fails again with {Failure ...} will the normal HOL Light printing be
+invoked. The additional string argument {s} is just to provide a convenient
+handle for later removal through {delete_user_color_printer}. However, any previous
+user printer with the same string tag will be removed when
+{install_user_color_printer} is called. The printing function takes two arguments,
+the second being the term to print and the first being the formatter to be
+used; this ensures that the printer will automatically have its output sent to
+the current formatter by the overall printer.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Analogous to the example of {install_user_printer}.
+
+\SEEALSO
+delete_user_color_printer, delete_user_printer, install_user_printer,
+try_user_color_printer, try_user_printer.
+
+\ENDDOC

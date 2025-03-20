@@ -765,38 +765,46 @@ let ANTS_TAC =
 (* Set to None if the formatter's default max boxes value is to be used.     *)
 let print_goal_hyp_max_boxes = ref None;;
 
-let (pp_print_goal:Format.formatter->goal->unit) =
-  let string_of_int3 n =
-    if n < 10 then "  "^string_of_int n
-    else if n < 100 then " "^string_of_int n
-    else string_of_int n in
-  let print_hyp fmt n (s,th) =
-    pp_open_hbox fmt ();
-    Format.pp_print_string fmt (string_of_int3 n);
-    Format.pp_print_string fmt " [";
-    pp_open_hvbox fmt 0;
-    let old_max_boxes = pp_get_max_boxes fmt () in
-    (match !print_goal_hyp_max_boxes with
-     | None -> ()
-     | Some hb -> pp_set_max_boxes fmt hb);
-    pp_print_qterm fmt (concl th);
-    pp_set_max_boxes fmt old_max_boxes;
-    pp_close_box fmt ();
-    Format.pp_print_string fmt "]";
-    (if not (s = "") then (Format.pp_print_string fmt (" ("^s^")")) else ());
-    pp_close_box fmt ();
-    Format.pp_print_newline fmt () in
-  let rec print_hyps fmt n asl =
-    if asl = [] then () else
-    (print_hyp fmt n (hd asl);
-     print_hyps fmt (n + 1) (tl asl)) in
-  fun fmt (asl,w) ->
-    Format.pp_print_newline fmt ();
-    if asl <> [] then (print_hyps fmt 0 (rev asl); Format.pp_print_newline fmt ()) else ();
-    pp_print_qterm fmt w; Format.pp_print_newline fmt ();;
+let (pp_print_goal:Format.formatter->goal->unit),
+    (pp_print_colored_goal:Format.formatter->goal->unit) =
+  let with_color (color_flag:bool) =
+    let string_of_int3 n =
+      if n < 10 then "  "^string_of_int n
+      else if n < 100 then " "^string_of_int n
+      else string_of_int n in
+    let print_hyp fmt n (s,th) =
+      pp_open_hbox fmt ();
+      Format.pp_print_string fmt (string_of_int3 n);
+      Format.pp_print_string fmt " [";
+      pp_open_hvbox fmt 0;
+      let old_max_boxes = pp_get_max_boxes fmt () in
+      (match !print_goal_hyp_max_boxes with
+      | None -> ()
+      | Some hb -> pp_set_max_boxes fmt hb);
+      (if color_flag then pp_print_colored_qterm else pp_print_qterm)
+        fmt (concl th);
+      pp_set_max_boxes fmt old_max_boxes;
+      pp_close_box fmt ();
+      Format.pp_print_string fmt "]";
+      (if not (s = "") then (Format.pp_print_string fmt (" ("^s^")")) else ());
+      pp_close_box fmt ();
+      Format.pp_print_newline fmt () in
+    let rec print_hyps fmt n asl =
+      if asl = [] then () else
+      (print_hyp fmt n (hd asl);
+      print_hyps fmt (n + 1) (tl asl)) in
+    fun fmt (asl,w) ->
+      Format.pp_print_newline fmt ();
+      if asl <> []
+      then (print_hyps fmt 0 (rev asl); Format.pp_print_newline fmt ())
+      else ();
+      (if color_flag then pp_print_colored_qterm else pp_print_qterm) fmt w;
+      Format.pp_print_newline fmt () in
+  with_color false, with_color true;;
 
-let (pp_print_goalstack:Format.formatter->goalstack->unit) =
-  let print_goalstate fmt k gs =
+let (pp_print_goalstack:Format.formatter->goalstack->unit),
+    (pp_print_colored_goalstack:Format.formatter->goalstack->unit) =
+  let print_goalstate color_flag fmt k gs =
     let (_,gl,_) = gs in
     let n = length gl in
     let s = if n = 0 then "No subgoals" else
@@ -804,22 +812,28 @@ let (pp_print_goalstack:Format.formatter->goalstack->unit) =
            ^" ("^(string_of_int n)^" total)" in
     Format.pp_print_string fmt s; Format.pp_print_newline fmt ();
     if gl = [] then () else
-    do_list (pp_print_goal fmt o C el gl) (rev(0--(k-1))) in
-  fun fmt l ->
+    do_list
+      ((if color_flag then pp_print_colored_goal else pp_print_goal) fmt
+        o C el gl)
+      (rev(0--(k-1))) in
+  let fn color_flag fmt l =
     if l = [] then Format.pp_print_string fmt "Empty goalstack"
     else if tl l = [] then
       let (_,gl,_ as gs) = hd l in
-      print_goalstate fmt 1 gs
+      print_goalstate color_flag fmt 1 gs
     else
       let (_,gl,_ as gs) = hd l
       and (_,gl0,_) = hd(tl l) in
       let p = length gl - length gl0 in
       let p' = if p < 1 then 1 else p + 1 in
-      print_goalstate fmt p' gs;;
+      print_goalstate color_flag fmt p' gs in
+  fn false, fn true;;
 
 let print_goal = pp_print_goal Format.std_formatter;;
 let print_goalstack = pp_print_goalstack Format.std_formatter;;
 let PRINT_GOAL_TAC: tactic = fun gl -> print_goal gl; ALL_TAC gl;;
+let PRINT_COLORED_GOAL_TAC: tactic =
+    fun gl -> pp_print_colored_goal Format.std_formatter gl; ALL_TAC gl;;
 let REMARK_TAC (s:string): tactic = fun gl -> remark s; ALL_TAC gl;;
 
 (* ------------------------------------------------------------------------- *)
