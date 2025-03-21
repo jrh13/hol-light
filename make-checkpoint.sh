@@ -38,9 +38,13 @@ hol_is_loaded_log=$(mktemp --suffix=".hol_loaded")
 echo '#use "hol.ml";;' >> ${init_ml_path}
 if [ $# -eq 2 ]; then
   additional_ocaml_statement=$2
-  echo "${additional_ocaml_statement};;" >> ${init_ml_path}
+  echo "try begin" >> ${init_ml_path}
+  echo "  ${additional_ocaml_statement};" >> ${init_ml_path}
+  echo "  Printf.printf \"HOL Light loaded.\n\"" >> ${init_ml_path}
+  echo "end with e -> print_endline (Printexc.to_string e);;" >> ${init_ml_path}
+else
+  echo "Printf.printf \"HOL Light loaded.\n\";;" >> ${init_ml_path}
 fi
-echo "Printf.printf \"HOL Light loaded.\n\";;" >> ${init_ml_path}
 echo "let __ckpt_f = open_out \"${hol_is_loaded_log}\" in Printf.fprintf __ckpt_f \"loaded\"; close_out __ckpt_f;;" \
   >> ${init_ml_path}
 
@@ -53,6 +57,9 @@ current_dir=$(dirname -- "$( readlink -f -- "$0"; )")
 hol_sh_path="${current_dir}/hol.sh"
 HOLLIGHT_DIR="$(${hol_sh_path} -dir)"
 
+# Get any unused port. Use a python script to do this. Doing this directly
+# on bash is frustratingly hard. :(
+export DMTCP_COORD_PORT=$(python3 -c "import socket; s = socket.socket(); s.bind(('', 0));print(s.getsockname()[1]);s.close()")
 
 function checkpoint_after_load () {
   while true; do
@@ -90,4 +97,4 @@ function checkpoint_after_load () {
 checkpoint_after_load &
 
 # Launch hol.sh using dmtcp_launch.
-bash -i -c "dmtcp_launch --ckptdir ${output_dmtcp_dir_path} ${hol_sh_path}"
+bash -i -c "dmtcp_launch --new-coordinator --ckptdir ${output_dmtcp_dir_path} ${hol_sh_path}"
