@@ -146,34 +146,22 @@ be available for some platforms. First the basic approach:
 
 Now for the alternative approach of building a standalone image.
 The level of convenience depends on the checkpointing program you
-have installed. As of 2024, there are three programs you can use.
+have installed. As of 2025, there are three programs you can use.
 
-(1) DMTCP: you can download from here:
+(1) DMTCP: If you have DMTCP, 'make hol' will build a checkpointed
+    HOL Light binary 'hol'. To launch it, simply run './hol'. To launch
+    multiple instances, run './hol -p <fresh port number>'.
+
+    you can download DMTCP from here:
 
         https://github.com/dmtcp/dmtcp/releases
 
     To build DMTCP, please refer to
     https://github.com/dmtcp/dmtcp/blob/master/INSTALL.md .
-    HOL Light does not have convenient commands or scripts to exploit DMTCP,
-    but you can proceed as follows:
+    As of 2025, DMTCP only supports Linux.
 
-        1. Start hol.sh running under the DMTCP coordinator and wait until
-           HOL Light is loaded:
-
-              dmtcp_launch ./hol.sh
-
-        2. From another terminal, issue the checkpoint command:
-
-             dmtcp_command -kc
-
-           This will kill the process once checkpointing is done.
-
-        3. Step 2 created a checkpoint of the OCaml process and
-           a shell script to invoke it, both in the directory in
-           which ocaml was started. Running that should restore
-           the OCaml process with all your state and bindings:
-
-             ./dmtcp_restart_script.sh
+    You can also build your custom checkpoint using 'make-checkpoint.sh'
+    which exists in this directory.
 
 (2) CRIU: CRIU is similar to DMTCP but faster. However, it requires sudo
     priviledge depending on your environment (e.g., WSL2).

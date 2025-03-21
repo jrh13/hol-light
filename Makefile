@@ -185,23 +185,20 @@ unit_tests.native: unit_tests_inlined.ml hol_lib.cmx inline_load.ml hol.sh ; \
 default: hol_lib.cma hol_lib.cmxa unit_tests.byte unit_tests.native
 endif
 
-# TODO: update this and hol.* commands to use one of checkpointing  tools
-# other than ckpt.
-# Build a standalone hol image called "hol" (needs Linux and ckpt program)
+# Build a standalone hol image called "hol" (needs Linux and DMTCP)
 
-hol: pa_j.cmo ${HOLSRC} update_database.ml;                    \
+hol: hol.sh make-checkpoint.sh update_database.ml;                      \
      if test `uname` = Linux; then                                      \
-     echo -e '#use "make.ml";;\nloadt "update_database.ml";;\nself_destruct "";;' | ckpt -a SIGUSR1 -n hol.snapshot ocaml;\
-     mv hol.snapshot hol;                                               \
+     ./make-checkpoint.sh hol "loadt \"update_database.ml\"" ;          \
      else                                                               \
      echo '******************************************************';     \
-     echo 'FAILURE: Image build assumes Linux and ckpt program';        \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
      echo '******************************************************';     \
      fi
 
 # Build an image with multivariate calculus preloaded.
 
-hol.multivariate: ./hol                                                 \
+hol.multivariate: hol.sh make-checkpoint.sh Multivariate/make.ml        \
      Library/card.ml Library/permutations.ml Library/products.ml        \
      Library/floor.ml Multivariate/misc.ml Library/iter.ml              \
      Multivariate/metric.ml Multivariate/vectors.ml                     \
@@ -211,29 +208,63 @@ hol.multivariate: ./hol                                                 \
      Multivariate/derivatives.ml Multivariate/clifford.ml               \
      Multivariate/integration.ml Multivariate/measure.ml                \
      Multivariate/multivariate_database.ml update_database.ml;          \
-     echo -e 'loadt "Multivariate/make.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate analysis";;' | ./hol; mv hol.snapshot hol.multivariate;
+     if test `uname` = Linux; then                                      \
+     ./make-checkpoint.sh hol.multivariate "loadt \"Multivariate/make.ml\"; loadt \"update_database.ml\""; \
+     else                                                               \
+     echo '******************************************************';     \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
+     echo '******************************************************';     \
+     fi
 
 # Build an image with analysis and SOS procedure preloaded
 
-hol.sosa: ./hol                                                         \
+hol.sosa: hol.sh make-checkpoint.sh                                     \
      Library/analysis.ml Library/transc.ml                              \
      Examples/sos.ml update_database.ml;                                \
-     echo -e 'loadt "Library/analysis.ml";;\nloadt "Library/transc.ml";;\nloadt "Examples/sos.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with analysis and SOS";;' | ./hol; mv hol.snapshot hol.sosa;
+     if test `uname` = Linux; then                                      \
+     ./make-checkpoint.sh hol.sosa "loadt \"Library/analysis.ml\"; loadt \"Library/transc.ml\"; loadt \"Examples/sos.ml\"; loadt \"update_database.ml\""; \
+     else                                                               \
+     echo '******************************************************';     \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
+     echo '******************************************************';     \
+     fi
 
 # Build an image with cardinal arithmetic preloaded
 
-hol.card: ./hol Library/card.ml; update_database.ml;                    \
-        echo -e 'loadt "Library/card.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with cardinal arithmetic";;' | ./hol; mv hol.snapshot hol.card;
+hol.card: hol.sh make-checkpoint.sh Library/card.ml update_database.ml; \
+     if test `uname` = Linux; then                                      \
+     ./make-checkpoint.sh hol.card "loadt \"Library/card.ml\"; loadt \"update_database.ml\""; \
+     else                                                               \
+     echo '******************************************************';     \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
+     echo '******************************************************';     \
+     fi
 
 # Build an image with multivariate-based complex analysis preloaded
 
-hol.complex: ./hol.multivariate                                         \
-        Library/binomial.ml Multivariate/complexes.ml                   \
-        Multivariate/canal.ml Multivariate/transcendentals.ml           \
-        Multivariate/realanalysis.ml Multivariate/moretop.ml            \
-        Multivariate/cauchy.ml Multivariate/complex_database.ml         \
-        update_database.ml;                                             \
-        echo -e 'loadt "Multivariate/complexes.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transcendentals.ml";;\nloadt "Multivariate/realanalysis.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
+hol.complex: hol.sh make-checkpoint.sh                                  \
+     Multivariate/make.ml                                            \
+     Library/card.ml Library/permutations.ml Library/products.ml     \
+     Library/floor.ml Multivariate/misc.ml Library/iter.ml           \
+     Multivariate/metric.ml Multivariate/vectors.ml                  \
+     Multivariate/determinants.ml Multivariate/topology.ml           \
+     Multivariate/convex.ml Multivariate/paths.ml                    \
+     Multivariate/polytope.ml Multivariate/degree.ml                 \
+     Multivariate/derivatives.ml Multivariate/clifford.ml            \
+     Multivariate/integration.ml Multivariate/measure.ml             \
+     Multivariate/multivariate_database.ml                           \
+     Library/binomial.ml Multivariate/complexes.ml                   \
+     Multivariate/canal.ml Multivariate/transcendentals.ml           \
+     Multivariate/realanalysis.ml Multivariate/moretop.ml            \
+     Multivariate/cauchy.ml Multivariate/complex_database.ml         \
+     update_database.ml;                                             \
+     if test `uname` = Linux; then                                   \
+     ./make-checkpoint.sh hol.complex "loadt \"Multivariate/make.ml\"; loadt \"update_database.ml\"; loadt \"Multivariate/complexes.ml\"; loadt \"Multivariate/canal.ml\"; loadt \"Multivariate/transcendentals.ml\"; loadt \"Multivariate/realanalysis.ml\"; loadt \"Multivariate/cauchy.ml\"; loadt \"Multivariate/complex_database.ml\"; loadt \"update_database.ml\""; \
+     else                                                           \
+     echo '******************************************************'; \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';           \
+     echo '******************************************************'; \
+     fi
 
 # Build all those
 all: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
@@ -245,9 +276,13 @@ install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.m
 # Clean up all compiled files
 
 clean:; \
-  rm -f bignum.c* bignum.o \
-        update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
-        hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
-        hol_loader.c* hol_loader.o \
-        unit_tests_inlined.* unit_tests.native unit_tests.byte \
-        ocaml-hol hol.sh hol hol.multivariate hol.sosa hol.card hol.complex
+  rm -rf bignum.c* bignum.o \
+         update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
+         hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
+         hol_loader.c* hol_loader.o \
+         unit_tests_inlined.* unit_tests.native unit_tests.byte \
+         ocaml-hol hol.sh hol hol.ckpt \
+         hol.multivariate hol.multivariate.ckpt \
+         hol.sosa hol.sosa.ckpt \
+         hol.card hol.card.ckpt \
+         hol.complex hol.complex.ckpt
