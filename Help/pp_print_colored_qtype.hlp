@@ -16,6 +16,6 @@ For its color configuration, see {pp_print_colored_type}.
 Should never fail unless the formatter does.
 
 \SEEALSO
-pp_print_colored_type, pp_print_type, print_qtype, print_type.
+pp_print_colored_type, pp_print_type, print_qtype, print_type, set_color_printer.
 
 \ENDDOC

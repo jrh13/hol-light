@@ -24,6 +24,6 @@ If set to {None}, the default color of the terminal is used.
 Should never fail unless the formatter does.
 
 \SEEALSO
-pp_print_colored_qtype, pp_print_type, pp_print_qtype, print_qtype, print_type.
+pp_print_colored_qtype, pp_print_type, pp_print_qtype, print_qtype, print_type, set_color_printer.
 
 \ENDDOC

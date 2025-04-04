@@ -29,6 +29,6 @@ Should never fail unless the formatter does.
 
 \SEEALSO
 get_infix_status, is_prefix, is_reserved_word, parses_as_binder,
-pp_print_colored_qterm, pp_print_term, pp_print_qterm, print_qterm, print_term
+pp_print_colored_qterm, pp_print_term, pp_print_qterm, print_qterm, print_term, set_color_printer
 
 \ENDDOC
