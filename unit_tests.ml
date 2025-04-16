@@ -88,6 +88,29 @@ assert (not (can (index 99) [0;10;20]));;
 
 
 (* ------------------------------------------------------------------------- *)
+(* Test bignum.                                                              *)
+(* ------------------------------------------------------------------------- *)
+
+(* Z.pow (Z.of_int 0) 0 is 1.
+   Num.power_num (Num.num_of_int 0) (Num.num_of_int 0) is also 1. *)
+assert (power_num (num 0) (num 0) = num 1);;
+assert (pow (num 0) 0 = num 1);;
+
+assert (power_num (num 2) (num 3) = num 8);;
+assert (power_num (num 1 // num 2) (num 3) = (num 1 // num 8));;
+assert (power_num (num 1 // num 2) (num 4) = (num 1 // num 16));;
+assert (power_num (num 1 // num 2) (num (-3)) = num 8);;
+assert (power_num (num 1 // num 2) (num (-4)) = num 16);;
+assert (power_num (num 1 // num 2) (num 0) = num 1);;
+assert (pow (num 2) 3 = num 8);;
+assert (pow (num 1 // num 2) 3 = (num 1 // num 8));;
+assert (pow (num 1 // num 2) 4 = (num 1 // num 16));;
+assert (pow (num 1 // num 2) (-3) = num 8);;
+assert (pow (num 1 // num 2) (-4) = num 16);;
+assert (pow (num 1 // num 2) 0 = num 1);;
+
+
+(* ------------------------------------------------------------------------- *)
 (* Test check_axioms.                                                        *)
 (* ------------------------------------------------------------------------- *)
 

@@ -18,9 +18,6 @@ module Num = struct
   let float_of_num (n:num):float = Q.to_float n
 
 
-  let pow (base:num) (exponent:int):num =
-    Q.of_bigint (Z.pow (Q.to_bigint base) exponent)
-
   let add_num = Q.add
 
   let abs_num = Q.abs
@@ -99,14 +96,22 @@ module Num = struct
 
   let num_of_big_int = Q.of_bigint
 
-  (* base must be Z.t and exponent
-     must fit in the range of OCaml int type *)
-  let power_num (base:num) (exponent:num):num =
-    let f (base:num) (exponent:num):num =
-      let exp_i = int_of_num exponent in
-      Q.of_bigint (Z.pow (Q.to_bigint base) exp_i) in
-    if ge_num exponent (num_of_int 0) then f base exponent
-    else div_num (num_of_int 1) (f base (minus_num exponent));;
+  let rec pow (base:num) (exponent:int):num =
+    if exponent < 0 then
+      (if exponent = (-1 lsl 62) then
+        let half = pow base (-1 lsl 61) in
+        mult_num half half
+       else div_num (num_of_int 1) (pow base (-exponent)))
+    else if exponent = 0 then num_of_int 1
+    else if exponent = 1 then base
+    else
+      let half = pow base (exponent / 2) in
+      let almostfull = mult_num half half in
+      if exponent mod 2 = 1 then mult_num almostfull base
+      else almostfull
+
+  (* exponent must fit in the range of OCaml int type *)
+  let power_num (base:num) (exponent:num):num = pow base (int_of_num exponent)
 
 end;;
 
