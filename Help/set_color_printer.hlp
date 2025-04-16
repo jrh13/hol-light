@@ -1,0 +1,17 @@
+\DOC set_color_printer
+
+\TYPE {set_color_printer : bool -> unit}
+
+\SYNOPSIS
+Installs or uninstalls color printers.
+
+\DESCRIBE
+The call {set_color_printer b} installs color pretty printers
+{pp_print_colored_qterm}, {pp_print_colored_qtype}, {pp_print_colored_thm},
+{pp_print_colored_goal} and {pp_print_colored_goalstack} if {b} is {true}.
+If {b} is {false}, it installs pretty printers that do not use colors.
+
+\FAILURE
+Should never fail.
+
+\ENDDOC

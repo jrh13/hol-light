@@ -1,0 +1,21 @@
+\DOC pp_print_colored_thm
+
+\TYPE {pp_print_colored_thm : formatter -> thm -> unit}
+
+\SYNOPSIS
+Prints a theorem to formatter.
+
+\DESCRIBE
+The call {pp_print_colored_thm fmt th} prints the colored representation of the
+theorem {th} to the formatter {fmt}.
+To print without colors, use {pp_print_thm}.
+
+For its color configuration, see {pp_print_colored_type} and {pp_print_colored_term}.
+
+\FAILURE
+Should never fail unless the formatter does.
+
+\SEEALSO
+pp_print_colored_term, pp_print_colored_type, pp_print_thm, print_thm, set_color_printer.
+
+\ENDDOC

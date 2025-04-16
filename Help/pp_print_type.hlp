@@ -9,6 +9,8 @@ Prints a type (without colon or quotes) to formatter.
 The call {pp_print_type fmt ty} prints the usual textual representation of the
 type {ty} to the formatter {fmt}. The string is just {ty} not {`:ty`}.
 
+To print a type with colors, use {pp_print_colored_type}.
+
 \FAILURE
 Should never fail unless the formatter does.
 
@@ -16,6 +18,6 @@ Should never fail unless the formatter does.
 The usual case where the formatter is the standard output is {print_type}.
 
 \SEEALSO
-pp_print_qtype, print_qtype, print_type.
+pp_print_colored_type, pp_print_colored_qtype, pp_print_qtype, print_qtype, print_type.
 
 \ENDDOC

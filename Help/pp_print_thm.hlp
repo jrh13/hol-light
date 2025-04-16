@@ -16,6 +16,6 @@ Should never fail unless the formatter does.
 The usual case where the formatter is the standard output is {print_thm}.
 
 \SEEALSO
-print_thm.
+pp_print_colored_thm, print_thm.
 
 \ENDDOC

@@ -23,6 +23,7 @@ If a user printer has been installed as in the example given for
 }
 
 \SEEALSO
-install_user_printer, try_user_printer.
+delete_user_color_printer, install_user_color_printer, install_user_printer,
+try_user_color_printer, try_user_printer.
 
 \ENDDOC

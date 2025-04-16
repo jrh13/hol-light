@@ -163,6 +163,50 @@ let name_of tm =
   | _ -> "";;
 
 (* ------------------------------------------------------------------------- *)
+(* Colors                                                                    *)
+(* ------------------------------------------------------------------------- *)
+
+(* These numbers are ANSI color codes. *)
+(* Const *)
+let printer_color_const:string option ref = ref (Some "32") (* green *);;
+(* Reserved words, excluding non-alphabets *)
+let printer_color_resword:string option ref = ref (Some "34") (* blue *);;
+(* Binders *)
+let printer_color_binder:string option ref = ref (Some "35") (* purple *);;
+(* Infixes *)
+let printer_color_infix:string option ref = ref None;;
+(* Prefixes *)
+let printer_color_prefix:string option ref = ref None;;
+(* Types *)
+let printer_color_type:string option ref = ref (Some "36") (* light blue *);;
+(* Type variables *)
+let printer_color_typevar:string option ref = ref (Some "34") (* blue *);;
+(* Invented type variables *)
+let printer_color_itypevar:string option ref = ref (Some "31") (* red *);;
+
+let pp_print_colored_string (colorcode:string option) fmt (contents:string) =
+  if colorcode <> None then
+    (* \027 is decimal 27 (oct 33) which corresponds to
+        "Set foreground color" in Select Graphic Rendition *)
+    let ansicmd = "\027[" ^ (Option.get colorcode) ^ "m" in
+    let endcmd = "\027[0m" in
+    (pp_print_as fmt 0 ansicmd; (* consider ansicmd as 0-len string *)
+     pp_print_string fmt contents;
+     pp_print_as fmt 0 endcmd)
+  else pp_print_string fmt contents;;
+
+let pp_print_colored_const, pp_print_colored_resword, pp_print_colored_binder,
+    pp_print_colored_infix, pp_print_colored_prefix, pp_print_colored_tyvar =
+  (fun fmt s -> pp_print_colored_string (!printer_color_const) fmt s),
+  (fun fmt s -> pp_print_colored_string (!printer_color_resword) fmt s),
+  (fun fmt s -> pp_print_colored_string (!printer_color_binder) fmt s),
+  (fun fmt s -> pp_print_colored_string (!printer_color_infix) fmt s),
+  (fun fmt s -> pp_print_colored_string (!printer_color_prefix) fmt s),
+  (fun fmt s -> pp_print_colored_string
+      (if s.[0] = '?' (* invented type var? *)
+        then (!printer_color_itypevar) else (!printer_color_typevar)) fmt s);;
+
+(* ------------------------------------------------------------------------- *)
 (* Printer for types.                                                        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -182,24 +226,65 @@ let pp_print_type,pp_print_qtype =
     | "cart",[ty1;ty2] -> soc "^" (pr > 6) [sot 6 ty1; sot 7 ty2]
     | con,args -> (soc "," true (map (sot 0) args))^con in
   (fun fmt ty -> pp_print_string fmt (sot 0 ty)),
-  (fun fmt ty -> pp_print_string fmt ("`:" ^ sot 0 ty ^ "`"));;
+  (fun fmt ty -> pp_print_string fmt "`:"; pp_print_string fmt (sot 0 ty);
+                 pp_print_string fmt "`");;
+
+(* Reimplementation of pp_print_type/pp_print_qtype, using prettyprinter
+   to properly color strings *)
+let pp_print_colored_type,pp_print_colored_qtype =
+  let color_print_str fmt (s:string) =
+    pp_print_colored_string (!printer_color_type) fmt s in
+  (* ss is a list of printers whose format arg is not applied yet. *)
+  let soc sep flag ss fmt =
+    if ss = [] then () else
+    let () = if flag then color_print_str fmt "(" in
+    let tuple_printer = end_itlist (fun pp pp_next ->
+        fun fmt -> (pp fmt; color_print_str fmt sep; pp_next fmt))
+        ss in
+    let () = tuple_printer fmt in
+    if flag then color_print_str fmt ")" else () in
+
+  let rec sot pr ty fmt =
+    try pp_print_colored_tyvar fmt (dest_vartype ty)
+    with Failure _ ->
+    try color_print_str fmt (string_of_num(dest_finty ty)) with Failure _ ->
+    match dest_type ty with
+      con,[] -> color_print_str fmt con
+    | "fun",[ty1;ty2] -> soc "->" (pr > 0) [sot 1 ty1; sot 0 ty2] fmt
+    | "sum",[ty1;ty2] -> soc "+" (pr > 2) [sot 3 ty1; sot 2 ty2] fmt
+    | "prod",[ty1;ty2] -> soc "#" (pr > 4) [sot 5 ty1; sot 4 ty2] fmt
+    | "cart",[ty1;ty2] -> soc "^" (pr > 6) [sot 6 ty1; sot 7 ty2] fmt
+    | con,args ->
+      (soc "," true (map (sot 0) args) fmt; color_print_str fmt con)
+  in
+  (fun fmt ty -> sot 0 ty fmt),
+  (fun fmt ty -> pp_print_string fmt "`:"; sot 0 ty fmt;
+                 pp_print_string fmt "`");;
 
 (* ------------------------------------------------------------------------- *)
 (* Allow the installation of user printers. Must fail quickly if N/A.        *)
 (* ------------------------------------------------------------------------- *)
 
-let install_user_printer,delete_user_printer,try_user_printer =
-  let user_printers = ref ([]:(string*(formatter->term->unit))list) in
+let install_user_printer,install_user_color_printer,
+    delete_user_printer,delete_user_color_printer,
+    try_user_printer,try_user_color_printer =
+  let user_printers = ref ([]:(string*(formatter->term->unit))list)
+  and user_color_printers = ref ([]:(string*(formatter->term->unit))list) in
   (fun pr -> user_printers := pr::(!user_printers)),
+  (fun pr -> user_color_printers := pr::(!user_color_printers)),
   (fun s -> user_printers := snd(remove (fun (s',_) -> s = s')
                                         (!user_printers))),
-  (fun fmt -> fun tm -> tryfind (fun (_,pr) -> pr fmt tm) (!user_printers));;
+  (fun s -> user_color_printers := snd(remove (fun (s',_) -> s = s')
+                                              (!user_color_printers))),
+  (fun fmt -> fun tm -> tryfind (fun (_,pr) -> pr fmt tm) (!user_printers)),
+  (fun fmt -> fun tm ->
+    tryfind (fun (_,pr) -> pr fmt tm) (!user_color_printers));;
 
 (* ------------------------------------------------------------------------- *)
 (* Printer for terms.                                                        *)
 (* ------------------------------------------------------------------------- *)
 
-let pp_print_term =
+let pp_print_term,pp_print_colored_term =
   let reverse_interface (s0,ty0) =
     if not(!reverse_interface_mapping) then s0 else
     try fst(find (fun (s,(s',ty)) -> s' = s0 && can (type_match ty ty0) [])
@@ -249,9 +334,17 @@ let pp_print_term =
     match tm with
       Comb(Comb(Comb(Const("COND",_),i),t),e) -> (i,t),e
     | _ -> failwith "pdest_cond" in
-  fun fmt ->
+  let print_colored_term (use_color:bool) fmt =
+    let color_switch pp =
+      if use_color then pp else pp_print_string in
     let rec print_term prec tm =
-      try try_user_printer fmt tm with Failure _ ->
+      try
+        if use_color then
+          try try_user_color_printer fmt tm
+          with _ -> try_user_printer fmt tm
+        else
+          try_user_printer fmt tm
+      with Failure _ ->
       try pp_print_string fmt (string_of_num(dest_numeral tm))
       with Failure _ ->
       try (let tms = dest_list tm in
@@ -313,13 +406,14 @@ let pp_print_term =
       try let eqs,bod = dest_let tm in
           (if prec = 0 then pp_open_hvbox fmt 0
            else (pp_open_hvbox fmt 1; pp_print_string fmt "(");
-           pp_print_string fmt "let ";
+           color_switch pp_print_colored_resword fmt "let ";
            print_term 0 (mk_eq(hd eqs));
-           do_list (fun (v,t) -> pp_print_break fmt 1 0;
-                                 pp_print_string fmt "and ";
-                                 print_term 0 (mk_eq(v,t)))
-                   (tl eqs);
-           pp_print_string fmt " in";
+           do_list (fun (v,t) ->
+               pp_print_break fmt 1 0;
+               color_switch pp_print_colored_resword fmt "and ";
+               print_term 0 (mk_eq(v,t)))
+             (tl eqs);
+           color_switch pp_print_colored_resword fmt " in";
            pp_print_break fmt 1 0;
            print_term 0 bod;
            if prec = 0 then () else pp_print_string fmt ")";
@@ -339,9 +433,9 @@ let pp_print_term =
         let cls = dest_clauses(hd(tl args)) in
         (if prec = 0 then () else pp_print_string fmt "(";
          pp_open_hvbox fmt 0;
-         pp_print_string fmt "match ";
+         color_switch pp_print_colored_resword fmt "match ";
          print_term 0 (hd args);
-         pp_print_string fmt " with";
+         color_switch pp_print_colored_resword fmt " with";
          pp_print_break fmt 1 2;
          print_clauses cls;
          pp_close_box fmt ();
@@ -351,7 +445,7 @@ let pp_print_term =
         let cls = dest_clauses(hd args) in
         (if prec = 0 then () else pp_print_string fmt "(";
          pp_open_hvbox fmt 0;
-         pp_print_string fmt "function";
+         color_switch pp_print_colored_resword fmt "function";
          pp_print_break fmt 1 2;
          print_clauses cls;
          pp_close_box fmt ();
@@ -362,34 +456,34 @@ let pp_print_term =
          pp_open_hvbox fmt (-1);
          (let ccls,ecl = splitlist pdest_cond tm in
           if length ccls <= 4 then
-           (pp_print_string fmt "if ";
+           (color_switch pp_print_colored_resword fmt "if ";
             print_term 0 (hd args);
             pp_print_break fmt 0 0;
-            pp_print_string fmt " then ";
+            color_switch pp_print_colored_resword fmt " then ";
             print_term 0 (hd(tl args));
             pp_print_break fmt 0 0;
-            pp_print_string fmt " else ";
+            color_switch pp_print_colored_resword fmt " else ";
             print_term 0 (hd(tl(tl args)))
            )
           else
-           (pp_print_string fmt "if ";
+           (color_switch pp_print_colored_resword fmt "if ";
             print_term 0 (fst(hd ccls));
-            pp_print_string fmt " then ";
+            color_switch pp_print_colored_resword fmt " then ";
             print_term 0 (snd(hd ccls));
             pp_print_break fmt 0 0;
             do_list (fun (i,t) ->
-              pp_print_string fmt " else if ";
+              color_switch pp_print_colored_resword fmt " else if ";
               print_term 0 i;
-              pp_print_string fmt " then ";
+              color_switch pp_print_colored_resword fmt " then ";
               print_term 0 t;
               pp_print_break fmt 0 0) (tl ccls);
-            pp_print_string fmt " else ";
+            color_switch pp_print_colored_resword fmt " else ";
             print_term 0 ecl));
          pp_close_box fmt ();
          (if prec = 0 then () else pp_print_string fmt ")"))
       else if is_prefix s && length args = 1 then
         (if prec = 1000 then pp_print_string fmt "(" else ();
-         pp_print_string fmt s;
+         color_switch pp_print_colored_prefix fmt s;
          (if isalnum s ||
            s = "--" &&
            length args = 1 &&
@@ -419,7 +513,7 @@ let pp_print_term =
                            else if mem s (!prebroken_binops)
                            then pp_print_break fmt 1 0
                            else pp_print_string fmt " ";
-                           pp_print_string fmt s;
+                           color_switch pp_print_colored_infix fmt s;
                            if mem s (!unspaced_binops)
                            then pp_print_break fmt 0 0
                            else if mem s (!prebroken_binops)
@@ -439,13 +533,16 @@ let pp_print_term =
         then
           (pp_open_box fmt 0;
           pp_print_string fmt "(";
-          pp_print_string fmt s';
+          (if (is_const hop) then color_switch pp_print_colored_const fmt s'
+           else pp_print_string fmt s');
           pp_print_string fmt ":";
-          pp_print_type fmt (type_of hop);
+          (if use_color then pp_print_colored_type else pp_print_type)
+            fmt (type_of hop);
           pp_print_string fmt ")";
           pp_close_box fmt ())
         else
-          pp_print_string fmt s'
+          (if (is_const hop) then color_switch pp_print_colored_const fmt s'
+           else pp_print_string fmt s')
       else
         let l,r = dest_comb tm in
         (pp_open_hvbox fmt 0;
@@ -494,7 +591,7 @@ let pp_print_term =
       let vs,bod = collectvs tm in
       ((if prec = 0 then pp_open_hvbox fmt 4
         else (pp_open_hvbox fmt 5; pp_print_string fmt "("));
-       pp_print_string fmt s';
+       color_switch pp_print_colored_binder fmt s';
        (if isalnum s' then pp_print_string fmt " " else ());
        do_list (fun (b,x) ->
          (if b then pp_print_string fmt "(" else ());
@@ -509,54 +606,64 @@ let pp_print_term =
        print_term 0 bod;
        (if prec = 0 then () else pp_print_string fmt ")");
        pp_close_box fmt ())
-  and print_clauses cls =
-    match cls with
-      [c] -> print_clause c
-    | c::cs -> (print_clause c;
-                pp_print_break fmt 1 0;
-                pp_print_string fmt "| ";
-                print_clauses cs)
-  and print_clause cl =
-    match cl with
-     [p;g;r] -> (print_term 1 p;
-                 pp_print_string fmt " when ";
-                 print_term 1 g;
-                 pp_print_string fmt " -> ";
-                 print_term 1 r)
-   | [p;r] -> (print_term 1 p;
-               pp_print_string fmt " -> ";
-               print_term 1 r)
-  in print_term 0;;
+    and print_clauses cls =
+      match cls with
+        [c] -> print_clause c
+      | c::cs -> (print_clause c;
+                  pp_print_break fmt 1 0;
+                  pp_print_string fmt "| ";
+                  print_clauses cs)
+    and print_clause cl =
+      match cl with
+      [p;g;r] -> (print_term 1 p;
+                  pp_print_string fmt " when ";
+                  print_term 1 g;
+                  pp_print_string fmt " -> ";
+                  print_term 1 r)
+    | [p;r] -> (print_term 1 p;
+                pp_print_string fmt " -> ";
+                print_term 1 r)
+    in print_term 0
+  in
+  print_colored_term false, print_colored_term true;;
 
 (* ------------------------------------------------------------------------- *)
 (* Print term with quotes.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let pp_print_qterm fmt tm =
-  pp_print_string fmt "`";
-  pp_print_term fmt tm;
-  pp_print_string fmt "`";;
+let pp_print_qterm, pp_print_colored_qterm =
+  let fn use_color fmt tm =
+    pp_print_string fmt "`";
+    (if use_color then pp_print_colored_term else pp_print_term) fmt tm;
+    pp_print_string fmt "`" in
+  fn false, fn true;;
 
 (* ------------------------------------------------------------------------- *)
 (* Printer for theorems.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
-let pp_print_thm fmt th =
-  let asl,tm = dest_thm th in
-  (if not (asl = []) then
-    (if !print_all_thm then
-      (pp_print_term fmt (hd asl);
-       do_list (fun x -> pp_print_string fmt ",";
-                         pp_print_space fmt ();
-                         pp_print_term fmt x)
-               (tl asl))
-     else pp_print_string fmt "...";
-     pp_print_space fmt ())
-   else ();
-   pp_open_hbox fmt();
-   pp_print_string fmt "|- ";
-   pp_print_term fmt tm;
-   pp_close_box fmt ());;
+let pp_print_thm, pp_print_colored_thm =
+  let fn use_color fmt th =
+    let asl,tm = dest_thm th in
+    (if not (asl = []) then
+      (if !print_all_thm then
+        ((if use_color then pp_print_colored_term else pp_print_term)
+            fmt (hd asl);
+        do_list (fun x ->
+            pp_print_string fmt ",";
+            pp_print_space fmt ();
+            (if use_color then pp_print_colored_term else pp_print_term)
+              fmt x)
+          (tl asl))
+      else pp_print_string fmt "...";
+      pp_print_space fmt ())
+    else ();
+    pp_open_hbox fmt();
+    pp_print_string fmt "|- ";
+    (if use_color then pp_print_colored_term else pp_print_term) fmt tm;
+    pp_close_box fmt ())
+  in
+  fn false, fn true;;
 
 (* ------------------------------------------------------------------------- *)
 (* Print on standard output.                                                 *)

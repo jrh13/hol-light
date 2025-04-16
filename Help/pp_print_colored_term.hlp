@@ -1,0 +1,34 @@
+\DOC pp_print_colored_term
+
+\TYPE {pp_print_colored_term : formatter -> term -> unit}
+
+\SYNOPSIS
+Prints a term (without quotes) with colors to formatter.
+
+\DESCRIBE
+The call {pp_print_colored_term fmt tm} prints the colored representation of the
+term {tm} to the formatter {fmt}. The string is just {tm} not {`tm`}.
+To print without colors, use {pp_print_term}.
+
+Colors can be changed by setting OCaml reference variables of optional strings
+describing the ANSI color code.
+If set to {None}, the default color of the terminal is used.
+
+- {printer_color_const}: a text color for constants.
+
+- {printer_color_resword}: a text color for reserved words (see {is_reserved_word}).
+
+- {printer_color_binder}: a text color for binders (see {parses_as_binder}).
+
+- {printer_color_infix}: a text color for infix operators (see {get_infix_status}).
+
+- {printer_color_prefix}: a text color for prefix operators (see {is_prefix}).
+
+\FAILURE
+Should never fail unless the formatter does.
+
+\SEEALSO
+get_infix_status, is_prefix, is_reserved_word, parses_as_binder,
+pp_print_colored_qterm, pp_print_term, pp_print_qterm, print_qterm, print_term, set_color_printer
+
+\ENDDOC

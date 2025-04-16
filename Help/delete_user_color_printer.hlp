@@ -1,0 +1,22 @@
+\DOC delete_user_color_printer
+
+\TYPE {delete_user_color_printer : string -> unit}
+
+\SYNOPSIS
+Remove user-defined color printer from the HOL Light term printing.
+
+\DESCRIBE
+HOL Light allows arbitrary user printers to be inserted into the toplevel
+printer so that they are invoked on all applicable subterms (see
+{install_user_printer} and {install_user_color_printer}).
+The call {delete_user_color_printer s} removes any such printer
+associated with the tag {s} that is registered by {install_user_color_printer}.
+
+\FAILURE
+Never fails, even if there is no printer with the given tag.
+
+\SEEALSO
+delete_user_printer, install_user_color_printer, install_user_printer,
+try_user_color_printer, try_user_printer.
+
+\ENDDOC
