@@ -8200,6 +8200,7 @@ let WORD_TO_IWORD_CONV =
 
 let WORD_IREDUCE_CONV =
   WORD_REDUCE_CONV THENC ONCE_DEPTH_CONV WORD_TO_IWORD_CONV;;
+
 (* ------------------------------------------------------------------------- *)
 (* Expanding a natural number sum in a more "balanced" way.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -8758,11 +8759,14 @@ let WORD_POPCOUNT_EXPAND_CONV =
   LAND_CONV (RAND_CONV(LAND_CONV DIMINDEX_CONV THENC NUM_SUB_CONV)) THENC
   EXPAND_NSUM_BALANCE_CONV;;
 
-let WORD_URELATION_EXPAND_CONV =
+let WORD_INEQ_RELATION_EXPAND_CONV =
   GEN_REWRITE_CONV I
-   (map (REWRITE_CONV[relational2; word_ule; word_ult; word_uge; word_ugt])
+   (map (REWRITE_CONV[relational2; word_ule; word_ult; word_uge; word_ugt;
+                      irelational2; word_ile; word_ilt; word_ige; word_igt])
         [`word_ule (x:N word) y`; `word_ult (x:N word) y`;
-         `word_uge (x:N word) y`; `word_ugt (x:N word) y`]);;
+         `word_uge (x:N word) y`; `word_ugt (x:N word) y`;
+         `word_ile (x:N word) y`; `word_ilt (x:N word) y`;
+         `word_ige (x:N word) y`; `word_igt (x:N word) y`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic bit-blasting tactic.                                                *)
@@ -8822,9 +8826,11 @@ let BITBLAST_THEN =
     REPEAT((COND_CASES_TAC THEN POP_ASSUM MP_TAC) ORELSE
            (CHANGED_TAC(CONV_TAC(ONCE_DEPTH_CONV let_CONV)))) THEN
     W(fun (_,w) -> let vars = wordbits w in
-      CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN REWRITE_TAC[] THEN
-      CONV_TAC(DEPTH_CONV(WORD_RED_CONV ORELSEC NUM_RED_CONV)) THEN
-      CONV_TAC(ONCE_DEPTH_CONV WORD_URELATION_EXPAND_CONV) THEN
+      CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN
+      REWRITE_TAC[word_UINT_MAX; WORD_INT_MIN; WORD_INT_MAX] THEN
+      CONV_TAC(DEPTH_CONV
+       (WORD_RED_CONV ORELSEC NUM_RED_CONV ORELSEC DIMINDEX_CONV)) THEN
+      CONV_TAC(ONCE_DEPTH_CONV WORD_INEQ_RELATION_EXPAND_CONV) THEN
       GEN_REWRITE_TAC TOP_DEPTH_CONV
        [WORD_ODDPARITY_POPCOUNT; WORD_EVENPARITY_POPCOUNT;
         WORD_CTZ_EMULATION_POPCOUNT; GSYM WORD_CTZ_REVERSEFIELDS] THEN
