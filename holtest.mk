@@ -7,6 +7,7 @@ STANDALONE_EXAMPLES:=\
 	Library/binary \
 	Library/binomial \
 	Examples/bitblast \
+	Examples/bitblast_generic \
 	Library/bitmatch \
 	Library/bitsize \
 	Examples/bondy \
@@ -66,6 +67,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/vitali \
 	Library/wo \
 	Library/words \
+	Library/word_automata \
 	Examples/zolotarev \
 	Library/analysis-transc \
 	Library/prime-pratt \

@@ -336,6 +336,46 @@ let rec BDD_OF_TERM defs tt tm =
   | _ -> (try apply defs tm with Failure _ -> BDD_VAR tt tm);;
 
 (* ------------------------------------------------------------------------- *)
+(* Existential quantification of BDDs.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let BDD_EXISTS =
+  let [rule_e;rule_d;rule_t;rule_f] =
+    map (fun t -> GEN_REWRITE_RULE RAND_CONV [MESON[] t])
+      [`(?p. if p then q else r) <=> q \/ r`;
+       `(?p. if x then q p else r p) <=> (if x then (?p. q p) else (?p. r p))`;
+       `(?p:bool. T) <=> T`;
+       `(?p:bool. ~T) <=> ~T`] in
+  fun (vtable,utable,ctable) x ->
+    let etable = ref undefined in
+    let xn = num_of_var vtable x in
+    let rec BDD_EXISTS (n,th) =
+      try apply (!etable) n with Failure _ ->
+      let res =
+        if n = BDD_0 then
+          (BDD_0,rule_f (MK_EXISTS x th))
+        else if n = BDD_1 then
+          (BDD_1,rule_t (MK_EXISTS x th))
+        else
+          let v,nt,nf = bdd_expand (tfst utable) n
+          and eth = TRANS th (BDD_EXPAND (tfst utable) n) in
+          let _,(ntm,nfm) = dest_cond(rand(concl eth)) in
+          if v = xn then
+            let onum,oth = BDD_OR (vtable,utable,ctable)
+                                  ((nt,REFL ntm),(nf,REFL nfm)) in
+            onum,TRANS (rule_e (MK_EXISTS x eth)) oth
+          else
+            let lnum,lth = BDD_EXISTS (nt,REFL ntm)
+            and rnum,rth = BDD_EXISTS (nf,REFL nfm) in
+            let wth =
+              TRANS (rule_d (MK_EXISTS x eth))
+                 (MK_COMB(AP_TERM (rator(rator(rand(concl eth)))) lth,rth)) in
+            let fth,wn,_ =  BDD_LOOKUP (tfst vtable) utable (v,lnum,rnum) in
+            wn,TRANS wth (SYM fth) in
+      etable := (n |-> res) (!etable); res in
+      BDD_EXISTS;;
+
+(* ------------------------------------------------------------------------- *)
 (* Provide some information on output when verbose = 1                       *)
 (* ------------------------------------------------------------------------- *)
 

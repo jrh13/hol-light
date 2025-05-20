@@ -36,6 +36,7 @@ echo '### Loading Library/bdd.ml, Examples/bdd_examples.ml';
 echo '### Loading Library/binary.ml'; echo 'loadt "Library/binary.ml";;' | (time $hollight)
 echo '### Loading Library/binomial.ml'; echo 'loadt "Library/binomial.ml";;' | (time $hollight)
 echo '### Loading Examples/bitblast.ml'; echo 'loadt "Examples/bitblast.ml";;' | (time $hollight)
+echo '### Loading Examples/bitblast_generic.ml'; echo 'loadt "Examples/bitblast_generic.ml";;' | (time $hollight)
 echo '### Loading Library/bitmatch.ml'; echo 'loadt "Library/bitmatch.ml";;' | (time $hollight)
 echo '### Loading Library/bitsize.ml'; echo 'loadt "Library/bitsize.ml";;' | (time $hollight)
 echo '### Loading Examples/bondy.ml'; echo 'loadt "Examples/bondy.ml";;' | (time $hollight)
@@ -95,6 +96,7 @@ echo '### Loading Examples/sylvester_gallai.ml'; echo 'loadt "Examples/sylvester
 echo '### Loading Examples/vitali.ml'; echo 'loadt "Examples/vitali.ml";;' | (time $hollight)
 echo '### Loading Library/wo.ml'; echo 'loadt "Library/wo.ml";;' | (time $hollight)
 echo '### Loading Library/words.ml'; echo 'loadt "Library/words.ml";;' | (time $hollight)
+echo '### Loading Library/word_automata.ml'; echo 'loadt "Library/word_automata.ml";;' | (time $hollight)
 echo '### Loading Examples/zolotarev.ml'; echo 'loadt "Examples/zolotarev.ml";;' | (time $hollight)
 echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml';
 (echo 'loadt "Library/analysis.ml";;'; echo 'loadt "Library/transc.ml";;';
