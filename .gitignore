@@ -11,7 +11,17 @@ _opam
 pa_j.ml
 update_database.ml
 ocaml-hol
+hol
+hol.card
+hol.card.ckpt
+hol.complex
+hol.complex.ckpt
+hol.ckpt
+hol.multivariate
+hol.multivariate.ckpt
 hol.sh
+hol.sosa
+hol.sosa.ckpt
 hol_lib_inlined.ml
 unit_tests_inlined.ml
 unit_tests.byte
