@@ -1,0 +1,30 @@
+\DOC LIST_OF_SEQ_CONV
+
+\TYPE {LIST_OF_SEQ_CONV : conv}
+
+\SYNOPSIS
+Evaluate the list construction function {list_of_seq} on specific numeral.
+
+\DESCRIBE
+When applied to  a term {`list_of_seq f k`} where {k} is a specific
+numeral, the conversion {LIST_OF_SEQ_CONV} returns the appropriate
+theorem {|- list_of_seq f k = [f 0; ...; f(k-1)]}. If the function
+{f} is a lambda-abstraction, then beta-reduction will also be applied
+to each term {f i}.
+
+\FAILURE
+Fails if the term is not of the expected form.
+
+\EXAMPLE
+{
+  # LIST_OF_SEQ_CONV `list_of_seq (f:num->A) 3`;;
+  val it : thm = |- list_of_seq f 3 = [f 0; f 1; f 2]
+
+  # LIST_OF_SEQ_CONV `list_of_seq (\n. f n > 0) 3`;;
+  val it : thm = |- list_of_seq (\n. f n > 0) 3 = [f 0 > 0; f 1 > 0; f 2 > 0]
+}
+
+\SEEALSO
+EL_CONV, LENGTH_CONV, LIST_CONV, REVERSE_CONV.
+
+\ENDDOC
