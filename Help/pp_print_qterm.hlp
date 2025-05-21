@@ -9,6 +9,8 @@ Prints a term with surrounding quotes to formatter.
 The call {pp_print_term fmt tm} prints the usual textual representation of the
 term {tm} to the formatter {fmt}, in the form {`tm`}.
 
+To print a term with colors, use {pp_print_colored_qterm}.
+
 \FAILURE
 Should never fail unless the formatter does.
 
@@ -16,6 +18,6 @@ Should never fail unless the formatter does.
 The usual case where the formatter is the standard output is {print_qterm}.
 
 \SEEALSO
-pp_print_term, print_qterm, print_term.
+pp_print_colored_term, pp_print_colored_qterm, pp_print_term, print_qterm, print_term.
 
 \ENDDOC
