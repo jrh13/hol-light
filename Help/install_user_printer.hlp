@@ -49,6 +49,7 @@ generate exceptions other than {Failure ...} or the toplevel printer will start
 to fail.
 
 \SEEALSO
-delete_user_printer, try_user_printer.
+delete_user_color_printer, delete_user_printer, install_user_color_printer,
+try_user_color_printer, try_user_printer.
 
 \ENDDOC

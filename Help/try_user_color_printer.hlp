@@ -1,14 +1,15 @@
-\DOC try_user_printer
+\DOC try_user_color_printer
 
-\TYPE {try_user_printer : formatter -> term -> unit}
+\TYPE {try_user_color_printer : formatter -> term -> unit}
 
 \SYNOPSIS
-Try user-defined printers on a term.
+Try user-defined color printers on a term.
 
 \DESCRIBE
 HOL Light allows arbitrary user printers to be inserted into the toplevel
 printer so that they are invoked on all applicable subterms (see
-{install_user_printer}). The call {try_user_printer fmt tm} attempts all
+{install_user_printer} and {install_user_color_printer}).
+The call {try_user_color_printer fmt tm} attempts all
 installed user printers on the term {tm} in an implementation-defined order,
 sending output to the formatter {fmt}. If one succeeds, the call returns {()},
 and otherwise it fails.
@@ -17,19 +18,8 @@ and otherwise it fails.
 Fails if no user printer is applicable to the given term (e.g. if no user
 printers have been installed).
 
-\EXAMPLE
-After installing the printer for variables with types in the example for
-{install_user_printer}, you can try:
-{
-  # try_user_printer std_formatter `x:num`;;
-  (x:num)val it : unit = ()
-
-  # try_user_printer std_formatter `1`;;
-  Exception: Failure "tryfind".
-}
-
 \SEEALSO
 delete_user_color_printer, delete_user_printer, install_user_color_printer,
-install_user_printer, try_user_color_printer.
+install_user_printer, try_user_printer.
 
 \ENDDOC
