@@ -5489,17 +5489,7 @@ let poly_pow_series = prove(`
   ring_powerseries r p ==>
   ring_powerseries r (poly_pow r p n)
 `,
-  rw[poly_pow] THEN
-  GEN_TAC THEN GEN_TAC THEN
-  INDUCT_TAC THENL [
-    intro THEN
-    rw[RING_POW_0;POWSER_RING] THEN
-    qed[RING_POWERSERIES_1]
-  ;
-    intro THEN
-    rw[ring_pow;POWSER_RING] THEN
-    qed[RING_POWERSERIES_MUL]
-  ]
+  qed[RING_POWERSERIES_POW]
 );;
 
 let poly_pow_poly = prove(`
@@ -5507,17 +5497,7 @@ let poly_pow_poly = prove(`
   ring_polynomial r p ==>
   ring_polynomial r (poly_pow r p n)
 `,
-  rw[poly_pow] THEN
-  GEN_TAC THEN GEN_TAC THEN
-  INDUCT_TAC THENL [
-    intro THEN
-    rw[RING_POW_0;POWSER_RING] THEN
-    qed[RING_POLYNOMIAL_1]
-  ;
-    intro THEN
-    rw[ring_pow;POWSER_RING] THEN
-    qed[RING_POLYNOMIAL_MUL]
-  ]
+  qed[RING_POLYNOMIAL_POW]
 );;
 
 let poly_pow_in_poly_ring = prove(`
@@ -5525,17 +5505,7 @@ let poly_pow_in_poly_ring = prove(`
   p IN ring_carrier(poly_ring r S) ==>
   poly_pow r p n IN ring_carrier(poly_ring r S)
 `,
-  rw[poly_pow] THEN
-  GEN_TAC THEN GEN_TAC THEN
-  INDUCT_TAC THENL [
-    intro THEN
-    rw[RING_POW_0;POWSER_RING] THEN
-    qed[POLY_RING;RING_1]
-  ;
-    intro THEN
-    rw[ring_pow;POWSER_RING] THEN
-    qed[poly_mul_in_poly_ring]
-  ]
+  qed[POLY_RING_CLAUSES; RING_POW]
 );;
 
 let x_series_use_pow = prove(`
@@ -5588,8 +5558,7 @@ let poly_1_pow = prove(`
   !(r:R ring) n.
   poly_pow r (poly_1 r) n = poly_1 r:(V->num)->R
 `,
-  once_rw[poly_pow] THEN
-  qed[POWSER_RING;RING_POW_ONE]
+  qed[POLY_POW_1]
 );;
 
 let poly_pow_add = prove(`
@@ -5651,21 +5620,7 @@ let poly_deg_pow_le = prove(`
   ring_polynomial r p ==>
   poly_deg r (poly_pow r p n) <= n * poly_deg r p
 `,
-  GEN_TAC THEN GEN_TAC THEN
-  INDUCT_TAC THENL [
-    rw[poly_pow_0] THEN
-    rw[POLY_DEG_1] THEN
-    ARITH_TAC
-  ;
-    intro THEN
-    have `ring_polynomial r (poly_pow r (p:(V->num)->R) n)` [poly_pow_poly] THEN
-    rw[poly_pow] THEN
-    rw[ring_pow] THEN
-    rw[GSYM poly_pow;POWSER_RING] THEN
-    have `poly_deg r (poly_mul r (p:(V->num)->R) (poly_pow r p n)) <= poly_deg r p + poly_deg r (poly_pow r p n)` [POLY_DEG_MUL_LE] THEN
-    have `poly_deg r (poly_pow r (p:(V->num)->R) n) <= n * poly_deg r p` [] THEN
-    ASM_ARITH_TAC
-  ]
+  qed[POLY_DEG_POW_LE]
 );;
 
 let coeff_pow_infinite_geometric_series = prove(`
@@ -20640,25 +20595,13 @@ let symmetric_subring_if_poly_subring_range = prove(`
 
 (* ===== poly_reindex: reindexing polynomial variables *)
 
-let poly_reindex = new_definition `
-  poly_reindex (r:R ring) (q:(Y->num)->R) (f:X->Y) (A:X->bool) (B:Y->bool)
-  = (\m. if monomial_vars m SUBSET A
-         then q(\b. if b IN B
-                    then m(@a:X. a IN A /\ f a = b)
-                    else 0)
-         else ring_0 r)
-`;;
-
 let poly_vars_poly_reindex = prove(`
   !(r:R ring) A B q f:X->Y.
   BIJ f A B ==>
   poly_vars r q SUBSET B ==>
   poly_vars r (poly_reindex r q f A B) SUBSET A
 `,
-  rw[poly_reindex] THEN
-  rw[poly_vars;UNIONS_SUBSET;IN_ELIM_THM] THEN
-  rw[monomial_vars;SUBSET;IN_ELIM_THM;EXTENSION] THEN
-  qed[]
+  qed[POLY_VARS_REINDEX]
 );;
 
 let powerseries_poly_reindex = prove(`
@@ -20667,60 +20610,7 @@ let powerseries_poly_reindex = prove(`
   ring_powerseries r q ==>
   ring_powerseries r (poly_reindex r q f A B)
 `,
-  rw[poly_reindex] THEN
-  rw[ring_powerseries;INFINITE;monomial_vars;SUBSET;IN_ELIM_THM] THEN
-  intro THENL [
-    qed[RING_0]
-  ;
-    case `!x:X. ~(m x = 0) ==> x IN A` THENL [
-      subgoal `~FINITE {b:Y | ~((\b. if b IN B then m (@a:X. a IN A /\ f a = b) else 0) b = 0)}` THENL [
-        rw[BETA_THM] THEN
-        intro THEN
-        subgoal `{b:Y | ~((if b IN B then m (@a. a IN A /\ f a = b) else 0) = 0)} = IMAGE f {a:X | ~(m a = 0)}` THENL [
-          rw[EXTENSION;IN_IMAGE;IN_ELIM_THM] THEN
-          intro THEN
-          splitiff THENL [
-            intro THEN
-            have `x:Y IN B` [] THEN
-            have `SURJ (f:X->Y) A B` [BIJ] THEN
-            choose `a:X` `a:X IN A /\ f a = x:Y` [SURJ] THEN
-            witness `a:X` THEN
-            subgoal `(@a:X. a IN A /\ f a = x:Y) = a` THENL [
-              sufficesby SELECT_UNIQUE THEN
-              qed[BIJ;INJ]
-            ; pass
-            ] THEN
-            qed[]
-          ;
-            intro THEN
-            have `x':X IN A` [] THEN
-            have `x:Y IN B` [BIJ;INJ] THEN
-            subgoal `(@a:X. a IN A /\ f a = x:Y) = x'` THENL [
-              sufficesby SELECT_UNIQUE THEN
-              qed[BIJ;INJ]
-            ; pass
-            ] THEN
-            qed[]
-          ]
-        ; pass
-        ] THEN
-        specialize_assuming[
-          `f:X->Y`;
-          `{a:X | ~(m a = 0)}`
-        ]FINITE_IMAGE_INJ_EQ THEN
-        subgoal `!i j:X. i IN {a | ~(m a = 0)} ==> j IN {a | ~(m a = 0)} ==> f i = f j:Y ==> i = j` THENL [
-          rw[IN_ELIM_THM] THEN
-          qed[BIJ;INJ]
-        ; pass
-        ] THEN
-        qed[]
-      ; pass
-      ] THEN
-      qed[]
-    ;
-      qed[]
-    ]
-  ]
+  qed[RING_POWERSERIES_REINDEX]
 );;
 
 let monomials_poly_reindex = prove(`
@@ -20733,74 +20623,7 @@ let monomials_poly_reindex = prove(`
       (\m:Y->num. \a:X. if a IN A then m (f a) else 0)
       {m | ~(q m = ring_0 r)}
 `,
-  rw[poly_reindex] THEN
-  rw[EXTENSION;in_image_vw;IN_ELIM_THM] THEN
-  intro THEN
-  splitiff THENL [
-    intro THEN
-    witness `(\b:Y. if b IN B then x (@a:X. a IN A /\ f a = b) else 0)` THEN
-    intro THENL [
-      rw[fun_eq_thm_e] THEN
-      intro THEN
-      case `e:X IN A` THENL [
-        subgoal `(@a:X. a IN A /\ f a = f e:Y) = e` THENL [
-          sufficesby SELECT_UNIQUE THEN
-          qed[BIJ;INJ]
-        ; pass
-        ] THEN
-        qed[BIJ;INJ]
-      ; pass
-      ] THEN
-      have `monomial_vars(x:X->num) SUBSET A` [] THEN
-      have `~(e:X IN monomial_vars x)` [SUBSET] THEN
-      have `~(e:X IN {i | ~(x i = 0)})` [monomial_vars] THEN
-      set_fact `~(e:X IN {i | ~(x i = 0)}) ==> x e = 0` THEN
-      qed[]
-    ;
-      qed[]
-    ]
-  ;
-    intro THEN
-    subgoal `monomial_vars(x:X->num) SUBSET A` THENL [
-      rw[monomial_vars;SUBSET;IN_ELIM_THM] THEN
-      qed[]
-    ; pass
-    ] THEN
-    subgoal `(\b:Y. if b IN B then x (@a:X. a IN A /\ f a = b) else 0) = v` THENL [
-      rw[fun_eq_thm_e] THEN
-      intro THEN
-      case `e:Y IN B` THENL [
-        have `SURJ (f:X->Y) A B` [BIJ] THEN
-        choose `a:X` `a:X IN A /\ f a = e:Y` [SURJ] THEN
-        subgoal `(@a:X. a IN A /\ f a = e:Y) = a` THENL [
-          sufficesby SELECT_UNIQUE THEN
-          qed[BIJ;INJ]
-        ; pass
-        ] THEN
-        qed[]
-      ; pass
-      ] THEN
-      subgoal `v(e:Y) = 0` THENL [
-        proven_if `v(e:Y) = 0` [] THEN
-        subgoal `e IN monomial_vars(v:Y->num)` THENL [
-          rw[monomial_vars;IN_ELIM_THM] THEN
-          qed[]
-        ; pass
-        ] THEN
-        subgoal `e IN poly_vars r (q:(Y->num)->R)` THENL [
-          rw[poly_vars;IN_UNIONS;IN_ELIM_THM] THEN
-          qed[]
-        ; pass
-        ] THEN
-        qed[SUBSET]
-      ; pass
-      ] THEN
-      qed[]
-    ; pass
-    ] THEN
-    qed[]
-  ]
-);;
+  qed[MONOMIALS_POLY_REINDEX]);;
 
 let polynomial_poly_reindex = prove(`
   !(r:R ring) A B q f:X->Y.
@@ -20924,136 +20747,7 @@ let poly_evaluate_poly_reindex = prove(`
   poly_evaluate r (poly_reindex r q f A B) (c o f)
   = poly_evaluate r q c
 `,
-  rw[poly_evaluate;poly_extend] THEN
-  intro THEN
-  have `ring_powerseries r (q:(Y->num)->R)` [ring_polynomial] THEN
-  specialize[
-    `r:R ring`;
-    `A:X->bool`;
-    `B:Y->bool`;
-    `q:(Y->num)->R`;
-    `f:X->Y`
-  ]monomials_poly_reindex THEN
-  simp[] THEN
-  subgoal `!x y:Y->num. x IN {m | ~(q m:R = ring_0 r)} ==> y IN {m | ~(q m = ring_0 r)} ==> (\a:X. if a IN A then x (f a) else 0) = (\a. if a IN A then y (f a) else 0) ==> x = y` THENL [
-    rw[IN_ELIM_THM;fun_eq_thm_e] THEN
-    intro THEN
-    case `e:Y IN B` THENL [
-      choose `a:X` `a:X IN A /\ f a = e:Y` [BIJ;SURJ] THEN
-      qed[]
-    ; pass
-    ] THEN
-    case `~(x(e:Y) = 0)` THENL [
-      subgoal `e:Y IN monomial_vars x` THENL [
-        rw[monomial_vars;IN_ELIM_THM] THEN
-        qed[]
-      ; pass
-      ] THEN
-      subgoal `e IN poly_vars r (q:(Y->num)->R)` THENL [
-        rw[poly_vars;IN_UNIONS;IN_ELIM_THM] THEN
-        qed[]
-      ; pass
-      ] THEN
-      qed[SUBSET]
-    ; pass
-    ] THEN
-    case `~(y(e:Y) = 0)` THENL [
-      subgoal `e:Y IN monomial_vars y` THENL [
-        rw[monomial_vars;IN_ELIM_THM] THEN
-        qed[]
-      ; pass
-      ] THEN
-      subgoal `e IN poly_vars r (q:(Y->num)->R)` THENL [
-        rw[poly_vars;IN_UNIONS;IN_ELIM_THM] THEN
-        qed[]
-      ; pass
-      ] THEN
-      qed[SUBSET]
-    ; pass
-    ] THEN
-    qed[]
-  ; pass
-  ] THEN
-  specialize[
-    `r:R ring`;
-    `\m a:X. if a IN A then m (f a:Y) else 0`;
-    `\m:X->num. ring_mul(r:R ring) (I (poly_reindex r q (f:X->Y) A B m)) (ring_product r (monomial_vars m) (\i. ring_pow r ((c o f) i) (m i)))`;
-    `{m:Y->num | ~(q m:R = ring_0 r)}`
-  ]RING_SUM_IMAGE THEN
-  simp[] THEN
-  sufficesby ring_sum_eq_name_d THEN
-  rw[BETA_THM;o_THM;I_THM;IN_ELIM_THM] THEN
-  intro THEN
-  subgoal `!x:Y. ~(d x = 0) ==> x IN B` THENL [
-    intro THEN
-    subgoal `x:Y IN monomial_vars d` THENL [
-      rw[monomial_vars;IN_ELIM_THM] THEN
-      qed[]
-    ; pass
-    ] THEN
-    subgoal `x IN poly_vars r (q:(Y->num)->R)` THENL [
-      rw[poly_vars;IN_UNIONS;IN_ELIM_THM] THEN
-      qed[]
-    ; pass
-    ] THEN
-    qed[SUBSET]
-  ; pass
-  ] THEN
-  subgoal `poly_reindex r q f A B (\a:X. if a IN A then d (f a:Y) else 0) = q d:R` THENL [
-    rw[poly_reindex;monomial_vars;SUBSET;IN_ELIM_THM] THEN
-    subgoal `(\b:Y. if b IN B then if (@a:X. a IN A /\ f a = b) IN A then d (f (@a. a IN A /\ f a = b)) else 0 else 0) = d` THENL [
-      rw[FUN_EQ_THM] THEN
-      intro THEN
-      case `x:Y IN B` THENL [
-        choose `a:X` `a:X IN A /\ f a = x:Y` [BIJ;SURJ] THEN
-        subgoal `(@a:X. a IN A /\ f a = x:Y) = a` THENL [
-          sufficesby SELECT_UNIQUE THEN
-          qed[BIJ;INJ]
-        ; pass
-        ] THEN
-        qed[]
-      ; pass
-      ] THEN
-      qed[]
-    ; pass
-    ] THEN
-    qed[]
-  ; pass
-  ] THEN
-  subgoal `monomial_vars (d:Y->num) = IMAGE f (monomial_vars (\a:X. if a IN A then d(f a) else 0))` THENL [
-    rw[EXTENSION;in_image_vw;monomial_vars;IN_ELIM_THM] THEN
-    intro THEN
-    splitiff THENL [
-      intro THEN
-      choose `a:X` `a:X IN A /\ f a = x:Y` [BIJ;SURJ] THEN
-      witness `a:X` THEN
-      qed[]
-    ;
-      qed[]
-    ]
-  ; pass
-  ] THEN
-  simp[] THEN
-  subgoal `!x y:X. x IN monomial_vars (\a. if a IN A then d (f a:Y) else 0) ==> y IN monomial_vars (\a:X. if a IN A then d (f a) else 0) ==> f x = f y ==> x = y` THENL [
-    rw[IN_ELIM_THM;fun_eq_thm_e;monomial_vars] THEN
-    intro THEN
-    qed[BIJ;INJ]
-  ; pass
-  ] THEN
-  specialize[
-    `r:R ring`;
-    `f:X->Y`;
-    `\i:Y. ring_pow(r:R ring) (c i) (d i)`;
-    `monomial_vars (\a:X. if a IN A then d (f a:Y) else 0)`
-  ]RING_PRODUCT_IMAGE THEN
-  simp[] THEN
-  subgoal `ring_product r (monomial_vars (\a:X. if a IN A then d (f a:Y) else 0)) (\i. ring_pow r (c (f i):R) (if i IN A then d (f i) else 0)) = ring_product r (monomial_vars (\a. if a IN A then d (f a) else 0)) ((\i. ring_pow r (c i) (d i)) o f)` THENL [
-    sufficesby RING_PRODUCT_EQ THEN
-    rw[BETA_THM;o_THM;monomial_vars;IN_ELIM_THM] THEN
-    qed[]
-  ; pass
-  ] THEN
-  simp[]
+  qed[POLY_EVALUATE_REINDEX]
 );;
 
 let poly_reindex_subring = prove(`

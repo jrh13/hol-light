@@ -8,6 +8,212 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 21st May 2025       unit_tests.ml
+
+Added some unit tests for EL_CONV, LENGTH_CONV, REVERSE_CONV and
+LIST_OF_SEQ_CONV, via a generic "test a conversion" function
+called assert_conv.
+
+Tue 20th May 2025       ProofTrace/README, ProofTrace/fusion.ml.diff
+
+Adopted an update from Dan Bernstein to bring the fusion.ml patch inside
+ProofTrace into step with the current version of fusion.ml, as well as
+to make the guidance on file sizes more explicit.
+
+Tue 20th May 2025       hol.ml, printer.ml, tactics.ml, Library/bitmatch.ml
+
+Merged an update from June Lee adding a systematic set of color printing
+functions, and applying them pervasively when printing to the terminal any
+types, terms, theorems and goals. This colorization is enabled by default,
+but can be enabled or disabled explicitly with
+
+  set_color_printer true;;
+  set_color_printer false;;
+
+Tue 20th May 2025       lists.ml
+
+Added a few elementary list lemmas:
+
+  LENGTH_EQ_LIST_OF_SEQ =
+    |- forall l n. LENGTH l = n <=> l = list_of_seq (\i. EL i l)
+
+  LENGTH_FILTER =
+    |- forall P l. LENGTH (FILTER P l) <= LENGTH l
+
+  LIST_OF_SEQ =
+    |- (forall f. list_of_seq f 0 = []) /\
+       (forall f n.
+            list_of_seq f (SUC n) = CONS (f 0) (list_of_seq (f o SUC) n))
+
+  LIST_OF_SEQ_EQ_SELF =
+    |- forall l. list_of_seq (\i. EL i l) (LENGTH l) = l
+
+  MAP_LIST_OF_SEQ =
+    |- forall f g n. MAP g (list_of_seq f n) = list_of_seq (g o f) n
+
+as well as explicit conversions for the list functions EL, LENGTH,
+list_of_seq and REVERSE:
+
+  EL_CONV
+  LENGTH_CONV
+  LIST_OF_SEQ_CONV
+  REVERSE_CONV
+
+Tue 13th May 2025       lists.ml
+
+Added one straightforward list theorem that seems an odd gap:
+
+  LENGTH_FILTER |- !P l. LENGTH(FILTER P l) <= LENGTH l
+
+Thu  1st May 2025       .gitignore,  Makefile,  README,  hol_4.14.sh,  hol_4.sh,  make-checkpoint.sh,  make.ml [deleted]
+
+Added an update from June Lee to support DMTCP-checkpointing more
+conveniently, including updating the existing but obselete Makefile
+targets like "hol" and "hol.multivariate". The basic script to create
+a checkpoint is "make-checkpoint.sh", which can simply create a
+HOL Light image:
+
+  make-checkpoint.sh ~/my-checkpoint.sh
+
+or a HOL Light image with more code and proofs pre-loaded, e.g.
+
+  cd ~/s2n-bignum
+  ~/hol-light/make-checkpoint.sh ./my-s2n-bignum-checkpoint.sh "loadt \"arm/proofs/base.ml\""
+
+Mon 21st Apr 2025       Library/word_automata.ml [new file], Examples/bitblast_generic.ml [new file]
+
+Added yet another machine word (bitvector) automated proof procedure
+WORD_AUTO_RULE / WORD_AUTO_TAC, an "arbitrary width" form of
+bit-blasting for problems involving a single generic word type like
+`:N word`, not restricted to a specific wordsize. This works
+internally by treating certain tuples of bits (of inputs, outputs and
+other subexpressions) as states in an automaton evolving over the
+sucessive bit positions from the LSB, with standard BDD-based
+reachability used to test satisfiability. The other new file gives a
+set of examples, one of which is:
+
+  WORD_AUTO_RULE
+   `!x y:N word. word_sub x y =
+                 word_sub (word_mul (word 2) (word_and x (word_not y)))
+                          (word_xor x y)`;;
+
+Supporting this are some additions to the BDD code (adding a function
+for existential quantification over a Boolean variable) and the
+existing fixed-size bitblasting procedure (handling signed comparisons
+more comprehensively).
+
+Sat 12th Apr 2025       bignum_zarith.ml, unit_tests.ml
+
+Fixed the power_num function in the Zarith version to be consistent with
+the Num library version in handling rational numbers for the base.
+
+Fri  4th Apr 2025       Library/matroids.ml, Library/ringtheory.ml, 100/transcendence.ml
+
+Made some more additions to matroid and ring background theory,
+in particular moving a little of the generally useful material from
+100/transcendence.ml into the core Library/ringtheory.ml. This includes
+the definitions of
+
+  poly_pow - polynomial powers
+
+  poly_reindex - reindexing polynomial variables over a given ring
+
+together with the suite of useful lemmas that were proved there
+(sometimes with superficial stylistic differences).
+
+Sun 16th Mar 2025       equal.ml, hol_loader.ml, lib.ml, printer.ml, tactics.ml
+
+Added REMARK_TAC and PRINT_TERM_CONV, a dummy tactic and conversions
+(equivalent to ALL_TAC and ALL_CONV) but producing informative output,
+in the first case a string and in the second printing the term to
+which the conversion is applied.
+
+This also fixes a bug in the tracking of loaded files in the presence
+of use_file_raise_failure and a couple of other minor typos.
+
+Wed 12th Mar 2025       hol_loader.ml, Help/loadt.hlp, Help/load_path.hlp
+
+Added a facility from June Lee to read additional load_path directories
+from an environment variable HOLLIGHT_LOAD_PATH, so you can do something
+like this before starting HOL Light:
+
+ export HOLLIGHT_LOAD_PATH=/home/me/hol_project:/tmp/otherdir
+
+Wed  5th Mar 2025       Library/binomial.ml, Library/primitive.ml
+
+Renamed the existing theorem DIVIDES_BINOM_PRIME to DIVIDES_PRIME_BINOM,
+and moved it from Library/primitive.ml to a more thematic spot in
+Library/binomial.ml, together with a couple of generalizations:
+
+  DIVIDES_COPRIME_BINOM =
+    |- forall n k. coprime(n,k) ==> n divides binom(n,k)
+
+  DIVIDES_GCD_BINOM =
+     |- forall n k. n divides gcd(n,k) * binom(n,k)
+
+Thu 20th Feb 2025       lib.ml, unit_tests.ml, Help/index.hlp, find_index.hlp [new file]
+
+Added the library function "find_index" corresponding exactly to the function
+List.find_index in the OCaml library for versions >= 5.
+
+Thu 13th Feb 2025       Library/words.ml, Examples/bitblast.ml
+
+Enhanced the bit-blasting rule and tactic to handle signed integer comparisons
+as well as unsigned ones in the top-level atomic formulas, basically by adding
+analogs of WORDIFY_CONV and related functions for integers instead of natural
+numbers, like IWORDIFY_CONV. It would be possible to rewrite away natural number
+atoms into integer ones (e.g. using INT_OF_NUM_LT) and then just avoid the
+natural number ones entirely, reducing the amount of highly analogous but
+different code. But it would occasionally have a small impact on the word sizes
+used.
+
+Fri  7th Feb 2025       define.ml, unit_tests.ml
+
+Added a fix from June Lee for a subtle problem over benign redefinitions
+in "define". When the definition is presented in the typical way via term
+quotation, the underlying term is different when the function is first
+defined (when a variable takes the place of the constant to be defined)
+and when a benign redefinition occurs (when it actually parses as that
+constant). This means that if the constant is polymorphic, it is possible
+to have more general type instantiations in the latter case, assigning
+different types to different instances of the constant. By contrast,
+all variables of the same name in the same scope are assumed to have
+the same type in the quotation parser. For example:
+
+  # `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  <-- `h` is a variable, so the second `h` in the right clause is also typed as `A list -> num`
+
+   # define `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  <-- makes `h` a constant
+
+   # `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  <-- now `h` is a constant, so the second `h` in the right clause is assigned `:(?143198)list->num`
+
+   # define `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  Warning: inventing type variables
+  Exception: Failure "close_definition_clauses: defining multiple functions".
+
+The redefinition above now works correctly as expected.
+
+Thu 23rd Jan 2025       compute.ml, unit_tests.ml
+
+Added the basic_compset() function from June Lee, which creates
+a fuller elementary compeset than bool_compset, also including
+the basic rewrites at the time of the call.
+
+Tue 21st Jan 2025       hol_lib.ml, unit_tests.ml
+
+Added the check_axioms() function from June Lee, which makes a check
+that no new axioms were introduced at call time, i.e. no axioms beyond
+the three standard HOL axioms ETA_AX, INFINITY_AX and SELECT_AX.
+
+Wed 15th Jan 2025       sets.ml
+
+Added preprocessing of the constants BIJ, INJ and SURJ (bijection, injection
+and surjection) to SET_TAC and hence to SET_RULE, e.g.
+
+  SET_RULE `BIJ (\x. b) {a} {b}`;;
+
 Sat 21st Dec 2024       100/transcendence.ml [new file]
 
 Added a development of transcendence theory from Daniel J. Bernstein,

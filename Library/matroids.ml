@@ -92,6 +92,33 @@ let MATROID_SPAN_INTER_SUBSET = prove
   REWRITE_TAC[SUBSET_INTER] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC MATROID_SPAN_MONO THEN ASM SET_TAC[]);;
 
+let MATROID_SPAN_UNION = prove
+ (`!(m:A matroid) s t.
+        s SUBSET matroid_set m /\ t SUBSET matroid_set m
+        ==> matroid_span m (s UNION t) =
+            matroid_span m (matroid_span m s UNION matroid_span m t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC MATROID_SPAN_MONO;
+    MATCH_MP_TAC MATROID_SPAN_MINIMAL] THEN
+  ASM_SIMP_TAC[MATROID_SPAN_SUPERSET; SET_RULE
+   `s SUBSET s' /\ t SUBSET t' ==> s UNION t SUBSET s' UNION t'`] THEN
+  ASM_SIMP_TAC[UNION_SUBSET; MATROID_SPAN_SUBSET;
+               MATROID_SPAN_MONO; SUBSET_UNION]);;
+
+let MATROID_SPAN_UNION_LEFT = prove
+ (`!(m:A matroid) s t.
+        s SUBSET matroid_set m /\ t SUBSET matroid_set m
+        ==> matroid_span m (s UNION t) =
+            matroid_span m (matroid_span m s UNION t)`,
+  ASM_MESON_TAC[MATROID_SPAN_UNION; MATROID_SPAN_SPAN; MATROID_SPAN_SUBSET]);;
+
+let MATROID_SPAN_UNION_RIGHT = prove
+ (`!(m:A matroid) s t.
+        s SUBSET matroid_set m /\ t SUBSET matroid_set m
+        ==> matroid_span m (s UNION t) =
+            matroid_span m (s UNION matroid_span m t)`,
+  ASM_MESON_TAC[MATROID_SPAN_UNION; MATROID_SPAN_SPAN; MATROID_SPAN_SUBSET]);;
+
 let MATROID_SPAN_UNION_SUBSET = prove
  (`!(m:A matroid) s t.
         s SUBSET matroid_set m /\ t SUBSET matroid_set m
@@ -210,6 +237,10 @@ let matroid_basis = new_definition
  `matroid_basis (m:A matroid) s <=>
         matroid_spanning m s /\ matroid_independent m s`;;
 
+let matroid_dependent = define
+ `matroid_dependent (m:A matroid) s <=>
+        s SUBSET matroid_set m /\ ~matroid_independent m s`;;
+
 let MATROID_SPANNING_IMP_SUBSET = prove
  (`!(m:A matroid) s. matroid_spanning m s ==> s SUBSET matroid_set m`,
   SIMP_TAC[matroid_spanning]);;
@@ -217,6 +248,10 @@ let MATROID_SPANNING_IMP_SUBSET = prove
 let MATROID_INDEPENDENT_IMP_SUBSET = prove
  (`!(m:A matroid) s. matroid_independent m s ==> s SUBSET matroid_set m`,
   SIMP_TAC[matroid_independent]);;
+
+let MATROID_DEPENDENT_IMP_SUBSET = prove
+ (`!(m:A matroid) s. matroid_dependent m s ==> s SUBSET matroid_set m`,
+  SIMP_TAC[matroid_dependent]);;
 
 let MATROID_BASIS_IMP_SUBSET = prove
  (`!(m:A matroid) s. matroid_basis m s ==> s SUBSET matroid_set m`,
@@ -233,6 +268,19 @@ let MATROID_SPANNING_SET = prove
  (`!(m:A matroid).
         matroid_spanning m (matroid_set m)`,
   SIMP_TAC[matroid_spanning; SUBSET_REFL; MATROID_SPAN_SET]);;
+
+let MATROID_INDEPENDENT = prove
+ (`!(m:A matroid) s.
+        matroid_independent m s <=>
+        s SUBSET matroid_set m /\ ~matroid_dependent m s`,
+  REWRITE_TAC[matroid_dependent; matroid_independent] THEN SET_TAC[]);;
+
+let MATROID_DEPENDENT = prove
+ (`!(m:A matroid) s.
+        matroid_dependent m s <=>
+        s SUBSET matroid_set m /\
+        ?x. x IN s /\ x IN matroid_span m (s DELETE x)`,
+  REWRITE_TAC[matroid_dependent; matroid_independent] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Properties of independent sets (which in other formulations could         *)
@@ -272,6 +320,16 @@ let MATROID_INDEPENDENT_FINITARY = prove
     DISCH_THEN(MP_TAC o SPEC `x:A` o CONJUNCT2)] THEN
   ASM_REWRITE_TAC[IN_INSERT; CONTRAPOS_THM] THEN
   MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
+
+let MATROID_DEPENDENT_FINITARY = prove
+ (`!(m:A matroid) s.
+         matroid_dependent m s <=>
+         s SUBSET matroid_set m /\
+         ?t. FINITE t /\ t SUBSET s /\ matroid_dependent m t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[matroid_dependent] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+   [MATROID_INDEPENDENT_FINITARY] THEN
+  SET_TAC[]);;
 
 let MATROID_INDEPENDENT_INSERT = prove
  (`!(m:A matroid) s a.
@@ -319,6 +377,18 @@ let MATROID_SPAN_PSUBSET_INDEPENDENT = prove
   MP_TAC(SPECL [`m:A matroid`; `s:A->bool`; `t DELETE (x:A)`]
         MATROID_SPAN_MONO) THEN
   ASM SET_TAC[MATROID_SPAN_INC]);;
+
+let MATROID_SPAN_PSUBSET_EXPLICIT = prove
+ (`!(m:A matroid) s t.
+        s PSUBSET t /\ matroid_independent m t
+        ==> ?a. a IN t /\ ~(a IN matroid_span m s)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`m:A matroid`; `s:A->bool`; `t:A->bool`]
+        MATROID_SPAN_PSUBSET_INDEPENDENT) THEN
+  MP_TAC(ISPECL [`m:A matroid`; `t:A->bool`; `s:A->bool`]
+    SUBSET_MATROID_SPAN) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MATROID_INDEPENDENT_IMP_SUBSET) THEN
+  ASM SET_TAC[]);;
 
 let MATROID_SPANNING_SUBSET_INDEPENDENT = prove
  (`!(m:A matroid) s t.
@@ -480,6 +550,27 @@ let MATROID_SPANNING_CONTAINS_BASIS = prove
   MP_TAC(ISPECL [`m:A matroid`; `{}:A->bool`; `s:A->bool`]
         MATROID_INTERMEDIATE_BASIS) THEN
   ASM_REWRITE_TAC[MATROID_INDEPENDENT_EMPTY; UNION_EMPTY] THEN MESON_TAC[]);;
+
+let MATROID_SPAN_DEPENDENCE = prove
+ (`!(m:A matroid) s x.
+        x IN matroid_set m /\ s SUBSET matroid_set m
+        ==> (x IN matroid_span m s <=>
+             x IN s \/
+             ?t. t SUBSET s /\
+                 matroid_independent m t /\
+                 matroid_dependent m (x INSERT t))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[MATROID_INDEPENDENT_INSERT; matroid_dependent] THEN
+  ASM_REWRITE_TAC[INSERT_SUBSET] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> ~(q ==> ~(p /\ r))`] THEN
+  SIMP_TAC[MESON[] `~(if p then T else ~x) <=> ~p /\ x`] THEN
+  REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC] THEN EQ_TAC THENL
+   [DISCH_TAC; ASM_MESON_TAC[MATROID_SPAN_MONO; MATROID_SPAN_INC; SUBSET]] THEN
+  ASM_CASES_TAC `(x:A) IN s` THEN ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPECL [`m:A matroid`; `{}:A->bool`; `s:A->bool`]
+        MATROID_INTERMEDIATE_SPAN) THEN
+  ASM_REWRITE_TAC[MATROID_INDEPENDENT_EMPTY; EMPTY_SUBSET; UNION_EMPTY] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]);;
 
 let MATROID_STEINITZ_EXCHANGE = prove
  (`!(m:A matroid) s t.
@@ -673,6 +764,63 @@ let MATROID_INDEPENDENT_SPANNING_FINITE = prove
         matroid_independent m s /\ matroid_spanning m t /\ FINITE t
         ==> FINITE s`,
   MESON_TAC[CARD_LE_FINITE; MATROID_INDEPENDENT_CARD_LE_SPANNING]);;
+
+let MATROID_DEPENDENT_FINITARY_MINIMAL = prove
+ (`!(m:A matroid) s.
+        matroid_dependent m s
+        ==> ?t. FINITE t /\ t SUBSET s /\ matroid_dependent m t /\
+                forall t'. t' PSUBSET t ==> matroid_independent m t'`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`m:A matroid`; `s:A->bool`] MATROID_DEPENDENT_FINITARY) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(CONJUNCTS_THEN2
+    ASSUME_TAC (X_CHOOSE_THEN `u:A->bool` STRIP_ASSUME_TAC)) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP WF_PSUBSET) THEN REWRITE_TAC[WF] THEN
+  DISCH_THEN(MP_TAC o SPEC
+    `\s:A->bool. s SUBSET u /\ matroid_dependent m s`) THEN
+  REWRITE_TAC[] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[SUBSET_REFL]; MATCH_MP_TAC MONO_EXISTS] THEN
+  GEN_TAC THEN STRIP_TAC THEN
+  REPEAT(CONJ_TAC THENL [ASM_MESON_TAC[FINITE_SUBSET; SUBSET]; ALL_TAC]) THEN
+  X_GEN_TAC `v:A->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `v:A->bool`) THEN
+  REWRITE_TAC[matroid_dependent] THEN ASM SET_TAC[]);;
+
+let MATROID_MINIMALLY_DEPENDENT = prove
+ (`!(m:A matroid) s.
+        (!t. t PSUBSET s ==> matroid_independent m t)
+        ==> (matroid_dependent m s <=>
+             ~(s = {}) /\ s SUBSET matroid_set m /\
+             !a. a IN s ==> a IN matroid_span m (s DELETE a))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[MATROID_DEPENDENT] THEN
+  ASM_CASES_TAC  `(s:A->bool) SUBSET matroid_set m` THEN
+  ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `s:A->bool = {}` THEN ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
+  EQ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `b:A` STRIP_ASSUME_TAC) THEN
+  X_GEN_TAC  `a:A` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `a:A = b` THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`m:A matroid`; `s DIFF {a:A,b}`; `a:A`; `b:A`] MATROID_SPAN_EXCHANGE) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `s DELETE (a:A)`) THEN
+  ASM_REWRITE_TAC[matroid_independent; SET_RULE
+    `s DELETE a PSUBSET s <=> a IN s`] THEN
+  DISCH_THEN(MP_TAC o SPEC `b:A` o CONJUNCT2) THEN
+  ASM_SIMP_TAC[IN_DELETE; SET_RULE
+   `a IN s /\ b IN s /\ ~(a = b)
+    ==> a INSERT (s DIFF {a, b}) = s DELETE b /\
+        b INSERT  (s DIFF {a, b}) = s DELETE a`] THEN
+  REWRITE_TAC[SET_RULE `s DELETE a DELETE b = s DIFF {a,b}`] THEN
+  ASM SET_TAC[]);;
+
+let MATROID_MINIMALLY_DEPENDENT_SUBSET = prove
+ (`!(m:A matroid) s.
+        matroid_dependent m s
+        ==> ?t. FINITE t /\ t SUBSET s /\
+                matroid_dependent m t /\ ~(t = {}) /\
+                !a. a IN t ==> a IN matroid_span m (t DELETE a)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MATROID_DEPENDENT_FINITARY_MINIMAL) THEN
+  MESON_TAC[MATROID_MINIMALLY_DEPENDENT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Subspaces, i.e. sets closed under the matroid span operation.             *)

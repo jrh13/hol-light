@@ -262,6 +262,26 @@ let BINOM = prove
   ONCE_REWRITE_TAC[ADD_SYM] THEN
   REWRITE_TAC[GSYM BINOM_FACT; ADD_SUB] THEN REWRITE_TAC[MULT_AC]);;
 
+let DIVIDES_GCD_BINOM = prove
+ (`!n k. n divides gcd(n,k) * binom(n,k)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `k = 0` THENL
+   [ASM_REWRITE_TAC[] THEN CONV_TAC NUMBER_RULE; ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (rand o lhand o rand) BINOM_BOTH_STEP_DOWN o
+    rand o rand o snd) THEN
+  ASM_REWRITE_TAC[] THEN POP_ASSUM MP_TAC THEN CONV_TAC NUMBER_RULE);;
+
+let DIVIDES_COPRIME_BINOM = prove
+ (`!n k. coprime(n,k) ==> n divides binom (n,k)`,
+  MESON_TAC[DIVIDES_GCD_BINOM; MULT_CLAUSES; NUMBER_RULE
+   `coprime(n,k) <=> gcd(n,k) = 1`]);;
+
+let DIVIDES_PRIME_BINOM = prove
+ (`!n p. prime p /\ 0 < n /\ n < p ==> p divides binom(p,n)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DIVIDES_COPRIME_BINOM THEN
+  ASM_CASES_TAC `(p:num) divides n` THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN ASM_ARITH_TAC;
+    ASM_MESON_TAC[PRIME_COPRIME_EQ_NONDIVISIBLE]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Additional lemmas.                                                        *)
 (* ------------------------------------------------------------------------- *)

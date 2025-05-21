@@ -2,6 +2,10 @@
 (*                          HOL LIGHT unit tests                             *)
 (* ========================================================================= *)
 
+let assert_conv conv tm tm' =
+  let asl,etm = dest_thm(conv tm) in
+  assert (asl = [] && is_eq etm && lhs etm = tm && rhs etm = tm');;
+
 (* ------------------------------------------------------------------------- *)
 (* Test verbose descriptive names for quantifiers/logical consts.            *)
 (* ------------------------------------------------------------------------- *)
@@ -28,6 +32,18 @@ assert (rhs (concl (NUM_COMPUTE_CONV `(\x. x + (1 + 2)) (3 + 4)`))
 assert (rhs (concl (NUM_COMPUTE_CONV `(unknown_fn:num->num) (1+2)`))
         = `(unknown_fn:num->num) 3`);;
 
+(* ------------------------------------------------------------------------- *)
+(* Test list-specific evaluation conversions.                                *)
+(* ------------------------------------------------------------------------- *)
+
+assert_conv LIST_OF_SEQ_CONV
+ `list_of_seq (\i. f(i + 17):B) 3` `[f (0 + 17):B; f (1 + 17); f (2 + 17)]`;;
+
+assert_conv EL_CONV `EL 1 [0;1;2;3;4]` `1`;;
+
+assert_conv LENGTH_CONV `LENGTH[1;2;3;4;5]` `5`;;
+
+assert_conv REVERSE_CONV `REVERSE[a:X;b;c;d]` `[d:X;c;b;a]`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Test basic_compset.                                                       *)
