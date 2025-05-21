@@ -1,0 +1,30 @@
+\DOC EL_CONV
+
+\TYPE {EL_CONV : conv}
+
+\SYNOPSIS
+Evaluate the list nth-element element function applied to a specific list.
+
+\DESCRIBE
+When applied to a term {`EL k [t1; ...; tn]`} where {k} is a specific
+numeral and the list a concrete list (though not necessarily with constant
+or ground elements) the conversion {EL_CONV} returns the appropriate
+theorem {|- EL k [t1; ...; tn] = tk}.
+
+\FAILURE
+Fails if the term is not of the expected form or if the numeral {k} is greater
+than or equal to the list length (equal because the numbering is from zero).
+
+\EXAMPLE
+{
+  # EL_CONV `EL 4 [1;2;3;4;5]`;;
+  val it : thm = |- EL 4 [1; 2; 3; 4; 5] = 5
+
+  # EL_CONV `EL 0 [a;one;c]`;;
+  val it : thm = |- EL 0 [a; one; c] = a
+}
+
+\SEEALSO
+LENGTH_CONV, LIST_CONV, LIST_OF_SEQ_CONV, REVERSE_CONV.
+
+\ENDDOC

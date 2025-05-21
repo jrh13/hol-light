@@ -1,0 +1,32 @@
+\DOC LENGTH_CONV
+
+\TYPE {LENGTH_CONV : conv}
+
+\SYNOPSIS
+Evaluate the list {LENGTH} function when applied to a specific list.
+
+\DESCRIBE
+When applied to a term {`LENGTH [t1; ...; tn]`} the conversion
+{LENGTH_CONV} returns the theorem {|- LENGTH [t1; ...; tn] = n}. The
+elements of the list do not have to be constants or ground terms.
+
+\FAILURE
+Fails if the term is not of the expected form.
+
+\EXAMPLE
+{
+  # LENGTH_CONV `LENGTH [1;2;3;4;5]`;;
+  val it : thm = |- LENGTH [1; 2; 3; 4; 5] = 5
+
+  # LENGTH_CONV `LENGTH [a;one;c]`;;
+  val it : thm = |- LENGTH [a; one; c] = 3
+}
+
+\USES
+Evaluating {LENGTH} in a more efficient and focused way than unfolding its
+definition.
+
+\SEEALSO
+EL_CONV, LIST_CONV, LIST_OF_SEQ_CONV, REVERSE_CONV.
+
+\ENDDOC

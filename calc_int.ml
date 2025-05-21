@@ -373,7 +373,7 @@ let REAL_INT_ABS_CONV =
     REWRITE_TAC[REAL_ABS_NEG; REAL_ABS_NUM]) in
   GEN_REWRITE_CONV I [pth];;
 
-let real_int_red_conv_list = 
+let real_int_red_conv_list =
   [`x <= y`,REAL_INT_LE_CONV;
    `x < y`,REAL_INT_LT_CONV;
    `x >= y`,REAL_INT_GE_CONV;

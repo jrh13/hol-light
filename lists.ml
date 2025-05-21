@@ -367,6 +367,12 @@ let MEM_FILTER = prove
   GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[MEM] THEN
   ASM_MESON_TAC[]);;
 
+let LENGTH_FILTER = prove
+ (`!P l:A list. LENGTH(FILTER P l) <= LENGTH l`,
+  GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[FILTER; LE_REFL] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[LENGTH; LE_SUC] THEN
+  ASM_MESON_TAC[LE_TRANS; LE]);;
+
 let EX_MEM = prove
  (`!P (l:A list). (?x. P x /\ MEM x l) <=> EX P l`,
   GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[EX; MEM] THEN
@@ -667,6 +673,28 @@ let LIST_OF_SEQ_EQ_NIL = prove
  (`!s:num->A n. list_of_seq s n = [] <=> n = 0`,
   REWRITE_TAC[GSYM LENGTH_EQ_NIL; LENGTH_LIST_OF_SEQ; LENGTH]);;
 
+let LIST_OF_SEQ_EQ_SELF = prove
+ (`!l:A list. list_of_seq (\i. EL i l) (LENGTH l) = l`,
+  SIMP_TAC[LIST_EQ; LENGTH_LIST_OF_SEQ; EL_LIST_OF_SEQ]);;
+
+let LENGTH_EQ_LIST_OF_SEQ = prove
+ (`!(l:A list) n. LENGTH l = n <=> l = list_of_seq (\i. EL i l) n`,
+  MESON_TAC[LIST_OF_SEQ_EQ_SELF; LENGTH_LIST_OF_SEQ]);;
+
+let MAP_LIST_OF_SEQ = prove
+ (`!f (g:A->B) n. MAP g (list_of_seq f n) = list_of_seq (g o f) n`,
+  GEN_TAC THEN GEN_TAC THEN
+  INDUCT_TAC THEN ASM_REWRITE_TAC[MAP; list_of_seq; MAP_APPEND; o_THM]);;
+
+let LIST_OF_SEQ = prove
+ (`(!(f:num->A). list_of_seq f 0 = []) /\
+   (!(f:num->A) n.
+        list_of_seq f (SUC n) = CONS (f 0) (list_of_seq (f o SUC) n))`,
+  REWRITE_TAC[CONJUNCT1 list_of_seq] THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[LIST_EQ; LENGTH_LIST_OF_SEQ; LENGTH; EL_CONS] THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[NOT_SUC; EL_LIST_OF_SEQ] THEN
+  ASM_SIMP_TAC[LT_SUC; SUC_SUB1; EL_LIST_OF_SEQ; o_THM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -714,6 +742,136 @@ let rec LIST_CONV conv tm =
     COMB2_CONV (RAND_CONV conv) (LIST_CONV conv) tm
   else if fst(dest_const tm) = "NIL" then REFL tm
   else failwith "LIST_CONV";;
+
+(* ------------------------------------------------------------------------- *)
+(* Some relatively efficient and tail-recursive (though very long and        *)
+(* explicit) evaluation conversions for a subset of the list operations.     *)
+(* ------------------------------------------------------------------------- *)
+
+let LENGTH_CONV:conv =
+  let pthc = prove
+   (`LENGTH(t:A list) = LENGTH t + 0 /\
+     LENGTH([]:A list) + n = n /\
+     LENGTH(CONS (h:A) t) + n = LENGTH t + SUC n`,
+    REWRITE_TAC[LENGTH; ADD_CLAUSES]) in
+  let pths = CONJUNCTS pthc
+  and avars = sort (<) (frees(concl pthc)) in
+  fun tm ->
+    match tm with
+      Comb(Const("LENGTH",_),ltm) when is_list ltm ->
+        let tyin = [hd(snd(dest_type(type_of ltm))),aty] in
+        let [h_tm;n_tm;t_tm] = map (inst tyin) avars
+        and [pth_init;pth_base;pth_step] = map (INST_TYPE tyin) pths in
+        let rec conv th =
+          let altm,ntm = dest_comb(rand(concl th)) in
+          let ltm = rand(rand altm) in
+          if is_cons ltm then
+            let htm,ttm = dest_cons ltm in
+            let th1 = INST [htm,h_tm; ttm,t_tm; ntm,n_tm] pth_step in
+            let ftm,stm = dest_comb(rand(concl th1)) in
+            let th2 = TRANS th1 (AP_TERM ftm (NUM_SUC_CONV stm)) in
+            conv (TRANS th th2)
+          else
+            TRANS th (INST [ntm,n_tm] pth_base) in
+         (try conv (INST [rand tm,t_tm] pth_init)
+          with Failure _ -> failwith "LENGTH_CONV")
+    | _ -> failwith "LENGTH_CONV";;
+
+let EL_CONV:conv =
+  let pthc = prove
+    (`EL 0 (CONS (h:A) t) = h /\
+      (n = SUC m ==> EL n (CONS h t) = EL m t)`,
+    SIMP_TAC[EL; HD; TL]) in
+  let pths = map UNDISCH_ALL (CONJUNCTS pthc)
+  and avars = sort (<) (frees(concl pthc)) in
+  fun tm ->
+    match tm with
+      Comb(Comb(Const("EL",_),ntm),ltm) when is_list ltm ->
+        let tyin = [hd(snd(dest_type(type_of ltm))),aty] in
+        let [h_tm;m_tm;n_tm;t_tm] = map (inst tyin) avars
+        and [pth_base;pth_step] = map (INST_TYPE tyin) pths in
+        let rec conv th =
+          let entm,ltm = dest_comb(rand(concl th)) in
+          let htm,ttm = dest_cons ltm in
+          let etm,ntm = dest_comb entm in
+          let n = dest_numeral ntm in
+          if n =/ num_0 then
+            TRANS th (INST [htm,h_tm; ttm,t_tm] pth_base)
+          else
+            let th1 = num_CONV ntm in
+            let th2 = INST [ntm,n_tm; rand(rand(concl th1)),m_tm;
+                            htm,h_tm; ttm,t_tm] pth_step in
+            let th3 = TRANS th (PROVE_HYP th1 th2) in
+            conv th3 in
+        (try conv(REFL tm) with Failure _ -> failwith "EL_CONV")
+    | _ -> failwith "EL_CONV";;
+
+let REVERSE_CONV:conv =
+  let pthc = prove
+   (`l:A list = APPEND l [] /\
+     APPEND (REVERSE []) l:A list = l /\
+     APPEND (REVERSE (CONS h t)) l = APPEND (REVERSE t) (CONS h l)`,
+    SIMP_TAC[APPEND; APPEND_NIL; REVERSE; GSYM APPEND_ASSOC]) in
+  let pths = map UNDISCH_ALL (CONJUNCTS pthc)
+  and avars = sort (<) (frees(concl pthc)) in
+  fun tm ->
+    match tm with
+      Comb(Const("REVERSE",_),ltm) ->
+        let tyin = [hd(snd(dest_type(type_of ltm))),aty] in
+        let [h_tm;l_tm;t_tm] = map (inst tyin) avars
+        and [pth_init;pth_base;pth_step] = map (INST_TYPE tyin) pths in
+        let rec conv th =
+          let ahtm,ltm = dest_comb(rand(concl th)) in
+          let httm = rand(rand ahtm) in
+          if is_cons httm then
+            let htm,ttm = dest_cons httm in
+            let th1 = INST [htm,h_tm; ltm,l_tm; ttm,t_tm] pth_step in
+            conv (TRANS th th1)
+          else
+            TRANS th (INST [ltm,l_tm] pth_base) in
+         (try conv (INST [tm,l_tm] pth_init)
+          with Failure _ -> failwith "REVERSE_CONV")
+    | _ -> failwith "REVERSE_CONV";;
+
+let LIST_OF_SEQ_CONV:conv =
+  let pthc = prove
+   (`l:A list = APPEND l [] /\
+     APPEND (list_of_seq f 0) l:A list = l /\
+     (n = SUC m
+      ==> APPEND (list_of_seq f n) l =
+          APPEND (list_of_seq f m) (CONS (f m) l))`,
+    SIMP_TAC[APPEND; APPEND_NIL; list_of_seq; GSYM APPEND_ASSOC]) in
+  let pths = map UNDISCH_ALL (CONJUNCTS pthc)
+  and avars = sort (<) (frees(concl pthc)) in
+  fun tm ->
+    match tm with
+      Comb(Comb(Const("list_of_seq",_),ftm),ntm) ->
+        let tyin = [snd(dest_fun_ty (type_of ftm)),aty] in
+        let [f_tm;l_tm;m_tm;n_tm] = map (inst tyin) avars
+        and [pth_init;pth_base;pth_step] = map (INST_TYPE tyin) pths
+        and bflag = is_abs ftm in
+        let rec conv th =
+          let nftm,ltm = dest_comb(rand(concl th)) in
+          let lftm,ntm = dest_comb (rand nftm) in
+          let ftm = rand lftm in
+          let n = dest_numeral ntm in
+          if n =/ num_0 then
+            TRANS th (INST [ftm,f_tm; ltm,l_tm] pth_base)
+          else
+            let th1 = num_CONV ntm in
+            let th2 = INST [ntm,n_tm; rand(rand(concl th1)),m_tm;
+                            ftm,f_tm; ltm,l_tm] pth_step in
+            let th3 = TRANS th (PROVE_HYP th1 th2) in
+            let th4 = if not bflag then th3 else
+              let jtm,ctxtm = dest_comb(rand(concl th3)) in
+              let cttm,xtm = dest_comb ctxtm in
+              let ctm,ttm = dest_comb cttm in
+              TRANS th3
+                (AP_TERM jtm (AP_THM (AP_TERM ctm (BETA_CONV ttm)) xtm)) in
+            conv th4 in
+        (try conv (INST [tm,l_tm] pth_init)
+         with Failure _ -> failwith "LIST_OF_SEQ_CONV")
+    | _ -> failwith "LIST_OF_SEQ_CONV";;
 
 (* ------------------------------------------------------------------------- *)
 (* Type of characters, like the HOL88 "ascii" type, with syntax              *)
