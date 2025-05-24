@@ -185,15 +185,16 @@ let printer_color_typevar:string option ref = ref (Some "34") (* blue *);;
 let printer_color_itypevar:string option ref = ref (Some "31") (* red *);;
 
 let pp_print_colored_string (colorcode:string option) fmt (contents:string) =
-  if colorcode <> None then
+  match colorcode with
+    Some thecode ->
     (* \027 is decimal 27 (oct 33) which corresponds to
         "Set foreground color" in Select Graphic Rendition *)
-    let ansicmd = "\027[" ^ (Option.get colorcode) ^ "m" in
-    let endcmd = "\027[0m" in
-    (pp_print_as fmt 0 ansicmd; (* consider ansicmd as 0-len string *)
-     pp_print_string fmt contents;
-     pp_print_as fmt 0 endcmd)
-  else pp_print_string fmt contents;;
+      let ansicmd = "\027[" ^ thecode ^ "m" in
+      let endcmd = "\027[0m" in
+      (pp_print_as fmt 0 ansicmd; (* consider ansicmd as 0-len string *)
+       pp_print_string fmt contents;
+       pp_print_as fmt 0 endcmd)
+  | None -> pp_print_string fmt contents;;
 
 let pp_print_colored_const, pp_print_colored_resword, pp_print_colored_binder,
     pp_print_colored_infix, pp_print_colored_prefix, pp_print_colored_tyvar =

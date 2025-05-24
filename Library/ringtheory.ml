@@ -1,5 +1,8 @@
 (* ========================================================================= *)
 (* Simple formulation of rings (commutative, with 1) as type "(A)ring".      *)
+(*                                                                           *)
+(*              (c) Copyright, John Harrison 2019-2025                       *)
+(*           (c) Copyright, Daniel J. Bernstein 2024-2025                    *)
 (* ========================================================================= *)
 
 needs "Library/binomial.ml";;
@@ -16229,11 +16232,11 @@ let POLY_MUL_MONOMIAL_1 = prove
   REWRITE_TAC[SET_RULE `{x,y | x = a /\ y = b} = {(a,b)}`] THEN
   ASM_SIMP_TAC[RING_SUM_SING; RING_MUL]);;
 
-let POLY_MUL_CONST = prove
- (`!r d (p:(V->num)->A).
-        d IN ring_carrier r /\ ring_polynomial r p
-        ==> poly_mul r (poly_const r d) p = \m. ring_mul r d (p m)`,
-  REWRITE_TAC[ring_polynomial; ring_powerseries] THEN
+let POWSER_MUL_CONST = prove
+ (`!r c (p:(V->num)->A).
+        c IN ring_carrier r /\ ring_powerseries r p
+        ==> poly_mul r (poly_const r c) p = \m. ring_mul r c (p m)`,
+  REWRITE_TAC[ring_powerseries] THEN
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
   X_GEN_TAC `m:V->num` THEN REWRITE_TAC[poly_mul; poly_const] THEN
   ONCE_REWRITE_TAC[COND_RAND] THEN ONCE_REWRITE_TAC[COND_RATOR] THEN
@@ -16248,6 +16251,12 @@ let POLY_MUL_CONST = prove
      m1 = monomial_1 /\ m2 = m`] THEN
   REWRITE_TAC[SET_RULE `{f x y | x = a /\ y = b} = {f a b}`] THEN
   ASM_SIMP_TAC[RING_SUM_SING; RING_MUL]);;
+
+let POLY_MUL_CONST = prove
+ (`!r c (p:(V->num)->A).
+        c IN ring_carrier r /\ ring_polynomial r p
+        ==> poly_mul r (poly_const r c) p = \m. ring_mul r c (p m)`,
+  SIMP_TAC[ring_polynomial; POWSER_MUL_CONST]);;
 
 let POLY_VARS_CONST = prove
  (`!(r:A ring) c. poly_vars r (poly_const r c) = {}`,

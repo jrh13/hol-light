@@ -4561,30 +4561,7 @@ let poly_const_times = prove(`
   poly_mul r (poly_const r c) p
   = (\m. ring_mul r c (p m))
 `,
-  rw[poly_mul] THEN
-  once_rw[fun_eq_thm_v] THEN
-  rw[BETA_THM] THEN
-  intro THEN
-  subgoal `ring_sum(r:R ring) {m1,m2 | monomial_mul m1 m2 = v:V->num} (\(m1,m2). ring_mul r (poly_const r c m1) (p m2)) = ring_sum r {m1,m2 | monomial_mul m1 m2 = v} (\j. if j = (monomial_1,v) then ring_mul r c (p v) else ring_0 r)` THENL [
-    sufficesby RING_SUM_EQ THEN
-    rw[FORALL_PAIR_THM;IN_ELIM_PAIR_THM;PAIR_EQ;poly_const] THEN
-    intro THEN
-    case `p1 = monomial_1:V->num` THENL [
-      have `p2 = v:V->num` [MONOMIAL_MUL_LID] THEN
-      simp[]
-    ; pass
-    ] THEN
-    have `p(p2:V->num) IN ring_carrier(r:R ring)` [ring_powerseries] THEN
-    qed[RING_MUL_LZERO]
-  ; pass
-  ] THEN
-  subgoal `monomial_1,v IN {m1,m2 | monomial_mul m1 m2 = v:V->num}` THENL [
-    rw[IN_ELIM_PAIR_THM] THEN
-    rw[MONOMIAL_MUL_LID]
-  ; pass
-  ] THEN
-  simp[RING_SUM_DELTA] THEN
-  qed[ring_powerseries;RING_MUL]
+  qed[POWSER_MUL_CONST]
 );;
 
 let coeff_poly_const_times = prove(`
