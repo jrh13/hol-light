@@ -94,6 +94,20 @@ let _ = define `(h_benign:A list -> num) [] = 0 /\
 
 
 (* ------------------------------------------------------------------------- *)
+(* Test benign redefinition of an inductive datatype.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let _ = new_inductive_definition
+  `(forall s. steps (step:S->S->bool) 0 (s:S) (s:S)) /\
+   (forall s s'' n. (exists s'. step s s' /\ steps step n s' s'')
+      ==> steps step (n+1) s s'')`;;
+let _ = new_inductive_definition
+  `(forall s. steps (step:S->S->bool) 0 (s:S) (s:S)) /\
+   (forall s s'' n. (exists s'. step s s' /\ steps step n s' s'')
+      ==> steps step (n+1) s s'')`;;
+
+
+(* ------------------------------------------------------------------------- *)
 (* Test functions in lib.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
