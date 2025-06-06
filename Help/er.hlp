@@ -1,0 +1,75 @@
+\DOC er
+
+\TYPE {er : tactic -> goalstack}
+
+\SYNOPSIS
+Applies a tactic to the current goal and rotates to the next subgoal.
+
+\DESCRIBE
+The function {er} is part of the subgoal package. It sequentially applies a
+tactic to the current goal to give a new proof state using {e}, then applies
+{r} to rotate to the next subgoal. If {e} created {n} subgoals, it rotates
+{n} times. When {verbose} is set to true, {er} prints the goal state after
+{e}, prints the number of subgoals to rotate, then returns the final goalstate.
+
+This command is useful when you want to interactively try a list of tactics
+after {THENL}. For example, given a proof `{TAC THENL [ TAC_A; TAC_B; .. ]}',
+statements `{e TAC;; er TAC_A;;}' will execute {TAC}, execute {TAC_A}, then
+switch to the second subgoal of `{e TAC}' which will be the input goalstate of
+{TAC_B}.
+
+If the proof of {THEN} form does not have any `{a THEN b}' where {a} generates
+multiple subgoals (which can be checked by enabling
+{unset_then_multiple_subgoals} and running the proof), the whole {THEN} proof
+can be easily converted to a series of {e} and {er}.
+
+\FAILURE
+{er tac} fails if its internal invoation {e tac} failed.
+
+\EXAMPLE
+{
+
+  # prove(`x + 1 = 1 + x /\ 1 + 1 = 2`,
+      CONJ_TAC THENL [ALL_TAC; ARITH_TAC] THEN REWRITE_TAC[ADD_SYM]);;
+  val it : thm = |- x + 1 = 1 + x /\ 1 + 1 = 2
+
+  # g `x + 1 = 1 + x /\ 1 + 1 = 2`;;
+  Warning: Free variables in goal: x
+  val it : goalstack = 1 subgoal (1 total)
+
+  `x + 1 = 1 + x /\ 1 + 1 = 2`
+
+  # e(CONJ_TAC);;
+  val it : goalstack = 2 subgoals (2 total)
+
+  `1 + 1 = 2`
+
+  `x + 1 = 1 + x`
+
+  # er(ALL_TAC);; (* rotates 1 subgoal *)
+  1 subgoal (2 total)
+
+  `x + 1 = 1 + x`
+
+  (Rotating 1 subgoal...)
+
+  val it : goalstack = 1 subgoal (2 total)
+
+  `1 + 1 = 2`
+
+  # e(ARITH_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `x + 1 = 1 + x`
+
+  # e(REWRITE_TAC[ADD_SYM]);;
+  val it : goalstack = No subgoals
+}
+
+\USES
+Doing a step in an interactive goal-directed proof.
+
+\SEEALSO
+b, e, g, p, r, set_goal, top_goal, top_thm, unset_then_multiple_subgoals.
+
+\ENDDOC

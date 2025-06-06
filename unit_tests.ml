@@ -108,6 +108,67 @@ let _ = new_inductive_definition
 
 
 (* ------------------------------------------------------------------------- *)
+(* Test the 'er' command of the subgoal package.                             *)
+(* Each test case has a proof in the THEN form, followed by g-e(er) form.    *)
+(* ------------------------------------------------------------------------- *)
+
+(* case 1: 'er' has to rotate 1 subgoal *)
+prove(`x + 1 = 1 + x /\ 1 + 1 = 2`,
+    CONJ_TAC THENL [
+        ALL_TAC;
+        ARITH_TAC
+    ] THEN REWRITE_TAC[ADD_SYM]);;
+g `x + 1 = 1 + x /\ 1 + 1 = 2`;;
+e(CONJ_TAC);;
+	er(ALL_TAC);; (* rotates 1 subgoal *)
+	e(ARITH_TAC);;
+e(REWRITE_TAC[ADD_SYM]);;
+top_thm();;
+
+(* case 2: 'er' has to rotate 2 subgoals *)
+prove(`(x + 1 = 1 + x /\ (x + y) + z = x + (y + z)) /\ 1 + 1 = 2`,
+    CONJ_TAC THENL [
+        CONJ_TAC;
+        ARITH_TAC
+    ] THEN REWRITE_TAC[ADD_AC]);;
+g `(x + 1 = 1 + x /\ (x + y) + z = x + (y + z)) /\ 1 + 1 = 2`;;
+e(CONJ_TAC);;
+	er(CONJ_TAC);; (* rotates 2 subgoals *)
+	e(ARITH_TAC);;
+e(REWRITE_TAC[ADD_AC]);;
+e(REWRITE_TAC[ADD_AC]);;
+top_thm();;
+
+(* case 2': 'er' has to rotate 2 subgoals. There is b(). *)
+prove(`(x + 1 = 1 + x /\ (x + y) + z = x + (y + z)) /\ 1 + 1 = 2`,
+    CONJ_TAC THENL [
+        CONJ_TAC;
+        ARITH_TAC
+    ] THEN REWRITE_TAC[ADD_AC]);;
+g `(x + 1 = 1 + x /\ (x + y) + z = x + (y + z)) /\ 1 + 1 = 2`;;
+e(CONJ_TAC);;
+	er(CONJ_TAC);; (* rotates 2 subgoals *)
+	b();;
+	er(CONJ_TAC);; (* rotates 2 subgoals *)
+	e(ARITH_TAC);;
+e(REWRITE_TAC[ADD_AC]);;
+e(REWRITE_TAC[ADD_AC]);;
+top_thm();;
+
+(* case 3: 'er' has to rotate 0 subgoal *)
+prove(`x + 1 = 1 + x /\ 1 + 1 = 2`,
+    CONJ_TAC THENL [
+        ARITH_TAC;
+        ARITH_TAC
+    ]);;
+g `x + 1 = 1 + x /\ 1 + 1 = 2`;;
+e(CONJ_TAC);;
+	er(ARITH_TAC);; (* does not rotate since ARITH_TAC discharges the subgoal *)
+	e(ARITH_TAC);;
+top_thm();;
+
+
+(* ------------------------------------------------------------------------- *)
 (* Test functions in lib.                                                    *)
 (* ------------------------------------------------------------------------- *)
 

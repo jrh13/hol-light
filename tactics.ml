@@ -926,6 +926,37 @@ let e tac = refine(by(VALID tac));;
 
 let r n = refine(rotate n);;
 
+(* A sequence of 'e tac; r n' where n is the number of subgoals after e tac. *)
+(* This command is useful when you want to interactively try a list of       *)
+(* tactics after THENL, e.g.,                                                *)
+(*   TAC THENL [ TAC_A; TAC_B; .. ]                                          *)
+(* 'e TAC;; er TAC_A;;' will execute TAC, execute TAC_A, then switch to the  *)
+(* second subgoal of 'e TAC' which will be the input goalstate of TAC_B.     *)
+let er tac =
+  let e_result = e tac in
+  let n_subgoals_to_rotate, n_subgoals =
+    match !current_goalstack with
+    | (_,gl,_)::(_,glprev,_)::_ ->
+      let n_subgoals = length gl in
+      if n_subgoals = 0 then 0, 0
+      else (n_subgoals - length glprev + 1), n_subgoals
+    | _ -> failwith "current_goalstack must have at least 2 items after 'e'" in
+
+  if n_subgoals_to_rotate = 0 || n_subgoals = 1 then begin
+    remark "(Rotating zero subgoal)\n\n";
+    e_result
+  end else begin
+    (if !verbose then print_goalstack !current_goalstack);
+    remark (Printf.sprintf "\n(Rotating %d subgoal%s...)\n\n"
+        n_subgoals_to_rotate
+        (if n_subgoals_to_rotate = 1 then "" else "s"));
+    let new_g = r n_subgoals_to_rotate in
+    (* pop the latest subgoal so that one b() can fully roll back the state *)
+    let cur_gs = !current_goalstack in
+    let _ = current_goalstack := hd cur_gs :: tl (tl cur_gs) in
+    new_g
+  end;;
+
 let set_goal(asl,w) =
   current_goalstack :=
     [mk_goalstate(map (fun t -> "",ASSUME t) asl,w)];

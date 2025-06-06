@@ -52,6 +52,6 @@ is invalid.
 Doing a step in an interactive goal-directed proof.
 
 \SEEALSO
-b, g, p, r, set_goal, top_goal, top_thm.
+b, er, g, p, r, set_goal, top_goal, top_thm.
 
 \ENDDOC
