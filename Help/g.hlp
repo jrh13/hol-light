@@ -29,6 +29,6 @@ Fails unless the argument term has type {bool}.
 }
 
 \SEEALSO
-b, e, p, r, set_goal, top_goal, top_thm.
+b, e, er, p, r, set_goal, top_goal, top_thm.
 
 \ENDDOC

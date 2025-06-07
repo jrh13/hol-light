@@ -38,6 +38,6 @@ The function {b} will fail if the backup list is empty.
 Back tracking in a goal-directed proof to undo errors or try different tactics.
 
 \SEEALSO
-e, g, p, r, set_goal, top_goal, top_thm.
+e, er, g, p, r, set_goal, top_goal, top_thm.
 
 \ENDDOC
