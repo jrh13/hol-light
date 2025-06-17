@@ -14,9 +14,7 @@ where that list is augmented by the goal's assumptions.
 Never fails (though the resulting tactic may do).
 
 \EXAMPLE
-{
 The inbuilt {ASM_REWRITE_TAC} is in fact defined as just {ASM REWRITE_TAC}.
-}
 
 \SEEALSO
 ASSUM_LIST, FREEZE_THEN, HYP, MESON_TAC, REWRITE_TAC, SET_TAC.

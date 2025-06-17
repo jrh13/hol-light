@@ -51,6 +51,7 @@ echo '### Loading Examples/dickson.ml'; echo 'loadt "Examples/dickson.ml";;' | (
 echo '### Loading Examples/digit_serial_methods.ml'; echo 'loadt "Examples/digit_serial_methods.ml";;' | (time $hollight)
 echo '### Loading Examples/division_algebras.ml'; echo 'loadt "Examples/division_algebras.ml";;' | (time $hollight)
 echo '### Loading Examples/dlo.ml'; echo 'loadt "Examples/dlo.ml";;' | (time $hollight)
+echo '### Loading Library/fieldtheory.ml'; echo 'loadt "Library/fieldtheory.ml";;' | (time $hollight)
 echo '### Loading Library/floor.ml'; echo 'loadt "Library/floor.ml";;' | (time $hollight)
 echo '### Loading Examples/forster.ml'; echo 'loadt "Examples/forster.ml";;' | (time $hollight)
 echo '### Loading Examples/gcdrecurrence.ml'; echo 'loadt "Examples/gcdrecurrence.ml";;' | (time $hollight)

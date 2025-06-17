@@ -22,6 +22,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/digit_serial_methods \
 	Examples/division_algebras \
 	Examples/dlo \
+	Library/fieldtheory \
 	Library/floor \
 	Examples/forster \
 	Examples/gcdrecurrence \
