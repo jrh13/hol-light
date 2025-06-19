@@ -9,7 +9,7 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-let hol_version = "3.0.0+";;
+let hol_version = "3.1.0";;
 
 #directory "+compiler-libs";;
 
