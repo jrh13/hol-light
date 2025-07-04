@@ -8,6 +8,17 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu  3rd Jul 2025        Jordan/jordan_curve_theorem.ml, Jordan/metric_spaces.ml, Jordan/misc_defs_and_lemmas.ml, Jordan/tactics_ext2.ml, Help/new_basic_type_definition.hlp, Help/new_type_definition.hlp
+
+Adopted a patch from Dan Bernstein to replace the use of pointer-level
+inequality != with structural inequality <> inside the "Jordan" proofs
+as was presumably intended, appropriately fixing up the breaks that
+result (patch taken from https://holtrace.cr.yp.to/jordan310.diff).
+
+Improved the type definition documentation by emphasizing explicitly
+that failure will also occur when the desired names of the abstraction
+and representation functions to and from the new type are the same.
+
 Fri  6th Jun 2025       tactics.ml, unit_tests.ml
 
 Added a new 'expand and rotate" function er to the goalstack package,

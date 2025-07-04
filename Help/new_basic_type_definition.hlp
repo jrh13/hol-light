@@ -18,9 +18,10 @@ The theorem is needed to ensure that that set is nonempty; all types in HOL are
 nonempty.
 
 \FAILURE
-Fails if any of the type or constant names is already in use, if the theorem
-has a nonempty list of hypotheses, if the conclusion of the theorem is not a
-combination, or if its rator {P} contains free variables.
+Fails if any of the type or constant names is already in use, if the two names
+{mk} and {dest} are the same, if the theorem has a nonempty list of hypotheses,
+if the conclusion of the theorem is not a combination, or if its rator {P}
+contains free variables.
 
 \EXAMPLE
 Here we define a basic type with 32 elements:

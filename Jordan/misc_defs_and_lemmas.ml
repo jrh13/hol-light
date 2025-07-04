@@ -746,9 +746,9 @@ let NUM2_COUNTABLE = prove_by_refinement(
   REPEAT (DISCH_THEN (CHOOSE_THEN MP_TAC));
   DISCH_THEN (fun t->REWRITE_TAC[t]);
   REWRITE_TAC[IN_UNIV];
-  SUBGOAL_TAC `?t. t = x'+|y'`;
+  SUBGOAL_TAC `?t. t = x+|y'`;
   MESON_TAC[];
-  SPEC_TAC (`x':num`,`a:num`);
+  SPEC_TAC (`x:num`,`a:num`);
   SPEC_TAC (`y':num`,`b:num`);
   CONV_TAC (quant_left_CONV "t");
   CONV_TAC (quant_left_CONV "t");

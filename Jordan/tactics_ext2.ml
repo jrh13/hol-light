@@ -82,7 +82,7 @@ let relabel_bound_conv tm =
  let relabel_bound tm =
    match tm with
     | Abs(x,t) ->
-        let avoids = filter ((!=) x) (vars_and_constants tm []) in
+        let avoids = filter ((<>) x) (vars_and_constants tm []) in
         let x' = mk_primed_var avoids x in
         if (x=x') then failwith "relabel_bound" else (alpha x' tm)
     | _ -> failwith "relabel_bound" in
