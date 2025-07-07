@@ -34,6 +34,7 @@ OCAML_UNARY_VERSION=`ocamlc -version | cut -c1`
 CAMLP5_BINARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1-4`
 CAMLP5_UNARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1`
 CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-' | cut -c1-6`
+CAMLP5_FULL_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-' | cut -c1-`
 
 # If set to 1, build hol_lib.cmo and make hol.sh to use it.
 # NOTE: This extends the trusted base of HOL Light to include the inliner
@@ -57,14 +58,14 @@ switch:; \
   opam switch create . ocaml-base-compiler.4.14.0 ; \
   eval $(opam env) ; \
   opam install -y zarith ledit ; \
-  opam pin -y add camlp5 8.03.00
+  opam pin -y add camlp5 8.03.06
 
 switch-5:; \
   opam update ; \
   opam switch create . ocaml-base-compiler.5.2.0 ; \
   eval $(opam env) ; \
   opam install -y zarith ledit ; \
-  opam pin -y add camlp5 8.03.00
+  opam pin -y add camlp5 8.03.06
 
 # Choose an appropriate "update_database.ml" file
 
@@ -96,9 +97,11 @@ pa_j.cmo: pa_j.ml; if test ${OCAML_BINARY_VERSION} = "3.0" ; \
 pa_j.ml: pa_j/pa_j_3.07.ml pa_j/pa_j_3.08.ml pa_j/pa_j_3.09.ml \
          pa_j/pa_j_3.1x_5.xx.ml pa_j/pa_j_3.1x_6.xx.ml \
          pa_j/pa_j_4.xx_8.00.ml pa_j/pa_j_4.xx_8.02.ml \
-         pa_j/pa_j_4.xx_8.03.ml; \
+         pa_j/pa_j_4.xx_8.03.ml pa_j/pa_j_4.xx_8.03.06.ml; \
         if test ${OCAML_BINARY_VERSION} = "3.0"  ; \
         then cp pa_j/pa_j_${OCAML_VERSION}.ml pa_j.ml ; \
+        elif test ${CAMLP5_FULL_VERSION} = "8.03.06" ; \
+        then cp pa_j/pa_j_4.xx_8.03.06.ml pa_j.ml; \
         elif test ${CAMLP5_BINARY_VERSION} = "8.00" -o ${CAMLP5_BINARY_VERSION} = "8.02" -o ${CAMLP5_BINARY_VERSION} = "8.03" ; \
         then cp pa_j/pa_j_4.xx_${CAMLP5_BINARY_VERSION}.ml pa_j.ml; \
         elif test ${CAMLP5_UNARY_VERSION} = "7" ; \
