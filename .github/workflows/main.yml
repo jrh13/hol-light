@@ -24,6 +24,7 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y opam
           opam init --disable-sandboxing --compiler=4.06.0
+          opam repository add archive git+https://github.com/ocaml/opam-repository-archive
           opam pin -y add camlp5 7.10
           opam install -y num ledit camlp-streams ocamlfind
 
