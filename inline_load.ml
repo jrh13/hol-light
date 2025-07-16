@@ -63,19 +63,35 @@ file_loader := fun filename ->
   fprintf fout "(* %s *)\n" filename;
   let lines = strings_of_file filename in
   let fail_if_nonexistent f x = try f x with _ -> failwith x in
-  List.iter
-    (fun line ->
+  let print_linenum lnum = fprintf fout "#%d \"%s\"\n" lnum filename in
+  print_linenum 1;
+  List.iteri
+    (fun idx line ->
       match parse_load_statement "loadt" line with
-      | Some (path,line') -> fail_if_nonexistent loadt path; fprintf fout "%s\n" line' | None ->
+      | Some (path,line') -> begin
+        fail_if_nonexistent loadt path;
+        print_linenum (idx+1);
+        fprintf fout "%s\n" line';
+        print_linenum (idx+2);
+        end
+      | None ->
       (match parse_load_statement "loads" line with
       | Some (path,line') -> begin
         if path = "update_database.ml"
         then Printf.printf "Warning: 'loads \"update_database.ml\";;' is omitted\n"
-        else (fail_if_nonexistent loads path; fprintf fout "%s\n" line')
+        else
+         (fail_if_nonexistent loads path;
+          print_linenum (idx+1);
+          fprintf fout "%s\n" line';
+          print_linenum (idx+2))
         end
       | None ->
       (match parse_load_statement "needs" line with
-      | Some (path,line') -> fail_if_nonexistent needs path; fprintf fout "%s\n" line'
+      | Some (path,line') ->
+       (fail_if_nonexistent needs path;
+        print_linenum (idx+1);
+        fprintf fout "%s\n" line';
+        print_linenum (idx+2))
       | None -> fprintf fout "%s\n" line (* no linebreak needed! *))))
     lines;
   (* add digest *)
