@@ -922,7 +922,7 @@ let flush_goalstack() =
   let l = !current_goalstack in
   current_goalstack := [hd l];;
 
-(* CHECK_VARTYPES_TAC detects whether there is are variables having the same *)
+(* CHECK_VARTYPES_TAC detects whether there are variables having the same    *)
 (* name but different types.                                                 *)
 
 let CHECK_VARTYPES_TAC: tactic =
