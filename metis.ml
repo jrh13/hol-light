@@ -5279,7 +5279,7 @@ let multInt =
     match Int.maxInt with
       None -> (fun x -> fun y -> Some (x * y))
     | Some m ->
-        let m = Real.floor (Stdlib.sqrt (Real.fromInt m))
+        let m = Real.floor (float_sqrt (Real.fromInt m))
       in
         fun x -> fun y -> if x <= m && y <= m then Some (x * y) else None
       ;;
