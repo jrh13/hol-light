@@ -11,7 +11,7 @@ rule, truth.
 \DESCRIBE
 {
       A |- tm
-   ---------------  EQF_INTRO
+   ---------------  EQT_INTRO
     A |- tm <=> T
 }
 
