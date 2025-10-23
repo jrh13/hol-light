@@ -8,6 +8,63 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 20th Oct 2025       Library/words.ml
+
+Type-generalized the existing theorems WORD_SUBWORD_AS_IWORD and
+WORD_SUBWORD_IWORD to allow two distinct source and destination
+word types; the constraint and even the proofs are unchanged.
+
+Mon 20th Oct 2025       Library/words.ml
+
+Added a couple more theorems about subwords of composite terms:
+
+  WORD_SUBWORD_ZX =
+    |- !x pos len.
+          MIN (pos + dimindex(:P)) (dimindex(:M)) <= dimindex(:N)
+          ==> word_subword ((word_zx:M word->N word) x) (pos,len):P word =
+              word_subword x (pos,len)
+
+  WORD_SUBWORD_ZX_TRIVIAL =
+    |- !x pos len.
+          MIN (dimindex(:M)) (dimindex(:N)) <= pos
+          ==> word_subword ((word_zx:M word->N word) x) (pos,len):P word =
+              word 0
+
+and upgraded WORD_SIMPLE_SUBWORD_CONV to make use of those where applicable
+as well as its existing theorems. This for example makes the following work:
+
+  WORD_SIMPLE_SUBWORD_CONV
+   `word_subword ((word_zx:int256->int128) x) (16,16):int16`;;
+
+  WORD_SIMPLE_SUBWORD_CONV
+   `word_subword ((word_zx:int32->int64) x) (48,8):byte`;;
+
+Sun 21st Sep 2025       TacticTrace/* [new directory]
+
+Added the TacticTrace tools from June Lee, which allow the user to
+log in JSON format the input/output of tactics and conversions; see
+the TacticTrace/README.md for more detailed instructions.
+
+Sun 21st Sep 2025       metis.ml
+
+Adopted a fix from Frederic Blanqui to use the more portable local
+"float_sqrt" in place of unqualified "sqrt" inside "metis.ml".
+
+Fri 19th Sep 2025       Library/words.ml
+
+Fixed an over-specialization in the type of "usimd16", which is now
+in line with "usimd2", "usimd4" and "usimd8".
+
+Tue 15th Jul 2025       Makefile, inline_load.ml, pa_j/pa_j_4.xx_8.03.06.ml [new file]
+
+Added support for camlp5 8.03.06, from June Lee. This version of
+camlp5 fixes support for line number directives so one can get better
+location information for debugging. For example:
+
+      # Printexc.record_backtrace true;;
+      # #100 "dummy.ml";;
+      failwith ".";;
+
 Thu  3rd Jul 2025        Jordan/jordan_curve_theorem.ml, Jordan/metric_spaces.ml, Jordan/misc_defs_and_lemmas.ml, Jordan/tactics_ext2.ml, Help/new_basic_type_definition.hlp, Help/new_type_definition.hlp
 
 Adopted a patch from Dan Bernstein to replace the use of pointer-level
@@ -1835,40 +1892,40 @@ intricate that it seemed worth recording them.
   WORD_COMPARISON_EQ =
     |- !x y.
            x = y <=>
-           bit (dimindex (:N) - 1)
+           bit (dimindex(:N) - 1)
            (word_not (word_or (word_xor x y) (word_neg (word_xor x y))))
 
   WORD_COMPARISON_ILE =
     |- !x y.
            ival x <= ival y <=>
-           bit (dimindex (:N) - 1)
+           bit (dimindex(:N) - 1)
            (word_and (word_or x (word_not y))
            (word_or (word_xor x y) (word_not (word_sub y x))))
 
   WORD_COMPARISON_ILT =
     |- !x y.
            ival x < ival y <=>
-           bit (dimindex (:N) - 1)
+           bit (dimindex(:N) - 1)
            (word_or (word_and x (word_not y))
            (word_and (word_not (word_xor x y)) (word_sub x y)))
 
   WORD_COMPARISON_NE =
     |- !x y.
            ~(x = y) <=>
-           bit (dimindex (:N) - 1)
+           bit (dimindex(:N) - 1)
            (word_or (word_xor x y) (word_neg (word_xor x y)))
 
   WORD_COMPARISON_ULE =
     |- !x y.
            val x <= val y <=>
-           bit (dimindex (:N) - 1)
+           bit (dimindex(:N) - 1)
            (word_and (word_or (word_not x) y)
            (word_or (word_xor x y) (word_not (word_sub y x))))
 
   WORD_COMPARISON_ULT =
     |- !x y.
            val x < val y <=>
-           bit (dimindex (:N) - 1)
+           bit (dimindex(:N) - 1)
            (word_or (word_and (word_not x) y)
            (word_and (word_or (word_not x) y) (word_sub x y)))
 

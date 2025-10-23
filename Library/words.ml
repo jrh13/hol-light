@@ -4222,12 +4222,21 @@ let WORD_SUBWORD_ADD = prove
 let WORD_SUBWORD_AS_IWORD = prove
  (`!(w:N word) pos len.
         pos + len <= dimindex(:N)
-        ==> word_subword w (pos,len):N word =
+        ==> word_subword w (pos,len):M word =
             iword((ival w div &2 pow pos) rem &2 pow len)`,
   REPEAT STRIP_TAC THEN SIMP_TAC[INT_DIV_REM; INT_POW_LE; INT_POS] THEN
   ASM_SIMP_TAC[GSYM INT_POW_ADD; INT_REM_IVAL] THEN
   REWRITE_TAC[word_subword; INT_OF_NUM_DIV; INT_OF_NUM_CLAUSES] THEN
   REWRITE_TAC[WORD_IWORD; EXP_ADD; GSYM DIV_MOD]);;
+
+let WORD_SUBWORD_IWORD = prove
+ (`!x pos len.
+        pos + len <= dimindex(:N)
+        ==> word_subword (iword x:N word) (pos,len):M word =
+            iword((x div &2 pow pos) rem &2 pow len)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[WORD_SUBWORD_AS_IWORD] THEN
+  SIMP_TAC[INT_DIV_REM; INT_POW_LE; INT_POS; GSYM INT_POW_ADD] THEN
+  ASM_SIMP_TAC[INT_REM_IVAL_IWORD]);;
 
 let WORD_SUBWORD_IWORD = prove
  (`!x pos len.
@@ -4511,6 +4520,30 @@ let WORD_DUPLICATE = prove
 (* equivalent to related ones for subexpresions of the word argument.        *)
 (* ------------------------------------------------------------------------- *)
 
+let WORD_SUBWORD_ZX = prove
+ (`!x pos len.
+        MIN (pos + dimindex(:P)) (dimindex(:M)) <= dimindex(:N)
+        ==> word_subword ((word_zx:M word->N word) x) (pos,len):P word =
+               word_subword x (pos,len)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_ZX] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  ASM_CASES_TAC `i:num < len` THEN
+  ASM_REWRITE_TAC[ARITH_RULE `i < MIN a b <=> i < a /\ i < b`] THEN
+  ONCE_REWRITE_TAC[BIT_GUARD] THEN
+  REWRITE_TAC[TAUT `(p /\ q <=> q) <=> q ==> p`] THEN STRIP_TAC THEN
+  ASM_ARITH_TAC);;
+
+let WORD_SUBWORD_ZX_TRIVIAL = prove
+ (`!x pos len.
+        MIN (dimindex(:M)) (dimindex(:N)) <= pos
+        ==> word_subword ((word_zx:M word->N word) x) (pos,len):P word =
+            word 0`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_ZX; BIT_WORD_0] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[BIT_GUARD] THEN ASM_ARITH_TAC);;
+
 let WORD_SIMPLE_SUBWORD_CONV =
   let dimarith_conv = DEPTH_CONV(!word_SIZE_CONV ORELSEC NUM_RED_CONV) in
   let dimarith_rule th =
@@ -4519,11 +4552,12 @@ let WORD_SIMPLE_SUBWORD_CONV =
      CONV_RULE(RAND_CONV(RAND_CONV(BINOP_CONV dimarith_conv)))
   and triv_rule =
      GEN_REWRITE_RULE (RAND_CONV o TRY_CONV) [WORD_DUPLICATE_REFL] in
-  let [rules_join; rules_insert; rules_subword; rules_duplicate;
+  let [rules_join; rules_insert; rules_zx; rules_subword; rules_duplicate;
        [rule_duplicate]; [rule_trivial]] =
   map (map (PART_MATCH (lhand o rand)))
    [[WORD_SUBWORD_JOIN_LOWER; WORD_SUBWORD_JOIN_UPPER];
     [WORD_SUBWORD_INSERT_OUTER; WORD_SUBWORD_INSERT_INNER];
+    [WORD_SUBWORD_ZX_TRIVIAL; WORD_SUBWORD_ZX];
     [WORD_SUBWORD_SUBWORD]; [WORD_SUBWORD_DUPLICATE];
     [WORD_SUBWORD_DUPLICATE_DUPLICATE];
     [WORD_SUBWORD_TRIVIAL]] in
@@ -4539,6 +4573,8 @@ let WORD_SIMPLE_SUBWORD_CONV =
            post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_insert)
       | Comb(Comb(Const("word_subword",_),_),_) ->
            post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_subword)
+      | Comb(Const("word_zx",_),_) ->
+           tryfind (fun f -> dimarith_rule(f tm)) rules_zx
       | Comb(Const("word_duplicate",_),_) ->
          (try triv_rule(dimarith_rule(rule_duplicate tm))
           with Failure _ ->
@@ -8887,7 +8923,7 @@ let simd8 = new_definition
  `simd8 (f:N word->N word->N word) = simd2 (simd4 f)`;;
 
 let usimd16 = new_definition
- `usimd16 (f:N word->N word) = usimd2 (usimd8 f)`;;
+ `usimd16 (f:N word->M word) = usimd2 (usimd8 f)`;;
 
 let simd16 = new_definition
  `simd16 (f:N word->N word->N word) = simd2 (simd8 f)`;;
