@@ -1,0 +1,14 @@
+.*.swp
+*.cmi
+*.cmo
+old
+hol_lib_inlined.marshalled.bin
+hol_lib_inlined.ml
+hol_lib_inlined.org.ml
+hol_lib_inlined.mli
+kernel_wrapper.ml
+tracer
+types_lexer.ml
+types_parser.ml
+types_parser.mli
+types_test
