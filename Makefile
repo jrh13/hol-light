@@ -68,10 +68,7 @@ switch-5:; \
 # Choose an appropriate "update_database.ml" file
 
 update_database.ml:; \
-  if [ ${OCAML_VERSION} = "4.14" ] ; \
-  then cp update_database/update_database_4.14.ml update_database.ml ; \
-  else cp update_database/update_database_${OCAML_UNARY_VERSION}.ml update_database.ml ; \
-  fi
+  cp update_database/`update_database/chooser.sh` update_database.ml
 
 # Build the camlp4 syntax extension file (camlp5 for OCaml >= 3.10)
 
