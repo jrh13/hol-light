@@ -1,4 +1,4 @@
-version = "3.0.0+"
+version = "3.1.0+"
 description = "The HOL Light interactive theorem prover"
 requires = "camlp5 zarith"
 archive(byte) = "hol_lib.cma"

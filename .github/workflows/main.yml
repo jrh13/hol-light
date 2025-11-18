@@ -39,7 +39,7 @@ jobs:
           cd hol-light
           eval $(opam env)
           make
-          ./hol.sh 2>&1 | tee log.txt
+          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version" log.txt
 
@@ -65,7 +65,7 @@ jobs:
           make switch
           eval $(opam env)
           make
-          ./hol.sh 2>&1 | tee log.txt
+          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
           cd ..
@@ -86,7 +86,7 @@ jobs:
 
   test3:
     runs-on: ubuntu-22.04
-    name: OCaml 5.2, Camlp5 8.03 (make switch-5)
+    name: OCaml 5.4, Camlp5 8.04 (make switch-5)
 
     steps:
       - name: Install dependency
@@ -106,7 +106,7 @@ jobs:
           make switch-5
           eval $(opam env)
           make
-          ./hol.sh 2>&1 | tee log.txt
+          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
           cd ..
@@ -119,7 +119,7 @@ jobs:
           make clean
           export HOLLIGHT_USE_MODULE=1
           make
-          ./hol.sh 2>&1 | tee log.txt
+          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
           ./unit_tests.byte
