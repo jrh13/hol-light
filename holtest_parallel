@@ -30,6 +30,7 @@ else
     make clean; make
     (cd Mizarlight; make clean; make)
     hollight=./hol.sh
+    export HOLLIGHT_DIR=`$hollight -dir`
 fi
 
 make -j $(getconf _NPROCESSORS_ONLN) "HOLLIGHT=$hollight" SHELL=bash \

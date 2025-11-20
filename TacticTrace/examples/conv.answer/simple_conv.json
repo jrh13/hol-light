@@ -1,0 +1,18 @@
+[
+  {
+    "conv":"simple_conv",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/conv.ml",
+       "line": 1
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/conv.ml",
+       "line": 10
+    },
+    "arg_names": ["t"],
+    "arg_types": ["term"],
+    "arg_values": ["`1 + 1`"],
+    "arg_exprs": ["`1+1`"],
+    "output": "|- 1 + 1 = 2"
+  }
+]

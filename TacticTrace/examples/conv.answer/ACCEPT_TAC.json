@@ -1,0 +1,20 @@
+[
+  {
+    "tactic":"ACCEPT_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 336
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/conv.ml",
+       "line": 10
+    },
+    "arg_names": ["th"],
+    "arg_types": ["thm"],
+    "arg_values": ["|- 1 + 1 = 2"],
+    "arg_exprs": ["(simple_conv `1+1`)"],
+    "goal_before": "\n`1 + 1 = 2`\n",
+    "goals_after": [],
+    "num_subgoals": 0
+  }
+]

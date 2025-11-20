@@ -13,12 +13,15 @@ echo "  - output: $output"
 echo "======================================================================"
 dumpdir=$3
 
+export TACLOGGER_DIR=${HOLLIGHT_DIR}/TacticTrace
+
 basedir=${TACLOGGER_DIR}
 
 # Remove the line number directives first.
 python3 ${TACLOGGER_DIR}/remove-linenum-dirs.py $input $input_no_linedir
 
 ${basedir}/get-ast.sh $input_no_linedir
+# get-ast.sh creates input_bin
 ${basedir}/tracer modify $input $input_bin $input_mli ${basedir}/hol_lib_inlined.mli ${output}.org
 
 head -2 ${output}.org > $output
@@ -29,3 +32,5 @@ cat ${basedir}/kernel_wrapper.ml >> $output
 echo "" >> $output
 tail -n +3 ${output}.org >> $output
 echo "exptrace_dump \"${dumpdir}\";;" >>$output
+
+rm $input_bin $input_no_linedir

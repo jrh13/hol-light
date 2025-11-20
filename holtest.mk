@@ -115,7 +115,8 @@ EXTENDED_EXAMPLES:=\
 	RichterHilbertAxiomGeometry/Topology \
 	RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read \
 	Functionspaces/make \
-	Formal_ineqs/make-ineqs
+	Formal_ineqs/make-ineqs \
+	TacticTrace/make-test
 
 GREAT_100_THEOREMS:= \
 	100/arithmetic_geometric_mean \
@@ -264,6 +265,16 @@ $(LOGDIR)/Cadical/make-test.ready:
 		echo '### Error: skip Cadical/make.ml, Cadical/test.ml because cadical is not available' > $(LOGDIR)/Cadical/make-test ; \
 	fi
 	@touch $(LOGDIR)/Cadical/make-test.ready
+
+$(LOGDIR)/TacticTrace/make-test.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname TacticTrace/make-test)
+	@echo '### Running TacticTrace/Makefile'
+	@$(MAKE) clean --quiet -C TacticTrace
+	@$(MAKE) --quiet -C TacticTrace
+	@cd TacticTrace && ./build-hol-kernel.sh
+	@$(MAKE) test --quiet -C TacticTrace > $(LOGDIR)/TacticTrace/make-test 2>&1
+	@cat TacticTrace/examples/*.hollog >> $(LOGDIR)/TacticTrace/make-test
+	@touch $(LOGDIR)/TacticTrace/make-test.ready
 
 # Recall that $* is the stem matched by the %
 $(LOGDIR)/%.ready:
