@@ -1,3 +1,12 @@
+(*
+  Creates tactic wrappers and replaces the tactic users with the wrapper
+  versions.
+
+  This implementation assumes that OCaml 5.4 is used.
+  https://ocaml.org/manual/5.4/api/compilerlibref/Parsetree.html
+*)
+
+
 type typ =
   | TyFun of { arg: typ; argname: string option; optional: bool; retty: typ }
   | TyApp of { args: typ list; destty: typ } (* string list, or (int, int) func *)
@@ -9,6 +18,7 @@ let is_typevar (ty:typ): bool =
   | TyConst s -> String.starts_with ~prefix:"'" s
   | _ -> false
 
+(* Returns (type, labeled name (if exists), is optional?) *)
 let rec get_fun_argtys (ty:typ): (typ * string option * bool) list =
   match ty with
   | TyFun x -> (x.arg, x.argname, x.optional) :: get_fun_argtys x.retty
@@ -61,29 +71,6 @@ let check_param_consistency
     true
 
 (* Print the definition of a function parameter as a string, for description purpose *)
-let function_param_to_str (args_info:function_param): string =
-  let rec pat_to_str (pa:pattern_desc): string =
-    match pa with
-    | Ppat_var l -> l.txt
-    | Ppat_tuple pl ->
-      "(" ^ (String.concat "," (List.map (fun p -> pat_to_str p.ppat_desc) pl)) ^ ")"
-    | _ -> "(unknown)" in
-
-  match args_info.pparam_desc with
-  | Pparam_val (lbl,exp0,p) ->
-    (* According to doc:
-      - P when lbl is Nolabel and exp0 is None
-      - ~l:P when lbl is Labelled l and exp0 is None
-      - ?l:P when lbl is Optional l and exp0 is None
-      - ?l:(P = E0) when lbl is Optional l and exp0 is Some E0
-    *)
-   (match lbl with
-    | Nolabel -> pat_to_str p.ppat_desc
-    | Labelled l -> l ^ " (labeled)"
-    | Optional l -> l ^ " (optional)")
-  | _ -> "(don't know how to represent)"
-
-(* Print the definition of a function parameter as a string, for description purpose *)
 let function_param_to_str (arg_info:function_param): string =
   let rec pat_to_str (pa:pattern_desc): string =
     match pa with
@@ -93,8 +80,11 @@ let function_param_to_str (arg_info:function_param): string =
       | Ppat_var l -> l.txt
       | _ -> "(unknown)"
       end
-    | Ppat_tuple pl ->
-      "(" ^ (String.concat "," (List.map (fun p -> pat_to_str p.ppat_desc) pl)) ^ ")"
+    | Ppat_tuple (pl,Closed) ->
+      "(" ^ (String.concat "," (List.map (fun (opt_name,p) ->
+        (match opt_name with | None -> "" | Some n -> (n ^ ":")) ^
+        pat_to_str p.ppat_desc) pl)) ^ ")"
+    (* todo: Ppat_tuple with Open? *)
     | _ -> "(unknown)" in
 
   match arg_info.pparam_desc with

@@ -1,0 +1,20 @@
+[
+  {
+    "tactic":"tac_in_let",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 6
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 10
+    },
+    "arg_names": ["t"],
+    "arg_types": ["term"],
+    "arg_values": ["`2`"],
+    "arg_exprs": ["`2`"],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  }
+]

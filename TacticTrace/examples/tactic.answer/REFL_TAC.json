@@ -1,0 +1,20 @@
+[
+  {
+    "tactic":"REFL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 365
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 10
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [],
+    "num_subgoals": 0
+  }
+]

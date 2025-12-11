@@ -1,6 +1,7 @@
 .*.swp
 *.cmi
 *.cmo
+*.out
 old
 hol_lib_inlined.marshalled.bin
 hol_lib_inlined.ml

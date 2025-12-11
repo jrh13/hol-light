@@ -1,0 +1,146 @@
+[
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 8
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  },
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 5
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  },
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 3
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  },
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 3
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  },
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 2
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  },
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 2
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  },
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 2
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  },
+  {
+    "tactic":"ALL_TAC",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/tactics.ml",
+       "line": 176
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/tactic.ml",
+       "line": 1
+    },
+    "arg_names": [],
+    "arg_types": [],
+    "arg_values": [],
+    "arg_exprs": [],
+    "goal_before": "\n`1 = 1`\n",
+    "goals_after": [{"goal": "\n`1 = 1`\n", "added_assumptions": [], "removed_assumptions": []}],
+    "num_subgoals": 1
+  }
+]

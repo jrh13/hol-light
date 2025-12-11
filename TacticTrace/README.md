@@ -14,8 +14,8 @@ as `let <theorem> = prove(<goal>, <proof>);;` and dumping in the JSON format.
 ## Prerequisite
 
 This project does not need patching HOL Light.
-Instead, HOL Light must be built with OCaml 5.2.0 (the `make switch-5` as of
-Aug. 22, 2025) and compiled with `HOLLIGHT_USE_MODULE=1`.
+Instead, HOL Light must be built with OCaml 5.4.0 (the `make switch-5` as of
+Nov. 20, 2025) and compiled with `HOLLIGHT_USE_MODULE=1`.
 
 **Operating System.**
 TacticTrace is tested on Ubuntu and MacOS.
@@ -23,10 +23,11 @@ TacticTrace is tested on Ubuntu and MacOS.
 ## 1. Building trace-generating tactic/conv wrappers of the HOL Light kernel
 
 ```sh
+export HOLLIGHT_DIR=<the HOL Light dir>
+eval $(opam env --set-switch --switch=${HOLLIGHT_DIR})
+
 make
 
-export HOLLIGHT_DIR=<the HOL Light dir>
-export TACLOGGER_DIR=${HOLLIGHT_DIR}/TacticTrace
 ./build-hol-kernel.sh
 ```
 
@@ -39,14 +40,14 @@ You will need to inline `loadt`/`loads`/`needs` invocations in `a.ml` through th
 OCaml script which is provided by HOL Light:
 
 ```sh
-ocaml ${HOLLIGHT_DIR}/inline_load.ml a.ml a_inlined.ml
+${HOLLIGHT_DIR}/hol.sh inline-load a.ml a_inlined.ml
 ```
 
 The next step is to modify the definitions of tactics/conversions as well as their
 users in `a_inlined.ml` so that they emit the inputs and outputs to a JSON file.
 
 ```sh
-${TACLOGGER_DIR}/modify-proof.sh a_inlined.ml a_inlined_wrapped.ml /home/your/output/dir
+${HOLLIGHT_DIR}/TacticTrace/modify-proof.sh a_inlined.ml a_inlined_wrapped.ml /home/your/output/dir
 ```
 
 You can run the `a_inlined_wrapped.ml` by loading it on top of HOL Light REPL (`hol.sh`), or
@@ -54,15 +55,8 @@ building it using the OCaml compiler. The following commands show how to build i
 native compiler.
 
 ```sh
-eval $(opam env --switch $HOLLIGHT_DIR --set-switch)
-
-# Give a large stack size.
-OCAMLRUNPARAM=l=2000000000 \
-ocamlopt.byte -pp "$(${HOLLIGHT_DIR}/hol.sh -pp)" -I "${HOLLIGHT_DIR}" -I +unix -c \
-    hol_lib.cmxa a_inlined_wrapped.ml -o a_inlined_wrapped.cmx -w -a
-ocamlfind ocamlopt -package zarith,unix -linkpkg hol_lib.cmxa \
-    -I "${HOLLIGHT_DIR}" a_inlined_wrapped.cmx \
-    -o "a_inlined_wrapped.native"
+${HOLLIGHT_DIR}/hol.sh compile a_inlined_wrapped.ml -o a_inlined_wrapped.cmx
+${HOLLIGHT_DIR}/hol.sh link a_inlined_wrapped.cmx -o a_inlined_wrapped.native
 ```
 
 ## 3. Collecting top-level theorems
@@ -83,8 +77,8 @@ Running the following commands will save a JSON file that contains the line numb
 informations of theorems including `MY_THM`.
 
 ```
-./get-ast.sh a_inlined.ml # This creates a_inlined.marshalled.bin
-./tracer collect-toplevel-thms a_inlined.marshalled.bin output.json
+${HOLLIGHT_DIR}/TacticTrace/get-ast.sh a_inlined.ml # This creates a_inlined.marshalled.bin
+${HOLLIGHT_DIR}/TacticTrace/tracer collect-toplevel-thms a_inlined.marshalled.bin output.json
 ```
 
 ### Known limitations

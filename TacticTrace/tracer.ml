@@ -2,9 +2,11 @@
   Creates tactic wrappers and replaces the tactic users with the wrapper
   versions.
 
-  This implementation assumes that OCaml 5.2 is used.
-  https://ocaml.org/manual/5.2/api/compilerlibref/Parsetree.html
+  This implementation assumes that OCaml 5.4 is used.
+  https://ocaml.org/manual/5.4/api/compilerlibref/Parsetree.html
 *)
+
+let verbose = true;;
 
 (******************************************************************************
                Collect types from the interface file ( *.mli)
@@ -134,11 +136,10 @@ let string_of_location (loc:Location.t): string =
 let read_ast (filename:string): Parsetree.structure =
   let ic = open_in_bin filename in
   try
-    (* AST_IMPL_MAGIC_NUMBER *)
-    let magic = "Caml1999M034" in
+    let magic = Config.ast_impl_magic_number in
     let magic_buffer = really_input_string ic (String.length magic) in
     if magic_buffer <> magic then
-      failwith ("Does not have the magic string" ^ magic) else
+      failwith ("Compiler version mismatch: does not have the magic string " ^ magic) else
     let loc_input_name = (input_value ic : string) in
     Printf.printf "read_ast: Location.input_name: %s\n" loc_input_name;
     Printf.printf "read_ast: Reading marshaled AST from %s\n\n" filename;
@@ -161,12 +162,40 @@ let read_ast (filename:string): Parsetree.structure =
 
 type hol_def_kind = KindTactic | KindConversion
 
+(* A definition of a tactic or conversion. *)
 type hol_def = {
   kind: hol_def_kind;
+  (* The type of definitions. *)
   ty: OcamlTypes.typ;
+  (* The function arguments that are specified at the definition of this
+     tactic or conversion.
+     *Comparison to the ty field.* The size of arg_defs may be larger than the
+     number of arguments in 'ty' by at most one, because if one wrote a
+     function like this:
+
+     let my_conv: conv =
+        fun (t:term) -> ...
+
+     The type of my_conv (which is conv) does not seem to have any argument,
+     but arg_defs is [t:term].
+  *)
   arg_defs: function_param list;
   loc: Location.t
 }
+
+let string_of_function_param (p:function_param): string =
+  match p.pparam_desc with
+  | Pparam_val (Nolabel, None, pat) ->
+    Format.asprintf "%a" Pprintast.pattern pat
+  | Pparam_val (Labelled l, None, pat) ->
+    Format.asprintf "~%s:%a" l Pprintast.pattern pat
+  | Pparam_val (Optional l, None, pat) ->
+    Format.asprintf "?%s:%a" l Pprintast.pattern pat
+  | Pparam_val (Optional l, Some _, pat) ->
+    Format.asprintf "?%s:(%a=..)" l Pprintast.pattern pat
+  | Pparam_val (_,_,_) -> failwith "Unknown case"
+  | Pparam_newtype _ ->
+    Format.asprintf "(type ..)"
 
 (* Skip these definitions returning tactic/conv type *)
 
@@ -241,19 +270,30 @@ let collect_defs
               arg_defs = arg_defs;
               loc = toplevel_loc
             });
-          Printf.printf "Found %s definition %s:%s (loc:%s)\n"
+          let _ = Printf.printf "Found %s definition %s:%s (loc:%s)\n"
             (if k = KindTactic then "tactic" else "conv")
             name (OcamlTypes.string_of_typ ty)
-            (string_of_location toplevel_loc)
+            (string_of_location toplevel_loc) in
+          let _ = Printf.printf "  args: [%s]\n"
+            (String.concat ", " (List.map (fun (fp:function_param) ->
+              string_of_function_param fp) arg_defs)) in
+          ()
         end
       | None ->
         Printf.printf "(note: collect_defs: could not find %s from .mli)\n" name
       end
-    | Ppat_tuple pats ->
-      List.iter (fun p ->
+    | Ppat_tuple (pats,Closed) ->
+      (* When multiple tactics are defined, e.g., let X_TAC,Y_TAC = .. *)
+      List.iter (fun (opt_name,p) ->
+          (* opt_name doesn't matter because p will also have the name.
+             For example,
+             let (~x_tac,~y_tac) = ...
+             In this case, opt_name of the first element is 'Some "x_tac"' and
+             Ppat_var "x_tac". So the 'Some "x_tac"' is redundant. *)
           register p.ppat_desc arg_defs toplevel_loc)
         pats
     | Ppat_constraint (p,_) ->
+      (* let (X_TAC: ..) = .. *)
       register p.ppat_desc arg_defs toplevel_loc
     | _ -> ()
   in
@@ -263,7 +303,7 @@ let collect_defs
       match item.pstr_desc with
       | Pstr_value (_, bindings) ->
           List.iter (fun (binding:value_binding) ->
-              (* The tacticc/conversion name (keyword) *)
+              (* The tactic/conversion name (keyword) *)
               let pat_desc:pattern_desc = binding.pvb_pat.ppat_desc in
               (* Tactic/conversion arguments. Interestingly, given
                  'let f x = ... in ...', the 'x' part appears at binding.pvb_expr. *)
@@ -331,7 +371,10 @@ let collect_users
 
   (* Remove scopes from the identifier l and pick the right one *)
   let find_tac_or_conv_name (l:Longident.t): string option =
-    let s = match l with | Lident x -> Some x | Ldot (_,x) -> Some x | _ -> None in
+    let s = match l with
+      | Lident x -> Some x
+      | Ldot (_,x) -> Some x.txt
+      | _ -> None in
     match s with
     | None -> None
     | Some x ->
@@ -356,6 +399,8 @@ let collect_users
   let rec visit_expr (e: Parsetree.expression): unit =
     match e.pexp_desc with
     | Pexp_ident id ->
+      (* In this case, we cannot get any information about the arguments to the tactic.
+         Pexp_apply will give more information. *)
       begin match find_tac_or_conv_name id.txt with
       | Some n when comes_after_def id.loc n ->
         (* Only add to user if this tactic does not accept extra args *)
@@ -367,6 +412,7 @@ let collect_users
             name = n;
             expr_loc = e.pexp_loc;
             tackey_loc = e.pexp_loc;
+            (* Has no information about arg locations! Pexp_apply case will have that *)
             arg_locs = []
           } in
           res := new_user::!res
@@ -402,16 +448,19 @@ let collect_users
             res := new_user::!res
         | None -> ()
         end
-      | _ -> ()
+
+      | _ ->
+        (* Recursively visit callee. *)
+        visit_expr callee
       end;
-      (* do not recursively visit callee! only visit the args *)
+      (* Visit arguments *)
       List.iter (fun (_,argexpr) -> visit_expr argexpr) args
     | Pexp_match (expr, cases)
     | Pexp_try (expr, cases) ->
       visit_expr expr;
       List.iter (fun case -> visit_case case) cases
     | Pexp_tuple exprs ->
-      List.iter (fun expr -> visit_expr expr) exprs
+      List.iter (fun (_, expr) -> visit_expr expr) exprs
     | Pexp_construct (_, expropt)
     | Pexp_variant (_, expropt) ->
       Option.iter visit_expr expropt
@@ -450,7 +499,7 @@ let collect_users
     | Pexp_poly (e,_) -> visit_expr e
     | Pexp_object cs -> visit_class_structure cs
     | Pexp_newtype (_,e) -> visit_expr e
-    | Pexp_pack me -> visit_module_expr me
+    | Pexp_pack (me, _) -> visit_module_expr me
     | Pexp_open (_,e) -> visit_expr e
     | Pexp_letop lo -> visit_letop lo
     | Pexp_extension _ -> failwith "Pexp_extension is unsupported"
@@ -620,16 +669,34 @@ let make_wrappers ast types (linenum_maps: ((int * string) option) array)
         | Some (l,n) -> (n,l) in
 
       let s = ref ("let " ^ tname ^ " ?(args_str:string list option) ?(caller_linenum:(string * int) option)") in
-      let argtys:(typ * string option * bool) list = get_fun_argtys def.ty in
-      let numargs = List.length argtys in
-      (* Cut away the extra argument, which can be:
-        - (assumptions,goal) part for tactic
-        - the input term for conv
-        from parameters, if it exists. *)
-      let arg_defs = takelist numargs def.arg_defs in
+
+      let numargs,arg_defs,argtys =
+        (* Parse the function type *)
+        let argtys:(typ * string option * bool) list = get_fun_argtys def.ty in
+        match def.kind with
+        | KindTactic ->
+          (* If there is an extra (assumptions,goal) input, strip it away from argument information.
+             *)
+          let _ =
+            if List.length def.arg_defs > List.length argtys + 1 then
+             (Printf.eprintf "Warning: too many arguments are defined compared to type signature\n";
+              Printf.eprintf "- Name: %s\n" tname;
+              Printf.eprintf "- # args defined at fn: %d\n" (List.length def.arg_defs);
+              Printf.eprintf "- # args described in type: %d\n" (List.length argtys);
+              Printf.eprintf "- Type signature: %s\n" (string_of_typ def.ty))
+            in
+          ((List.length argtys),(takelist (List.length argtys) def.arg_defs),argtys)
+
+        | KindConversion ->
+          (* argtys doesn't have the input term yet (the 'conv' type's input term); add it *)
+          let argtys = argtys @ [(TyConst "term"),None,false] in
+          (* NOTE: length of arg_defs may be length of argtys - 1 here. *)
+          let n = List.length argtys in
+          (n, def.arg_defs, argtys) in
+
+      (**** Generate args ****)
       let args = ref [(* arg ty, name, prefix string ("?", "~", "") *)] in
 
-      (* Generate args *)
       let fresh_arg =
         let cnt = ref 0 in
         fun () ->
@@ -725,53 +792,53 @@ let make_wrappers ast types (linenum_maps: ((int * string) option) array)
         wrappers := (def.loc,tname,!s)::!wrappers
       end
       | KindConversion -> begin
-        s := !s ^ ": conv =\n";
+        s := !s ^ ": thm =\n"; (* Note that this isn't ": conv" because
+              the term argument is already in the signature *)
 
         (* Now the application part *)
-        s := !s ^ "  fun (t_input:term) ->\n";
-        s := !s ^ "    let thm_output = " ^ tname;
+        s := !s ^ "  let thm_output = " ^ tname;
         List.iter (fun (argty, argname, prefix) ->
             (* prefix is either "", "?" or "~" *)
             s := !s ^ " " ^ prefix ^ argname)
           !args;
-        s := !s ^ " t_input in\n";
+        s := !s ^ " in\n";
 
         (* Add a record to ExportTrace *)
-        s := !s ^ "    exptrace_add_conv \"" ^ tname ^ "\" {\n";
-        s := !s ^ "      definition_line_number = (\"" ^ tac_def_filepath ^ "\","
+        s := !s ^ "  exptrace_add_conv \"" ^ tname ^ "\" {\n";
+        s := !s ^ "    definition_line_number = (\"" ^ tac_def_filepath ^ "\","
                 ^ (string_of_int tac_def_line) ^ ");\n";
-        s := !s ^ "      user_line_number = (match caller_linenum with\n";
-        s := !s ^ "          | None -> (\"\",0)\n";
-        s := !s ^ "          | Some t -> t\n";
-        s := !s ^ "        );\n";
-        s := !s ^ "      input = t_input;\n";
-        s := !s ^ "      output = thm_output;\n";
-        s := !s ^ "    } (fun () -> {\n";
+        s := !s ^ "    user_line_number = (match caller_linenum with\n";
+        s := !s ^ "        | None -> (\"\",0)\n";
+        s := !s ^ "        | Some t -> t\n";
+        s := !s ^ "      );\n";
+        s := !s ^ "    input = " ^ (let _,argname,_ = List.hd (List.rev !args) in argname) ^ ";\n";
+        s := !s ^ "    output = thm_output;\n";
+        s := !s ^ "  } (fun () -> {\n";
 
-        s := !s ^ "      names = to_n_elems [" ^
+        s := !s ^ "    names = to_n_elems [" ^
           String.concat "; " (List.map
             (fun pdef -> "\"" ^ function_param_to_str pdef ^ "\"")
             arg_defs) ^ "] " ^ (string_of_int numargs) ^ ";\n";
-        s := !s ^ "      types = [" ^
+        s := !s ^ "    types = [" ^
           String.concat "; " (List.map
             (fun (argty,_,_) -> "\"" ^ string_of_typ argty ^ "\"") argtys) ^
           "];\n";
         (if numargs = 0 then
-        s := !s ^ "      values = [];\n"
+        s := !s ^ "    values = [];\n"
         else (
-        s := !s ^ "      values = [\n";
-        s := !s ^ "        " ^
+        s := !s ^ "    values = [\n";
+        s := !s ^ "      " ^
           (String.concat ";\n        "
             (List.map (fun (argty, argname, prefix) ->
               OcamlTypes.get_stringifier (prefix = "?") argty argname) !args)) ^ "\n";
         s := !s ^ "      ];\n"
         ));
-        s := !s ^ "      exprs = to_n_elems\n";
-        s := !s ^ "         (match args_str with | Some s -> s  | None -> [])\n";
-        s := !s ^ "         " ^ (string_of_int numargs) ^ ";\n";
-        s := !s ^ "    });\n";
+        s := !s ^ "    exprs = to_n_elems\n";
+        s := !s ^ "       (match args_str with | Some s -> s  | None -> [])\n";
+        s := !s ^ "       " ^ (string_of_int numargs) ^ ";\n";
+        s := !s ^ "  });\n";
 
-        s := !s ^ "    thm_output\n";
+        s := !s ^ "  thm_output\n";
 
         wrappers := (def.loc,tname,!s)::!wrappers
 
@@ -919,6 +986,13 @@ let collect_toplevel_thms ast_path output_path =
   (* Find the top-level let definitions of the form
      'let _ = prove(_,_);;' or
      'let _ = time prove(_,_);;' *)
+
+  let get_args_of_provefn (e:expression): (expression * expression) option =
+    match e.pexp_desc with
+    | Pexp_tuple [(None,goal_term);(None,proof_term)] ->
+      Some(goal_term, proof_term)
+    | _ -> None in
+
   List.iter (fun (item:structure_item) ->
       match item.pstr_desc with
       | Pstr_value (_, bindings) ->
@@ -933,23 +1007,23 @@ let collect_toplevel_thms ast_path output_path =
                 (* prove(_,_) *)
                 | Pexp_apply (prove_fn, [Nolabel,prove_args])
                     when is_ident prove_fn "prove" -> begin
-                  match prove_args.pexp_desc with
-                  | Pexp_tuple [goal_term;proof_term] ->
+                  match get_args_of_provefn prove_args with
+                  | Some (goal_term,proof_term) ->
                     (* Found it! :) *)
                     thms := (item, idloc.txt, goal_term, proof_term)::!thms
-                  | _ -> ()
+                  | None -> () (* TODO: print that this could not beproven *)
                   end
 
                 (* time prove(_,_) *)
                 | Pexp_apply (time_fn, [Nolabel,prove_fn; Nolabel,prove_args])
                     when is_ident time_fn "time" && is_ident prove_fn "prove" -> begin
-                  match prove_args.pexp_desc with
-                  | Pexp_tuple [goal_term;proof_term] ->
+                  match get_args_of_provefn prove_args with
+                  | Some (goal_term,proof_term) ->
                     (* Found it! :) *)
                     thms := (item, idloc.txt, goal_term, proof_term)::!thms
-                  | _ -> ()
+                  | None -> ()
                   end
-                | _ -> () 
+                | _ -> ()
                 end
               | _ -> ())
             bindings
