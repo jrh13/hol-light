@@ -4566,20 +4566,21 @@ let WORD_SIMPLE_SUBWORD_CONV =
       Comb(Comb(Const("word_subword",_),itm),
            Comb(Comb(Const(",",_),Comb(Const("NUMERAL",_),_)),
                 Comb(Const("NUMERAL",_),_))) ->
-     (match itm with
-        Comb(Comb(Const("word_join",_),_),_) ->
-           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_join)
-      | Comb(Comb(Comb(Const("word_insert",_),_),_),_) ->
-           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_insert)
-      | Comb(Comb(Const("word_subword",_),_),_) ->
-           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_subword)
-      | Comb(Const("word_zx",_),_) ->
-           tryfind (fun f -> dimarith_rule(f tm)) rules_zx
-      | Comb(Const("word_duplicate",_),_) ->
-         (try triv_rule(dimarith_rule(rule_duplicate tm))
-          with Failure _ ->
-           post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_duplicate))
-      | _ -> dimarith_rule(rule_trivial tm))
+      (try dimarith_rule(rule_trivial tm) with Failure _ ->
+       (match itm with
+          Comb(Comb(Const("word_join",_),_),_) ->
+             post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_join)
+        | Comb(Comb(Comb(Const("word_insert",_),_),_),_) ->
+             post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_insert)
+        | Comb(Comb(Const("word_subword",_),_),_) ->
+             post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_subword)
+        | Comb(Const("word_zx",_),_) ->
+             tryfind (fun f -> dimarith_rule(f tm)) rules_zx
+        | Comb(Const("word_duplicate",_),_) ->
+           (try triv_rule(dimarith_rule(rule_duplicate tm))
+            with Failure _ ->
+             post_rule(tryfind (fun f -> dimarith_rule(f tm)) rules_duplicate))
+        | _ -> failwith "WORD_SIMPLE_SUBWORD_CONV"))
     | _ -> failwith "WORD_SIMPLE_SUBWORD_CONV";;
 
 (* ------------------------------------------------------------------------- *)
@@ -8874,7 +8875,7 @@ let BITBLAST_THEN =
       CONV_TAC(ONCE_DEPTH_CONV WORDIFY_WORD_CONV) THEN
       CONV_TAC(DEPTH_CONV(WORD_RED_CONV ORELSEC NUM_RED_CONV)) THEN
       CONV_TAC(ONCE_DEPTH_CONV VAL_MOD_OR_DIV_CONV) THEN
-      CONV_TAC(ONCE_DEPTH_CONV
+      CONV_TAC(DEPTH_CONV
        (WORDIFY_ATOM_CONV ORELSEC IWORDIFY_ATOM_CONV)) THEN
       CONV_TAC(DEPTH_CONV WORD_MUL_EXPAND_CONV) THEN
       REPEAT(W(fun (_,w) ->

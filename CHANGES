@@ -8,6 +8,49 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon  8th Dec 2025       Library/words.ml, Examples/bitblast.ml
+
+Fixed a bug in bit-blasting where the conversion from arithmetical to word
+form was being missed in some cases where arithmetic is nested inside other
+word operations (possibly after other normalizations that started in word
+form). The fix is to use DEPTH_CONV in place of ONCE_DEPTH_CONV for the
+WORDIFY_ATOM_CONV and IWORDIFY_ATOM_CONV conversions. For example, this
+case formerly failed but now works:
+
+  BITBLAST_RULE
+  `!x:int64.
+        let y = word_and x (word_sub (word_or x (word 0x0800800800800800))
+                                     (word 0x0501501501501501)) in
+        let z = word_ushr (word_and y (word 0x0800800800800800)) 11 in
+        bitval(word_uge (word_subword x (0,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (12,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (24,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (36,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (48,12):int16) (word 3329)) =
+        val(word_ushr (word_mul z (word 0x100100100100100)) 56)`;;
+
+Added this and a few other new ones to Examples/bitblast.ml
+
+Wed  3rd Dec 2025       Library/words.ml
+
+Made a small fix in WORD_SIMPLE_SUBWORD_CONV, which was failing to make
+the simple simplifications based on WORD_SUBWORD_TRIVIAL if the word operation
+was a composite term matching one of the other cases, e.g.
+
+  WORD_SIMPLE_SUBWORD_CONV
+    `(word_subword:(16)word->num#num->(16)word)
+     ((word_join:byte->byte->int16) h l) (0,16)`;;
+
+Mon 17th Nov 2025       .github/workflows/main.yml, Help/list_mk_exists.hlp, META, Makefile, opam, pa_j/chooser.sh [new file], pa_j/pa_j_5.4_8.04.00.ml [new file], unit_tests.ml, update_database/chooser.sh [new file], update_database/update_database_5.4.ml [new file]
+
+Set up appropriate new versions of pa_j and update_database code to work
+smoothly with OCaml 5.4 (from June Lee). This includes a significant
+rationalization and cleanup of the version-dependent choosing code.
+
+This update also removes a dangling reference in the Help/list_mk_exists.hl
+file to a nonexistent function EXISTS_EQ, probably a cut-and-paste error
+wrongly inherited from HOL88 that does/did have such a function.
+
 Mon 20th Oct 2025       Library/words.ml
 
 Type-generalized the existing theorems WORD_SUBWORD_AS_IWORD and
