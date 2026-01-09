@@ -187,8 +187,6 @@ let exptrace_dump (dir_path:string): unit =
   let conv_rec_comp (_,_,i1) (_,_,i2) = ExportTrace.compare_conv_interestingness i1 i2 in
 
   Sys.mkdir dir_path 0o777;
-  let substract l1 l2 =
-    List.filter (fun itm -> not (List.mem itm l2)) l1 in
   let string_of_asm_list l =
     (List.map (fun th -> "\"" ^ String.escaped (string_of_term (concl (snd th))) ^ "\"") l) in
 
@@ -268,8 +266,6 @@ let exptrace_dump (dir_path:string): unit =
             (String.concat ", " (List.map (fun s -> "\"" ^ (String.escaped s) ^ "\"") r_args.values));
           Printf.fprintf oc "    \"arg_exprs\": [%s],\n"
             (String.concat ", " (List.map (fun s -> "\"" ^ (String.escaped s) ^ "\"") r_args.exprs));
-          Printf.fprintf oc "    \"input\": \"%s\",\n"
-            (String.escaped (Format.asprintf "%a" pp_print_term r.input));
           Printf.fprintf oc "    \"output\": \"%s\"\n"
             (String.escaped (Format.asprintf "%a" pp_print_thm r.output));
           Printf.fprintf oc "  }%s\n" (if i + 1 = List.length recs then "" else ","))

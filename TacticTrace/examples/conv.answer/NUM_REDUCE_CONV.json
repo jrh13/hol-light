@@ -1,0 +1,50 @@
+[
+  {
+    "conv":"NUM_REDUCE_CONV",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/calc_num.ml",
+       "line": 1478
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/conv.ml",
+       "line": 5
+    },
+    "arg_names": ["(unknown)"],
+    "arg_types": ["term"],
+    "arg_values": ["`2 + 3`"],
+    "arg_exprs": ["(unknown)"],
+    "output": "|- 2 + 3 = 5"
+  },
+  {
+    "conv":"NUM_REDUCE_CONV",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/calc_num.ml",
+       "line": 1478
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/conv.ml",
+       "line": 1
+    },
+    "arg_names": ["(unknown)"],
+    "arg_types": ["term"],
+    "arg_values": ["`1 + 1`"],
+    "arg_exprs": ["t"],
+    "output": "|- 1 + 1 = 2"
+  },
+  {
+    "conv":"NUM_REDUCE_CONV",
+    "definition_line_number": {
+       "file_path": "/mnt/disk/hol-light/calc_num.ml",
+       "line": 1478
+    },
+    "user_line_number": {
+       "file_path": "/mnt/disk/hol-light/TacticTrace/examples/conv.ml",
+       "line": 7
+    },
+    "arg_names": ["(unknown)"],
+    "arg_types": ["term"],
+    "arg_values": ["`1 + 1 = 2`"],
+    "arg_exprs": ["tm"],
+    "output": "|- 1 + 1 = 2 <=> true"
+  }
+]
