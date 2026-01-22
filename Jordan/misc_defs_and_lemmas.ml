@@ -746,9 +746,9 @@ let NUM2_COUNTABLE = prove_by_refinement(
   REPEAT (DISCH_THEN (CHOOSE_THEN MP_TAC));
   DISCH_THEN (fun t->REWRITE_TAC[t]);
   REWRITE_TAC[IN_UNIV];
-  SUBGOAL_TAC `?t. t = x'+|y'`;
+  SUBGOAL_TAC `?t. t = x+|y'`;
   MESON_TAC[];
-  SPEC_TAC (`x':num`,`a:num`);
+  SPEC_TAC (`x:num`,`a:num`);
   SPEC_TAC (`y':num`,`b:num`);
   CONV_TAC (quant_left_CONV "t");
   CONV_TAC (quant_left_CONV "t");
@@ -2243,8 +2243,8 @@ let PI_SER = prove_by_refinement(
 let SUC_EXPAND_CONV tm =
    let count = dest_numeral tm in
    let rec add_suc i r =
-     if (i <=/ (Int 0)) then r
-     else add_suc (i -/ (Int 1)) (mk_comb (`SUC`,r)) in
+     if (i <=/ (num 0)) then r
+     else add_suc (i -/ (num 1)) (mk_comb (`SUC`,r)) in
    let tm' = add_suc count `0` in
    REWRITE_RULE[] (ARITH_REWRITE_CONV[] (mk_eq (tm,tm')));;
 
@@ -2266,7 +2266,7 @@ let PI_SERn n =
 (* abs(pi - u ) < e *)
 let recompute_pi bprec =
    let n = (bprec /4) in
-   let pi_ser = PI_SERn (mk_numeral (Int n)) in
+   let pi_ser = PI_SERn (mk_numeral (num n)) in
    let _ = remove_real_constant `pi` in
    (add_real_constant pi_ser; INTERVAL_OF_TERM bprec `pi`);;
 

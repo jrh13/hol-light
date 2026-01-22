@@ -1,0 +1,18 @@
+\DOC PRINT_GOAL_TAC
+
+\TYPE {PRINT_GOAL_TAC : tactic}
+
+\SYNOPSIS
+Prints the goal to standard output.
+
+\DESCRIBE
+Given any goal {A ?- p}, the tactic {PRINT_GOAL_TAC} prints the goal
+to standard output.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+print_goal, print_goalstack, print_term, PRINT_TERM_CONV, REMARK_TAC
+
+\ENDDOC

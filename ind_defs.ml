@@ -350,8 +350,8 @@ let prove_inductive_relations_exist,new_inductive_definition =
       let crels = zip grels schems in
       let clauses' = map (subst crels) clauses in
       clauses',snd(strip_comb(hd schems)) in
-  let find_redefinition tm (rth,ith,cth as trip) =
-    if aconv tm (concl rth) then trip else failwith "find_redefinition" in
+  let find_redefinition tm (rth,ith,cth as trip):((thm*thm*thm)*thm) =
+    (trip,PART_MATCH I rth tm) in
   let prove_inductive_properties tm =
     let clauses = conjuncts tm in
     let clauses',fvs = unschematize_clauses clauses in
@@ -362,8 +362,10 @@ let prove_inductive_relations_exist,new_inductive_definition =
     let th2 = generalize_schematic_variables true fvs th1 in
     derive_existence th2
   and new_inductive_definition tm =
-    try let th = tryfind (find_redefinition tm) (!the_inductive_definitions) in
-        warn true "Benign redefinition of inductive predicate"; th
+    try let tm' = snd(strip_forall tm) in
+        let th,_ = tryfind (find_redefinition tm')
+          (!the_inductive_definitions) in
+        warn true "Benign redefinition of inductive predicate";th
     with Failure _ ->
     let fvs,th1 = prove_inductive_properties tm in
     let th2 = generalize_schematic_variables true fvs th1 in

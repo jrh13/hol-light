@@ -258,7 +258,7 @@ let REAL_RAT_ADD_CONV =
     and y3n = y1n */ y2n in
     let d = gcd_num x3n y3n in
     let x3n' = quo_num x3n d and y3n' = quo_num y3n d in
-    let x3n'',y3n'' = if y3n' >/ Int 0 then x3n',y3n'
+    let x3n'',y3n'' = if y3n' >/ num 0 then x3n',y3n'
                       else minus_num x3n',minus_num y3n' in
     let x3' = mk_realintconst x3n'' and y3' = mk_realintconst y3n'' in
     let th0 = INST [x1',x1; y1',y1; x2',x2; y2',y2; x3',x3; y3',y3] pth in
@@ -386,28 +386,43 @@ let REAL_RAT_MIN_CONV =
 (* Everything.                                                               *)
 (* ------------------------------------------------------------------------- *)
 
+let real_rat_red_conv_list =
+  [`x <= y`,REAL_RAT_LE_CONV;
+   `x < y`,REAL_RAT_LT_CONV;
+   `x >= y`,REAL_RAT_GE_CONV;
+   `x > y`,REAL_RAT_GT_CONV;
+   `x:real = y`,REAL_RAT_EQ_CONV;
+   `--x`,CHANGED_CONV REAL_RAT_NEG_CONV;
+   `real_sgn(x)`,REAL_RAT_SGN_CONV;
+   `abs(x)`,REAL_RAT_ABS_CONV;
+   `inv(x)`,REAL_RAT_INV_CONV;
+   `x + y`,REAL_RAT_ADD_CONV;
+   `x - y`,REAL_RAT_SUB_CONV;
+   `x * y`,REAL_RAT_MUL_CONV;
+   `x / y`,CHANGED_CONV REAL_RAT_DIV_CONV;
+   `x pow n`,REAL_RAT_POW_CONV;
+   `max x y`,REAL_RAT_MAX_CONV;
+   `min x y`,REAL_RAT_MIN_CONV];;
+
 let REAL_RAT_RED_CONV =
-  let gconv_net = itlist (uncurry net_of_conv)
-    [`x <= y`,REAL_RAT_LE_CONV;
-     `x < y`,REAL_RAT_LT_CONV;
-     `x >= y`,REAL_RAT_GE_CONV;
-     `x > y`,REAL_RAT_GT_CONV;
-     `x:real = y`,REAL_RAT_EQ_CONV;
-     `--x`,CHANGED_CONV REAL_RAT_NEG_CONV;
-     `real_sgn(x)`,REAL_RAT_SGN_CONV;
-     `abs(x)`,REAL_RAT_ABS_CONV;
-     `inv(x)`,REAL_RAT_INV_CONV;
-     `x + y`,REAL_RAT_ADD_CONV;
-     `x - y`,REAL_RAT_SUB_CONV;
-     `x * y`,REAL_RAT_MUL_CONV;
-     `x / y`,CHANGED_CONV REAL_RAT_DIV_CONV;
-     `x pow n`,REAL_RAT_POW_CONV;
-     `max x y`,REAL_RAT_MAX_CONV;
-     `min x y`,REAL_RAT_MIN_CONV]
+  let gconv_net = itlist (uncurry net_of_conv) real_rat_red_conv_list
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
 let REAL_RAT_REDUCE_CONV = DEPTH_CONV REAL_RAT_RED_CONV;;
+
+let real_rat_compute_add_convs =
+  let convlist = map (fun pat,the_conv ->
+    let c,args = strip_comb pat in (c,length args,the_conv))
+    real_rat_red_conv_list in
+  fun (compset:Compute.compset) ->
+    itlist (fun newc () -> Compute.add_conv newc compset) convlist ();;
+
+let REAL_RAT_COMPUTE_CONV =
+  let cs = Compute.bool_compset () in
+  Compute.set_skip cs `COND: bool -> A -> A -> A` (Some 1);
+  real_rat_compute_add_convs cs;
+  Compute.WEAK_CBV_CONV cs;;
 
 (* ------------------------------------------------------------------------- *)
 (* Real normalizer dealing with rational constants.                          *)
@@ -529,7 +544,11 @@ let GEN_REAL_ARITH PROVER =
 let REAL_ARITH =
   let init = GEN_REWRITE_CONV ONCE_DEPTH_CONV [DECIMAL]
   and pure = GEN_REAL_ARITH REAL_LINEAR_PROVER in
-  fun tm -> let th = init tm in EQ_MP (SYM th) (pure(rand(concl th)));;
+  fun tm ->
+    try
+      let th = init tm in EQ_MP (SYM th) (pure(rand(concl th)))
+    with Failure m ->
+      failwith ("REAL_ARITH `" ^ (string_of_term tm) ^ "`: " ^ m);;
 
 let REAL_ARITH_TAC = CONV_TAC REAL_ARITH;;
 

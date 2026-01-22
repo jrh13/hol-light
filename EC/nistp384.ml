@@ -22,6 +22,12 @@ let c_384 = new_definition `c_384 = 0x79d1e655f868f02fff48dcdee14151ddb80643c140
 let b_384 = new_definition `b_384 = 0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef`;;
 let G_384 = new_definition `G_384 = SOME(&0xaa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7:int,&0x3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f:int)`;;
 
+let nistp384 = define
+ `nistp384 =
+    (integer_mod_ring p_384,
+     ring_neg (integer_mod_ring p_384) (&3),
+     &b_384:int)`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Primality of the field characteristic and group order.                    *)
 (* ------------------------------------------------------------------------- *)
@@ -123,7 +129,7 @@ let GROUP_ELEMENT_ORDER_G384 = prove
   REWRITE_TAC[n_384] THEN CONV_TAC(LAND_CONV ECGROUP_POW_CONV) THEN
   REFL_TAC);;
 
-let FINITE_GROUP_CARRIER_384 = prove
+let FINITE_GROUP_CARRIER_P384 = prove
  (`FINITE(group_carrier p384_group)`,
   REWRITE_TAC[P384_GROUP] THEN MATCH_MP_TAC FINITE_WEIERSTRASS_CURVE THEN
   REWRITE_TAC[FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING; PRIME_P384] THEN
@@ -134,7 +140,7 @@ let SIZE_P384_GROUP = prove
   MATCH_MP_TAC GROUP_ADHOC_ORDER_UNIQUE_LEMMA THEN
   EXISTS_TAC `G_384:(int#int)option` THEN
   REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_384; GROUP_ELEMENT_ORDER_G384;
-              FINITE_GROUP_CARRIER_384] THEN
+              FINITE_GROUP_CARRIER_P384] THEN
   REWRITE_TAC[P384_GROUP] THEN CONJ_TAC THENL
    [W(MP_TAC o PART_MATCH (lhand o rand)
       CARD_BOUND_WEIERSTRASS_CURVE o lhand o snd) THEN
@@ -166,11 +172,21 @@ let SIZE_P384_GROUP = prove
     REWRITE_TAC[GSYM num_coprime; ARITH; COPRIME_2] THEN
     DISCH_THEN(MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN ASM_INT_ARITH_TAC]);;
 
+let P384_GROUP_ORDER = prove
+ (`CARD(group_carrier p384_group) = n_384`,
+  REWRITE_TAC[REWRITE_RULE[HAS_SIZE] SIZE_P384_GROUP]);;
+
+let P384_GROUP_ELEMENT_ORDER = prove
+ (`!P. P IN group_carrier p384_group
+       ==> group_element_order p384_group P =
+           if P = group_id p384_group then 1 else n_384`,
+  MESON_TAC[SIZE_P384_GROUP; HAS_SIZE; GROUP_ELEMENT_ORDER_PRIME; PRIME_N384]);;
+
 let GENERATED_P384_GROUP = prove
  (`subgroup_generated p384_group {G_384} = p384_group`,
   SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
            GENERATOR_IN_GROUP_CARRIER_384;
-           FINITE_GROUP_CARRIER_384] THEN
+           FINITE_GROUP_CARRIER_P384] THEN
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G384;
               REWRITE_RULE[HAS_SIZE] SIZE_P384_GROUP]);;
 

@@ -22,6 +22,12 @@ let c_521 = new_definition `c_521 = 0x0b48bfa5f420a34949539d2bdfc264eeeeb077688e
 let b_521 = new_definition `b_521 = 0x051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00`;;
 let G_521 = new_definition `G_521 = SOME(&0xc6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66:int,&0x11839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650:int)`;;
 
+let nistp521 = define
+ `nistp521 =
+   (integer_mod_ring p_521,
+     ring_neg (integer_mod_ring p_521) (&3),
+     &b_521:int)`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Primality of the field characteristic and group order.                    *)
 (* ------------------------------------------------------------------------- *)
@@ -121,7 +127,7 @@ let GROUP_ELEMENT_ORDER_G521 = prove
   REWRITE_TAC[n_521] THEN CONV_TAC(LAND_CONV ECGROUP_POW_CONV) THEN
   REFL_TAC);;
 
-let FINITE_GROUP_CARRIER_521 = prove
+let FINITE_GROUP_CARRIER_P521 = prove
  (`FINITE(group_carrier p521_group)`,
   REWRITE_TAC[P521_GROUP] THEN MATCH_MP_TAC FINITE_WEIERSTRASS_CURVE THEN
   REWRITE_TAC[FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING; PRIME_P521] THEN
@@ -132,7 +138,7 @@ let SIZE_P521_GROUP = prove
   MATCH_MP_TAC GROUP_ADHOC_ORDER_UNIQUE_LEMMA THEN
   EXISTS_TAC `G_521:(int#int)option` THEN
   REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_521; GROUP_ELEMENT_ORDER_G521;
-              FINITE_GROUP_CARRIER_521] THEN
+              FINITE_GROUP_CARRIER_P521] THEN
   REWRITE_TAC[P521_GROUP] THEN CONJ_TAC THENL
    [W(MP_TAC o PART_MATCH (lhand o rand)
       CARD_BOUND_WEIERSTRASS_CURVE o lhand o snd) THEN
@@ -164,11 +170,21 @@ let SIZE_P521_GROUP = prove
     REWRITE_TAC[GSYM num_coprime; ARITH; COPRIME_2] THEN
     DISCH_THEN(MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN ASM_INT_ARITH_TAC]);;
 
+let P521_GROUP_ORDER = prove
+ (`CARD(group_carrier p521_group) = n_521`,
+  REWRITE_TAC[REWRITE_RULE[HAS_SIZE] SIZE_P521_GROUP]);;
+
+let P521_GROUP_ELEMENT_ORDER = prove
+ (`!P. P IN group_carrier p521_group
+       ==> group_element_order p521_group P =
+           if P = group_id p521_group then 1 else n_521`,
+  MESON_TAC[SIZE_P521_GROUP; HAS_SIZE; GROUP_ELEMENT_ORDER_PRIME; PRIME_N521]);;
+
 let GENERATED_P521_GROUP = prove
  (`subgroup_generated p521_group {G_521} = p521_group`,
   SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
            GENERATOR_IN_GROUP_CARRIER_521;
-           FINITE_GROUP_CARRIER_521] THEN
+           FINITE_GROUP_CARRIER_P521] THEN
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G521;
               REWRITE_RULE[HAS_SIZE] SIZE_P521_GROUP]);;
 

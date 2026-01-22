@@ -1,0 +1,71 @@
+\DOC THEN
+
+\TYPE {(THEN) : tactic -> tactic -> tactic}
+
+\SYNOPSIS
+Applies two tactics in sequence.
+
+\KEYWORDS
+tactical.
+
+\DESCRIBE
+If {t1} and {t2} are tactics, {t1 THEN t2} is a tactic which applies {t1} to a
+goal, then applies the tactic {t2} to all the subgoals generated. If {t1}
+solves the goal then {t2} is never applied.
+
+\FAILURE
+The application of {THEN} to a pair of tactics never fails.
+The resulting tactic fails if {t1} fails when applied to the goal, or if
+{t2} does when applied to any of the resulting subgoals.
+
+If {unset_then_multiple_subgoals} is used, {THEN} is configured to fail
+when {t1} generates more than one subgoal.
+This is useful when one wants to check whether a proof written using {THEN} can
+be syntactically converted to the `e` form.
+
+\EXAMPLE
+Suppose we want to prove the inbuilt theorem {DELETE_INSERT} ourselves:
+{
+  # g `!x y. (x INSERT s) DELETE y =
+             if x = y then s DELETE y else x INSERT (s DELETE y)`;;
+}
+We may wish to perform a case-split using {COND_CASES_TAC}, but since variables
+in the if-then-else construct are bound, this is inapplicable. Thus we want to
+first strip off the universally quantified variables:
+{
+  # e(REPEAT GEN_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `(x INSERT s) DELETE y =
+   (if x = y then s DELETE y else x INSERT (s DELETE y))`
+}
+\noindent and then apply {COND_CASES_TAC}:
+{
+  # e COND_CASES_TAC;;
+  ...
+}
+A quicker way (starting again from the initial goal) would be to combine the
+tactics using {THEN}:
+{
+  # e(REPEAT GEN_TAC THEN COND_CASES_TAC);;
+  ...
+}
+
+\COMMENTS
+Although normally used to sequence tactics which generate a single subgoal,
+it is worth remembering that it is sometimes useful to apply the same tactic
+to multiple subgoals; sequences like the following:
+{
+   EQ_TAC THENL [ASM_REWRITE_TAC[]; ASM_REWRITE_TAC[]]
+}
+\noindent can be replaced by the briefer:
+{
+   EQ_TAC THEN ASM_REWRITE_TAC[]
+}
+If using this several times in succession, remember that {THEN} is
+left-associative.
+
+\SEEALSO
+EVERY, ORELSE, THENL, unset_then_multiple_subgoals
+
+\ENDDOC

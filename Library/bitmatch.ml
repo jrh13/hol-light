@@ -176,86 +176,99 @@ let preparse_bitpat,preparse_bitmatch =
 install_parser("bitpat",preparse_bitpat);;
 install_parser("bitmatch",preparse_bitmatch);;
 
-let pp_print_bitpat,pp_print_bitmatch =
-  let rec dest_pat_rev tm =
-    match tm with
-    | Comb(Comb(Const("CONSPAT",_),p),a) -> a::dest_pat_rev p
-    | Const("NILPAT",_) -> []
-    | _ -> failwith "dest_pat" in
-  let dest_pat = rev o dest_pat_rev in
-  let dest_clause tm =
-    match snd(strip_exists(body(body tm))) with
-    | Comb(Comb(Const("_UNGUARDED_PATTERN",_),lhs),
-        Comb(Comb(Const("=",_),res),_)) ->
-      (match lhs with
-      | Comb(Comb(Const("pat_set",_),pat),_) -> dest_pat pat, res
-      | _ -> failwith "dest_clause")
-    | _ -> failwith "dest_clause" in
-  let rec dest_clauses tm =
-    match tm with
-    | Comb(Comb(Const("_SEQPATTERN",_),c),cs) ->
-        let c = dest_clause c and l,r = dest_clauses cs in c::l,r
-    | Comb(Const("_ELSEPATTERN",_),res) -> [],res
-    | _ -> failwith "dest_clauses" in
-  let f fmt =
-    let unword i = function
-    | Comb(Const("word",_),a) when is_numeral a ->
-      if dest_numeral a < power_num (Int 2) (dest_finty i)
-      then a
-      else failwith "numeral out of range"
-    | a -> a in
-    let print_pat = function
-    | Comb(Const("word1",_),a) -> pp_print_term fmt a
-    | a -> match type_of a with
-      | Tyapp("word",[i]) ->
-          (pp_print_term fmt (unword i a);
-          pp_print_string fmt ":";
-          pp_print_type fmt i)
-      | _ -> failwith "print_pat" in
-    let print_opat = function
-    | None -> pp_print_string fmt "_"
-    | Some [] -> pp_print_string fmt "[]"
-    | Some (x::xs) ->
-       (pp_print_string fmt "[";
-        print_pat x;
-        List.iter (fun x ->
-          pp_print_string fmt "; ";
-          print_pat x) xs;
-        pp_print_string fmt "]") in
-    let print_clause p r =
-      (print_opat p;
-       pp_print_string fmt " -> ";
-       pp_print_term fmt r) in
-    let rec print_clauses cls r = match cls,r with
-    | [p,res],Const("ARB",_) -> print_clause (Some p) res
-    | (p,res)::cs,_ -> (
-      print_clause (Some p) res;
-      pp_print_break fmt 1 0;
-      pp_print_string fmt "| ";
-      print_clauses cs r)
-    | [],r -> print_clause None r in
-    let pp_print_bitpat tm =
-      let pat = dest_pat tm in
-      (pp_open_hvbox fmt 0;
-       pp_print_string fmt "(BITPAT";
-       pp_print_space fmt ();
-       print_opat (Some pat);
-       pp_print_string fmt ")";
-       pp_close_box fmt ()) in
-    let pp_print_bitmatch = function
-    | Comb(Comb(Const("_BITMATCH",_),e),c) ->
-        let cls,r = dest_clauses c in
+let pp_print_bitpat,pp_print_colored_bitpat,
+    pp_print_bitmatch,pp_print_colored_bitmatch =
+  let switch_color (use_color:bool) =
+    (* color printer setting *)
+    let pp_term = if use_color then pp_print_colored_term else pp_print_term in
+    let pp_type = if use_color then pp_print_colored_type else pp_print_type in
+    let pp_resword =
+      if use_color then pp_print_colored_resword else pp_print_string in
+
+    let rec dest_pat_rev tm =
+      match tm with
+      | Comb(Comb(Const("CONSPAT",_),p),a) -> a::dest_pat_rev p
+      | Const("NILPAT",_) -> []
+      | _ -> failwith "dest_pat" in
+    let dest_pat = rev o dest_pat_rev in
+    let dest_clause tm =
+      match snd(strip_exists(body(body tm))) with
+      | Comb(Comb(Const("_UNGUARDED_PATTERN",_),lhs),
+          Comb(Comb(Const("=",_),res),_)) ->
+        (match lhs with
+        | Comb(Comb(Const("pat_set",_),pat),_) -> dest_pat pat, res
+        | _ -> failwith "dest_clause")
+      | _ -> failwith "dest_clause" in
+    let rec dest_clauses tm =
+      match tm with
+      | Comb(Comb(Const("_SEQPATTERN",_),c),cs) ->
+          let c = dest_clause c and l,r = dest_clauses cs in c::l,r
+      | Comb(Const("_ELSEPATTERN",_),res) -> [],res
+      | _ -> failwith "dest_clauses" in
+    let f fmt =
+      let unword i = function
+      | Comb(Const("word",_),a) when is_numeral a ->
+        if dest_numeral a < power_num (num 2) (dest_finty i)
+        then a
+        else failwith "numeral out of range"
+      | a -> a in
+      let print_pat = function
+      | Comb(Const("word1",_),a) -> pp_term fmt a
+      | a -> match type_of a with
+        | Tyapp("word",[i]) ->
+            (pp_term fmt (unword i a);
+            pp_print_string fmt ":";
+            pp_type fmt i)
+        | _ -> failwith "print_pat" in
+      let print_opat = function
+      | None -> pp_print_string fmt "_"
+      | Some [] -> pp_print_string fmt "[]"
+      | Some (x::xs) ->
+        (pp_print_string fmt "[";
+          print_pat x;
+          List.iter (fun x ->
+            pp_print_string fmt "; ";
+            print_pat x) xs;
+          pp_print_string fmt "]") in
+      let print_clause p r =
+        (print_opat p;
+        pp_print_string fmt " -> ";
+        pp_term fmt r) in
+      let rec print_clauses cls r = match cls,r with
+      | [p,res],Const("ARB",_) -> print_clause (Some p) res
+      | (p,res)::cs,_ -> (
+        print_clause (Some p) res;
+        pp_print_break fmt 1 0;
+        pp_print_string fmt "| ";
+        print_clauses cs r)
+      | [],r -> print_clause None r in
+      let pp_print_bitpat tm =
+        let pat = dest_pat tm in
         (pp_open_hvbox fmt 0;
-         pp_print_string fmt "(bitmatch ";
-         pp_print_term fmt e;
-         pp_print_string fmt " with";
-         pp_print_break fmt 1 2;
-         print_clauses cls r;
-         pp_close_box fmt ();
-         pp_print_string fmt ")")
-    | _ -> failwith "print_bitmatch" in
-    pp_print_bitpat,pp_print_bitmatch in
-  fst o f, snd o f;;
+        pp_print_string fmt "(BITPAT";
+        pp_print_space fmt ();
+        print_opat (Some pat);
+        pp_print_string fmt ")";
+        pp_close_box fmt ()) in
+      let pp_print_bitmatch = function
+      | Comb(Comb(Const("_BITMATCH",_),e),c) ->
+          let cls,r = dest_clauses c in
+          (pp_open_hvbox fmt 0;
+          pp_print_string fmt "(";
+          pp_resword fmt "bitmatch ";
+          pp_term fmt e;
+          pp_resword fmt " with";
+          pp_print_break fmt 1 2;
+          print_clauses cls r;
+          pp_close_box fmt ();
+          pp_print_string fmt ")")
+      | _ -> failwith "print_bitmatch" in
+      pp_print_bitpat,pp_print_bitmatch in
+    fst o f, snd o f
+  in
+  let ppbitpat,ppbitmatch = switch_color false
+  and ppbitpatcol,ppbitmatchcol = switch_color true in
+  ppbitpat,ppbitpatcol,ppbitmatch,ppbitmatchcol;;
 
 let print_bitpat = pp_print_bitpat std_formatter
 and string_of_bitpat = print_to_string pp_print_bitpat;;
@@ -265,6 +278,8 @@ and string_of_bitmatch = print_to_string pp_print_bitmatch;;
 
 install_user_printer("bitpat",pp_print_bitpat);;
 install_user_printer("bitmatch",pp_print_bitmatch);;
+install_user_color_printer("bitpat",pp_print_colored_bitpat);;
+install_user_color_printer("bitmatch",pp_print_colored_bitmatch);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some tactics for dealing with bitmatch                                    *)
@@ -567,7 +582,7 @@ let bm_build_tree' =
       match r with
       | None -> Leaf_dt eqth
       | Some(_,i) ->
-        let ii = mk_numeral (Int i) in
+        let ii = mk_numeral (num i) in
         let bit = bit_tm ii e in
         let skip_th sc th =
           let sm, rs' = dest_comb (lhs (concl th)) in
@@ -772,11 +787,11 @@ let rec bitpat_matches p i = match p with
 | Comb(Comb(Const("CONSPAT",_),p),a) ->
   let N = dest_word_ty (type_of a) in
   let n = Num.int_of_num (dest_finty N) in
-  let m = power_num (Int 2) (Int n) in
+  let m = power_num (num 2) (num n) in
   let i' = quo_num i m and a' = mod_num i m in
   let r = match a with
-  | Comb(Const("word1",_),Const("T",_)) -> if a' = Int 1 then None else Some 0
-  | Comb(Const("word1",_),Const("F",_)) -> if a' = Int 0 then None else Some 0
+  | Comb(Const("word1",_),Const("T",_)) -> if a' = num 1 then None else Some 0
+  | Comb(Const("word1",_),Const("F",_)) -> if a' = num 0 then None else Some 0
   | Comb(Const("word1",_),Var(_,_)) -> None
   | Comb(Const("word",_),n) ->
     let n' = dest_numeral n in
@@ -791,7 +806,7 @@ let rec bitpat_matches p i = match p with
     match bitpat_matches p i' with
     | Some j -> Some (j + n)
     | None -> None)
-| Const("NILPAT",_) -> if i = Int 0 then None else
+| Const("NILPAT",_) -> if i = num 0 then None else
   failwith "bitpat_matches: out of range"
 | Abs(_,c) -> bitpat_matches c i
 | Comb(Const("?",_),c) -> bitpat_matches c i
@@ -851,7 +866,7 @@ let inst_bitpat_numeral =
   | Comb(Comb(Const("CONSPAT",_),p),a) ->
     let N = dest_word_ty (type_of a) in
     let n = Num.int_of_num (dest_finty N) in
-    let m = power_num (Int 2) (Int n) in
+    let m = power_num (num 2) (num n) in
     let i' = quo_num i m and a' = mod_num i m in
     let ls, th' = go i' p in
     let p',x = dest_comb (concl th') in let p' = rand p' in
@@ -860,11 +875,11 @@ let inst_bitpat_numeral =
       let ls, b = match a with
       | Const("T",_) -> ls,true
       | Const("F",_) -> ls,false
-      | Var(_,_) -> let b = a' = Int 1 in ((if b then T else F),a)::ls, b
+      | Var(_,_) -> let b = a' = num 1 in ((if b then T else F),a)::ls, b
       | _ -> failwith "inst_bitpat_numeral" in
       ls, PROVE_HYP th' (
         if b then INST [x,ex; p',ep] w1T
-        else if i = Int 0 then INST [p',ep] w1F0
+        else if i = num 0 then INST [p',ep] w1F0
         else INST [x,ex; p',ep] w1F)
     | _ ->
       let thd = dim N in
@@ -936,7 +951,7 @@ let BITMATCH_CONV =
     (match snd (snd (get_dt a tr)) with
     | th::_ ->
       let ps = hd (hyp th) in
-      let ls, th' = inst_bitpat_numeral ps (Int n) in
+      let ls, th' = inst_bitpat_numeral ps (num n) in
       PROVE_HYP th' (INST ls th)
     | _ -> failwith "BITMATCH_CONV")
   | _ -> failwith "BITMATCH_CONV";;
@@ -992,7 +1007,7 @@ let BITMATCH_SIMP_CONV asl =
               | Some b, Some c, None when b != c -> r := Some i
               | _ -> ()) a;
             let i = match !r with
-            | Some i -> mk_numeral (Int i)
+            | Some i -> mk_numeral (num i)
             | _ -> fail () in
             let th' = PROVE_HYP th (PROVE_HYP (pat_to_bit true i h)
               (bm_skip_clause (pat_to_bit false i) tm)) in
@@ -1141,7 +1156,7 @@ let bm_seq_numeral = function
     | Comb(Comb(Const("_SEQPATTERN",_),c),cs') ->
       let ps = hd (hyp th) in
       let pats = Array.init sz (fun i -> try
-        Some (bm_skip_clause (pat_to_bit false (mk_numeral (Int i))) tm)
+        Some (bm_skip_clause (pat_to_bit false (mk_numeral (num i))) tm)
       with Failure _ -> None) in
       let f = mk_fun cs' in
       fun n e' ->
@@ -1166,3 +1181,67 @@ let BITMATCH_SEQ_CONV = function
 | Comb(Comb(Const("_BITMATCH",_), Comb(Const("word",_),n)),_) as tm ->
   snd (bm_seq_numeral tm (dest_numeral n))
 | _ -> failwith "BITMATCH_CONV";;
+
+
+(* Given a bitmatch term 'tm', 'bm_check_disjointness tm' checks whether there
+   exist two bit patterns that overlap. Two bit patterns overlap if there
+   exists at least one bitvector that can be matched to both of them. If there
+   exists such overlapping patterns, 'bm_check_disjointness' throws
+   Invalid_argument. This function is useful when you want to ensure that
+   the bitmatch can be successfully handled by BITMATCH_CONV. *)
+let bm_check_disjointness =
+  let rec first_n l n = if n = 0 then [] else
+    match l with | h::t -> h::(first_n t (n-1)) | [] -> [] in
+  (* Do two patterns overlap? *)
+  let overlaps (pat0: bool option array) pat1 sz =
+    begin let overlaps_i idx =
+      match pat0.(idx), pat1.(idx) with
+      | Some b0, Some b1 -> b0 = b1
+      | _, _ -> true (* always can assign bit(s) that make them equal *) in
+    let rec overlaps_all idx =
+      if idx = sz then true
+      else (overlaps_i idx) && overlaps_all (idx+1) in
+    overlaps_all 0 end in
+  (* Given term tm, do the main check. *)
+  fun tm -> match tm with
+  | Comb(Comb(Const("_BITMATCH",_),bitval),patterns) ->
+    let valty = type_of bitval in
+    begin match valty with
+    | Tyapp("word", [N]) ->
+      let bitwidth = Num.int_of_num (dest_finty N) in
+      let pattern_arrs = bm_analyze_clauses bitwidth patterns in
+
+      List.iteri (fun idx0 pattern0 ->
+        List.iteri (fun idx1 pattern1 ->
+            if overlaps pattern0 pattern1 bitwidth then
+              let idx0_str = string_of_int idx0 in
+              let idx1_str = string_of_int idx1 in
+              invalid_arg ("Pattern number " ^ idx0_str ^
+                           " and pattern number " ^ idx1_str ^ " overlap")
+            else ())
+          (first_n pattern_arrs idx0))
+        pattern_arrs
+    | _ -> invalid_arg "bm_check_disjointness: word's bitwidth is unknown"
+    end
+  | _ -> invalid_arg "bm_check_disjointness: not bitmatch";;
+
+(* Unit tests for bm_check_disjointness *)
+let _ = bm_check_disjointness
+    `bitmatch (x:(2)word) with | [0b00:2] -> T | [0b10:2] -> T`;;
+let _ = bm_check_disjointness
+    `bitmatch (x:(2)word) with | [T; x] -> T | [F; y] -> T`;;
+let _ = try
+    bm_check_disjointness
+        `bitmatch (x:(2)word) with | [0b00:2] -> T | [0b00:2] -> T`;
+    failwith "Must fail"
+  with Invalid_argument _ -> ();;
+let _ = try
+    bm_check_disjointness
+        `bitmatch (x:(2)word) with | [T; x] -> T | [y; T] -> T`;
+    failwith "Must fail"
+  with Invalid_argument _ -> ();;
+let _ = try
+    bm_check_disjointness
+        `bitmatch (x:(2)word) with | [0b11:2] -> T | [0b00:2] -> T | [0b00:2] -> T`;
+    failwith "Must fail"
+  with Invalid_argument _ -> ();;

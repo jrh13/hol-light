@@ -41,6 +41,10 @@ let HAS_SIZE_1 = prove
    [REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING] THEN MESON_TAC[one];
     SIMP_TAC[NOT_IN_EMPTY; HAS_SIZE; FINITE_RULES; CARD_CLAUSES; ARITH]]);;
 
+let NUMSEG_LT_DIMINDEX = prove
+ (`{i | i < dimindex(:N)} = 0..dimindex(:N)-1`,
+  REWRITE_TAC[NUMSEG_LT; DIMINDEX_NONZERO]);;
+
 let DIMINDEX_1 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_1;;
 
 (* ------------------------------------------------------------------------- *)
@@ -111,7 +115,7 @@ let cart_tybij =
 parse_as_infix("$",(25,"left"));;
 
 let finite_index = new_definition
-  `x$i = dest_cart x (finite_index i)`;;
+  `(x:A^N)$i = dest_cart x (finite_index i)`;;
 
 let CART_EQ = prove
  (`!x:A^B y.
@@ -143,7 +147,7 @@ let LAMBDA_UNIQUE = prove
   SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN MESON_TAC[]);;
 
 let LAMBDA_ETA = prove
- (`!g. (lambda i. g$i) = g`,
+ (`!g. (lambda i. g$i):A^B = g`,
   REWRITE_TAC[CART_EQ; LAMBDA_BETA]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -221,7 +225,7 @@ let SNDCART_PASTECART = prove
     ASM_SIMP_TAC[ADD_SUB; ARITH_RULE `1 <= i ==> ~(i + a <= a)`]]);;
 
 let PASTECART_FST_SND = prove
- (`!z. pastecart (fstcart z) (sndcart z) = z`,
+ (`!z. pastecart (fstcart z) (sndcart z):A^(M,N)finite_sum = z`,
   SIMP_TAC[pastecart; fstcart; sndcart; CART_EQ; LAMBDA_BETA] THEN
   REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
   ASM_SIMP_TAC[DIMINDEX_FINITE_SUM; LAMBDA_BETA;
@@ -230,15 +234,16 @@ let PASTECART_FST_SND = prove
      ARITH_RULE `~(i <= a) ==> ((i - a) + a = i)`]);;
 
 let PASTECART_EQ = prove
- (`!x y. (x = y) <=> (fstcart x = fstcart y) /\ (sndcart x = sndcart y)`,
+ (`!x y:A^(M,N)finite_sum.
+        x = y <=> fstcart x = fstcart y /\ sndcart x = sndcart y`,
   MESON_TAC[PASTECART_FST_SND]);;
 
 let FORALL_PASTECART = prove
- (`(!p. P p) <=> !x y. P (pastecart x y)`,
+ (`(!p:A^(M,N)finite_sum. P p) <=> !x y. P (pastecart x y)`,
   MESON_TAC[PASTECART_FST_SND; FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 let EXISTS_PASTECART = prove
- (`(?p. P p) <=> ?x y. P (pastecart x y)`,
+ (`(?p:A^(M,N)finite_sum. P p) <=> ?x y. P (pastecart x y)`,
   MESON_TAC[PASTECART_FST_SND; FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 let PASTECART_INJ = prove
@@ -554,7 +559,7 @@ let vector = new_definition
 (* ------------------------------------------------------------------------- *)
 
 let IN_ELIM_PASTECART_THM = prove
- (`!P a b. pastecart a b IN {pastecart x y | P x y} <=> P a b`,
+ (`!P (a:A^M) (b:A^N). pastecart a b IN {pastecart x y | P x y} <=> P a b`,
   REWRITE_TAC[IN_ELIM_THM; PASTECART_EQ;
               FSTCART_PASTECART; SNDCART_PASTECART] THEN
   MESON_TAC[]);;
@@ -569,40 +574,43 @@ let PCROSS = new_definition
  `s PCROSS t = {pastecart (x:A^M) (y:A^N) | x IN s /\ y IN t}`;;
 
 let FORALL_IN_PCROSS = prove
- (`(!z. z IN s PCROSS t ==> P z) <=>
+ (`(!z:A^(M,N)finite_sum. z IN s PCROSS t ==> P z) <=>
    (!x y. x IN s /\ y IN t ==> P(pastecart x y))`,
   REWRITE_TAC[PCROSS; FORALL_IN_GSPEC]);;
 
 let EXISTS_IN_PCROSS = prove
- (`(?z. z IN s PCROSS t /\ P z) <=>
+ (`(?z:A^(M,N)finite_sum. z IN s PCROSS t /\ P z) <=>
    (?x y. x IN s /\ y IN t /\ P(pastecart x y))`,
   REWRITE_TAC[PCROSS; EXISTS_IN_GSPEC; CONJ_ASSOC]);;
 
 let PASTECART_IN_PCROSS = prove
- (`!s t x y. (pastecart x y) IN (s PCROSS t) <=> x IN s /\ y IN t`,
+ (`!s t (x:A^M) (y:A^N). (pastecart x y) IN (s PCROSS t) <=> x IN s /\ y IN t`,
   REWRITE_TAC[PCROSS; IN_ELIM_PASTECART_THM]);;
 
 let PCROSS_EQ_EMPTY = prove
- (`!s t. s PCROSS t = {} <=> s = {} \/ t = {}`,
+ (`!(s:A^M->bool) (t:A^N->bool). s PCROSS t = {} <=> s = {} \/ t = {}`,
   REWRITE_TAC[PCROSS] THEN SET_TAC[]);;
 
 let PCROSS_EMPTY = prove
- (`(!s. s PCROSS {} = {}) /\ (!t. {} PCROSS t = {})`,
+ (`(!s. (s PCROSS {}) :A^(M,N)finite_sum->bool = {}) /\
+   (!t. ({} PCROSS t) :A^(M,N)finite_sum->bool = {})`,
   REWRITE_TAC[PCROSS_EQ_EMPTY]);;
 
 let PCROSS_SING = prove
- (`!x y:A^N. {x} PCROSS {y} = {pastecart x y}`,
+ (`!(x:A^M) (y:A^N). {x} PCROSS {y} = {pastecart x y}`,
   REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_SING; PASTECART_IN_PCROSS;
               PASTECART_INJ]);;
 
 let SUBSET_PCROSS = prove
- (`!s t s' t'. s PCROSS t SUBSET s' PCROSS t' <=>
-                s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'`,
+ (`!(s:A^M->bool) (t:A^N->bool) s' t'.
+        s PCROSS t SUBSET s' PCROSS t' <=>
+        s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'`,
   SIMP_TAC[PCROSS; EXTENSION; IN_ELIM_PASTECART_THM; SUBSET;
    FORALL_PASTECART; PASTECART_IN_PCROSS; NOT_IN_EMPTY] THEN MESON_TAC[]);;
 
 let PCROSS_MONO = prove
- (`!s t s' t'. s SUBSET s' /\ t SUBSET t' ==> s PCROSS t SUBSET s' PCROSS t'`,
+ (`!(s:A^M->bool) (t:A^N->bool) s' t'.
+        s SUBSET s' /\ t SUBSET t' ==> s PCROSS t SUBSET s' PCROSS t'`,
   SIMP_TAC[SUBSET_PCROSS]);;
 
 let PCROSS_EQ = prove
@@ -664,46 +672,54 @@ let IMAGE_SNDCART_PCROSS = prove
   REWRITE_TAC[EXISTS_IN_PCROSS; SNDCART_PASTECART] THEN ASM SET_TAC[]);;
 
 let PCROSS_INTER = prove
- (`(!s t u. s PCROSS (t INTER u) = (s PCROSS t) INTER (s PCROSS u)) /\
-   (!s t u. (s INTER t) PCROSS u = (s PCROSS u) INTER (t PCROSS u))`,
+ (`(!(s:A^M->bool) (t:A^N->bool) u.
+        s PCROSS (t INTER u) = (s PCROSS t) INTER (s PCROSS u)) /\
+   (!(s:A^M->bool) t (u:A^N->bool).
+        (s INTER t) PCROSS u = (s PCROSS u) INTER (t PCROSS u))`,
   REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_INTER; PASTECART_IN_PCROSS] THEN
   REPEAT STRIP_TAC THEN CONV_TAC TAUT);;
 
 let PCROSS_UNION = prove
- (`(!s t u. s PCROSS (t UNION u) = (s PCROSS t) UNION (s PCROSS u)) /\
-   (!s t u. (s UNION t) PCROSS u = (s PCROSS u) UNION (t PCROSS u))`,
+ (`(!(s:A^M->bool) (t:A^N->bool) u.
+        s PCROSS (t UNION u) = (s PCROSS t) UNION (s PCROSS u)) /\
+   (!(s:A^M->bool) t (u:A^N->bool).
+        (s UNION t) PCROSS u = (s PCROSS u) UNION (t PCROSS u))`,
   REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_UNION; PASTECART_IN_PCROSS] THEN
   REPEAT STRIP_TAC THEN CONV_TAC TAUT);;
 
 let PCROSS_DIFF = prove
- (`(!s t u. s PCROSS (t DIFF u) = (s PCROSS t) DIFF (s PCROSS u)) /\
-   (!s t u. (s DIFF t) PCROSS u = (s PCROSS u) DIFF (t PCROSS u))`,
+ (`(!(s:A^M->bool) (t:A^N->bool) u.
+        s PCROSS (t DIFF u) = (s PCROSS t) DIFF (s PCROSS u)) /\
+   (!(s:A^M->bool) t (u:A^N->bool).
+        (s DIFF t) PCROSS u = (s PCROSS u) DIFF (t PCROSS u))`,
   REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_DIFF; PASTECART_IN_PCROSS] THEN
   REPEAT STRIP_TAC THEN CONV_TAC TAUT);;
 
 let INTER_PCROSS = prove
- (`!s s' t t'.
+ (`!(s:A^M->bool) s' (t:A^N->bool) t'.
       (s PCROSS t) INTER (s' PCROSS t') = (s INTER s') PCROSS (t INTER t')`,
   REWRITE_TAC[EXTENSION; IN_INTER; FORALL_PASTECART; PASTECART_IN_PCROSS] THEN
   CONV_TAC TAUT);;
 
 let PCROSS_UNIONS_UNIONS,PCROSS_UNIONS = (CONJ_PAIR o prove)
- (`(!f g. (UNIONS f) PCROSS (UNIONS g) =
+ (`(!f g. ((UNIONS f) PCROSS (UNIONS g)) :A^(M,N)finite_sum->bool =
           UNIONS {s PCROSS t | s IN f /\ t IN g}) /\
-   (!s f. s PCROSS (UNIONS f) = UNIONS {s PCROSS t | t IN f}) /\
-   (!f t. (UNIONS f) PCROSS t = UNIONS {s PCROSS t | s IN f})`,
+   (!s f. (s PCROSS (UNIONS f)) :A^(M,N)finite_sum->bool =
+          UNIONS {s PCROSS t | t IN f}) /\
+   (!f t. ((UNIONS f) PCROSS t) :A^(M,N)finite_sum->bool =
+          UNIONS {s PCROSS t | s IN f})`,
   REWRITE_TAC[UNIONS_GSPEC; EXTENSION; FORALL_PASTECART; IN_ELIM_THM;
               PASTECART_IN_PCROSS] THEN
   SET_TAC[]);;
 
 let PCROSS_INTERS_INTERS,PCROSS_INTERS = (CONJ_PAIR o prove)
- (`(!f g. (INTERS f) PCROSS (INTERS g) =
+ (`(!f g. ((INTERS f) PCROSS (INTERS g)) :A^(M,N)finite_sum->bool =
           if f = {} then INTERS {UNIV PCROSS t | t IN g}
           else if g = {} then INTERS {s PCROSS UNIV | s IN f}
           else INTERS {s PCROSS t | s IN f /\ t IN g}) /\
-   (!s f. s PCROSS (INTERS f) =
+   (!s f. (s PCROSS (INTERS f)) :A^(M,N)finite_sum->bool =
           if f = {} then s PCROSS UNIV else INTERS {s PCROSS t | t IN f}) /\
-   (!f t. (INTERS f) PCROSS t =
+   (!f t. ((INTERS f) PCROSS t) :A^(M,N)finite_sum->bool =
           if f = {} then UNIV PCROSS t else INTERS {s PCROSS t | s IN f})`,
   REPEAT STRIP_TAC THEN REPEAT (COND_CASES_TAC THEN REWRITE_TAC[]) THEN
   ASM_REWRITE_TAC[INTERS_GSPEC; EXTENSION; FORALL_PASTECART; IN_ELIM_THM;

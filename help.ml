@@ -7,8 +7,6 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-needs "define.ml";;
-
 (* ------------------------------------------------------------------------- *)
 (* Help system.                                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -64,7 +62,7 @@ let help s =
     a.(l1).(l2) in
   let closeness s s' =
     s',2.0 *. float_of_int
-        (edit_distance (String.uppercase s) (String.uppercase s')) /.
+        (edit_distance (String.uppercase_ascii s) (String.uppercase_ascii s')) /.
         float_of_int(String.length s + String.length s') in
   let guess s =
     let guesses = mergesort(increasing snd) (map (closeness s) mod_listing) in
@@ -73,7 +71,7 @@ let help s =
    "-------------------------------------------------------------------\n";
   Format.print_flush();
   (if mem s mod_listing then
-    let fn = assocd s funny_filenames s ^".doc" in
+    let fn = assocd s funny_filenames s ^".hlp" in
     let file = file_on_path true_path fn
     and script = file_on_path [!hol_dir] "doc-to-help.sed" in
     ignore(Sys.command("sed -f "^script^" "^file))

@@ -1,0 +1,16 @@
+\DOC find_index
+
+\TYPE {find_index : ('a -> bool) -> 'a list -> int option}
+
+\SYNOPSIS
+Returns position of an element in list satisfying the predicate.
+
+\DESCRIBE
+The call {find_index p l} where l is a list returns the position number of the
+first instance in the list satifying {p}, or returns {None} if there is none.
+The indices start at zero, corresponding to {el}.
+
+\SEEALSO
+el, find, index.
+
+\ENDDOC

@@ -1,0 +1,34 @@
+\DOC g
+
+\TYPE {g : term -> goalstack}
+
+\SYNOPSIS
+Initializes the subgoal package with a new goal which has no assumptions.
+
+\DESCRIBE
+The call
+{
+   g `tm`
+}
+\noindent is equivalent to
+{
+   set_goal([],`tm`)
+}
+\noindent and clearly more convenient if a goal has no assumptions.
+For a description of the subgoal package, see  {set_goal}.
+
+\FAILURE
+Fails unless the argument term has type {bool}.
+
+\EXAMPLE
+{
+  # g `HD[1;2;3] = 1 /\ TL[1;2;3] = [2;3]`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `HD [1; 2; 3] = 1 /\ TL [1; 2; 3] = [2; 3]`
+}
+
+\SEEALSO
+b, e, er, p, r, set_goal, top_goal, top_thm.
+
+\ENDDOC

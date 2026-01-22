@@ -1,7 +1,8 @@
 # The Candle Interactive Theorem Prover
 
 This repository contains the Candle theorem prover sources. The repository is a
-fork of John Harrison's HOL Light sources, which are available in the repository
+fork of John Harrison's HOL Light sources (based on the commit
+e960dd0f636c36d48f79664c7cf11a59ba6f66a3), which are available in the repository
 here: [https://github.com/jrh13/hol-light](https://github.com/jrh13/hol-light).
 The original README of this repository can be found [here](README.hol-light).
 

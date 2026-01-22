@@ -209,12 +209,12 @@ module Rule_gl = struct
 
   (* Must be a total order, otherwise we may have loops in the main tactic. *)
   let lt tm1 tm2 =
-    let c1 = Pervasives.compare tm1 tm2 in
+    let c1 = compare tm1 tm2 in
     if c1 = 0 then false else
     let r1,x1 = rank tm1
     and r2,x2 = rank tm2 in
     if r1 <> r2 then r1 < r2 else
-    let c2 = Pervasives.compare x1 x2 in
+    let c2 = compare x1 x2 in
     if c2 = 0 then c1 > 0 else
     if free_in x1 x2 then true else
     if free_in x2 x1 then false else

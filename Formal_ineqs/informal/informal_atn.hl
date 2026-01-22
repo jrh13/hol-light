@@ -1,12 +1,18 @@
-(* =========================================================== *)
-(* Informal arithmetic procedures: atn                         *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2014-09-26                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal arithmetic procedures: atn                                        *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_interval.hl";;
-needs "informal/informal_poly.hl";;
+needs "Formal_ineqs/informal/informal_interval.hl";;
+needs "Formal_ineqs/informal/informal_poly.hl";;
 
 module type Informal_atn_sig =
   sig
@@ -54,13 +60,13 @@ let halfatn4_pos_lo pp t =
     f (f (f (f t)));;
 
 let rec fact n =
-  if sign_num n <= 0 then Int 1 else
-    n */ fact (pred_num n);;
+  if sign_num n <= 0 then Num.num_of_int 1 else
+    n */ fact (n -/ num_1);;
 
 let atn_tables pp n =
   let t1 = map (fun i -> 4 * i + 1) (0 -- (n / 2)) and
       t2 = map (fun i -> 4 * i + 3) (0 -- ((n + 1) / 2 - 1)) in
-  let f n = if n = 1 then mk_num_interval (Int n) else inv_interval pp (mk_num_interval (Int n)) in
+  let f n = if n = 1 then mk_num_interval (Num.num_of_int n) else inv_interval pp (mk_num_interval (Num.num_of_int n)) in
     map f t1, map f t2;;
 
 (* Computes x^k / k! *)
@@ -69,14 +75,14 @@ let rec x_pow_over_fact x k =
     x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
 
 (* Computes i such that x^(2 * i + 1) / (2 * i + 1) <= base^(-(p + 1)) and cond(i) *)
-let n_of_p_atn x pp cond =
+let n_of_p_atn x pp cond = 
   let t = (float_of_int Informal_nat.arith_base) ** (float_of_int (-pp - 1)) in
   let rec try_i i =
     let _ = if i > 50 then failwith "n_of_p_atn: cannot find i" else () in
       if cond i then
 	let d = float_of_int (2 * i + 1) in
 	let r = (x ** d) /. d in
-	  if r <= t then i else try_i (i + 1)
+	  if r <= t then i else try_i (i + 1) 
       else
 	try_i (i + 1)
   in
@@ -175,7 +181,7 @@ end;;
 
 (*
 
-needs "trig/atn_eval.hl";;
+needs "Formal_ineqs/trig/atn_eval.hl";;
 
 #install_printer print_ifloat;;
 #install_printer print_interval;;

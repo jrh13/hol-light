@@ -1,0 +1,26 @@
+\DOC load_path
+
+\TYPE {load_path : string list ref}
+
+\SYNOPSIS
+Path where HOL Light tries to find files to load.
+
+\DESCRIBE
+The reference variable {load_path} gives a list of directories. When HOL loads
+files with {loadt}, it will try these places in order on all non-absolute
+filenames. An initial dollar sign {$} in each path is interpreted as a
+reference to the current setting of {hol_dir}. To get an actual {$} character
+at the start of the filename, use two dollar signs {$$}.
+
+Additional paths can be added to {load_path} by setting the
+{HOLLIGHT_LOAD_PATH} environment variable. Each path must be separated by
+an OS-specific delimiter (':' for Unix and ';' for Windows).
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+file_on_path, help_path, hol_dir, hol_expand_directory, load_on_path, loads,
+loadt, needs.
+
+\ENDDOC

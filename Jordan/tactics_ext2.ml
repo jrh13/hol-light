@@ -82,7 +82,7 @@ let relabel_bound_conv tm =
  let relabel_bound tm =
    match tm with
     | Abs(x,t) ->
-        let avoids = filter ((!=) x) (vars_and_constants tm []) in
+        let avoids = filter ((<>) x) (vars_and_constants tm []) in
         let x' = mk_primed_var avoids x in
         if (x=x') then failwith "relabel_bound" else (alpha x' tm)
     | _ -> failwith "relabel_bound" in
@@ -351,11 +351,11 @@ let new_factor_order2 t1 t2 =
 
 let rec mon_sz tm =
   if is_var tm then
-    Int (Hashtbl.hash tm)
+    num (Hashtbl.hash tm)
   else
   try let (a,b) = dest_binop `( *. )` tm in
     (mon_sz a) */ (mon_sz b)
-  with Failure _ -> Int 1;;
+  with Failure _ -> num 1;;
 
 let rec new_summand_order t1 t2 =
   try let t1v = fst(dest_binop `( +. )` t1) in

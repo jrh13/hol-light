@@ -352,3 +352,15 @@ let ABELIAN_MONTGOMERY_GROUP = prove
       ==> abelian_group(montgomery_group(f,a,b))`,
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[abelian_group; MONTGOMERY_GROUP] THEN
   REWRITE_TAC[IN] THEN ASM_MESON_TAC[MONTGOMERY_ADD_SYM]);;
+
+let GROUP_POW_MONTGOMERY_TORSION = prove
+ (`!(f:A ring) a b P n.
+        field f /\ ~(ring_char f = 2) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        montgomery_nonsingular (f,a,b)
+        ==> group_pow (montgomery_group(f,a,b)) (SOME (ring_0 f,ring_0 f)) n =
+            if EVEN n then NONE else SOME(ring_0 f,ring_0 f)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[group_pow; EVEN; MONTGOMERY_GROUP; COND_SWAP] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[montgomery_add]);;

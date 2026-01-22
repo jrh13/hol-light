@@ -1,7 +1,7 @@
-needs "lib/ssrbool.hl";;
-needs "lib/ssrnat.hl";;
-needs "arith/interval_arith.hl";;
-needs "trig/matan.hl";;
+needs "Formal_ineqs/lib/ssrbool.hl";;
+needs "Formal_ineqs/lib/ssrnat.hl";;
+needs "Formal_ineqs/arith/interval_arith.hl";;
+needs "Formal_ineqs/trig/matan.hl";;
 needs "Multivariate/realanalysis.ml";;
 
 (* Module Taylor_interval*)
@@ -17,15 +17,15 @@ prioritize_real();;
 let derivative = new_definition `derivative f = \y. @d. (f has_real_derivative d) (atreal y)`;;
 let nth_derivative = new_definition `nth_derivative n f = iter n derivative f`;;
 let nth_differentiable = define `(nth_differentiable 0 f x <=> f real_continuous atreal x) /\
-	(nth_differentiable (SUC n) f x <=> nth_differentiable n f x /\
+	(nth_differentiable (SUC n) f x <=> nth_differentiable n f x /\ 
 			nth_derivative n f real_differentiable atreal x)`;;
 let nth_differentiable_on = new_definition `nth_differentiable_on n s f <=>
 	!x. x IN s ==> nth_differentiable n f x`;;
 let nth_differentiable_on_int = new_definition `nth_differentiable_on_int n int f <=>
 	!x. interval_arith x int ==> nth_differentiable n f x`;;
-let nth_diff_weak = new_definition `nth_diff_weak n f x <=> f real_continuous atreal x /\
+let nth_diff_weak = new_definition `nth_diff_weak n f x <=> f real_continuous atreal x /\ 
 	?F. F 0 = f /\ !i. i < n ==> (F i has_real_derivative F (SUC i) x) (atreal x)`;;
-let nth_diff_strong = new_definition `nth_diff_strong n f x <=>
+let nth_diff_strong = new_definition `nth_diff_strong n f x <=> 
 	?s. real_open s /\ x IN s /\ nth_differentiable_on n s f`;;
 let nth_diff_strong_int = new_definition `nth_diff_strong_int n int f <=>
 	!x. interval_arith x int ==> nth_diff_strong n f x`;;
@@ -150,7 +150,7 @@ let nth_differentiable_cond = Sections.section_proof ["n";"f";"x"]
 (* Lemma nth_differentiable_on_cond *)
 let nth_differentiable_on_cond = Sections.section_proof ["n";"s";"f"]
 `nth_differentiable_on n s f ==>
- !x. x IN s ==>
+ !x. x IN s ==> 
   !i. i < n ==> (nth_derivative i f has_real_derivative (nth_derivative (SUC i) f x)) (atreal x)`
 [
    ((((use_arg_then2 ("nth_differentiable_on", [nth_differentiable_on]))(thm_tac (new_rewrite [] [])))) THEN (move ["cond"]) THEN (move ["x"]));
@@ -735,7 +735,7 @@ let derivative_sub = Sections.section_proof []
 
 (* Lemma derivative_div *)
 let derivative_div = Sections.section_proof []
-`~(g x = &0) ==>
+`~(g x = &0) ==> 
   derivative (\x. f x / g x) x = (derivative f x * g x - f x * derivative g x) / (g x * g x)`
 [
    ((BETA_TAC THEN (move ["gn0"])) THEN (((use_arg_then2 ("derivative_unique", [derivative_unique])) (disch_tac [])) THEN (clear_assumption "derivative_unique") THEN (DISCH_THEN apply_tac)) THEN ((((use_arg_then2 ("REAL_POW_2", [REAL_POW_2]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("HAS_REAL_DERIVATIVE_DIV_ATREAL", [HAS_REAL_DERIVATIVE_DIV_ATREAL]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac))));
@@ -865,7 +865,7 @@ Sections.begin_section "NthDerivativeArith";;
 (* Lemma nth_derivative_scale_strong *)
 let nth_derivative_scale_strong = Sections.section_proof ["c";"i";"x"]
 `interval_arith x int ==> i <= n ==>
-	?s. real_open s /\ x IN s /\
+	?s. real_open s /\ x IN s /\ 
 	!y. y IN s ==> nth_derivative i (\y. c * f y) y = c * nth_derivative i f y`
 [
    ((((use_arg_then2 ("df", [])) (disch_tac [])) THEN (clear_assumption "df") THEN BETA_TAC) THEN (((((use_arg_then2 ("nth_diff_strong_int", [nth_diff_strong_int]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("nth_diff_strong", [nth_diff_strong]))(thm_tac (new_rewrite [] []))))) THEN (move ["df"])));
@@ -886,11 +886,11 @@ let nth_derivative_scale_strong = Sections.section_proof ["c";"i";"x"]
 (* Lemma nth_derivative_scale_strong_all *)
 let nth_derivative_scale_strong_all = Sections.section_proof ["c";"x"]
 `interval_arith x int ==>
-	?s. real_open s /\ x IN s /\
+	?s. real_open s /\ x IN s /\ 
 	!i y. i <= n /\ y IN s ==> nth_derivative i (\y. c * f y) y = c * nth_derivative i f y`
 [
    (BETA_TAC THEN (DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("nth_derivative_scale_strong", [nth_derivative_scale_strong])) (fun fst_arg -> (use_arg_then2 ("c", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN (move ["h"]));
-   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\
+   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\ 
 	(!y. y IN s ==> nth_derivative i (\y. c * f y) y = c * nth_derivative i f y)`))) (term_tac (set_tac "P")));
    ((fun arg_tac -> arg_tac (Arg_term (`!i. i <= n:num ==> P i ((@) (P i))`))) (term_tac (have_gen_tac [](move ["sel_P"]))));
    ((BETA_TAC THEN (move ["i"]) THEN (move ["i_le_n"])) THEN ((use_arg_then2 ("SELECT_AX", [SELECT_AX])) (thm_tac apply_tac)));
@@ -944,7 +944,7 @@ let nth_diff_scale = Sections.section_proof ["c"]
 (* Lemma nth_derivative_add_strong *)
 let nth_derivative_add_strong = Sections.section_proof ["i";"x"]
 `interval_arith x int ==> i <= n ==>
-   ?s. real_open s /\ x IN s /\
+   ?s. real_open s /\ x IN s /\ 
       !y. y IN s ==> nth_derivative i (\y. f y + g y) y = nth_derivative i f y + nth_derivative i g y`
 [
    ((((use_arg_then2 ("dg", [])) (disch_tac [])) THEN (clear_assumption "dg") THEN ((use_arg_then2 ("df", [])) (disch_tac [])) THEN (clear_assumption "df") THEN BETA_TAC) THEN (((repeat_tactic 1 9 (((use_arg_then2 ("nth_diff_strong_int", [nth_diff_strong_int]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("nth_diff_strong", [nth_diff_strong]))(thm_tac (new_rewrite [] [])))))) THEN (move ["df"]) THEN (move ["dg"]) THEN (move ["ineq"])));
@@ -968,12 +968,12 @@ let nth_derivative_add_strong = Sections.section_proof ["i";"x"]
 (* Lemma nth_derivative_add_strong_all *)
 let nth_derivative_add_strong_all = Sections.section_proof ["x"]
 `interval_arith x int ==>
-	?s. real_open s /\ x IN s /\
-	!i y. i <= n /\ y IN s ==>
+	?s. real_open s /\ x IN s /\ 
+	!i y. i <= n /\ y IN s ==> 
 		nth_derivative i (\y. f y + g y) y = nth_derivative i f y + nth_derivative i g y`
 [
    (BETA_TAC THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("nth_derivative_add_strong", [nth_derivative_add_strong])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN (move ["h"]));
-   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\
+   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\ 
    (!y. y IN s ==> nth_derivative i (\y. f y + g y) y = nth_derivative i f y + nth_derivative i g y)`))) (term_tac (set_tac "P")));
    ((fun arg_tac -> arg_tac (Arg_term (`!i. i <= n:num ==> P i ((@) (P i))`))) (term_tac (have_gen_tac [](move ["sel_P"]))));
    ((BETA_TAC THEN (move ["i"]) THEN (move ["i_le_n"])) THEN ((use_arg_then2 ("SELECT_AX", [SELECT_AX])) (thm_tac apply_tac)));
@@ -1029,7 +1029,7 @@ let nth_diff_add = Sections.section_proof []
 (* Lemma nth_derivative_sub_strong *)
 let nth_derivative_sub_strong = Sections.section_proof ["i";"x"]
 `interval_arith x int ==> i <= n ==>
-   ?s. real_open s /\ x IN s /\
+   ?s. real_open s /\ x IN s /\ 
       !y. y IN s ==> nth_derivative i (\y. f y - g y) y = nth_derivative i f y - nth_derivative i g y`
 [
    ((((use_arg_then2 ("dg", [])) (disch_tac [])) THEN (clear_assumption "dg") THEN ((use_arg_then2 ("df", [])) (disch_tac [])) THEN (clear_assumption "df") THEN BETA_TAC) THEN (((repeat_tactic 1 9 (((use_arg_then2 ("nth_diff_strong_int", [nth_diff_strong_int]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("nth_diff_strong", [nth_diff_strong]))(thm_tac (new_rewrite [] [])))))) THEN (move ["df"]) THEN (move ["dg"]) THEN (move ["ineq"])));
@@ -1053,12 +1053,12 @@ let nth_derivative_sub_strong = Sections.section_proof ["i";"x"]
 (* Lemma nth_derivative_sub_strong_all *)
 let nth_derivative_sub_strong_all = Sections.section_proof ["x"]
 `interval_arith x int ==>
-	?s. real_open s /\ x IN s /\
-	!i y. i <= n /\ y IN s ==>
+	?s. real_open s /\ x IN s /\ 
+	!i y. i <= n /\ y IN s ==> 
 		nth_derivative i (\y. f y - g y) y = nth_derivative i f y - nth_derivative i g y`
 [
    (BETA_TAC THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("nth_derivative_sub_strong", [nth_derivative_sub_strong])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN (move ["h"]));
-   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\
+   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\ 
    (!y. y IN s ==> nth_derivative i (\y. f y - g y) y = nth_derivative i f y - nth_derivative i g y)`))) (term_tac (set_tac "P")));
    ((fun arg_tac -> arg_tac (Arg_term (`!i. i <= n:num ==> P i ((@) (P i))`))) (term_tac (have_gen_tac [](move ["sel_P"]))));
    ((BETA_TAC THEN (move ["i"]) THEN (move ["i_le_n"])) THEN ((use_arg_then2 ("SELECT_AX", [SELECT_AX])) (thm_tac apply_tac)));
@@ -1114,8 +1114,8 @@ let nth_diff_sub = Sections.section_proof []
 (* Lemma nth_derivative_mul_strong *)
 let nth_derivative_mul_strong = Sections.section_proof ["i";"x"]
 `interval_arith x int ==> i <= n ==>
-   ?s. real_open s /\ x IN s /\
-      !y. y IN s ==> nth_derivative i (\y. f y * g y) y =
+   ?s. real_open s /\ x IN s /\ 
+      !y. y IN s ==> nth_derivative i (\y. f y * g y) y = 
 	sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)`
 [
    ((((use_arg_then2 ("dg", [])) (disch_tac [])) THEN (clear_assumption "dg") THEN ((use_arg_then2 ("df", [])) (disch_tac [])) THEN (clear_assumption "df") THEN BETA_TAC) THEN (((repeat_tactic 1 9 (((use_arg_then2 ("nth_diff_strong_int", [nth_diff_strong_int]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("nth_diff_strong", [nth_diff_strong]))(thm_tac (new_rewrite [] [])))))) THEN (move ["df"]) THEN (move ["dg"]) THEN (move ["ineq"])));
@@ -1144,7 +1144,7 @@ let nth_derivative_mul_strong = Sections.section_proof ["i";"x"]
    ((((use_arg_then2 ("i_lt_n", [])) (disch_tac [])) THEN (clear_assumption "i_lt_n") THEN ((use_arg_then2 ("ineq", [])) (disch_tac [])) THEN (clear_assumption "ineq") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
    (((fun arg_tac -> arg_tac (Arg_term (`nth_derivative (SUC (i - k)) g y`))) (term_tac exists_tac)) THEN (((fun arg_tac -> (use_arg_then2 ("diff_g", [])) (fun fst_arg -> (use_arg_then2 ("ysg", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))));
    ((((use_arg_then2 ("i_lt_n", [])) (disch_tac [])) THEN (clear_assumption "i_lt_n") THEN ((use_arg_then2 ("ineq", [])) (disch_tac [])) THEN (clear_assumption "ineq") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
-   ((fun arg_tac -> arg_tac (Arg_term (`!k. k IN 0..i ==>
+   ((fun arg_tac -> arg_tac (Arg_term (`!k. k IN 0..i ==> 
 	(\y. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)
 		real_differentiable atreal y`))) (term_tac (have_gen_tac [](move ["diff_cond2"]))));
    (BETA_TAC THEN (move ["k"]) THEN (move ["k_in"]) THEN (simp_tac));
@@ -1177,14 +1177,14 @@ let nth_derivative_mul_strong = Sections.section_proof ["i";"x"]
 (* Lemma nth_derivative_mul_strong_all *)
 let nth_derivative_mul_strong_all = Sections.section_proof ["x"]
 `interval_arith x int ==>
-	?s. real_open s /\ x IN s /\
-	!i y. i <= n /\ y IN s ==>
-	  nth_derivative i (\y. f y * g y) y =
+	?s. real_open s /\ x IN s /\ 
+	!i y. i <= n /\ y IN s ==> 
+	  nth_derivative i (\y. f y * g y) y = 
 		sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)`
 [
    (BETA_TAC THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("nth_derivative_mul_strong", [nth_derivative_mul_strong])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN (move ["h"]));
-   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\
-   (!y. y IN s ==> nth_derivative i (\y. f y * g y) y =
+   ((fun arg_tac -> arg_tac (Arg_term (`\i s. real_open s /\ x IN s /\ 
+   (!y. y IN s ==> nth_derivative i (\y. f y * g y) y = 
 	sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y))`))) (term_tac (set_tac "P")));
    ((fun arg_tac -> arg_tac (Arg_term (`!i. i <= n:num ==> P i ((@) (P i))`))) (term_tac (have_gen_tac [](move ["sel_P"]))));
    ((BETA_TAC THEN (move ["i"]) THEN (move ["i_le_n"])) THEN ((use_arg_then2 ("SELECT_AX", [SELECT_AX])) (thm_tac apply_tac)));
@@ -1207,7 +1207,7 @@ let nth_derivative_mul_strong_all = Sections.section_proof ["x"]
 (* Lemma nth_derivative_mul *)
 let nth_derivative_mul = Sections.section_proof ["i";"x"]
 `interval_arith x int ==> i <= n ==>
-	nth_derivative i (\x. f x * g x) x =
+	nth_derivative i (\x. f x * g x) x = 
   	  sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f x * nth_derivative (i - k) g x)`
 [
    (BETA_TAC THEN (move ["ineq"]) THEN (move ["i_le_n"]));
@@ -1353,13 +1353,13 @@ let nth_derivative_mul_strong_all = Sections.finalize_theorem nth_derivative_mul
 let nth_derivative_mul = Sections.finalize_theorem nth_derivative_mul;;
 let nth_diff_mul = Sections.finalize_theorem nth_diff_mul;;
 Sections.end_section "NthDerivatives";;
-let lin_approx = new_definition `lin_approx f x f_bounds df_bounds <=>
+let lin_approx = new_definition `lin_approx f x f_bounds df_bounds <=> 
 	interval_arith (f x) f_bounds /\
 	(?f'. (f has_real_derivative f') (atreal x) /\ interval_arith f' df_bounds)`;;
 let has_bounded_second_derivative = new_definition `has_bounded_second_derivative f int dd_bounds <=>
-	nth_diff_strong_int 2 int f /\
+	nth_diff_strong_int 2 int f /\ 
 	bounded_on_int (nth_derivative 2 f) int dd_bounds`;;
-let taylor_interval = new_definition
+let taylor_interval = new_definition 
   `taylor_interval f x y z w f_bounds df_bounds ddf_bounds <=>
 	x <= y /\ y <= z /\ y - x <= w /\ z - y <= w /\
 	lin_approx f y f_bounds df_bounds /\
@@ -1496,7 +1496,7 @@ let f_continuous = Sections.section_proof []
 
 (* Lemma taylor_error *)
 let taylor_error = Sections.section_proof ["t"]
-`x <= t /\ t <= z ==>
+`x <= t /\ t <= z ==> 
 	abs (f t - f y) <= w * iabs df_bounds + w * w * dd_bound / &2`
 [
    (BETA_TAC THEN (move ["t_ineqs"]));
@@ -1524,7 +1524,7 @@ let taylor_error = Sections.section_proof ["t"]
    ((((use_arg_then2 ("andTb", [andTb]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("andbT", [andbT]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("REAL_MUL_SYM", [REAL_MUL_SYM]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("REAL_POW_2", [REAL_POW_2]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("REAL_LE_MUL2", [REAL_LE_MUL2]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("REAL_LE_REFL", [REAL_LE_REFL]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("dd_prop", []))(thm_tac (new_rewrite [] [])))));
    (((((use_arg_then2 ("REAL_LE_POW_2", [REAL_LE_POW_2]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("andTb", [andTb]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("andbT", [andbT]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("REAL_LE_SQUARE_ABS", [REAL_LE_SQUARE_ABS]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("REAL_ABS_ABS", [REAL_ABS_ABS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("abs_ty", [])) (disch_tac [])) THEN (clear_assumption "abs_ty") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
    ((fun arg_tac -> arg_tac (Arg_term (`\i. if i = 0 then f else if i = 1 then f' else if i = 2 then f'' else I`))) (term_tac (set_tac "Df")));
-   ((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `0 + 1 = 1 /\ ~(1 = 0) /\ 1 + 1 = 2 /\
+   ((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `0 + 1 = 1 /\ ~(1 = 0) /\ 1 + 1 = 2 /\ 
 	~(2 = 1) /\ ~(2 = 1) /\ ~(2 = 0)`))) (fun arg -> thm_tac MP_TAC arg THEN (move ["arith"])));
    ((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("REAL_TAYLOR", [REAL_TAYLOR])) (fun fst_arg -> (use_arg_then2 ("Df", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`1`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`real_interval [x, z]`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("dd_bound", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun arg -> thm_tac MP_TAC arg THEN ALL_TAC));
    (ANTS_TAC);
@@ -1564,7 +1564,7 @@ let taylor_lower_bound = Sections.section_proof []
 
 (* Lemma taylor_derivative_error *)
 let taylor_derivative_error = Sections.section_proof []
-`!t. x <= t /\ t <= z ==>
+`!t. x <= t /\ t <= z ==> 
 	abs (derivative f t - derivative f y) <= w * dd_bound`
 [
    (BETA_TAC THEN (move ["t"]) THEN (move ["t_ineqs"]));
@@ -1581,7 +1581,7 @@ let taylor_derivative_error = Sections.section_proof []
    ((((fun arg_tac -> (use_arg_then2 ("df", [])) (fun fst_arg -> (use_arg_then2 ("y", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN ((((fun arg_tac -> (use_arg_then2 ("pair_eq", [pair_eq])) (fun fst_arg -> (use_arg_then2 ("ddf_bounds", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("interval_arith", [interval_arith]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("iabs", [iabs]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("domain_ineqs", []))(thm_tac (new_rewrite [] [])))))) THEN (arith_tac) THEN (done_tac));
    ((BETA_TAC THEN (move ["p"]) THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("df", [])) (thm_tac (match_mp_then snd_th MP_TAC))))) THEN ((((use_arg_then2 ("pair_eq", [pair_eq]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("interval_arith", [interval_arith]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("iabs", [iabs]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac));
    ((fun arg_tac -> arg_tac (Arg_term (`\i. if i = 0 then f' else if i = 1 then f'' else I`))) (term_tac (set_tac "Df")));
-   ((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `0 + 1 = 1 /\ ~(1 = 0) /\ 1 + 1 = 2 /\
+   ((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `0 + 1 = 1 /\ ~(1 = 0) /\ 1 + 1 = 2 /\ 
 	~(2 = 1) /\ ~(2 = 1) /\ ~(2 = 0)`))) (fun arg -> thm_tac MP_TAC arg THEN (move ["arith"])));
    ((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("REAL_TAYLOR", [REAL_TAYLOR])) (fun fst_arg -> (use_arg_then2 ("Df", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`0`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`real_interval [x, z]`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("dd_bound", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun arg -> thm_tac MP_TAC arg THEN ALL_TAC));
    (ANTS_TAC);
@@ -2114,7 +2114,7 @@ let second_derivative_pow3_x = Sections.section_proof []
 
 (* Lemma second_derivative_atn_eq *)
 let second_derivative_atn_eq = Sections.section_proof ["x"]
-`((\x. inv (&1 + x pow 2)) has_real_derivative
+`((\x. inv (&1 + x pow 2)) has_real_derivative 
 	(-- &2 * x) * inv (&1 + x pow 2) pow 2) (atreal x)`
 [
    (((((use_arg_then2 ("REAL_POW_INV", [REAL_POW_INV]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("real_div", [real_div]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("REAL_NEG_LMUL", [REAL_NEG_LMUL]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("HAS_REAL_DERIVATIVE_INV_ATREAL", [HAS_REAL_DERIVATIVE_INV_ATREAL]))(thm_tac (new_rewrite [] []))))) THEN (split_tac));
@@ -2321,7 +2321,7 @@ let real_powS = Sections.section_proof ["x";"n"]
 
 (* Lemma second_derivative_acs *)
 let second_derivative_acs = Sections.section_proof ["x"]
-`abs x < &1 ==>
+`abs x < &1 ==> 
 	nth_derivative 2 acs x = --(x / sqrt ((&1 - x * x) pow 3))`
 [
    ((((use_arg_then2 ("nth_derivative2", [nth_derivative2]))(thm_tac (new_rewrite [] [])))) THEN (move ["x_ineq"]));
@@ -2376,7 +2376,7 @@ let diff2_acs = Sections.section_proof ["x"]
 
 (* Lemma second_derivative_asn *)
 let second_derivative_asn = Sections.section_proof ["x"]
-`abs x < &1 ==>
+`abs x < &1 ==> 
 	nth_derivative 2 asn x = x / sqrt ((&1 - x * x) pow 3)`
 [
    ((((use_arg_then2 ("nth_derivative2", [nth_derivative2]))(thm_tac (new_rewrite [] [])))) THEN (move ["x_ineq"]));
@@ -2475,7 +2475,7 @@ let REAL_CONTINUOUS_OPEN_PREIMAGE = Sections.section_proof ["f";"s";"t"]
 [
    (BETA_TAC THEN (move ["f_cont"]) THEN (move ["open_s"]) THEN (move ["open_t"]));
    (((use_arg_then2 ("REAL_OPEN", [REAL_OPEN]))(thm_tac (new_rewrite [] []))));
-   (((THENL_ROT 1)) ((fun arg_tac -> arg_tac (Arg_term (`IMAGE lift {x | x IN s /\ f x IN t} =
+   (((THENL_ROT 1)) ((fun arg_tac -> arg_tac (Arg_term (`IMAGE lift {x | x IN s /\ f x IN t} = 
 	{x | x IN (IMAGE lift s) /\ (lift o f o drop) x IN (IMAGE lift t)}`))) (term_tac (have_gen_tac [](((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))))));
    (((((use_arg_then2 ("CONTINUOUS_OPEN_PREIMAGE", [CONTINUOUS_OPEN_PREIMAGE]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("REAL_OPEN", [REAL_OPEN]))(gsym_then (thm_tac (new_rewrite [] []))))))) THEN (((use_arg_then2 ("ETA_AX", [ETA_AX]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("REAL_CONTINUOUS_ON", [REAL_CONTINUOUS_ON]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (done_tac));
    ((((((use_arg_then2 ("EXTENSION", [EXTENSION]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("IN_IMAGE_LIFT_DROP", [IN_IMAGE_LIFT_DROP]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("IN_ELIM_THM", [IN_ELIM_THM]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("IN_IMAGE_LIFT_DROP", [IN_IMAGE_LIFT_DROP]))(thm_tac (new_rewrite [] [])))))) THEN (move ["z"]) THEN (simp_tac)) THEN (split_tac));
@@ -2488,7 +2488,7 @@ let REAL_CONTINUOUS_OPEN_PREIMAGE = Sections.section_proof ["f";"s";"t"]
 (* Lemma second_derivative_compose *)
 let second_derivative_compose = Sections.section_proof ["f";"g";"x"]
 `nth_diff_strong 2 g x ==> nth_diff_strong 2 f (g x) ==>
-	nth_derivative 2 (\x. f (g x)) x =
+	nth_derivative 2 (\x. f (g x)) x = 
 	nth_derivative 2 f (g x) * (derivative g x) pow 2 + derivative f (g x) * nth_derivative 2 g x`
 [
    (BETA_TAC THEN (move ["dg"]) THEN (move ["df"]));
@@ -2602,7 +2602,7 @@ let second_derivative_compose_abs_neg = Sections.section_proof []
 (* Lemma second_derivative_compose_pow *)
 let second_derivative_compose_pow = Sections.section_proof ["n"]
 `nth_derivative 2 (\x. f x pow n) x =
-		 &n * (nth_derivative 2 f x * f x pow (n - 1)
+		 &n * (nth_derivative 2 f x * f x pow (n - 1) 
 	   	 + &(n - 1) * f x pow (n - 2) * derivative f x pow 2)`
 [
    ((fun arg_tac -> arg_tac (Arg_term (`\x. x pow n`))) (term_tac (set_tac "g")));
@@ -2632,7 +2632,7 @@ let second_derivative_compose_pow3 = Sections.section_proof []
 
 (* Lemma second_derivative_compose_atn *)
 let second_derivative_compose_atn = Sections.section_proof []
-`nth_derivative 2 (\x. atn (f x)) x =
+`nth_derivative 2 (\x. atn (f x)) x = 
 	(nth_derivative 2 f x * (&1 + f x * f x) - &2 * f x * derivative f x pow 2) / (&1 + f x * f x) pow 2`
 [
    ((((use_arg_then2 ("second_derivative_compose", [second_derivative_compose]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("diff2_atn", [diff2_atn]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("nth_derivative2", [nth_derivative2]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("second_derivative_atn", [second_derivative_atn]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("derivative_atn", [derivative_atn]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac));
@@ -2649,7 +2649,7 @@ let second_derivative_compose_atn = Sections.section_proof []
 
 (* Lemma second_derivative_compose_cos *)
 let second_derivative_compose_cos = Sections.section_proof []
-`nth_derivative 2 (\x. cos (f x)) x =
+`nth_derivative 2 (\x. cos (f x)) x = 
 	--(nth_derivative 2 f x * sin (f x) + cos (f x) * derivative f x pow 2)`
 [
    ((((use_arg_then2 ("second_derivative_compose", [second_derivative_compose]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("diff2_cos", [diff2_cos]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("second_derivative_cos", [second_derivative_cos]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("derivative_cos", [derivative_cos]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac));
@@ -2658,7 +2658,7 @@ let second_derivative_compose_cos = Sections.section_proof []
 
 (* Lemma second_derivative_compose_sin *)
 let second_derivative_compose_sin = Sections.section_proof []
-`nth_derivative 2 (\x. sin (f x)) x =
+`nth_derivative 2 (\x. sin (f x)) x = 
 	nth_derivative 2 f x * cos (f x) - sin (f x) * derivative f x pow 2`
 [
    ((((use_arg_then2 ("second_derivative_compose", [second_derivative_compose]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("diff2_sin", [diff2_sin]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("second_derivative_sin", [second_derivative_sin]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("derivative_sin", [derivative_sin]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac));
@@ -2667,7 +2667,7 @@ let second_derivative_compose_sin = Sections.section_proof []
 
 (* Lemma second_derivative_compose_exp *)
 let second_derivative_compose_exp = Sections.section_proof []
-`nth_derivative 2 (\x. exp (f x)) x =
+`nth_derivative 2 (\x. exp (f x)) x = 
 	nth_derivative 2 f x * exp (f x) + exp (f x) * derivative f x pow 2`
 [
    ((((use_arg_then2 ("second_derivative_compose", [second_derivative_compose]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("diff2_exp", [diff2_exp]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("second_derivative_exp", [second_derivative_exp]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("derivative_exp", [derivative_exp]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac));
@@ -2721,7 +2721,7 @@ let second_derivative_compose_sqrt = Sections.section_proof []
 let second_derivative_compose_acs = Sections.section_proof []
 `abs (f x) < &1 ==>
 	nth_derivative 2 (\x. acs (f x)) x =
-	-- ((nth_derivative 2 f x * (&1 - f x * f x) + f x * derivative f x pow 2) /
+	-- ((nth_derivative 2 f x * (&1 - f x * f x) + f x * derivative f x pow 2) / 
 	sqrt ((&1 - f x * f x) pow 3))`
 [
    (BETA_TAC THEN (move ["f_ineq"]));
@@ -2742,7 +2742,7 @@ let second_derivative_compose_acs = Sections.section_proof []
 let second_derivative_compose_asn = Sections.section_proof []
 `abs (f x) < &1 ==>
 	nth_derivative 2 (\x. asn (f x)) x =
-	((nth_derivative 2 f x * (&1 - f x * f x) + f x * derivative f x pow 2) /
+	((nth_derivative 2 f x * (&1 - f x * f x) + f x * derivative f x pow 2) / 
 	sqrt ((&1 - f x * f x) pow 3))`
 [
    (BETA_TAC THEN (move ["f_ineq"]));
@@ -2922,7 +2922,7 @@ let second_derivative_div = Sections.section_proof ["f";"g";"x"]
 `~(g x = &0) ==>
 	nth_diff_strong 2 f x ==>
 	nth_diff_strong 2 g x ==>
-	nth_derivative 2 (\x. f x / g x) x =
+	nth_derivative 2 (\x. f x / g x) x = 
 	((nth_derivative 2 f x * g x - f x * nth_derivative 2 g x) * g x -
 	&2 * derivative g x * (derivative f x * g x - f x * derivative g x)) / (g x pow 3)`
 [
@@ -2934,7 +2934,7 @@ let second_derivative_div = Sections.section_proof ["f";"g";"x"]
    ((((use_arg_then2 ("diff_g", [])) (disch_tac [])) THEN (clear_assumption "diff_g") THEN BETA_TAC) THEN ((((use_arg_then2 ("nth_diff_strong2_eq", [nth_diff_strong2_eq]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN (move ["s"])) THEN (case THEN (move ["open_s"])) THEN (case THEN (move ["xs"])) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac))) THEN (done_tac));
    ((((use_arg_then2 ("ddf_def", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ddg_def", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("df_def", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("dg_def", []))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("real_div", [real_div]))(thm_tac (new_rewrite [] []))))));
    ((fun arg_tac -> arg_tac (Arg_term (`_1 + _2`))) (term_tac (set_tac "lhs")));
-   (((fun arg_tac -> arg_tac (Arg_theorem (REAL_RING `!f g x. ((ddf * g x - f x * ddg) * g x - &2 * dg * (df * g x - f x * dg)) *
+   (((fun arg_tac -> arg_tac (Arg_theorem (REAL_RING `!f g x. ((ddf * g x - f x * ddg) * g x - &2 * dg * (df * g x - f x * dg)) * 
 						inv (g x pow 3) =
 			f x * (&2 * dg pow 2 - ddg * g x) * inv (g x pow 3) +
 			&2 * df * --(g x * inv (g x pow 3)) * dg +
@@ -3004,7 +3004,7 @@ let second_derivative_compose_bounds = Sections.section_proof ["f";"g";"int";"g_
 `nth_diff_strong_int 2 int g ==>
 	bounded_on_int g int g_bounds ==>
 	nth_diff_strong_int 2 g_bounds f ==>
-	bounded_on_int (\x. nth_derivative 2 f (g x) * derivative g x pow 2 +
+	bounded_on_int (\x. nth_derivative 2 f (g x) * derivative g x pow 2 + 
 			derivative f (g x) * nth_derivative 2 g x) int dd_bounds ==>
 	has_bounded_second_derivative (\x. f (g x)) int dd_bounds`
 [
@@ -3165,7 +3165,7 @@ let second_derivative_cos_bounds = Sections.section_proof ["dd_bounds"]
 (* Lemma second_derivative_compose_cos_bounds *)
 let second_derivative_compose_cos_bounds = Sections.section_proof ["f";"dd_bounds"]
 `nth_diff_strong_int 2 int f ==>
-	bounded_on_int (\x. --(nth_derivative 2 f x * sin (f x)
+	bounded_on_int (\x. --(nth_derivative 2 f x * sin (f x) 
 		+ cos (f x) * derivative f x pow 2)) int dd_bounds ==>
 	has_bounded_second_derivative (\x. cos (f x)) int dd_bounds`
 [
@@ -3187,7 +3187,7 @@ let second_derivative_sin_bounds = Sections.section_proof ["dd_bounds"]
 (* Lemma second_derivative_compose_sin_bounds *)
 let second_derivative_compose_sin_bounds = Sections.section_proof ["f";"dd_bounds"]
 `nth_diff_strong_int 2 int f ==>
-	bounded_on_int (\x. nth_derivative 2 f x * cos (f x)
+	bounded_on_int (\x. nth_derivative 2 f x * cos (f x) 
 		- sin (f x) * derivative f x pow 2) int dd_bounds ==>
 	has_bounded_second_derivative (\x. sin (f x)) int dd_bounds`
 [
@@ -3209,7 +3209,7 @@ let second_derivative_exp_bounds = Sections.section_proof ["dd_bounds"]
 (* Lemma second_derivative_compose_exp_bounds *)
 let second_derivative_compose_exp_bounds = Sections.section_proof ["f";"dd_bounds"]
 `nth_diff_strong_int 2 int f ==>
-	bounded_on_int (\x. nth_derivative 2 f x * exp (f x)
+	bounded_on_int (\x. nth_derivative 2 f x * exp (f x) 
 		+ exp (f x) * derivative f x pow 2) int dd_bounds ==>
 	has_bounded_second_derivative (\x. exp (f x)) int dd_bounds`
 [
@@ -3261,7 +3261,7 @@ let second_derivative_inv_bounds = Sections.section_proof ["dd_bounds"]
 let second_derivative_compose_inv_bounds = Sections.section_proof ["f";"f_bounds";"dd_bounds"]
 `bounded_on_int f int f_bounds ==> interval_not_zero f_bounds ==>
 	nth_diff_strong_int 2 int f ==>
-	bounded_on_int (\x. (&2 * derivative f x pow 2 - nth_derivative 2 f x * f x) / f x pow 3)
+	bounded_on_int (\x. (&2 * derivative f x pow 2 - nth_derivative 2 f x * f x) / f x pow 3) 
 			int dd_bounds ==>
 	has_bounded_second_derivative (\x. inv (f x)) int dd_bounds`
 [
@@ -3290,7 +3290,7 @@ let second_derivative_compose_sqrt_bounds = Sections.section_proof ["f";"f_bound
 `bounded_on_int f int f_bounds ==> interval_pos f_bounds ==>
 	nth_diff_strong_int 2 int f ==>
 	bounded_on_int (\x. (&2 * nth_derivative 2 f x * f x - derivative f x pow 2) /
-			(&4 * sqrt (f x pow 3)))
+			(&4 * sqrt (f x pow 3))) 
 			int dd_bounds ==>
 	has_bounded_second_derivative (\x. sqrt (f x)) int dd_bounds`
 [
@@ -3578,7 +3578,7 @@ Sections.end_section "SecondDerivativeBound";;
 
 (* Section TaylorArith *)
 Sections.begin_section "TaylorArith";;
-let cell_domain = new_definition `cell_domain x y z w <=>
+let cell_domain = new_definition `cell_domain x y z w <=> 
 	x <= y /\ y <= z /\ y - x <= w /\ z - y <= w`;;
 
 (* Lemma taylor_x *)

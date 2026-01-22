@@ -27,7 +27,7 @@ let GEQ_DEF = new_definition
  `GEQ a b = (a:A = b)`;;
 
 let _SEQPATTERN = new_definition
- `_SEQPATTERN = \r s x. if ?y. r x y then r x else s x`;;
+ `_SEQPATTERN = \(r:A->B->bool) s x. if ?y. r x y then r x else s x`;;
 
 let _UNGUARDED_PATTERN = new_definition
  `_UNGUARDED_PATTERN = \p r. p /\ r`;;
@@ -36,10 +36,10 @@ let _GUARDED_PATTERN = new_definition
  `_GUARDED_PATTERN = \p g r. p /\ g /\ r`;;
 
 let _MATCH = new_definition
- `_MATCH =  \e r. if (?!) (r e) then (@) (r e) else @z. F`;;
+ `_MATCH =  \e (r:A->B->bool). if (?!) (r e) then (@) (r e) else @z. F`;;
 
 let _FUNCTION = new_definition
- `_FUNCTION = \r x. if (?!) (r x) then (@) (r x) else @z. F`;;
+ `_FUNCTION = \(r:A->B->bool) x. if (?!) (r x) then (@) (r x) else @z. F`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Pair type.                                                                *)
@@ -113,7 +113,7 @@ let PAIR = prove
   REWRITE_TAC[FST; SND]);;
 
 let pair_INDUCT = prove
- (`!P. (!x y. P (x,y)) ==> !p. P p`,
+ (`!P:A#B->bool. (!x y. P (x,y)) ==> !p. P p`,
   REPEAT STRIP_TAC THEN
   GEN_REWRITE_TAC RAND_CONV [GSYM PAIR] THEN
   FIRST_ASSUM MATCH_ACCEPT_TAC);;
@@ -293,15 +293,15 @@ inductive_type_store :=
 (* ------------------------------------------------------------------------- *)
 
 let FORALL_PAIR_THM = prove
- (`!P. (!p. P p) <=> (!p1 p2. P(p1,p2))`,
+ (`!P:A#B->bool. (!p. P p) <=> (!p1 p2. P(p1,p2))`,
   MESON_TAC[PAIR]);;
 
 let EXISTS_PAIR_THM = prove
- (`!P. (?p. P p) <=> ?p1 p2. P(p1,p2)`,
+ (`!P:A#B->bool. (?p. P p) <=> ?p1 p2. P(p1,p2)`,
   MESON_TAC[PAIR]);;
 
 let LAMBDA_PAIR_THM = prove
- (`!t. (\p. t p) = (\(x,y). t(x,y))`,
+ (`!t:A#B->C. (\p. t p) = (\(x,y). t(x,y))`,
   REWRITE_TAC[FORALL_PAIR_THM; FUN_EQ_THM]);;
 
 let LAMBDA_PAIR = prove
@@ -318,9 +318,9 @@ let LAMBDA_TRIPLE = prove
   REWRITE_TAC[LAMBDA_TRIPLE_THM]);;
 
 let PAIRED_ETA_THM = prove
- (`(!f. (\(x,y). f (x,y)) = f) /\
-   (!f. (\(x,y,z). f (x,y,z)) = f) /\
-   (!f. (\(w,x,y,z). f (w,x,y,z)) = f)`,
+ (`(!f:A#B->C. (\(x,y). f (x,y)) = f) /\
+   (!f:A#B#C->D. (\(x,y,z). f (x,y,z)) = f) /\
+   (!f:A#B#C#D->E. (\(w,x,y,z). f (w,x,y,z)) = f)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM]);;
 
 let FORALL_UNCURRY = prove
@@ -335,19 +335,19 @@ let EXISTS_UNCURRY = prove
   REWRITE_TAC[FORALL_UNCURRY]);;
 
 let EXISTS_CURRY = prove
- (`!P. (?f. P f) <=> (?f. P (\(a,b). f a b))`,
+ (`!P:(A#B->C)->bool. (?f. P f) <=> (?f. P (\(a,b). f a b))`,
   REWRITE_TAC[EXISTS_UNCURRY; PAIRED_ETA_THM]);;
 
 let FORALL_CURRY = prove
- (`!P. (!f. P f) <=> (!f. P (\(a,b). f a b))`,
+ (`!P:(A#B->C)->bool. (!f. P f) <=> (!f. P (\(a,b). f a b))`,
   REWRITE_TAC[FORALL_UNCURRY; PAIRED_ETA_THM]);;
 
 let FORALL_UNPAIR_THM = prove
- (`!P. (!x y. P x y) <=> !z. P (FST z) (SND z)`,
+ (`!P:A->B->bool. (!x y. P x y) <=> !z. P (FST z) (SND z)`,
   REWRITE_TAC[FORALL_PAIR_THM; FST; SND] THEN MESON_TAC[]);;
 
 let EXISTS_UNPAIR_THM = prove
- (`!P. (?x y. P x y) <=> ?z. P (FST z) (SND z)`,
+ (`!P:A->B->bool. (?x y. P x y) <=> ?z. P (FST z) (SND z)`,
   REWRITE_TAC[EXISTS_PAIR_THM; FST; SND] THEN MESON_TAC[]);;
 
 let FORALL_PAIR_FUN_THM = prove
@@ -362,11 +362,11 @@ let EXISTS_PAIR_FUN_THM = prove
   REWRITE_TAC[FORALL_PAIR_FUN_THM]);;
 
 let FORALL_UNPAIR_FUN_THM = prove
- (`!P. (!f g. P f g) <=> (!h. P (FST o h) (SND o h))`,
+ (`!P:(A->B)->(A->C)->bool. (!f g. P f g) <=> (!h. P (FST o h) (SND o h))`,
   REWRITE_TAC[FORALL_PAIR_FUN_THM; o_DEF; ETA_AX]);;
 
 let EXISTS_UNPAIR_FUN_THM = prove
- (`!P. (?f g. P f g) <=> (?h. P (FST o h) (SND o h))`,
+ (`!P:(A->B)->(A->C)->bool. (?f g. P f g) <=> (?h. P (FST o h) (SND o h))`,
   REWRITE_TAC[EXISTS_PAIR_FUN_THM; o_DEF; ETA_AX]);;
 
 let EXISTS_SWAP_FUN_THM = prove
@@ -383,12 +383,12 @@ let EXISTS_SWAP_FUN_THM = prove
 (* ------------------------------------------------------------------------- *)
 
 let FORALL_PAIRED_THM = prove
- (`!P. (!(x,y). P x y) <=> (!x y. P x y)`,
+ (`!P:A->B->bool. (!(x,y). P x y) <=> (!x y. P x y)`,
   GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o RATOR_CONV) [FORALL_DEF] THEN
   REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM]);;
 
 let EXISTS_PAIRED_THM = prove
- (`!P. (?(x,y). P x y) <=> (?x y. P x y)`,
+ (`!P:A->B->bool. (?(x,y). P x y) <=> (?x y. P x y)`,
   GEN_TAC THEN MATCH_MP_TAC(TAUT `(~p <=> ~q) ==> (p <=> q)`) THEN
   REWRITE_TAC[REWRITE_RULE[ETA_AX] NOT_EXISTS_THM; FORALL_PAIR_THM]);;
 
@@ -397,12 +397,12 @@ let EXISTS_PAIRED_THM = prove
 (* ------------------------------------------------------------------------- *)
 
 let FORALL_TRIPLED_THM = prove
- (`!P. (!(x,y,z). P x y z) <=> (!x y z. P x y z)`,
+ (`!P:A->B->C->bool. (!(x,y,z). P x y z) <=> (!x y z. P x y z)`,
   GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o RATOR_CONV) [FORALL_DEF] THEN
   REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM]);;
 
 let EXISTS_TRIPLED_THM = prove
- (`!P. (?(x,y,z). P x y z) <=> (?x y z. P x y z)`,
+ (`!P:A->B->C->bool. (?(x,y,z). P x y z) <=> (?x y z. P x y z)`,
   GEN_TAC THEN MATCH_MP_TAC(TAUT `(~p <=> ~q) ==> (p <=> q)`) THEN
   REWRITE_TAC[REWRITE_RULE[ETA_AX] NOT_EXISTS_THM; FORALL_PAIR_THM]);;
 

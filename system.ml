@@ -5,10 +5,7 @@
 (* ========================================================================= *)
 
 (* ------------------------------------------------------------------------- *)
-(* Set up a quotation expander for the `...` quotes.                         *)
-(* This includes the case `;...` to support miz3, even if that isn't loaded. *)
-(* Other quotations ending in `...:` are treated just as (escaped) strings,  *)
-(* so they can be parsed in a type context etc.                              *)
+(* Set up a printer for num.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
 let quotexpander s =

@@ -1,0 +1,28 @@
+\DOC LIST_CONV
+
+\TYPE {LIST_CONV : conv -> conv}
+
+\SYNOPSIS
+Apply a conversion to each element of a list.
+
+\DESCRIBE
+If {cnv `ti`} returns {|- ti = ti'} for {i} ranging from {1} to {n}, then
+{LIST_CONV cnv `[t1; ...; tn]`} returns {|- [t1; ...; tn] = [t1'; ...; tn']}.
+
+\FAILURE
+Fails if the conversion fails on any list element.
+
+\EXAMPLE
+{
+  # LIST_CONV num_CONV `[1;2;3;4;5]`;;
+  val it : thm = |- [1; 2; 3; 4; 5] = [SUC 0; SUC 1; SUC 2; SUC 3; SUC 4]
+}
+
+\USES
+Applying a conversion more delicately than simply by {DEPTH_CONV} etc.
+
+\SEEALSO
+DEPTH_BINOP_CONV, DEPTH_CONV, EL_CONV, LENGTH_CONV, LIST_OF_SEQ_CONV,
+ONCE_DEPTH_CONV, REDEPTH_CONV, REVERSE_CONV, TOP_DEPTH_CONV, TOP_SWEEP_CONV.
+
+\ENDDOC

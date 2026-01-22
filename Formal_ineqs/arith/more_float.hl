@@ -1,11 +1,17 @@
-(* =========================================================== *)
-(* Additional floating point procedures                        *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
 
-needs "arith/arith_float.hl";;
-needs "misc/misc_vars.hl";;
+(* -------------------------------------------------------------------------- *)
+(* Additional floating point procedures                                       *)
+(* -------------------------------------------------------------------------- *)
+
+needs "Formal_ineqs/arith/arith_float.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
 
 module More_float = struct
 
@@ -33,9 +39,8 @@ let num_of_float_tm tm =
     if s = "T" then minus_num r else r;;
 
 (* Converts a float term to a floating-point number *)
-(* Note: float_of_num gives a very bad approximation in some cases *)
 let float_of_float_tm tm =
-  (float_of_string o approx_num_exp 30 o num_of_float_tm) tm;;
+  (Num.float_of_num o num_of_float_tm) tm;;
 
 (* Converts a floating-point number into a float term *)
 let float_tm_of_float =
@@ -44,32 +49,33 @@ let float_tm_of_float =
     let log_b = log b in
     let rec fix t k =
       if t = 0.0 || t = infinity || t = nan then
-	t, k
+        t, k
       else if t < 1.0 then
-	fix (t *. b) (k - 1)
+        fix (t *. b) (k - 1)
       else if t >= b then
-	fix (t /. b) (k + 1)
+        fix (t /. b) (k + 1)
       else
-	t, k in
+        t, k in
       fun f ->
-	if f = 0.0 then
-	  false, f, 0
-	else
-	  let s, x = if f < 0.0 then true, -.f else false, f in
-	  let e = -.floor (log x /. log_b) in
-	  let k = -int_of_float e in
-	  let t, n = fix (x *. (b ** e)) k in
-	    s, t, n
+        if f = 0.0 then
+          false, f, 0
+        else
+    let s, x = if f < 0.0 then true, -.f else false, f in
+    let e = -.floor (log x /. log_b) in
+    let k = -int_of_float e in
+    let t, n = fix (x *. (b ** e)) k in
+    s, t, n
   and extract =
     let b = float_of_int Arith_num.arith_base in
-    let nb = Int Arith_num.arith_base in
+    let nb = Num.num_of_int Arith_num.arith_base in
     let rec step k f acc =
-      if k <= 0 then acc
+      if k <= 0 then 
+        acc
       else
-	let d = int_of_float f in
-	  step (k - 1) ((f -. float_of_int d) *. b) (Int d +/ (nb */ acc)) in
-      fun pp f ->
-	step pp f (Int 0)
+        let d = int_of_float f in
+        step (k - 1) ((f -. float_of_int d) *. b) (Num.num_of_int d +/ (nb */ acc)) in
+    fun pp f ->
+      step pp f (Num.num_of_int 0)
   in
     fun pp f ->
       let s, x, k = split f in
@@ -77,7 +83,7 @@ let float_tm_of_float =
       let n_tm = rand (Arith_num.mk_numeral_array n) in
       let e_tm = rand (Arith_num.mk_small_numeral_array (min_exp + k - pp + 1)) in
       let sign = if s then "T" else "F" in
-	make_float sign n_tm e_tm;;
+      make_float sign n_tm e_tm;;
 
 (* Creates a (not normalized) floating-point number from a given natural number. *)
 (* Returns the theorem |- &n = float F n min_exp and the term n                  *)

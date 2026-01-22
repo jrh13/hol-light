@@ -85,7 +85,7 @@ let ADD_HYP hyp_thm thm = CONJUNCT2 (CONJ hyp_thm thm);;
 let rec (DISCHL: term list -> thm -> thm) =
   fun tms thm ->
     if (tms = []) then thm
-	else DISCH (hd tms) (DISCHL (tl tms) thm);;
+        else DISCH (hd tms) (DISCHL (tl tms) thm);;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -107,7 +107,7 @@ let print_varandtype fmt tm =
   let hop,args = strip_comb tm in
   let s = name_of hop
   and ty = type_of hop in
-  if is_var hop & args = [] then
+  if is_var hop && args = [] then
    (pp_print_string fmt "(";
     pp_print_string fmt s;
     pp_print_string fmt ":";

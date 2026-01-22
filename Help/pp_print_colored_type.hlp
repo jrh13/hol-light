@@ -1,0 +1,29 @@
+\DOC pp_print_colored_type
+
+\TYPE {pp_print_colored_type : formatter -> hol_type -> unit}
+
+\SYNOPSIS
+Prints a type (without colon or quotes) with colors to formatter.
+
+\DESCRIBE
+The call {pp_print_colored_type fmt ty} prints the colored representation of the
+type {ty} to the formatter {fmt}. The string is just {ty} not {`:ty`}.
+To print without colors, use {pp_print_type}.
+
+Colors can be changed by setting OCaml reference variables of optional strings
+describing the ANSI color code.
+If set to {None}, the default color of the terminal is used.
+
+- {printer_color_typevar}: a text color for type variables.
+
+- {printer_color_itypevar}: a text color for invented type variables.
+
+- {printer_color_type}: a text color for generic type expressions.
+
+\FAILURE
+Should never fail unless the formatter does.
+
+\SEEALSO
+pp_print_colored_qtype, pp_print_type, pp_print_qtype, print_qtype, print_type, set_color_printer.
+
+\ENDDOC

@@ -22,12 +22,13 @@ loadt "EC/montgomery.ml";;
 loadt "EC/edwards.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Projective, Jacobian and projective-without-y coordinates.                *)
+(* Projective, Jacobian, projective-without-y, extended projective coords.   *)
 (* ------------------------------------------------------------------------- *)
 
 loadt "EC/projective.ml";;
 loadt "EC/jacobian.ml";;
 loadt "EC/xzprojective.ml";;
+loadt "EC/exprojective.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Some traditional formulas for evaluation in these coordinate systems.     *)
@@ -70,6 +71,12 @@ loadt "EC/secp224k1.ml";;
 loadt "EC/secp256k1.ml";;
 
 (* ------------------------------------------------------------------------- *)
+(* The Commercial Cryptography SM2 curve                                     *)
+(* ------------------------------------------------------------------------- *)
+
+loadt "EC/ccsm2.ml";;
+
+(* ------------------------------------------------------------------------- *)
 (* The curve25519 family in Edwards, Montgomery and Weierstrass forms.       *)
 (* The first three files are independent, the fourth giving the connections. *)
 (* ------------------------------------------------------------------------- *)
@@ -78,6 +85,13 @@ loadt "EC/edwards25519.ml";;
 loadt "EC/curve25519.ml";;
 loadt "EC/wei25519.ml";;
 loadt "EC/family25519.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* The x25519 function, as a mapping of x coordinates over a generalization  *)
+(* of curve25519 with the y coordinate living in an extension field.         *)
+(* ------------------------------------------------------------------------- *)
+
+loadt "EC/x25519.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* The Goldilocks curve                                                      *)

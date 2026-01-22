@@ -9,16 +9,8 @@ needs "Library/pocklington.ml";;
 needs "Library/multiplicative.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Some lemmas connecting concepts in the various background theories.       *)
+(* Lemma connecting concepts in the various background theories.             *)
 (* ------------------------------------------------------------------------- *)
-
-let DIVIDES_BINOM_PRIME = prove
- (`!n p. prime p /\ 0 < n /\ n < p ==> p divides binom(p,n)`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(AP_TERM `(divides) p` (SPECL [`p - n:num`; `n:num`] BINOM_FACT)) THEN
-  ASM_SIMP_TAC[DIVIDES_FACT_PRIME; PRIME_DIVPROD_EQ; SUB_ADD; LT_IMP_LE] THEN
-  ASM_REWRITE_TAC[GSYM NOT_LT; LT_REFL] THEN
-  ASM_SIMP_TAC[ARITH_RULE `0 < n /\ n < p ==> p - n < p`]);;
 
 let INT_PRIME = prove
  (`!p. int_prime(&p) <=> prime p`,
@@ -323,7 +315,7 @@ let COPRIME_1_PLUS_POWER_STEP = prove
     ONCE_REWRITE_TAC[MULT_SYM] THEN
     REWRITE_TAC[EXP; ARITH_RULE `k + 2 = SUC(k + 1)`] THEN
     MATCH_MP_TAC DIVIDES_MUL2 THEN CONJ_TAC THENL
-     [MATCH_MP_TAC DIVIDES_BINOM_PRIME THEN ASM_REWRITE_TAC[] THEN
+     [MATCH_MP_TAC DIVIDES_PRIME_BINOM THEN ASM_REWRITE_TAC[] THEN
       ASM_ARITH_TAC;
       ASM_SIMP_TAC[DIVIDES_EXP_LE; ARITH_RULE `3 <= p ==> 2 <= p`] THEN
       MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC `k * 2` THEN CONJ_TAC THENL

@@ -1,21 +1,28 @@
-HOLLIGHT:=ocaml -init hol.ml
+HOLLIGHT:=./hol.sh
 
 STANDALONE_EXAMPLES:=\
 	Library/agm \
+	Library/bdd \
+	Examples/bdd_examples \
 	Library/binary \
 	Library/binomial \
+	Examples/bitblast \
+	Examples/bitblast_generic \
 	Library/bitmatch \
 	Library/bitsize \
+	Examples/bondy \
 	Examples/borsuk \
 	Examples/brunn_minkowski \
 	Library/card \
 	Examples/combin \
+	Examples/complexpolygon \
 	Examples/cong \
 	Examples/cooper \
 	Examples/dickson \
 	Examples/digit_serial_methods \
 	Examples/division_algebras \
 	Examples/dlo \
+	Library/fieldtheory \
 	Library/floor \
 	Examples/forster \
 	Examples/gcdrecurrence \
@@ -33,6 +40,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/lagrange_lemma \
 	Examples/lucas_lehmer \
 	Examples/mangoldt \
+	Library/matroids \
 	Examples/mccarthy \
 	Examples/miller_rabin \
 	Examples/misiurewicz \
@@ -60,6 +68,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/vitali \
 	Library/wo \
 	Library/words \
+	Library/word_automata \
 	Examples/zolotarev \
 	Library/analysis-transc \
 	Library/prime-pratt \
@@ -69,7 +78,9 @@ STANDALONE_EXAMPLES:=\
 EXTENDED_EXAMPLES:=\
 	Arithmetic/make \
 	Boyer_Moore/make \
+	Cadical/make-test \
 	Complex/make \
+	Divstep/make \
 	EC/make \
 	GL/make \
 	Geometric_Algebra/make \
@@ -79,7 +90,7 @@ EXTENDED_EXAMPLES:=\
 	Logic/make \
 	Mizarlight/make \
 	miz3/make-test \
-	Minisat/make-taut \
+	Minisat/make-test \
 	Model/make \
 	Multivariate/make \
 	Multivariate/make_complex \
@@ -104,7 +115,8 @@ EXTENDED_EXAMPLES:=\
 	RichterHilbertAxiomGeometry/Topology \
 	RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read \
 	Functionspaces/make \
-	Formal_ineqs/make-ineqs
+	Formal_ineqs/make-ineqs \
+	TacticTrace/make-test
 
 GREAT_100_THEOREMS:= \
 	100/arithmetic_geometric_mean \
@@ -137,6 +149,7 @@ GREAT_100_THEOREMS:= \
 	100/fta \
 	100/gcd \
 	100/heron \
+	100/isoperimetric \
 	100/inclusion_exclusion \
 	100/independence \
 	100/isosceles \
@@ -164,6 +177,7 @@ GREAT_100_THEOREMS:= \
 	100/stirling \
 	100/subsequence \
 	100/thales \
+	100/transcendence \
 	100/triangular \
 	100/two_squares \
 	100/wilson
@@ -217,16 +231,16 @@ $(LOGDIR)/miz3/make-test.ready:
 	@(echo 'loadt "miz3/make.ml";;'; echo 'loadt "miz3/test.ml";;'; echo 'loadt "miz3/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/miz3/make-test 2>&1
 	@touch $(LOGDIR)/miz3/make-test.ready
 
-$(LOGDIR)/Minisat/make-taut.ready:
-	@mkdir -p $(LOGDIR)/$$(dirname Minisat/make-taut)
-	@echo '### Loading Minisat/make.ml,Minisat/taut.ml'
+$(LOGDIR)/Minisat/make-test.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Minisat/make-test)
+	@echo '### Loading Minisat/make.ml,Minisat/test.ml'
 	if which zchaff > /dev/null ; then \
-		echo '### Loading Minisat/make.ml,Minisat/taut.ml' > $(LOGDIR)/Minisat/make-taut ; \
-		(echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Minisat/make-taut 2>&1 ; \
+		echo '### Loading Minisat/make.ml,Minisat/test.ml' > $(LOGDIR)/Minisat/make-test ; \
+		(echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;'; echo 'loadt "Minisat/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Minisat/make-test 2>&1 ; \
 	else \
-		echo '### Error: skip Minisat/make.ml, Minisat/taut.ml because zchaff is not available' > $(LOGDIR)/Minisat/make-taut ; \
+		echo '### Error: skip Minisat/make.ml, Minisat/test.ml because zchaff is not available' > $(LOGDIR)/Minisat/make-test ; \
 	fi
-	@touch $(LOGDIR)/Minisat/make-taut.ready
+	@touch $(LOGDIR)/Minisat/make-test.ready
 
 $(LOGDIR)/Formal_ineqs/make-ineqs.ready:
 	@mkdir -p $(LOGDIR)/$$(dirname Formal_ineqs/make-ineqs)
@@ -241,7 +255,26 @@ $(LOGDIR)/100/bertrand-primerecip.ready:
 	@(echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/100/bertrand-primerecip 2>&1
 	@touch $(LOGDIR)/100/bertrand-primerecip.ready
 
+$(LOGDIR)/Cadical/make-test.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Cadical/make-test)
+	@echo '### Loading Cadical/make.ml,Cadical/test.ml'
+	if which cadical > /dev/null ; then \
+		echo '### Loading Cadical/make.ml,Cadical/test.ml' > $(LOGDIR)/Cadical/make-test ; \
+		(echo 'loadt "Cadical/make.ml";;'; echo 'loadt "Minisat/taut.ml";;'; echo 'loadt "Cadical/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Cadical/make-test 2>&1 ; \
+	else \
+		echo '### Error: skip Cadical/make.ml, Cadical/test.ml because cadical is not available' > $(LOGDIR)/Cadical/make-test ; \
+	fi
+	@touch $(LOGDIR)/Cadical/make-test.ready
 
+$(LOGDIR)/TacticTrace/make-test.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname TacticTrace/make-test)
+	@echo '### Running TacticTrace/Makefile'
+	@$(MAKE) clean --quiet -C TacticTrace
+	@$(MAKE) --quiet -C TacticTrace
+	@cd TacticTrace && ./build-hol-kernel.sh
+	@$(MAKE) test --quiet -C TacticTrace > $(LOGDIR)/TacticTrace/make-test 2>&1
+	@cat TacticTrace/examples/*.hollog >> $(LOGDIR)/TacticTrace/make-test
+	@touch $(LOGDIR)/TacticTrace/make-test.ready
 
 # Recall that $* is the stem matched by the %
 $(LOGDIR)/%.ready:

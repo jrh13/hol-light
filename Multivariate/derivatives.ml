@@ -5197,6 +5197,75 @@ let VECTOR_DERIVATIVE_AT = prove
   ASM_REWRITE_TAC[vector_derivative] THEN CONV_TAC SELECT_CONV THEN
   ASM_MESON_TAC[]);;
 
+let HAS_VECTOR_DERIVATIVE_COMPONENTWISE_WITHIN = prove
+ (`!(f:real^1->real^N) f' a s.
+         (f has_vector_derivative f') (at a within s) <=>
+         !i. 1 <= i /\ i <= dimindex(:N)
+             ==> ((\x. lift(f x$i)) has_vector_derivative lift(f'$i))
+                 (at a within s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[has_vector_derivative] THEN
+  GEN_REWRITE_TAC LAND_CONV [HAS_DERIVATIVE_COMPONENTWISE_WITHIN] THEN
+  REWRITE_TAC[VECTOR_MUL_COMPONENT; LIFT_CMUL]);;
+
+let HAS_VECTOR_DERIVATIVE_COMPONENTWISE_AT = prove
+ (`!(f:real^1->real^N) f' a.
+         (f has_vector_derivative f') (at a) <=>
+         !i. 1 <= i /\ i <= dimindex(:N)
+             ==> ((\x. lift(f x$i)) has_vector_derivative lift(f'$i)) (at a)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[has_vector_derivative] THEN
+  GEN_REWRITE_TAC LAND_CONV [HAS_DERIVATIVE_COMPONENTWISE_AT] THEN
+  REWRITE_TAC[VECTOR_MUL_COMPONENT; LIFT_CMUL]);;
+
+let HAS_VECTOR_DERIVATIVE_LIFT_COMPONENT_WITHIN = prove
+ (`!(f:real^1->real^N) f' a s i.
+        (f has_vector_derivative f') (at a within s) /\
+        1 <= i /\ i <= dimindex(:N)
+        ==> ((\x. lift(f x$i)) has_vector_derivative lift(f'$i))
+             (at a within s)`,
+  MESON_TAC[HAS_VECTOR_DERIVATIVE_COMPONENTWISE_WITHIN]);;
+
+let HAS_VECTOR_DERIVATIVE_LIFT_COMPONENT_AT = prove
+ (`!(f:real^1->real^N) f' a i.
+        (f has_vector_derivative f') (at a) /\
+        1 <= i /\ i <= dimindex(:N)
+        ==> ((\x. lift(f x$i)) has_vector_derivative lift(f'$i)) (at a)`,
+  MESON_TAC[HAS_VECTOR_DERIVATIVE_COMPONENTWISE_AT]);;
+
+let HAS_VECTOR_DERIVATIVE_WITHIN_1D = prove
+ (`!f:real^1->real^N s x.
+      (f has_vector_derivative f') (at x within s) <=>
+      ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x within s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[has_vector_derivative; has_derivative_within] THEN
+  SIMP_TAC[LINEAR_VMUL_DROP; LINEAR_ID] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [LIM_NULL] THEN
+  GEN_REWRITE_TAC LAND_CONV [LIM_NULL_NORM] THEN
+  REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+  REWRITE_TAC[NORM_1; GSYM REAL_ABS_INV] THEN
+  REWRITE_TAC[GSYM NORM_1; GSYM NORM_MUL] THEN
+  REWRITE_TAC[GSYM LIM_NULL_NORM] THEN MATCH_MP_TAC LIM_TRANSFORM_EQ THEN
+  MATCH_MP_TAC LIM_EVENTUALLY THEN REWRITE_TAC[EVENTUALLY_WITHIN] THEN
+  REWRITE_TAC[GSYM DIST_NZ; VECTOR_SUB_EQ] THEN
+  REWRITE_TAC[VECTOR_ADD_LDISTRIB; VECTOR_SUB_LDISTRIB] THEN
+  SIMP_TAC[VECTOR_MUL_ASSOC; DROP_SUB; DROP_EQ; REAL_MUL_LINV; REAL_SUB_0] THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC VECTOR_ARITH);;
+
+let HAS_VECTOR_DERIVATIVE_AT_1D = prove
+ (`!f:real^1->real^N x.
+      (f has_vector_derivative f') (at x) <=>
+      ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D]);;
+
+let VECTOR_DERIVATIVE_UNIQUE_WITHIN = prove
+ (`!(f:real^1->real^N) x s f' f''.
+        ~trivial_limit (at x within s) /\
+        (f has_vector_derivative f') (at x within s) /\
+        (f has_vector_derivative f'') (at x within s)
+        ==> f' = f''`,
+  REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D; LIM_UNIQUE]);;
+
 let VECTOR_DERIVATIVE_UNIQUE_WITHIN_CLOSED_INTERVAL = prove
  (`!f:real^1->real^N a b x f' f''.
         drop a < drop b /\
@@ -5204,15 +5273,12 @@ let VECTOR_DERIVATIVE_UNIQUE_WITHIN_CLOSED_INTERVAL = prove
         (f has_vector_derivative f') (at x within interval [a,b]) /\
         (f has_vector_derivative f'') (at x within interval [a,b])
         ==> f' = f''`,
-  REWRITE_TAC[has_vector_derivative; drop] THEN REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`f:real^1->real^N`;
-                 `\x. drop x % (f':real^N)`; `\x. drop x % (f'':real^N)`;
-                `x:real^1`; `a:real^1`; `b:real^1`]
-         FRECHET_DERIVATIVE_UNIQUE_WITHIN_CLOSED_INTERVAL) THEN
-  ASM_SIMP_TAC[DIMINDEX_1; LE_ANTISYM; drop] THEN
-  ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN REWRITE_TAC[FUN_EQ_THM] THEN
-  DISCH_THEN(MP_TAC o SPEC `vec 1:real^1`) THEN
-  SIMP_TAC[VEC_COMPONENT; DIMINDEX_1; ARITH; VECTOR_MUL_LID]);;
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^1->real^N`; `x:real^1`;
+                 `interval[a:real^1,b]`] VECTOR_DERIVATIVE_UNIQUE_WITHIN) THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[TRIVIAL_LIMIT_WITHIN; LIMIT_POINT_OF_INTERVAL] THEN
+  ASM_MESON_TAC[REAL_LT_REFL]);;
 
 let VECTOR_DERIVATIVE_WITHIN_CLOSED_INTERVAL = prove
  (`!f:real^1->real^N f' x a b.
@@ -5410,33 +5476,6 @@ let RESTRICTION_HAS_DERIVATIVE = prove
    MAP_EVERY EXISTS_TAC [`f:real^1->real^N`; `&1`] THEN
    ASM_REWRITE_TAC[REAL_LT_01] THEN
    SIMP_TAC[RESTRICTION]]);;
-
-let HAS_VECTOR_DERIVATIVE_WITHIN_1D = prove
- (`!f:real^1->real^N s x.
-      (f has_vector_derivative f') (at x within s) <=>
-      ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x within s)`,
-  REPEAT GEN_TAC THEN
-  REWRITE_TAC[has_vector_derivative; has_derivative_within] THEN
-  SIMP_TAC[LINEAR_VMUL_DROP; LINEAR_ID] THEN
-  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [LIM_NULL] THEN
-  GEN_REWRITE_TAC LAND_CONV [LIM_NULL_NORM] THEN
-  REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
-  REWRITE_TAC[NORM_1; GSYM REAL_ABS_INV] THEN
-  REWRITE_TAC[GSYM NORM_1; GSYM NORM_MUL] THEN
-  REWRITE_TAC[GSYM LIM_NULL_NORM] THEN MATCH_MP_TAC LIM_TRANSFORM_EQ THEN
-  MATCH_MP_TAC LIM_EVENTUALLY THEN REWRITE_TAC[EVENTUALLY_WITHIN] THEN
-  REWRITE_TAC[GSYM DIST_NZ; VECTOR_SUB_EQ] THEN
-  REWRITE_TAC[VECTOR_ADD_LDISTRIB; VECTOR_SUB_LDISTRIB] THEN
-  SIMP_TAC[VECTOR_MUL_ASSOC; DROP_SUB; DROP_EQ; REAL_MUL_LINV; REAL_SUB_0] THEN
-  EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
-  REPEAT STRIP_TAC THEN CONV_TAC VECTOR_ARITH);;
-
-let HAS_VECTOR_DERIVATIVE_AT_1D = prove
- (`!f:real^1->real^N x.
-      (f has_vector_derivative f') (at x) <=>
-      ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x)`,
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D]);;
 
 let BAIRE1_VECTOR_DERIVATIVE = prove
  (`!f:real^1->real^N f' s.

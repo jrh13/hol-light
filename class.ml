@@ -376,7 +376,10 @@ let TAUT =
      W((fun t1 t2 -> t1 THEN t2) (REWRITE_TAC[]) o BOOL_CASES_TAC o
        hd o sort free_in o find_terms ok o snd)) (asl,w) in
   let TAUT_TAC = REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN REPEAT RTAUT_TAC in
-  fun tm -> prove(tm,TAUT_TAC);;
+  fun tm ->
+    try prove(tm,TAUT_TAC)
+    with Failure _ ->
+      failwith ("TAUT `" ^ (string_of_term tm) ^ "`: cannot solve");;
 
 (* ------------------------------------------------------------------------- *)
 (* Throw monotonicity in.                                                    *)
@@ -421,7 +424,7 @@ let SKOLEM_THM = prove
   POP_ASSUM MATCH_ACCEPT_TAC);;
 
 let SKOLEM_THM_GEN = prove
- (`!P R. (!x. P x ==> ?y. R x y) <=> (?f. !x. P x ==> R x (f x))`,
+ (`!P R. (!x:A. P x ==> ?y:B. R x y) <=> (?f. !x. P x ==> R x (f x))`,
   REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM]);;
 
 (* ------------------------------------------------------------------------- *)

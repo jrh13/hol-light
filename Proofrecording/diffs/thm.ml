@@ -49,22 +49,22 @@ let mk_eq =
 
   let rec ordav env x1 x2 =
     match env with
-      [] -> Pervasives.compare x1 x2
-    | (t1,t2 as tp)::oenv -> if Pervasives.compare x1 t1 = 0
-                             then if Pervasives.compare x2 t2 = 0
+      [] -> compare x1 x2
+    | (t1,t2 as tp)::oenv -> if compare x1 t1 = 0
+                             then if compare x2 t2 = 0
                                   then 0 else -1
-                             else if Pervasives.compare x2 t2 = 0 then 1
+                             else if compare x2 t2 = 0 then 1
                              else ordav oenv x1 x2
 
   let rec orda env tm1 tm2 =
     if tm1 == tm2 && env = [] then 0 else
     match (tm1,tm2) with
       Var(x1,ty1),Var(x2,ty2) -> ordav env tm1 tm2
-    | Const(x1,ty1),Const(x2,ty2) -> Pervasives.compare tm1 tm2
+    | Const(x1,ty1),Const(x2,ty2) -> compare tm1 tm2
     | Comb(s1,t1),Comb(s2,t2) ->
           let c = orda env s1 s2 in if c <> 0 then c else orda env t1 t2
     | Abs(Var(_,ty1) as x1,t1),Abs(Var(_,ty2) as x2,t2) ->
-          let c = Pervasives.compare ty1 ty2 in
+          let c = compare ty1 ty2 in
           if c <> 0 then c else orda ((x1,x2)::env) t1 t2
     | Const(_,_),_ -> -1
     | _,Const(_,_) -> 1
@@ -171,7 +171,7 @@ module Hol : Hol_thm_primitives = struct
      match (c1,c2) with
        Comb(Comb(Const("=",_),l1),r1),Comb(Comb(Const("=",_),l2),r2) ->
         (match type_of l1 with
-           Tyapp("fun",[ty;_]) when Pervasives.compare ty (type_of l2) = 0
+           Tyapp("fun",[ty;_]) when compare ty (type_of l2) = 0
              -> Sequent(term_union asl1 asl2,
                         mk_eq (mk_comb (l1, l2), mk_comb(r1, r2)),
                         proof_MK_COMB (p1,p2))
@@ -190,7 +190,7 @@ module Hol : Hol_thm_primitives = struct
 
   let BETA tm =
     match tm with
-      Comb(Abs(v,bod),arg) when Pervasives.compare arg v = 0
+      Comb(Abs(v,bod),arg) when compare arg v = 0
         -> Sequent([],mk_eq (tm, bod), proof_BETA tm)
     | _ -> failwith "BETA: not a trivial beta-redex"
 
@@ -199,7 +199,7 @@ module Hol : Hol_thm_primitives = struct
 (* ------------------------------------------------------------------------- *)
 
   let ASSUME tm =
-    if Pervasives.compare (type_of tm) bool_ty = 0 then Sequent([tm],tm, proof_ASSUME tm)
+    if compare (type_of tm) bool_ty = 0 then Sequent([tm],tm, proof_ASSUME tm)
     else failwith "ASSUME: not a proposition"
 
   let EQ_MP (Sequent(asl1,eq,p1)) (Sequent(asl2,c,p2)) =
@@ -234,7 +234,7 @@ module Hol : Hol_thm_primitives = struct
   let axioms() = !the_axioms
 
   let new_axiom tm =
-    if Pervasives.compare (type_of tm) bool_ty = 0 then
+    if compare (type_of tm) bool_ty = 0 then
       let axname = new_axiom_name "" in
       let p = proof_new_axiom (axname) tm in
       let th = Sequent([],tm,p) in

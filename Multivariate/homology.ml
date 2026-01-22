@@ -10210,9 +10210,7 @@ let ISOMORPHIC_RELATIVE_HOMOLOGY_GROUPS_EUCLIDEAN_COMPLEMENTS = prove
         REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_SUBSET)) THEN
         ASM SET_TAC[];
         ALL_TAC] THEN
-      MATCH_MP_TAC(SET_RULE
-       `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
-      EXPAND_TAC "g'" THEN REWRITE_TAC[o_THM] THEN
+      MATCH_MP_TAC IMAGE_EQ THEN EXPAND_TAC "g'" THEN REWRITE_TAC[o_THM] THEN
       MATCH_MP_TAC(SET_RULE
        `(!x. x IN s ==> k(h(f x)) = f x) /\
         (!x. x IN s ==> g(h x) = h(f x))

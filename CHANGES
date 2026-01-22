@@ -8,6 +8,4060 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon  8th Dec 2025       Library/words.ml, Examples/bitblast.ml
+
+Fixed a bug in bit-blasting where the conversion from arithmetical to word
+form was being missed in some cases where arithmetic is nested inside other
+word operations (possibly after other normalizations that started in word
+form). The fix is to use DEPTH_CONV in place of ONCE_DEPTH_CONV for the
+WORDIFY_ATOM_CONV and IWORDIFY_ATOM_CONV conversions. For example, this
+case formerly failed but now works:
+
+  BITBLAST_RULE
+  `!x:int64.
+        let y = word_and x (word_sub (word_or x (word 0x0800800800800800))
+                                     (word 0x0501501501501501)) in
+        let z = word_ushr (word_and y (word 0x0800800800800800)) 11 in
+        bitval(word_uge (word_subword x (0,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (12,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (24,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (36,12):int16) (word 3329)) +
+        bitval(word_uge (word_subword x (48,12):int16) (word 3329)) =
+        val(word_ushr (word_mul z (word 0x100100100100100)) 56)`;;
+
+Added this and a few other new ones to Examples/bitblast.ml
+
+Wed  3rd Dec 2025       Library/words.ml
+
+Made a small fix in WORD_SIMPLE_SUBWORD_CONV, which was failing to make
+the simple simplifications based on WORD_SUBWORD_TRIVIAL if the word operation
+was a composite term matching one of the other cases, e.g.
+
+  WORD_SIMPLE_SUBWORD_CONV
+    `(word_subword:(16)word->num#num->(16)word)
+     ((word_join:byte->byte->int16) h l) (0,16)`;;
+
+Mon 17th Nov 2025       .github/workflows/main.yml, Help/list_mk_exists.hlp, META, Makefile, opam, pa_j/chooser.sh [new file], pa_j/pa_j_5.4_8.04.00.ml [new file], unit_tests.ml, update_database/chooser.sh [new file], update_database/update_database_5.4.ml [new file]
+
+Set up appropriate new versions of pa_j and update_database code to work
+smoothly with OCaml 5.4 (from June Lee). This includes a significant
+rationalization and cleanup of the version-dependent choosing code.
+
+This update also removes a dangling reference in the Help/list_mk_exists.hl
+file to a nonexistent function EXISTS_EQ, probably a cut-and-paste error
+wrongly inherited from HOL88 that does/did have such a function.
+
+Mon 20th Oct 2025       Library/words.ml
+
+Type-generalized the existing theorems WORD_SUBWORD_AS_IWORD and
+WORD_SUBWORD_IWORD to allow two distinct source and destination
+word types; the constraint and even the proofs are unchanged.
+
+Mon 20th Oct 2025       Library/words.ml
+
+Added a couple more theorems about subwords of composite terms:
+
+  WORD_SUBWORD_ZX =
+    |- !x pos len.
+          MIN (pos + dimindex(:P)) (dimindex(:M)) <= dimindex(:N)
+          ==> word_subword ((word_zx:M word->N word) x) (pos,len):P word =
+              word_subword x (pos,len)
+
+  WORD_SUBWORD_ZX_TRIVIAL =
+    |- !x pos len.
+          MIN (dimindex(:M)) (dimindex(:N)) <= pos
+          ==> word_subword ((word_zx:M word->N word) x) (pos,len):P word =
+              word 0
+
+and upgraded WORD_SIMPLE_SUBWORD_CONV to make use of those where applicable
+as well as its existing theorems. This for example makes the following work:
+
+  WORD_SIMPLE_SUBWORD_CONV
+   `word_subword ((word_zx:int256->int128) x) (16,16):int16`;;
+
+  WORD_SIMPLE_SUBWORD_CONV
+   `word_subword ((word_zx:int32->int64) x) (48,8):byte`;;
+
+Sun 21st Sep 2025       TacticTrace/* [new directory]
+
+Added the TacticTrace tools from June Lee, which allow the user to
+log in JSON format the input/output of tactics and conversions; see
+the TacticTrace/README.md for more detailed instructions.
+
+Sun 21st Sep 2025       metis.ml
+
+Adopted a fix from Frederic Blanqui to use the more portable local
+"float_sqrt" in place of unqualified "sqrt" inside "metis.ml".
+
+Fri 19th Sep 2025       Library/words.ml
+
+Fixed an over-specialization in the type of "usimd16", which is now
+in line with "usimd2", "usimd4" and "usimd8".
+
+Tue 15th Jul 2025       Makefile, inline_load.ml, pa_j/pa_j_4.xx_8.03.06.ml [new file]
+
+Added support for camlp5 8.03.06, from June Lee. This version of
+camlp5 fixes support for line number directives so one can get better
+location information for debugging. For example:
+
+      # Printexc.record_backtrace true;;
+      # #100 "dummy.ml";;
+      failwith ".";;
+
+Thu  3rd Jul 2025        Jordan/jordan_curve_theorem.ml, Jordan/metric_spaces.ml, Jordan/misc_defs_and_lemmas.ml, Jordan/tactics_ext2.ml, Help/new_basic_type_definition.hlp, Help/new_type_definition.hlp
+
+Adopted a patch from Dan Bernstein to replace the use of pointer-level
+inequality != with structural inequality <> inside the "Jordan" proofs
+as was presumably intended, appropriately fixing up the breaks that
+result (patch taken from https://holtrace.cr.yp.to/jordan310.diff).
+
+Improved the type definition documentation by emphasizing explicitly
+that failure will also occur when the desired names of the abstraction
+and representation functions to and from the new type are the same.
+
+Fri  6th Jun 2025       tactics.ml, unit_tests.ml
+
+Added a new 'expand and rotate" function er to the goalstack package,
+from June Lee. The call `er tac`  applies `e tac` followed by `r n`
+where `n` is the number of subgoals generated by `tac`. This command is
+useful when you want to interactively try a list of tactics after
+`THENL`. For example, given a proof `TAC THENL [ TAC_A; TAC_B; .. ]',
+statements `e TAC;; er TAC_A;;' will execute `TAC`, execute `TAC_A`,
+then switch to the second subgoal of `e TAC' which will be the input
+goalstate of `TAC_B`.
+
+Tue  3rd Jun 2025       Library/fieldtheory.ml
+
+Extended the field theory library, mainly with definitions of algebraic
+dependence, transcendence bases and related concepts, and a derivation of
+some of their expected properties. The new definitions are:
+
+  algebraic_matroid
+  algebraic_span
+  algebraically_dependent
+  algebraically_independent
+  algebraically_spanning
+  transcendence_basis
+
+There is no explicit definition of transcendence degree, but it is handled
+via the cardinality of a transcendence basis, e.g. in the additivity of
+transcendence degrees in TRANSCENDENCE_BASIS_TOWER_LAW. The properties around
+algebraic dependence and span are as usual derived from matroids, roughly
+following Pete Clark's online "Field Theory" notes, section 11.4. One small
+application to the earlier material on finite extensions is the reverse
+transitivity/compositionality property for finitely generated extensions,
+FINITELY_GENERATED_EXTENSION_TRANS_EQ, largely taken from theorem 24.9 in
+Isaacs: "Algebra: A Graduate Course".
+
+Thu 29th May 2025       ind_defs.ml, unit_tests.ml
+
+Added an improvement to benign-redefinition checking for inductive
+definitions, written by June Lee. This previously was too crude in
+comparing with the earlier definition, not taking account of
+additional universally quantified variables, so didn't work properly
+in many cases. For example, the definitions in "GL/completeness.ml"
+and "Library/fieldtheory.ml" used to fail to load twice but now work
+smoothly.
+
+Sat 24th May 2025       Library/fieldtheory.ml
+
+Added a new file giving a basic development of field theory, first some basic
+constructs about subfields and subfields generated by a set (which could
+arguably be put back in Library/ringtheory.ml) followed by standard properties
+of field extensions: finite, fintely generated and algebraic. This includes the
+general (finite or infinite) tower law for the degree of an extension field.
+
+Fri 23rd May 2025       Library/ringtheory.ml, 100/transcendence.ml
+
+Imported one more theorem (now called POWSER_MUL_CONST) from Dan Bernstein's
+development in 100/transcendence.ml back to the Library ring theory file; this
+generalizes POLY_MUL_CONST and now trivializes its proof.
+
+Fri 23rd May 2025       printer.ml
+
+Made a trivial recoding to one printer function so that it works smoothly on
+older OCamls, where the Option-type material is in a different place.
+
+Wed 21st May 2025       unit_tests.ml
+
+Added some unit tests for EL_CONV, LENGTH_CONV, REVERSE_CONV and
+LIST_OF_SEQ_CONV, via a generic "test a conversion" function
+called assert_conv.
+
+Tue 20th May 2025       ProofTrace/README, ProofTrace/fusion.ml.diff
+
+Adopted an update from Dan Bernstein to bring the fusion.ml patch inside
+ProofTrace into step with the current version of fusion.ml, as well as
+to make the guidance on file sizes more explicit.
+
+Tue 20th May 2025       hol.ml, printer.ml, tactics.ml, Library/bitmatch.ml
+
+Merged an update from June Lee adding a systematic set of color printing
+functions, and applying them pervasively when printing to the terminal any
+types, terms, theorems and goals. This colorization is enabled by default,
+but can be enabled or disabled explicitly with
+
+  set_color_printer true;;
+  set_color_printer false;;
+
+Tue 20th May 2025       lists.ml
+
+Added a few elementary list lemmas:
+
+  LENGTH_EQ_LIST_OF_SEQ =
+    |- forall l n. LENGTH l = n <=> l = list_of_seq (\i. EL i l)
+
+  LENGTH_FILTER =
+    |- forall P l. LENGTH (FILTER P l) <= LENGTH l
+
+  LIST_OF_SEQ =
+    |- (forall f. list_of_seq f 0 = []) /\
+       (forall f n.
+            list_of_seq f (SUC n) = CONS (f 0) (list_of_seq (f o SUC) n))
+
+  LIST_OF_SEQ_EQ_SELF =
+    |- forall l. list_of_seq (\i. EL i l) (LENGTH l) = l
+
+  MAP_LIST_OF_SEQ =
+    |- forall f g n. MAP g (list_of_seq f n) = list_of_seq (g o f) n
+
+as well as explicit conversions for the list functions EL, LENGTH,
+list_of_seq and REVERSE:
+
+  EL_CONV
+  LENGTH_CONV
+  LIST_OF_SEQ_CONV
+  REVERSE_CONV
+
+Tue 13th May 2025       lists.ml
+
+Added one straightforward list theorem that seems an odd gap:
+
+  LENGTH_FILTER |- !P l. LENGTH(FILTER P l) <= LENGTH l
+
+Thu  1st May 2025       .gitignore,  Makefile,  README,  hol_4.14.sh,  hol_4.sh,  make-checkpoint.sh,  make.ml [deleted]
+
+Added an update from June Lee to support DMTCP-checkpointing more
+conveniently, including updating the existing but obselete Makefile
+targets like "hol" and "hol.multivariate". The basic script to create
+a checkpoint is "make-checkpoint.sh", which can simply create a
+HOL Light image:
+
+  make-checkpoint.sh ~/my-checkpoint.sh
+
+or a HOL Light image with more code and proofs pre-loaded, e.g.
+
+  cd ~/s2n-bignum
+  ~/hol-light/make-checkpoint.sh ./my-s2n-bignum-checkpoint.sh "loadt \"arm/proofs/base.ml\""
+
+Mon 21st Apr 2025       Library/word_automata.ml [new file], Examples/bitblast_generic.ml [new file]
+
+Added yet another machine word (bitvector) automated proof procedure
+WORD_AUTO_RULE / WORD_AUTO_TAC, an "arbitrary width" form of
+bit-blasting for problems involving a single generic word type like
+`:N word`, not restricted to a specific wordsize. This works
+internally by treating certain tuples of bits (of inputs, outputs and
+other subexpressions) as states in an automaton evolving over the
+sucessive bit positions from the LSB, with standard BDD-based
+reachability used to test satisfiability. The other new file gives a
+set of examples, one of which is:
+
+  WORD_AUTO_RULE
+   `!x y:N word. word_sub x y =
+                 word_sub (word_mul (word 2) (word_and x (word_not y)))
+                          (word_xor x y)`;;
+
+Supporting this are some additions to the BDD code (adding a function
+for existential quantification over a Boolean variable) and the
+existing fixed-size bitblasting procedure (handling signed comparisons
+more comprehensively).
+
+Sat 12th Apr 2025       bignum_zarith.ml, unit_tests.ml
+
+Fixed the power_num function in the Zarith version to be consistent with
+the Num library version in handling rational numbers for the base.
+
+Fri  4th Apr 2025       Library/matroids.ml, Library/ringtheory.ml, 100/transcendence.ml
+
+Made some more additions to matroid and ring background theory,
+in particular moving a little of the generally useful material from
+100/transcendence.ml into the core Library/ringtheory.ml. This includes
+the definitions of
+
+  poly_pow - polynomial powers
+
+  poly_reindex - reindexing polynomial variables over a given ring
+
+together with the suite of useful lemmas that were proved there
+(sometimes with superficial stylistic differences).
+
+Sun 16th Mar 2025       equal.ml, hol_loader.ml, lib.ml, printer.ml, tactics.ml
+
+Added REMARK_TAC and PRINT_TERM_CONV, a dummy tactic and conversions
+(equivalent to ALL_TAC and ALL_CONV) but producing informative output,
+in the first case a string and in the second printing the term to
+which the conversion is applied.
+
+This also fixes a bug in the tracking of loaded files in the presence
+of use_file_raise_failure and a couple of other minor typos.
+
+Wed 12th Mar 2025       hol_loader.ml, Help/loadt.hlp, Help/load_path.hlp
+
+Added a facility from June Lee to read additional load_path directories
+from an environment variable HOLLIGHT_LOAD_PATH, so you can do something
+like this before starting HOL Light:
+
+ export HOLLIGHT_LOAD_PATH=/home/me/hol_project:/tmp/otherdir
+
+Wed  5th Mar 2025       Library/binomial.ml, Library/primitive.ml
+
+Renamed the existing theorem DIVIDES_BINOM_PRIME to DIVIDES_PRIME_BINOM,
+and moved it from Library/primitive.ml to a more thematic spot in
+Library/binomial.ml, together with a couple of generalizations:
+
+  DIVIDES_COPRIME_BINOM =
+    |- forall n k. coprime(n,k) ==> n divides binom(n,k)
+
+  DIVIDES_GCD_BINOM =
+     |- forall n k. n divides gcd(n,k) * binom(n,k)
+
+Thu 20th Feb 2025       lib.ml, unit_tests.ml, Help/index.hlp, find_index.hlp [new file]
+
+Added the library function "find_index" corresponding exactly to the function
+List.find_index in the OCaml library for versions >= 5.
+
+Thu 13th Feb 2025       Library/words.ml, Examples/bitblast.ml
+
+Enhanced the bit-blasting rule and tactic to handle signed integer comparisons
+as well as unsigned ones in the top-level atomic formulas, basically by adding
+analogs of WORDIFY_CONV and related functions for integers instead of natural
+numbers, like IWORDIFY_CONV. It would be possible to rewrite away natural number
+atoms into integer ones (e.g. using INT_OF_NUM_LT) and then just avoid the
+natural number ones entirely, reducing the amount of highly analogous but
+different code. But it would occasionally have a small impact on the word sizes
+used.
+
+Fri  7th Feb 2025       define.ml, unit_tests.ml
+
+Added a fix from June Lee for a subtle problem over benign redefinitions
+in "define". When the definition is presented in the typical way via term
+quotation, the underlying term is different when the function is first
+defined (when a variable takes the place of the constant to be defined)
+and when a benign redefinition occurs (when it actually parses as that
+constant). This means that if the constant is polymorphic, it is possible
+to have more general type instantiations in the latter case, assigning
+different types to different instances of the constant. By contrast,
+all variables of the same name in the same scope are assumed to have
+the same type in the quotation parser. For example:
+
+  # `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  <-- `h` is a variable, so the second `h` in the right clause is also typed as `A list -> num`
+
+   # define `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  <-- makes `h` a constant
+
+   # `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  <-- now `h` is a constant, so the second `h` in the right clause is assigned `:(?143198)list->num`
+
+   # define `(h:A list -> num) [] = 0 /\ h (CONS _ t) = 1 + h t`;;
+  Warning: inventing type variables
+  Exception: Failure "close_definition_clauses: defining multiple functions".
+
+The redefinition above now works correctly as expected.
+
+Thu 23rd Jan 2025       compute.ml, unit_tests.ml
+
+Added the basic_compset() function from June Lee, which creates
+a fuller elementary compeset than bool_compset, also including
+the basic rewrites at the time of the call.
+
+Tue 21st Jan 2025       hol_lib.ml, unit_tests.ml
+
+Added the check_axioms() function from June Lee, which makes a check
+that no new axioms were introduced at call time, i.e. no axioms beyond
+the three standard HOL axioms ETA_AX, INFINITY_AX and SELECT_AX.
+
+Wed 15th Jan 2025       sets.ml
+
+Added preprocessing of the constants BIJ, INJ and SURJ (bijection, injection
+and surjection) to SET_TAC and hence to SET_RULE, e.g.
+
+  SET_RULE `BIJ (\x. b) {a} {b}`;;
+
+Sat 21st Dec 2024       100/transcendence.ml [new file]
+
+Added a development of transcendence theory from Daniel J. Bernstein,
+currently a verbatim copy of the original:
+
+  https://cr.yp.to/2024/transcendence-20241221.ml
+
+This, among other results, re-proves the transcendence of e (using a
+different approach from "100/e_is_transcendental.ml") and proves the
+transcendence of pi:
+
+  e_is_transcendental =
+    |- ~algebraic_number (cexp (Cx (&1)))
+
+  pi_is_transcendental =
+    |- ~algebraic_number (Cx pi)
+
+as well as the full Lindemann theorem, which easily implies both of
+those and more:
+
+  zero_sum_algebraic_exp_algebraic =
+    |- forall S B.
+        FINITE S /\
+        S SUBSET algebraic_number /\
+        (forall s. s IN S ==> algebraic_number (B s)) /\
+        ring_sum complex_ring S (\s. B s * cexp s) = Cx (&0)
+        ==> (forall s. s IN S ==> B s = Cx (&0))
+
+This more general theorem is also commonly known as Hermite-Lindemann
+or Lindemann-Weierstrass; see the notes near the top of the file for some
+historical notes and overview of the proofs.
+
+Wed 20th Nov 2024       Makefile, calc_int.ml, calc_num.ml, calc_rat.ml, int.ml, unit_tests.ml, Library/words.ml
+
+Merged an update from June Lee adding conversions xxx_COMPUTE_CONV analogous
+to the existing xxx_REDUCE_CONV but using the call-by-value computational
+machinery in compute.ml:
+
+        NUM_COMPUTE_CONV - natural numbers (type `:num`)
+        INT_COMPUTE_CONV - integers (type `:int`)
+        REAL_INT_COMPUTE_CONV - integer-valued reals (type `:real`)
+        REAL_RAT_COMPUTE_CONV - rational-valued reals (type `:real`)
+        WORD_COMPUTE_CONV - machine words (type `:N word` for specific N)
+
+Thu  7th Nov 2024               Multivariate/vectors.ml, Library/matroids.ml [new file]
+
+Factored the material about linear dependence, span and dimension
+out of the specific setting of vectors in R^n and set it up as a
+general theory of "matroids". These don't have all the finiteness
+assumptions common in matroid theory, but could be considered as
+"finitary" (matroid span is assumed to have finite character).
+The setup roughly follows Pete Clark's "Field Theory" notes, 11.4:
+
+      http://alpha.math.uga.edu/~pete/FieldTheory.pdf
+
+Wed  6th Nov 2024               Library/words.ml
+
+Added one more theorem relating subwords and duplication, which is also
+now exploited inside WORD_SIMPLE_SUBWORD_CONV:
+
+  WORD_SUBWORD_DUPLICATE_DUPLICATE =
+    |- !x pos len.
+         pos MOD dimindex (:M) = 0 /\
+         dimindex (:P) <= len /\
+         pos + len <= dimindex (:N)
+         ==> word_subword (word_duplicate x) (pos,len) = word_duplicate x
+
+Wed  6th Nov 2024               int.ml
+
+Slightly refined the improvements to div/rem elimination made recently,
+to avoid exponential blowups while preserving the ability to deduce
+nonnegativity of the quotient in "easy" cases.
+
+Fri  1st Nov 2024               Library/words.ml
+
+Added both unsigned and signed *saturating* conversions from N and Z to
+machine words, which rather than wrapping modulo 2^wordsize as the main
+"word" and "iword" do, saturate at the extremal values of that size:
+
+  word_saturate =
+   |- word_saturate n =
+      if n > val word_UINT_MAX then word_UINT_MAX else word n
+
+  iword_saturate =
+    |- iword_saturate x =
+       if x < ival word_INT_MIN then word_INT_MIN
+       else if x > ival word_INT_MAX then word_INT_MAX
+       else iword x
+
+Also added a natural "word_duplicate" operation, a kind of iterated
+word_join inferring relative sizes and hence number of duplicates from
+the types.
+
+  word_duplicate =
+    |- (word_duplicate:M word->N word) x =
+       word_of_bits {i | bit (i MOD dimindex (:M)) x
+
+There are also a few elementary lemmas about it:
+
+  BIT_WORD_DUPLICATE =
+    |- !x i.
+           bit i (word_duplicate x) <=>
+           i < dimindex(:N) /\ bit (i MOD dimindex(:M)) x
+
+  VAL_WORD_DUPLICATE =
+    |- !x k.
+           dimindex(:N) <= k * dimindex(:M)
+           ==> val (word_duplicate x) =
+               ((2 EXP (k * dimindex(:M)) - 1) DIV (2 EXP dimindex(:M) - 1) *
+                val x) MOD
+               2 EXP dimindex(:N)
+
+  WORD_DUPLICATE =
+    |- !m k.
+           dimindex(:N) <= k * dimindex(:M)
+           ==> word_duplicate (word m) =
+               word
+               ((2 EXP (k * dimindex(:M)) - 1) DIV (2 EXP dimindex(:M) - 1) *
+                m MOD 2 EXP dimindex(:M))
+
+  WORD_DUPLICATE_DOUBLE =
+    |- !x. word_duplicate (word_join x x) = word_duplicate x
+
+  WORD_DUPLICATE_REFL =
+    |- !x. word_duplicate x = x
+
+  WORD_SUBWORD_DUPLICATE =
+    |- !x pos len.
+           pos MOD dimindex(:M) + len <= dimindex(:M) /\
+           pos + len <= dimindex(:N)
+           ==> word_subword (word_duplicate x) (pos,len) =
+               word_subword x (pos MOD dimindex(:M),len)
+
+The relevant conversions like BIT_WORD_CONV, SIMPLE_WORD_SUBWORD_CONV
+and WORD_RED_CONV have all been updated to take these three new operations
+into account.
+
+Tue 22nd Oct 2024               Library/words.ml
+
+Added several new lemmas for "simple subwords of composite word
+expressions":
+
+    WORD_SUBWORD_INSERT_INNER
+    WORD_SUBWORD_INSERT_OUTER
+    WORD_SUBWORD_JOIN_LOWER
+    WORD_SUBWORD_JOIN_UPPER
+    WORD_SUBWORD_SUBWORD
+    WORD_SUBWORD_TRIVIAL
+
+as well as a new conversion WORD_SIMPLE_SUBWORD_CONV that packages
+them up into a simplifying function, e.g.
+
+  # WORD_SIMPLE_SUBWORD_CONV `word_subword (x:int16) (0,16):int16`;;
+  val it : thm = |- word_subword x (0,16) = x
+
+  # WORD_SIMPLE_SUBWORD_CONV
+   `word_subword (word_join (x:int16) (y:int16):int32) (0,16):int16`;;
+  val it : thm = |- word_subword (word_join x y) (0,16) = word_subword y (0,16)
+
+  # WORD_SIMPLE_SUBWORD_CONV
+   `word_subword (word_subword (x:int64) (32,32):int32) (0,16):int16`;;
+  val it : thm =
+    |- word_subword (word_subword x (32,32)) (0,16) = word_subword x (32,16)
+
+Tue 22nd Oct 2024               README, hol.ml, hol_4.sh, hol_4.14.sh, opam [new file], META [new file]
+
+Added updates from June Lee with new files containing metadata for
+opam, as well as appropriately updated instructions in README to
+reflect that fact that now HOL Light can indeed now be installed via
+opam.
+
+This update also increases the version string to "3.0.0+" to reflect
+the freezing of a release of that name on the github page and adds a
+new option "-dir" to the hol.sh script that will print the HOL Light
+directory.
+
+Wed 16th Oct 2024               Library/ringtheory.ml
+
+Fixed identical degenerate-case bugs in the decision procedures
+RING_RULE and INTEGRAL_DOMAIN_RULE (the latter bug being also
+inherited by FIELD_TAC). Previously these would fail if the input
+problem was so trivial that the initial normalization converted
+it to "true", e.g.
+
+  RING_RULE `x:A = ring_1 r ==> x = ring_1 r`;;
+
+  INTEGRAL_DOMAIN_RULE `ring_mul r x z = y ==> ring_mul r x z = y`;;
+
+Wed 16th Oct 2024               int.ml
+
+Fixed a couple of bugs in the handling of div/rem in INT_ARITH that
+were collectively limiting its ability to reason about formulas using
+several div/rem operations with distinct arguments. For example, this
+didn't work before but now does:
+
+ let hbar = prove
+  (`!x. abs x <= &2 pow 15
+        ==> let sqdmulh = (&2 * &0x4ebf * x) div &2 pow 16 in
+            let srshr = (sqdmulh + &2 pow 10) div &2 pow 11 in
+            abs(x - &3329 * srshr) <= &1664`,
+   CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN INT_ARITH_TAC);;
+
+Sat 12th Oct 2024               update_database/passim [new directory]
+
+Merged updates from June Lee completing support for OCaml version 5. As
+well as fixing deprecated functions and adding a new "switch-5" option
+in the Makefile, this enables the use of dynamic updating of the theorem
+search database, which was a significant gap in earlier OCaml 5 support.
+As part of this, the "update_database*.ml" files have been moved to a
+new subdirectory "update_database".
+
+Wed  9th Oct 2024               Library/ringtheory.ml
+
+Added a number of miscellaneous and simple ring theory lemmas:
+
+        FIELD_HOMOMORPHISM_DIV
+        FIELD_HOMOMORPHISM_INV
+        FINITE_MONOMIAL_VARS
+        FINITE_MONOMIAL_VARS_1
+        IMAGE_POLY_EVAL
+        IMAGE_POLY_EXTEND_1
+        IN_IDEAL_GENERATED_SELF
+        IN_IDEAL_GENERATED_SING
+        IN_IDEAL_GENERATED_SING_EQ
+        ISOMORPHIC_TRANSPORT_OF_RING
+        POLY_DEG_SUBRING_GENERATED
+        POLY_EXTEND_FROM_SUBRING_GENERATED
+        POLY_EXTEND_INTO_SUBRING_GENERATED
+        POLY_SUBRING_GENERATED_1
+        POLY_SUBRING_GENERATED_CLAUSES
+        RING_0_IN_SUBRING_GENERATED
+        RING_1_IN_SUBRING_GENERATED
+        RING_ADD_IN_SUBRING_GENERATED
+        RING_HOMOMORPHISM_INV
+        RING_MONOMORPHISM_INTO_SUBRING
+        RING_MUL_IN_SUBRING_GENERATED
+        RING_NEG_IN_SUBRING_GENERATED
+        RING_POW_IN_SUBRING_GENERATED
+        RING_PRODUCT_SUBRING_GENERATED
+        RING_PRODUCT_SUBRING_GENERATED_GEN
+        RING_SUM_CASES
+        SUBRING_GENERATED_INC_GEN
+
+Wed  9th Oct 2024               EC/ccsm2.ml
+
+Added two more easy theorems by analogy with the earlier additions
+for NIST curves:
+
+  SM2_GROUP_ORDER =
+    |- CARD (group_carrier sm2_group) = n_sm2
+
+  SM2_GROUP_ELEMENT_ORDER =
+    |- !P. P IN group_carrier sm2_group
+           ==> group_element_order sm2_group P =
+               (if P = group_id sm2_group then 1 else n_sm2)
+
+Mon  7th Oct 2024               tactics.ml, pa_j/passim
+
+Merged an update from June Lee that provides an optional change in
+the behaviour of THEN, requiring that first tactic should produce only
+a single subgoal, rather than applying the second tactic to all the
+subgoals regardless of number. This is controlled by an expansion
+in the preprocessor switched by the special identifiers
+
+        set_then_multiple_subgoals
+        unset_then_multiple_subgoals
+
+The default behavior is "set_then_multiple_subgoals", which as before
+allows multiple subgoals.
+
+Tue 24th Sep 2024               bool.ml
+
+Added conveniently packaged interface mappings to set up more friendly
+syntax for the quantifiers. New functions "set_verbose_symbols" and
+"unset_verbose_symbols" enable and disable, respectively, these more
+verbose and descriptive names for some logical symbols:
+
+        F -> false
+        T -> true
+        ! -> forall
+        ? -> exists
+        ?! -> existsunique
+
+This is all done via interface maps. Not only is the underlying term
+structure unchanged (the "actual" names are the symbolic ones) but
+also the original syntax is accepted as an alternative:
+
+  # `exists x. x = 1` = `?x. x = 1`;;
+  val it : bool = true
+
+The new syntax is enabled by default, but can, as explained above,
+be switched off with "unset_verbose_symbols()".
+
+Thu 19th Sep 2024                .gitignore, Makefile, README,  hol.ml,  hol_4.14.sh,  hol_4.sh,  hol_lib.ml,  hol_lib_use_module.ml [new file],  inline_load.ml [new file]
+
+Merged an update from June Lee that enables compilation of HOL Light
+(supported for OCaml >= 4.14). It is controlled by the environment
+variable HOLLIGHT_USE_MODULE, such that doing:
+
+  HOLLIGHT_USE_MODULE=1 make
+
+will build "hol.sh" so that it uses the compiled "hol_lib.cmo".
+
+Thu 19th Sep 2024               impconv.ml
+
+Fix IMP_REWRITE_TAC and related tactics in impconv.ml to raise the
+preferred "Failure" exception rather than "Unchanged", making them
+consistent with the rest of the codebase and in particular compatible
+with tactic combinators like ORELSE. This change is from June Lee.
+
+Wed 18th Sep 2024               int.ml, Library/words.ml
+
+Made a small enhancement to div/rem elimination in INT_ARITH, making it
+handle the common case where divisor and dividend are nonnegative, thus
+being more comparable to ARITH_RULE.
+
+Made some improvements to WORD_ARITH/WORD_ARITH_TAC to further normalize
+constants and as a last resort write away all word expressions using numeric
+values, to widen the scope, e.g.
+
+  WORD_ARITH
+   `!m n. m < 4096 /\ n <= 511
+        ==> word_ule (word_add (word_mul (word n) (word 0x00001000)) (word m))
+                     (word 0x0000000001FFFFFF:int64)`;;
+
+Tue 17th Sep 2024               trivia.ml
+
+Added the special eta-conversion variant for the 1-element type:
+
+  ETA_ONE = |- !f:1->A. (\x. f one) = f
+
+Tue  3rd Sep 2024               Library/words.ml
+
+Made a couple of small improvements to BITBLAST_RULE: do more systematic
+reduction of word constant-expressions in the middle of prenormalization, and
+handle val(x) DIV 2^k and val(x) MOD 2^k in the initial bitwise expansion.
+(The recognition of powers of 2 in arbitrary numeric expressions is broken out
+as a separate conversion EMPOWER_CONV.) For example, this didn't work before
+but now does:
+
+  BITBLAST_RULE
+    `word_and x (word 256):int64 = word 0 <=> val x MOD 512 < 256`;;
+
+Fri 23rd Aug 2024               hol_lib.ml, hol_loader.ml [new files], passim
+
+Merged a refactoring from June Lee that factors out file loading so that it
+can be readily replaced with catenation and module compilation.
+
+Tue  6th Aug 2024               Makefile, bignum_num.ml, bignum_zarith.ml, hol.ml, system.ml, pa_j/passim
+
+Merged an update from June Lee that reorganizes the camlp5 preprocessing in
+various ways so that camlp5r can be used with pa_j.cmo as a standaline
+preprocessor, e.g. as follows:
+
+  ocamlc -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" test.ml
+
+This required several changes:
+
+  * Printing "* HOL-Light syntax in effect *" is redirected to stderr, not
+    stdout, because ocamlc was consuming the log from from stdout too.
+
+  * jrh_lexer is enabled by default.
+
+  * quotexpander is moved to pa_j.ml
+
+  * bignum files had to be separately compiled without using pa_j because
+    they were declaring modules which interfere with the preprocessor.
+
+Thu  1st Aug 2024               Library/prime.ml, Arithmetic/definability.ml
+
+Added a simple variant of an existing theorem PRIME_POWER_EXISTS,
+characterizing prime powers via their divisors:
+
+  PRIME_POWER_EXISTS_ALT =
+    |- !n p.
+           prime p
+           ==> ((?i. n = p EXP i) <=>
+                (!d. d divides n ==> d = 1 \/ p divides d))
+
+Used this to simplify the proof of primepow_DELTA in the arithmetic
+definability material, since it is only a minor elaboration of
+this lemma.
+
+Sat  6th Jul 2024               Makefile, README, pa_j [new directory], pa_j/pa_j_4.xx_8.03.ml
+
+Merged an update from June Lee adding camlp5 8.03 support and making it the
+target version for "make switch", as well as reorganizing this and previous
+pa_j files into a subdirectory with a README to explain how they are put
+together.
+
+Sat  6th Jul 2024               holtest, holtest.ml, holtest_parallel
+
+Merged an update from June Lee making the various HOL test files use the
+"hol.sh" script to invoke HOL Light.
+
+Fri  5th Jul 2024               EC/passim
+
+Added a couple more theorems (easy consequences of existing ones) for
+each one of the various Weierstrass curves, all analogs of the
+following for P-256:
+
+  P256_GROUP_ELEMENT_ORDER =
+    |- !P. P IN group_carrier p256_group
+           ==> group_element_order p256_group P =
+               if P = group_id p256_group then 1 else n_256
+
+  P256_GROUP_ORDER =
+    |- CARD(group_carrier p256_group) = n_256
+
+with the complete list of new theorems being
+
+        P192K1_GROUP_ELEMENT_ORDER
+        P192K1_GROUP_ORDER
+        P192_GROUP_ELEMENT_ORDER
+        P192_GROUP_ORDER
+        P224K1_GROUP_ELEMENT_ORDER
+        P224K1_GROUP_ORDER
+        P224_GROUP_ELEMENT_ORDER
+        P256K1_GROUP_ELEMENT_ORDER
+        P256K1_GROUP_ORDER
+        P256_GROUP_ELEMENT_ORDER
+        P256_GROUP_ORDER
+        P256_GROUP_ORDER
+        P384_GROUP_ELEMENT_ORDER
+        P384_GROUP_ORDER
+        P521_GROUP_ELEMENT_ORDER
+        P521_GROUP_ORDER
+
+Also consistently renamed all the following existing theorems:
+
+        FINITE_GROUP_CARRIER_192   -> FINITE_GROUP_CARRIER_P192
+        FINITE_GROUP_CARRIER_192K1 -> FINITE_GROUP_CARRIER_P192K1
+        FINITE_GROUP_CARRIER_224   -> FINITE_GROUP_CARRIER_P224
+        FINITE_GROUP_CARRIER_224K1 -> FINITE_GROUP_CARRIER_P224K1
+        FINITE_GROUP_CARRIER_256   -> FINITE_GROUP_CARRIER_P256
+        FINITE_GROUP_CARRIER_256K1 -> FINITE_GROUP_CARRIER_P256K1
+        FINITE_GROUP_CARRIER_384   -> FINITE_GROUP_CARRIER_P384
+        FINITE_GROUP_CARRIER_521   -> FINITE_GROUP_CARRIER_P521
+
+Wed  3rd Jul 2024               Library/prime.ml
+
+Added a little lemma that is trivial to construct but handy sometimes:
+
+  DIVIDES_EQ_ZERO = |- !p n. n < p ==> (p divides n <=> n = 0)
+
+Wed  3rd Jul 2024               Library/grouptheory.ml
+
+Added a few elementary group lemmas:
+
+  GROUP_ELEMENT_ORDER_PRIME =
+    |- !G a.
+           prime p /\ group_carrier G HAS_SIZE p /\ a IN group_carrier G
+           ==> group_element_order G a =
+               (if a = group_id G then 1 else CARD (group_carrier G))
+
+  GROUP_POW_MOD_ELEMENT_ORDER =
+    |- !G x n.
+           x IN group_carrier G
+           ==> group_pow G x (n MOD group_element_order G x) = group_pow G x n
+
+  GROUP_POW_MOD_ORDER =
+    |- !G x n.
+           FINITE (group_carrier G) /\ x IN group_carrier G
+           ==> group_pow G x (n MOD CARD (group_carrier G)) = group_pow G x n
+
+  GROUP_ZPOW_INV =
+    |- !G x n.
+           x IN group_carrier G
+           ==> group_zpow G (group_inv G x) n = group_zpow G x (--n)
+
+  GROUP_ZPOW_REM_ELEMENT_ORDER =
+    |- !G x n.
+           x IN group_carrier G
+           ==> group_zpow G x (n rem &(group_element_order G x)) =
+               group_zpow G x n
+
+  GROUP_ZPOW_REM_ORDER =
+    |- !G x n.
+           FINITE (group_carrier G) /\ x IN group_carrier G
+           ==> group_zpow G x (n rem &(CARD (group_carrier G))) =
+               group_zpow G x n
+
+Fri 28th Jun 2024               Library/ringtheory.ml
+
+Added more elementary ring lemmas including characterizations of units and
+nilpotents in polynomial rings:
+
+  IN_SUBRING_PRODUCT =
+    |- !r h f s.
+           h subring_of r /\ (!a. a IN s ==> f a IN h)
+           ==> ring_product r s f IN h
+
+  IN_SUBRING_SUM =
+    |- !r h f s.
+           h subring_of r /\ (!a. a IN s ==> f a IN h) ==> ring_sum r s f IN h
+
+  MONOMIAL_VAR_1 =
+    |- (!v. ~(monomial_var v = monomial_1)) /\
+       (!v. ~(monomial_1 = monomial_var v))
+
+  POLY_EVALUATE_AT_0 =
+    |- !r p.
+           p IN ring_carrier (poly_ring r v)
+           ==> poly_evaluate r p (\x. ring_0 r) = p monomial_1
+
+  POLY_EVAL_AT_0 =
+    |- !r p.
+           p IN ring_carrier (poly_ring r (:1))
+           ==> poly_eval r p (ring_0 r) = p (\v. 0)
+
+  POLY_EXTEND_AT_0 =
+    |- !r s v h p.
+           ring_homomorphism (r,s) h /\ p IN ring_carrier (poly_ring r v)
+           ==> poly_extend (r,s) h (\x. ring_0 s) p = h (p monomial_1)
+
+  POLY_MUL_MONOMIAL_1 =
+    |- !r p q.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_mul r p q monomial_1 =
+               ring_mul r (p monomial_1) (q monomial_1)
+
+  POLY_SUBRING_GENERATED =
+    |- !r s.
+           subring_generated (poly_ring r s)
+           ({poly_const r c | c | c IN ring_carrier r} UNION
+            {poly_var r x | x IN s}) =
+           poly_ring r s
+
+  RING_HOMOMORPHISM_MONOMIAL_1 =
+    |- !r v. ring_homomorphism (poly_ring r v,r) (\p. p monomial_1)
+
+  RING_NILPOTENT_POLY_RING =
+    |- !r s p.
+           ring_nilpotent (poly_ring r s) p <=>
+           p IN ring_carrier (poly_ring r s) /\ (!m. ring_nilpotent r (p m))
+
+  RING_NILPOTENT_SUM =
+    |- !r f s.
+           FINITE s /\ (!i. i IN s ==> ring_nilpotent r (f i))
+           ==> ring_nilpotent r (ring_sum r s f)
+
+  RING_UNIT_POLY_CONST =
+    |- !r s c. ring_unit (poly_ring r s) (poly_const r c) <=> ring_unit r c
+
+  RING_UNIT_POLY_DOMAIN =
+    |- !r s p.
+           integral_domain r
+           ==> (ring_unit (poly_ring r s) p <=>
+                (?c. ring_unit r c /\ p = poly_const r c))
+
+  RING_UNIT_POLY_RING =
+    |- !r s p.
+           ring_unit (poly_ring r s) p <=>
+           p IN ring_carrier (poly_ring r s) /\
+           ring_unit r (p monomial_1) /\
+           (!m. ~(m = monomial_1) ==> ring_nilpotent r (p m))
+
+Wed 19th Jun 2024               Library/bdd.ml
+
+Changed the data structures in the BDD code that are used to store the "unique"
+and "computed" tables from arrays to finite partial functions. This costs a
+small but noticeable amount in average-case performance since lookup is now
+log(n) instead of constant time. But it also avoids inherent arbitrary limits
+and so sometimes lets the code scale to somewhat larger problems.
+
+Sun  9th Jun 2024               Library/ringtheory.ml
+
+Added a slew of further elementary definitions and theorems about rings, in
+particular definitions of "local_ring" (local ring), "poly_deg" (degree of a
+polynomial), "poly_evaluate"/"poly_eval" (evaluation in the multivariate and
+univariate settings). In incompatible changes, the original name POLY_CONST_0
+is now used for a slightly different theorem. New definitions:
+
+  local_ring =
+    |- !r. local_ring r <=> (?!j. maximal_ideal r j)
+
+  poly_deg =
+    |- !p r.
+           poly_deg r p =
+           (minimal d. !m. ~(p m = ring_0 r) ==> monomial_deg m <= d)
+
+  poly_eval =
+    |- !r p x. poly_eval r p x = poly_evaluate r p (\v. x)
+
+  poly_evaluate =
+    |- !r x p. poly_evaluate r p x = poly_extend (r,r) I x p
+
+  poly_sub =
+    |- !r p1 p2. poly_sub r p1 p2 = (\m. ring_sub r (p1 m) (p2 m))
+
+and theorems:
+
+  EUCLIDEAN_POLY_RING =
+    |- !f. field f ==> euclidean_ring (poly_ring f (:1))
+
+  EXISTS_FUN_FROM_1 =
+    |- !P. (?f. P (f one) f) <=> (?z. P z (\v. z))
+
+  FIELD_IMP_LOCAL_RING =
+    |- !r. field r ==> local_ring r
+
+  FORALL_FUN_FROM_1 =
+    |- !P. (!f. P (f one) f) <=> (!z. P z (\v. z))
+
+  INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD =
+    |- quotient_ring integer_ring (ideal_generated integer_ring {&n})
+       isomorphic_ring integer_mod_ring n
+
+  INTEGER_RING_COSET_IDEAL_GENERATED_SING =
+    |- !n. ring_coset integer_ring (ideal_generated integer_ring {n}) = mod n
+
+  INTEGER_RING_IDEAL_GENERATED_SING =
+    |- !n. ideal_generated integer_ring {n} = {x | n divides x}
+
+  IN_POLY_RING_CARRIER =
+    |- !r s.
+           p IN ring_carrier (poly_ring r s) <=>
+           ring_polynomial r p /\ poly_vars r p SUBSET s
+
+  IN_RING_COSET =
+    |- !r j x y.
+           (ring_ideal r j \/ j subring_of r) /\
+           x IN ring_carrier r /\
+           y IN ring_carrier r
+           ==> (x IN ring_coset r j y <=> ring_coset r j x = ring_coset r j y)
+
+  IN_RING_POLYNOMIAL_CARRIER_COMPOSE =
+    |- !r s f v p.
+           ring_homomorphism (r,s) f /\ p IN ring_carrier (poly_ring r v)
+           ==> f o p IN ring_carrier (poly_ring s v)
+
+  IN_RING_POWERSERIES_CARRIER_COMPOSE =
+    |- !r s v f p.
+           ring_homomorphism (r,s) f /\ p IN ring_carrier (powser_ring r v)
+           ==> f o p IN ring_carrier (powser_ring s v)
+
+  ISOMORPHIC_RING_LOCALITY =
+    |- !r r'. r isomorphic_ring r' ==> (local_ring r <=> local_ring r')
+
+  ISOMORPHIC_SUBCOPY_OF_RING =
+    |- !r s.
+           ring_carrier r <=_c s
+           ==> (?r'. ring_carrier r' SUBSET s /\ r isomorphic_ring r')
+
+  LOCAL_IMP_NONTRIVIAL_RING =
+    |- !r. local_ring r ==> ~trivial_ring r
+
+  LOCAL_POWSER_RING =
+    |- !r s. local_ring r ==> local_ring (powser_ring r s)
+
+  LOCAL_QUOTIENT_RING =
+    |- !r j.
+           local_ring r /\ proper_ideal r j ==> local_ring (quotient_ring r j)
+
+  LOCAL_RING_EPIMORPHIC_IMAGE =
+    |- !r r' f.
+           ring_epimorphism (r,r') f /\ local_ring r /\ ~trivial_ring r'
+           ==> local_ring r'
+
+  LOCAL_RING_IDEAL_NONUNITS =
+    |- !r.
+           local_ring r <=>
+           ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
+
+  LOCAL_RING_LOCALIZATION =
+    |- !r j.
+           prime_ideal r j
+           ==> local_ring (ring_localization r (ring_carrier r DIFF j))
+
+  MAXIMAL_CONTAINING_IDEAL_EXISTS =
+    |- !r a.
+           a IN ring_carrier r /\ ~ring_unit r a
+           ==> (?j. maximal_ideal r j /\ a IN j)
+
+  MAXIMAL_IDEAL_NONUNITS =
+    |- !r.
+           maximal_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
+           ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
+
+  MONOMIAL_DEG =
+    |- !m. monomial_deg m = nsum (:V) m
+
+  MONOMIAL_DEG_LE_POLY_DEG =
+    |- !r p m.
+           ring_polynomial r p /\ ~(p m = ring_0 r)
+           ==> monomial_deg m <= poly_deg r p
+
+  MONOMIAL_DEG_UNIVARIATE =
+    |- !i. monomial_deg (\v. i) = i
+
+  MONOMIAL_VARS_UNIVARIATE =
+    |- !i. monomial_vars (\v. i) = (if i = 0 then {} else {one})
+
+  PID_POLY_RING =
+    |- !f. field f ==> PID (poly_ring f (:1))
+
+  POLY_0 =
+    |- !r. poly_0 r = (\m. ring_0 r)
+
+  POLY_CLAUSES =
+    |- (!r. {p | ring_polynomial r p} = ring_carrier (poly_ring r (:V))) /\
+       (!r. poly_0 r = ring_0 (poly_ring r (:V))) /\
+       (!r. poly_1 r = ring_1 (poly_ring r (:V))) /\
+       (!r. poly_neg r = ring_neg (poly_ring r (:V))) /\
+       (!r. poly_add r = ring_add (poly_ring r (:V))) /\
+       (!r. poly_sub r = ring_sub (poly_ring r (:V))) /\
+       (!r. poly_mul r = ring_mul (poly_ring r (:V)))
+
+  POLY_CONST_1 =
+    |- !r. poly_const r (ring_1 r) = poly_1 r
+
+  POLY_DEG_0 =
+    |- !r. poly_deg r (poly_0 r) = 0
+
+  POLY_DEG_1 =
+    |- !r. poly_deg r (poly_1 r) = 0
+
+  POLY_DEG_ADD =
+    |- !r p q.
+           ring_polynomial r p /\
+           ring_polynomial r q /\
+           ~(poly_deg r p = poly_deg r q)
+           ==> poly_deg r (poly_add r p q) = MAX (poly_deg r p) (poly_deg r q)
+
+  POLY_DEG_ADD_LE =
+    |- !r p q.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_deg r (poly_add r p q) <= MAX (poly_deg r p) (poly_deg r q)
+
+  POLY_DEG_CONST =
+    |- !r c. poly_deg r (poly_const r c) = 0
+
+  POLY_DEG_EQ =
+    |- !r p n.
+           ring_polynomial r p
+           ==> (poly_deg r p = n <=>
+                (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n) /\
+                (n = 0 \/ (?m. ~(p m = ring_0 r) /\ monomial_deg m = n)))
+
+  POLY_DEG_EQ_0 =
+    |- !r p.
+           ring_polynomial r p
+           ==> (poly_deg r p = 0 <=>
+                (?c. c IN ring_carrier r /\ p = poly_const r c))
+
+  POLY_DEG_EQ_0_ALT =
+    |- !r p.
+           ring_polynomial r p
+           ==> (poly_deg r p = 0 <=> p = poly_const r (p monomial_1))
+
+  POLY_DEG_GE =
+    |- !r p m n.
+           ring_polynomial r p /\ ~(p m = ring_0 r) /\ n <= monomial_deg m
+           ==> n <= poly_deg r p
+
+  POLY_DEG_GE_EQ =
+    |- !r p n.
+           ring_polynomial r p
+           ==> (n <= poly_deg r p <=>
+                n = 0 \/ (?m. ~(p m = ring_0 r) /\ n <= monomial_deg m))
+
+  POLY_DEG_HOMOMORPHIC_IMAGE =
+    |- !r s f p.
+           ring_homomorphism (r,s) f /\ ring_polynomial r p
+           ==> poly_deg s (f o p) <= poly_deg r p
+
+  POLY_DEG_LE =
+    |- !r p n.
+           ring_polynomial r p /\
+           (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n)
+           ==> poly_deg r p <= n
+
+  POLY_DEG_LE_EQ =
+    |- !r p n.
+           ring_polynomial r p
+           ==> (poly_deg r p <= n <=>
+                (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n))
+
+  POLY_DEG_MONOMIAL_EXISTS =
+    |- !r p.
+           ring_polynomial r p /\ ~(p = poly_0 r)
+           ==> (?m. ~(p m = ring_0 r) /\ monomial_deg m = poly_deg r p)
+
+  POLY_DEG_MONOMORPHIC_IMAGE =
+    |- !r s f p.
+           ring_monomorphism (r,s) f /\ ring_polynomial r p
+           ==> poly_deg s (f o p) = poly_deg r p
+
+  POLY_DEG_MUL =
+    |- !r p q.
+           integral_domain r /\
+           ring_polynomial r p /\
+           ring_polynomial r q /\
+           (p = poly_0 r <=> q = poly_0 r)
+           ==> poly_deg r (poly_mul r p q) = poly_deg r p + poly_deg r q
+
+  POLY_DEG_MUL_LE =
+    |- !r p q.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_deg r (poly_mul r p q) <= poly_deg r p + poly_deg r q
+
+  POLY_DEG_NEG =
+    |- !r p. ring_polynomial r p ==> poly_deg r (poly_neg r p) = poly_deg r p
+
+  POLY_DEG_RING_ADD_LE =
+    |- !r s p q n.
+           p IN ring_carrier (poly_ring r s) /\
+           q IN ring_carrier (poly_ring r s) /\
+           poly_deg r p <= n /\
+           poly_deg r q <= n
+           ==> poly_deg r (ring_add (poly_ring r s) p q) <= n
+
+  POLY_DEG_RING_SUB_LE =
+    |- !r s p q n.
+           p IN ring_carrier (poly_ring r s) /\
+           q IN ring_carrier (poly_ring r s) /\
+           poly_deg r p <= n /\
+           poly_deg r q <= n
+           ==> poly_deg r (ring_sub (poly_ring r s) p q) <= n
+
+  POLY_DEG_RING_SUM_LE =
+    |- !r s f k n.
+           FINITE k /\
+           (!i.
+                i IN k
+                ==> f i IN ring_carrier (poly_ring r s) /\
+                    poly_deg r (f i) <= n)
+           ==> poly_deg r (ring_sum (poly_ring r s) k f) <= n
+
+  POLY_DEG_SUB =
+    |- !r p q.
+           ring_polynomial r p /\
+           ring_polynomial r q /\
+           ~(poly_deg r p = poly_deg r q)
+           ==> poly_deg r (poly_sub r p q) = MAX (poly_deg r p) (poly_deg r q)
+
+  POLY_DEG_SUB_LE =
+    |- !r p q.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_deg r (poly_sub r p q) <= MAX (poly_deg r p) (poly_deg r q)
+
+  POLY_DEG_UNIQUE =
+    |- !r p n.
+           ring_polynomial r p /\
+           (!m. ~(p m = ring_0 r) ==> monomial_deg m <= n) /\
+           (n = 0 \/ (?m. ~(p m = ring_0 r) /\ monomial_deg m = n))
+           ==> poly_deg r p = n
+
+  POLY_DEG_VAR =
+    |- !r. poly_deg r (poly_var r v) = (if ring_1 r = ring_0 r then 0 else 1)
+
+  POLY_DEG_VAR_POW =
+    |- !r s i k.
+           poly_deg r (ring_pow (poly_ring r s) (poly_var r i) k) =
+           (if ring_1 r = ring_0 r then 0 else k)
+
+  POLY_DIVIDES_X_MINUS_A =
+    |- !r a p.
+           a IN ring_carrier r /\ p IN ring_carrier (poly_ring r (:1))
+           ==> ring_divides (poly_ring r (:1))
+               (poly_sub r (poly_var r one) (poly_const r a))
+               (poly_sub r p (poly_const r (poly_eval r p a)))
+
+  POLY_DIVIDES_X_MINUS_ROOT =
+    |- !r a p.
+           a IN ring_carrier r /\
+           p IN ring_carrier (poly_ring r (:1)) /\
+           poly_eval r p a = ring_0 r
+           ==> ring_divides (poly_ring r (:1))
+               (poly_sub r (poly_var r one) (poly_const r a))
+               p
+
+  POLY_DIVIDES_X_MINUS_ROOT_EQ =
+    |- !r a p.
+           a IN ring_carrier r /\ p IN ring_carrier (poly_ring r (:1))
+           ==> (ring_divides (poly_ring r (:1))
+                (poly_sub r (poly_var r one) (poly_const r a))
+                p <=>
+                poly_eval r p a = ring_0 r)
+
+  POLY_DIVISION =
+    |- !f p d.
+           field f /\
+           p IN ring_carrier (poly_ring f (:1)) /\
+           d IN ring_carrier (poly_ring f (:1)) /\
+           ~(d = ring_0 (poly_ring f (:1)))
+           ==> (?q t.
+                    q IN ring_carrier (poly_ring f (:1)) /\
+                    t IN ring_carrier (poly_ring f (:1)) /\
+                    (poly_deg f t < poly_deg f d \/
+                     t = ring_0 (poly_ring f (:1))) /\
+                    ring_add (poly_ring f (:1))
+                    (ring_mul (poly_ring f (:1)) q d)
+                    t =
+                    p)
+
+  POLY_DIVISION_GEN =
+    |- !r p d.
+           p IN ring_carrier (poly_ring r (:1)) /\
+           d IN ring_carrier (poly_ring r (:1)) /\
+           ring_unit r (d (\v. poly_deg r d))
+           ==> (?q t.
+                    q IN ring_carrier (poly_ring r (:1)) /\
+                    t IN ring_carrier (poly_ring r (:1)) /\
+                    (poly_deg r t < poly_deg r d \/
+                     t = ring_0 (poly_ring r (:1))) /\
+                    ring_add (poly_ring r (:1))
+                    (ring_mul (poly_ring r (:1)) q d)
+                    t =
+                    p)
+
+  POLY_EQ_0_MONOMORPHIC_IMAGE =
+    |- !r s f p.
+           ring_monomorphism (r,s) f /\ ring_polynomial r p
+           ==> (f o p = poly_0 s <=> p = poly_0 r)
+
+  POLY_EVAL =
+    |- !r p x. poly_eval r p x IN ring_carrier r
+
+  POLY_EVALUATE =
+    |- !r p x. poly_evaluate r p x IN ring_carrier r
+
+  POLY_EVALUATE_0 =
+    |- !r x. poly_evaluate r (poly_0 r) x = ring_0 r
+
+  POLY_EVALUATE_1 =
+    |- !r x. poly_evaluate r (poly_1 r) x = ring_1 r
+
+  POLY_EVALUATE_ADD =
+    |- !r p q x.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_evaluate r (poly_add r p q) x =
+               ring_add r (poly_evaluate r p x) (poly_evaluate r q x)
+
+  POLY_EVALUATE_CONST =
+    |- !r a x. a IN ring_carrier r ==> poly_evaluate r (poly_const r a) x = a
+
+  POLY_EVALUATE_EQ =
+    |- !r s p x y.
+           (!i. i IN s ==> x i IN ring_carrier r) /\
+           (!i. i IN s ==> x i = y i) /\
+           p IN ring_carrier (poly_ring r s)
+           ==> poly_evaluate r p x = poly_evaluate r p y
+
+  POLY_EVALUATE_HOMOMORPHIC_IMAGE =
+    |- !r s x f v p.
+           ring_homomorphism (r,s) f /\
+           IMAGE x v SUBSET ring_carrier r /\
+           p IN ring_carrier (poly_ring r v)
+           ==> f (poly_evaluate r p x) = poly_evaluate s (f o p) (f o x)
+
+  POLY_EVALUATE_MUL =
+    |- !r p q x.
+           ring_polynomial r p /\
+           ring_polynomial r q /\
+           (!i.
+                i IN poly_vars r p UNION poly_vars r q
+                ==> x i IN ring_carrier r)
+           ==> poly_evaluate r (poly_mul r p q) x =
+               ring_mul r (poly_evaluate r p x) (poly_evaluate r q x)
+
+  POLY_EVALUATE_SUB =
+    |- !r p q x.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_evaluate r (poly_sub r p q) x =
+               ring_sub r (poly_evaluate r p x) (poly_evaluate r q x)
+
+  POLY_EVALUATE_VAR =
+    |- !r i x. x i IN ring_carrier r ==> poly_evaluate r (poly_var r i) x = x i
+
+  POLY_EVAL_0 =
+    |- !r x. poly_eval r (poly_0 r) x = ring_0 r
+
+  POLY_EVAL_1 =
+    |- !r x. poly_eval r (poly_1 r) x = ring_1 r
+
+  POLY_EVAL_ADD =
+    |- !r p q x.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_eval r (poly_add r p q) x =
+               ring_add r (poly_eval r p x) (poly_eval r q x)
+
+  POLY_EVAL_CONST =
+    |- !r a x. a IN ring_carrier r ==> poly_eval r (poly_const r a) x = a
+
+  POLY_EVAL_EXPAND =
+    |- !r x p.
+           x IN ring_carrier r /\ p IN ring_carrier (poly_ring r (:1))
+           ==> poly_eval r p x =
+               ring_sum r (0..poly_deg r p)
+               (\i. ring_mul r (p (\v. i)) (ring_pow r x i))
+
+  POLY_EVAL_HOMOMORPHIC_IMAGE =
+    |- !r s x f p.
+           ring_homomorphism (r,s) f /\
+           x IN ring_carrier r /\
+           p IN ring_carrier (poly_ring r (:1))
+           ==> f (poly_eval r p x) = poly_eval s (f o p) (f x)
+
+  POLY_EVAL_MUL =
+    |- !r p q x.
+           ring_polynomial r p /\ ring_polynomial r q /\ x IN ring_carrier r
+           ==> poly_eval r (poly_mul r p q) x =
+               ring_mul r (poly_eval r p x) (poly_eval r q x)
+
+  POLY_EVAL_SUB =
+    |- !r p q x.
+           ring_polynomial r p /\ ring_polynomial r q
+           ==> poly_eval r (poly_sub r p q) x =
+               ring_sub r (poly_eval r p x) (poly_eval r q x)
+
+  POLY_EVAL_VAR =
+    |- !r x. x IN ring_carrier r ==> poly_eval r (poly_var r one) x = x
+
+  POLY_EXPAND =
+    |- !r p.
+           p IN ring_carrier (poly_ring r (:1))
+           ==> p =
+               ring_sum (poly_ring r (:1)) (0..poly_deg r p)
+               (\i.
+                    ring_mul (poly_ring r (:1)) (poly_const r (p (\v. i)))
+                    (ring_pow (poly_ring r (:1)) (poly_var r one) i))
+
+  POLY_EXTEND_EQ =
+    |- !r r' s h k x y p.
+           ring_homomorphism (r,r') h /\
+           (!i. i IN s ==> x i IN ring_carrier r') /\
+           (!a. a IN ring_carrier r ==> h a = k a) /\
+           (!i. i IN s ==> x i = y i) /\
+           p IN ring_carrier (poly_ring r s)
+           ==> poly_extend (r,r') h x p = poly_extend (r,r') k y p
+
+  POLY_EXTEND_EVALUATE =
+    |- !r s f x p.
+           ring_homomorphism (r,s) f
+           ==> poly_extend (r,s) f x p = poly_evaluate s (f o p) x
+
+  POLY_EXTEND_HOMOMORPHIC_IMAGE =
+    |- !r s t h v x f p.
+           ring_homomorphism (r,s) h /\
+           ring_homomorphism (s,t) f /\
+           IMAGE x v SUBSET ring_carrier s /\
+           p IN ring_carrier (poly_ring r v)
+           ==> f (poly_extend (r,s) h x p) =
+               poly_extend (r,t) (f o h) (f o x) p
+
+  POLY_EXTEND_SUB =
+    |- !r r' h x p1 p2.
+           ring_homomorphism (r,r') h /\
+           ring_polynomial r p1 /\
+           ring_polynomial r p2
+           ==> poly_extend (r,r') h x (poly_sub r p1 p2) =
+               ring_sub r' (poly_extend (r,r') h x p1)
+               (poly_extend (r,r') h x p2)
+
+  POLY_EXTEND_UNIVARIATE =
+    |- !r r' h x p.
+           ring_homomorphism (r,r') h /\
+           x one IN ring_carrier r' /\
+           p IN ring_carrier (poly_ring r (:1))
+           ==> poly_extend (r,r') h x p =
+               ring_sum r' (0..poly_deg r p)
+               (\i. ring_mul r' (h (p (\v. i))) (ring_pow r' (x one) i))
+
+  POLY_MONOMIALS =
+    |- !r s m.
+           p IN ring_carrier (poly_ring r s) /\ ~(p m = ring_0 r)
+           ==> monomial s m
+
+  POLY_MONOMIALS_FINITE =
+    |- !r s.
+           p IN ring_carrier (poly_ring r s) ==> FINITE {m | ~(p m = ring_0 r)}
+
+  POLY_MONOMIAL_IN_CARRIER =
+    |- !r s p m. p IN ring_carrier (poly_ring r s) ==> p m IN ring_carrier r
+
+  POLY_MUL_0 =
+    |- (!r p. ring_polynomial r p ==> poly_mul r p (poly_0 r) = poly_0 r) /\
+       (!r q. ring_polynomial r q ==> poly_mul r (poly_0 r) q = poly_0 r)
+
+  POLY_RING_CLAUSES =
+    |- (!r s.
+            ring_carrier (poly_ring r s) =
+            {p | ring_polynomial r p /\ poly_vars r p SUBSET s}) /\
+       (!r s. ring_0 (poly_ring r s) = poly_0 r) /\
+       (!r s. ring_1 (poly_ring r s) = poly_1 r) /\
+       (!r s. ring_neg (poly_ring r s) = poly_neg r) /\
+       (!r s. ring_add (poly_ring r s) = poly_add r) /\
+       (!r s. ring_sub (poly_ring r s) = poly_sub r) /\
+       (!r s. ring_mul (poly_ring r s) = poly_mul r)
+
+  POLY_ROOT_BOUND =
+    |- !r p.
+           integral_domain r /\
+           p IN ring_carrier (poly_ring r (:1)) /\
+           ~(p = ring_0 (poly_ring r (:1)))
+           ==> FINITE {x | x IN ring_carrier r /\ poly_eval r p x = ring_0 r} /\
+               CARD {x | x IN ring_carrier r /\ poly_eval r p x = ring_0 r} <=
+               poly_deg r p
+
+  POLY_SUB =
+    |- !r p q. poly_sub r p q = poly_add r p (poly_neg r q)
+
+  POLY_TOP_MONOMIAL_LE =
+    |- !(<<=) r p.
+           toset (<<=) /\
+           fld (<<=) = (:V) /\
+           ring_polynomial r p /\
+           ~(p = poly_0 r)
+           ==> (?m.
+                    ~(p m = ring_0 r) /\
+                    monomial_deg m = poly_deg r p /\
+                    (!m'.
+                         ~(p m' = ring_0 r) /\ monomial_deg m' = poly_deg r p
+                         ==> monomial_le (<<=) m' m))
+
+  POLY_TOP_MONOMIAL_LT =
+    |- !(<<=) r p.
+           toset (<<=) /\
+           fld (<<=) = (:V) /\
+           ring_polynomial r p /\
+           ~(p = poly_0 r)
+           ==> (?m.
+                    ~(p m = ring_0 r) /\
+                    monomial_deg m = poly_deg r p /\
+                    (!m'.
+                         ~(p m' = ring_0 r) /\
+                         monomial_deg m' = poly_deg r p /\
+                         ~(m' = m)
+                         ==> monomial_lt (<<=) m' m))
+
+  POLY_TOP_NONZERO =
+    |- !r p.
+           p IN ring_carrier (poly_ring r (:1)) /\
+           ~(p = ring_0 (poly_ring r (:1)))
+           ==> ~(p (\v. poly_deg r p) = ring_0 r)
+
+  POLY_TOP_TAIL =
+    |- !r p.
+           p IN ring_carrier (poly_ring r (:1)) /\
+           ~(p = ring_0 (poly_ring r (:1)))
+           ==> (?q.
+                    q IN ring_carrier (poly_ring r (:1)) /\
+                    (poly_deg r q < poly_deg r p \/
+                     q = ring_0 (poly_ring r (:1))) /\
+                    ring_add (poly_ring r (:1))
+                    (ring_mul (poly_ring r (:1))
+                     (poly_const r (p (\v. poly_deg r p)))
+                    (ring_pow (poly_ring r (:1)) (poly_var r one)
+                    (poly_deg r p)))
+                    q =
+                    p)
+
+  POLY_VAR_UNIV =
+    |- !r i. poly_var r i IN ring_carrier (poly_ring r (:V))
+
+  POWSER_MONOMIALS =
+    |- !r s m.
+           p IN ring_carrier (powser_ring r s) /\ ~(p m = ring_0 r)
+           ==> monomial s m
+
+  POWSER_MONOMIAL_IN_CARRIER =
+    |- !r s p m. p IN ring_carrier (powser_ring r s) ==> p m IN ring_carrier r
+
+  POWSER_VAR_UNIV =
+    |- !r i. poly_var r i IN ring_carrier (powser_ring r (:V))
+
+  PRIME_IDEAL_CONTAINS_NILPOTENTS =
+    |- !r j. prime_ideal r j ==> {x | ring_nilpotent r x} SUBSET j
+
+  PRIME_IDEAL_NONUNITS =
+    |- !r.
+           prime_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
+           ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
+
+  PROPER_IDEAL_NONUNITS =
+    |- !r.
+           proper_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
+           ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x}
+
+  PROPER_IDEAL_SUBSET_NONUNITS =
+    |- !r j.
+           proper_ideal r j
+           ==> j SUBSET {x | x IN ring_carrier r /\ ~ring_unit r x}
+
+  RING_COSET_IDEAL_GENERATED_SING =
+    |- !r a x.
+           a IN ring_carrier r /\ x IN ring_carrier r
+           ==> ring_coset r (ideal_generated r {a}) x =
+               {y | y IN ring_carrier r /\ ring_divides r a (ring_sub r x y)}
+
+  RING_COSET_IDEAL_GENERATED_SING_EQ =
+    |- !r a x y.
+           a IN ring_carrier r /\ x IN ring_carrier r /\ y IN ring_carrier r
+           ==> (ring_coset r (ideal_generated r {a}) x =
+                ring_coset r (ideal_generated r {a}) y <=>
+                ring_divides r a (ring_sub r x y))
+
+  RING_COSET_RELATIONAL =
+    |- !r j x y.
+           (ring_ideal r j \/ j subring_of r) /\
+           x IN ring_carrier r /\
+           y IN ring_carrier r
+           ==> (ring_coset r j x y <=> ring_coset r j x = ring_coset r j y)
+
+  RING_EPIMORPHISM_I =
+    |- !r. ring_epimorphism (r,r) I
+
+  RING_EPIMORPHISM_POLY_EVAL =
+    |- !r s x.
+           x IN ring_carrier r
+           ==> ring_epimorphism (poly_ring r s,r) (\p. poly_eval r p x)
+
+  RING_EPIMORPHISM_POLY_EVALUATE =
+    |- !r s x.
+           IMAGE x s SUBSET ring_carrier r
+           ==> ring_epimorphism (poly_ring r s,r) (\p. poly_evaluate r p x)
+
+  RING_EPIMORPHISM_POLY_RINGS =
+    |- !r s f v.
+           ring_epimorphism (r,s) f
+           ==> ring_epimorphism (poly_ring r v,poly_ring s v) (\p. f o p)
+
+  RING_EPIMORPHISM_POWSER_RINGS =
+    |- !r s f v.
+           ring_epimorphism (r,s) f
+           ==> ring_epimorphism (powser_ring r v,powser_ring s v) (\p. f o p)
+
+  RING_HOMOMORPHISM_I =
+    |- !r. ring_homomorphism (r,r) I
+
+  RING_HOMOMORPHISM_INTEGER_MOD_RINGS =
+    |- !p m n.
+           ring_homomorphism (integer_mod_ring m,integer_mod_ring n)
+           (\x. x rem &n) <=>
+           n divides m
+
+  RING_HOMOMORPHISM_INTEGER_MOD_RINGS_POW =
+    |- !p i j.
+           i <= j
+           ==> ring_homomorphism
+               (integer_mod_ring (p EXP j),integer_mod_ring (p EXP i))
+               (\x. x rem &p pow i)
+
+  RING_HOMOMORPHISM_POLY_EVAL =
+    |- !r s x.
+           x IN ring_carrier r
+           ==> ring_homomorphism (poly_ring r s,r) (\p. poly_eval r p x)
+
+  RING_HOMOMORPHISM_POLY_EVALUATE =
+    |- !r s x.
+           IMAGE x s SUBSET ring_carrier r
+           ==> ring_homomorphism (poly_ring r s,r) (\p. poly_evaluate r p x)
+
+  RING_HOMOMORPHISM_POLY_RINGS =
+    |- !r s f v.
+           ring_homomorphism (r,s) f
+           ==> ring_homomorphism (poly_ring r v,poly_ring s v) (\p. f o p)
+
+  RING_HOMOMORPHISM_POWSER_RINGS =
+    |- !r s f v.
+           ring_homomorphism (r,s) f
+           ==> ring_homomorphism (powser_ring r v,powser_ring s v) (\p. f o p)
+
+  RING_IDEAL_NONUNITS =
+    |- !r.
+           ring_ideal r {x | x IN ring_carrier r /\ ~ring_unit r x} <=>
+           ~trivial_ring r /\
+           (!x y.
+                x IN ring_carrier r /\
+                ~ring_unit r x /\
+                y IN ring_carrier r /\
+                ~ring_unit r y
+                ==> ~ring_unit r (ring_add r x y))
+
+  RING_ISOMORPHISMS_I =
+    |- !r. ring_isomorphisms (r,r) (I,I)
+
+  RING_ISOMORPHISM_I =
+    |- !r. ring_isomorphism (r,r) I
+
+  RING_ISOMORPHISM_POLY_RINGS =
+    |- !r s f v.
+           ring_isomorphism (r,s) f
+           ==> ring_isomorphism (poly_ring r v,poly_ring s v) (\p. f o p)
+
+  RING_ISOMORPHISM_POWSER_RINGS =
+    |- !r s f v.
+           ring_isomorphism (r,s) f
+           ==> ring_isomorphism (powser_ring r v,powser_ring s v) (\p. f o p)
+
+  RING_MONOMORPHISM_I =
+    |- !r. ring_monomorphism (r,r) I
+
+  RING_MONOMORPHISM_POLY_RINGS =
+    |- !r s f v.
+           ring_monomorphism (r,s) f
+           ==> ring_monomorphism (poly_ring r v,poly_ring s v) (\p. f o p)
+
+  RING_MONOMORPHISM_POWSER_RINGS =
+    |- !r s f v.
+           ring_monomorphism (r,s) f
+           ==> ring_monomorphism (powser_ring r v,powser_ring s v) (\p. f o p)
+
+  RING_MULTSYS =
+    |- (!r s x. ring_multsys r s /\ x IN s ==> x IN ring_carrier r) /\
+       (!r s. ring_multsys r s ==> ring_1 r IN s) /\
+       (!r s x y. ring_multsys r s /\ x IN s /\ y IN s ==> ring_mul r x y IN s)
+
+  RING_NILPOTENT_UNIT =
+    |- !r x.
+           ring_unit r x /\ ring_nilpotent r x <=>
+           trivial_ring r /\ x = ring_0 r
+
+  RING_POLYNOMIAL =
+    |- !r p. ring_polynomial r p <=> p IN ring_carrier (poly_ring r (:V))
+
+  RING_POLYNOMIAL_CARRIER =
+    |- !r p.
+           ring_polynomial r p <=>
+           p IN ring_carrier (poly_ring r (poly_vars r p))
+
+  RING_POLYNOMIAL_CARRIER_GEN =
+    |- !r s p.
+           poly_vars r p SUBSET s
+           ==> (ring_polynomial r p <=> p IN ring_carrier (poly_ring r s))
+
+  RING_POLYNOMIAL_COMPOSE =
+    |- !r s f p.
+           ring_homomorphism (r,s) f /\ ring_polynomial r p
+           ==> ring_polynomial s (f o p)
+
+  RING_POLYNOMIAL_MONOMIAL =
+    |- !r p m. ring_polynomial r p /\ ~(p m = ring_0 r) ==> monomial (:V) m
+
+  RING_POLYNOMIAL_SUB =
+    |- !r p1 p2.
+           ring_polynomial r p1 /\ ring_polynomial r p2
+           ==> ring_polynomial r (poly_sub r p1 p2)
+
+  RING_POWERSERIES_COMPOSE =
+    |- !r s f p.
+           ring_homomorphism (r,s) f /\ ring_powerseries r p
+           ==> ring_powerseries s (f o p)
+
+  RING_POWERSERIES_MONOMIAL =
+    |- !r p m. ring_powerseries r p /\ ~(p m = ring_0 r) ==> monomial (:V) m
+
+  RING_POWERSERIES_SUB =
+    |- !r p1 p2.
+           ring_powerseries r p1 /\ ring_powerseries r p2
+           ==> ring_powerseries r (poly_sub r p1 p2)
+
+  RING_SATURATED_MULTSYS_NONPRIME =
+    |- !r j.
+           prime_ideal r j
+           ==> ring_multsys r (ring_carrier r DIFF j) /\
+               (!x y.
+                    x IN ring_carrier r /\
+                    y IN ring_carrier r /\
+                    ring_mul r x y IN ring_carrier r DIFF j
+                    ==> x IN ring_carrier r DIFF j /\
+                        y IN ring_carrier r DIFF j)
+
+  RING_SUM_CLAUSES_RIGHT =
+    |- !r f m n.
+           0 < n /\ m <= n
+           ==> ring_sum r (m..n) f =
+               (if f n IN ring_carrier r
+                then ring_add r (ring_sum r (m..n - 1) f) (f n)
+                else ring_sum r (m..n - 1) f)
+
+  RING_UNIT_LOCALEQUIV_EQ =
+    |- !r s a b.
+           ring_multsys r s /\
+           (!x y.
+                x IN ring_carrier r /\
+                y IN ring_carrier r /\
+                ring_mul r x y IN s
+                ==> x IN s /\ y IN s) /\
+           a IN ring_carrier r /\
+           b IN s
+           ==> (ring_unit (ring_localization r s) (ring_localequiv r s (a,b)) <=>
+                a IN s)
+
+  RING_UNIT_LOCALIZATION =
+    |- !r s c.
+           ring_multsys r s /\
+           (!x y.
+                x IN ring_carrier r /\
+                y IN ring_carrier r /\
+                ring_mul r x y IN s
+                ==> x IN s /\ y IN s)
+           ==> (ring_unit (ring_localization r s) c <=>
+                (?a b. a IN s /\ b IN s /\ c = ring_localequiv r s (a,b)))
+
+  UNIONS_PRIME_IDEALS =
+    |- !r.
+           UNIONS {j | prime_ideal r j} =
+           {x | x IN ring_carrier r /\ ~ring_unit r x}
+
+  UNIONS_PROPER_IDEALS =
+    |- !r.
+           UNIONS {j | proper_ideal r j} =
+           {x | x IN ring_carrier r /\ ~ring_unit r x}
+
+  UNIQUE_PRIME_IDEAL =
+    |- !r.
+           (?!j. prime_ideal r j) <=>
+           ~trivial_ring r /\
+           (!x. x IN ring_carrier r ==> ring_unit r x \/ ring_nilpotent r x)
+
+  UNIQUE_PRIME_IDEAL_IMP_LOCAL_RING =
+    |- !r. (?!j. prime_ideal r j) ==> local_ring r
+
+Thu  6th Jun 2024               Library/words.ml
+
+Added a more general variant of the existing theorem TWOS_COMPLEMENT:
+
+  TWOS_COMPLEMENT_GEN =
+    |- !p k n x.
+           (&n == x) (mod (&2 pow (p + k))) /\
+           n < 2 EXP (p + k) /\ --(&2 pow p) <= x /\ x < &2 pow p
+           ==> n DIV 2 EXP p = (2 EXP k - 1) * bitval (x < &0) /\
+               &n - &2 pow (p + k) * &(bitval (x < &0)) = x
+
+Thu 16th May 2024               metis.ml
+
+Added a small refinement from Joe Hurd that eliminates the
+catching of completely arbitrary exception patterns ("with _ -> ...")
+in the METIS code. In principle, such patterns could hide or be
+confused by asynchronous interrupts.
+
+Fri 10th May 2024               Makefile, README, hol_4.sh, hol_4.14.sh
+
+Added a new "make switch" Makefile option from June Lee, which automatically
+sets up an appropriate "local" OCaml implementation in an "_opam" subdirectory,
+removing versioning dependencies on the system-wide OCaml. This also updates
+the hol.sh shell scripts to invoke a line editor by default.
+
+Fri 10th May 2024               bignum_zarith.ml, Formal_ineqs/passim
+
+Added a number of updates to Formal_ineqs from Alexey Solovyev, including
+modifications for OCaml zarith and other improvements.
+
+Wed  8th May 2024               sets.ml, Library/grouptheory.ml, Library/ringtheory.ml
+
+Added a couple of generalizations of the existing FINITE_SUBSET_UNIONS_CHAIN
+(first to an equivalence, and then to directed families not just chains):
+
+  FINITE_SUBSET_UNIONS_CHAIN_EQ =
+   |- !f s. ~(f = {}) /\
+            (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t) /\
+            FINITE s
+            ==> (s SUBSET UNIONS f <=> ?t. t IN f /\ s SUBSET t)
+
+  FINITE_SUBSET_UNIONS_DIRECTED_EQ =
+   |- !f s. ~(f = {}) /\
+            (!t u. t IN f /\ u IN f
+                   ==> ?v. v IN f /\ t SUBSET v /\ u SUBSET v) /\
+            FINITE s
+            ==> (s SUBSET UNIONS f <=> ?t. t IN f /\ s SUBSET t)
+
+Also added theorems asserting the existence of direct limits of groups and
+rings, in the special case of actual inclusion maps (these are conceptually
+similar algebraic facts):
+
+  GROUP_DIRECT_LIMIT =
+    |- !c. ~(c = {}) /\
+           (!g g'. g IN c /\ g' IN c
+                   ==> ?G. G IN c /\
+                           group_monomorphism(g,G) I /\
+                           group_monomorphism(g',G) I)
+           ==> ?G. group_carrier G = UNIONS {group_carrier g | g IN c} /\
+                   !g. g IN c ==> group_monomorphism(g,G) I
+
+  RING_DIRECT_LIMIT =
+    |- !c. ~(c = {}) /\
+           (!r r'. r IN c /\ r' IN c
+                   ==> ?R. R IN c /\
+                           ring_monomorphism(r,R) I /\
+                           ring_monomorphism(r',R) I)
+           ==> ?R. ring_carrier R = UNIONS {ring_carrier r | r IN c} /\
+                   !r. r IN c ==> ring_monomorphism(r,R) I
+
+Mon  6th May 2024               Library/wo.ml
+
+Generalized the existing theorem HP (Hausdorff maximal principle) from
+posets to qosets (quasi-ordered sets = preorders), and also proved a
+variant of Zorn's lemma for qosets, expressing the set-theoretic aspects
+following current style using IN:
+
+  ZL_STRONG =
+    |- !l. qoset l /\
+           (!c. chain l c
+                ==> ?y. y IN fld l /\ !x. x IN c ==> l x y)
+           ==> ?y. y IN fld l /\ !x. l y x ==> l x y
+
+Added three trivial supporting lemmas, re-naming the old QOSET_REFL
+to QOSET_REFL_EQ to maintain terminological consistency with POSET_REFL:
+
+  QOSET_FLDEQ =
+    |- !l. qoset l ==> (!x. fld l x <=> l x x)
+
+  QOSET_REFL =
+    |- !l. qoset l ==> (!x. fld l x ==> l x x)
+
+  QOSET_TRANS =
+    |- !l. qoset l ==> (!x y z. l x y /\ l y z ==> l x z)
+
+Mon  6th May 2024               sets.ml
+
+Added an explicit characterization of the universe of the 1-element set:
+
+  UNIV_1 = |- (:1) = {one}
+
+Fri 26th Apr 2024               sets.ml
+
+Added a few set lemmas including a slightly curious characterization of
+unique existence:
+
+  EXISTS_UNIQUE_UNIONS_INTERS =
+   |- !P. (?!s. P s) <=> UNIONS {s | P s} = INTERS {s | P s}
+
+  SING_ALT =
+   |- !s. (?x. s = {x}) <=> ?!x. x IN s
+
+  UNIONS_EQ_INTERS =
+   |- !f. UNIONS f = INTERS f <=> ?s. f = {s}
+
+Tue 23rd Apr 2024               sets.ml
+
+Added one triviality about restriction:
+
+  RESTRICTION_UNIV =
+    |- !f. RESTRICTION (:A) f = f
+
+Mon 15th Apr 2024               Library/words.ml
+
+Added a few little lemmas giving characterizations of various orderings
+in terms of the top bit (cf. Hacker's Delight 2-11). They are mostly
+proved completely automatically by WORD_ARITH, but are sufficiently
+intricate that it seemed worth recording them.
+
+  WORD_COMPARISON_EQ =
+    |- !x y.
+           x = y <=>
+           bit (dimindex(:N) - 1)
+           (word_not (word_or (word_xor x y) (word_neg (word_xor x y))))
+
+  WORD_COMPARISON_ILE =
+    |- !x y.
+           ival x <= ival y <=>
+           bit (dimindex(:N) - 1)
+           (word_and (word_or x (word_not y))
+           (word_or (word_xor x y) (word_not (word_sub y x))))
+
+  WORD_COMPARISON_ILT =
+    |- !x y.
+           ival x < ival y <=>
+           bit (dimindex(:N) - 1)
+           (word_or (word_and x (word_not y))
+           (word_and (word_not (word_xor x y)) (word_sub x y)))
+
+  WORD_COMPARISON_NE =
+    |- !x y.
+           ~(x = y) <=>
+           bit (dimindex(:N) - 1)
+           (word_or (word_xor x y) (word_neg (word_xor x y)))
+
+  WORD_COMPARISON_ULE =
+    |- !x y.
+           val x <= val y <=>
+           bit (dimindex(:N) - 1)
+           (word_and (word_or (word_not x) y)
+           (word_or (word_xor x y) (word_not (word_sub y x))))
+
+  WORD_COMPARISON_ULT =
+    |- !x y.
+           val x < val y <=>
+           bit (dimindex(:N) - 1)
+           (word_or (word_and (word_not x) y)
+           (word_and (word_or (word_not x) y) (word_sub x y)))
+
+Mon 15th Apr 2024               printer.ml
+
+Made a very tiny tweak to the printer to allow/encourage linbreak after
+the varstruct of an abstraction, even if it consists of just a single
+variable.
+
+Fri 12th Apr 2024               Cadical/* [new directory]
+
+Added a proof-checking interface to the Cadical SAT solver
+(https://github.com/arminbiere/cadical). This is highly analogous
+to the existing interfaces to Minisat and zchaff in "Minisat/*"
+and uses some very similar code for CNF transformation. Among
+other facilities, this makes available a Cadical-powered tautology
+checker, with the LRAT proof produced by Cadical (it is tidied up
+with lrat-trim in the standard flow) checked in the HOL Light
+kernel. For example:
+
+  # CADICAL_PROVE `(p ==> q) <=> (p <=> p /\ q)`;;
+  val it : thm = |- p ==> q <=> p <=> p /\ q
+
+Thu 11th Apr 2024               Examples/complexpolygon.ml
+
+Added a proof that a polygon with all its vertices on the unit circle
+is closed under complex multiplication iff the vertices are the n'th
+complex roots of unity for some n. This is based on the discussion in
+
+  https://math.stackexchange.com/questions/4892153
+
+in particular the observation from Dario extending Carl Schildkraut's
+proof of the original problem to an equivalence.
+
+Thu 11th Apr 2024               Library/grouptheory.ml
+
+Added a few new miscellaneous theorems:
+
+  BILINEAR_IN_AFFINE_HULL =
+    |- !f s t x y.
+           bilinear f /\ x IN affine hull s /\ y IN affine hull t
+           ==> f x y IN affine hull {f a b | a IN s /\ b IN t}
+
+  BILINEAR_IN_CONVEX_HULL =
+    |- !f s t x y.
+           bilinear f /\ x IN convex hull s /\ y IN convex hull t
+           ==> f x y IN convex hull {f a b | a IN s /\ b IN t}
+
+  FINITE_SUBGROUP_OF_SETWISE =
+    |- !G s.
+           FINITE s
+           ==> (s subgroup_of G <=>
+                s SUBSET group_carrier G /\
+                ~(s = {}) /\
+                group_setmul G s s SUBSET s)
+
+  SIMPLEX_FURTHEST_LT_EXISTS =
+    |- !a s x.
+           x IN convex hull s /\ ~(x IN s)
+           ==> ?y. y IN s /\ norm(x - a) < norm(y - a)
+
+as well as generalizing both SIMPLEX_FURTHEST_LT and SIMPLEX_FURTHEST_LE_EXISTS
+to remove the finiteness assumption (hence perhaps making the "SIMPLEX" in the
+name a bit misleading).
+
+Tue  2nd Apr 2024               printer.ml, bool.ml, Arithmetic/passim, Model/passim
+
+Fixed a bug in the printer where the interface map was not reversed for
+binders. Also made a few minor name changes in the embedded logics to
+avoid using "true" and "false", to make room for using those as alternative
+names for T and F.
+
+Mon  1st Apr 2024               sets.ml
+
+Made a few useful improvements to SET_TAC and SET_RULE. First of all, they now
+deal with conditionals at least to some extent (the previous failure to do so
+was a basic bug). They also use streamlined versions of certain "write away set
+concepts" rules such as UNIONS_GSPEC, which can be helpful preprocessing to
+make the eventual MESON problem easier, or even provable at all. Here are a
+couple of trivial examples that now work but didn't previously:
+
+  SET_RULE `IMAGE (f:A->B) s = UNIONS {{f x} | x IN s}`;;
+
+  SET_RULE `{a,b} DELETE (a:A) = if a = b then {} else {b}`;;
+
+Fri 22nd Mar 2024               bool.ml
+
+Made a few tiny optimizations to basic rules like CONJUNCT1 by switching
+the implementation from PROVE_HYP to the underlying primitive rules
+DEDUCT_ANTISYM_RULE and EQ_MP. This has the advantage of skipping a check
+that in context we know is redundant (whether the PROVE_HYP is
+non-trivial in the sense that the assumption is not there to start with).
+
+Tue 19th Mar 2024               lib.ml
+
+Made "strings_of_file" and "string_of_file" more robust so they can handle
+bigger input files without problems. Previously, the core loop of
+"strings_of_file" was not tail recursive because the body was enclosed in
+a "try...with" block; this is now changed. The "string_of_file" function now
+just uses more basic library functions directly instead of calling
+"strings_of_file" and concatenating the results.
+
+Mon 18th Mar 2024               Library/words.ml, Examples/bitblast.ml [new file]
+
+Added a basic bit-blasting tactic and rule to the word library, using
+BDDs as the backend by default (BITBLAST_TAC and BITBLAST_RULE) but
+providing a more general BITBLAST_THEN that does the reduction followed
+by another tactic (e.g. SAT). The new file "Examples/bitblast.ml" gives
+a number of examples, mainly typical "Hacker's Delight" fare.
+
+Sat 16th Mar 2024               Examples/bondy.ml [new file]
+
+Added a new example, a proof of Bondy's theorem, following the first
+of the two proofs given in Bollobas's "Combinatorics" for Theorem 1 (p4).
+
+Fri 15th Mar 2024               Library/bdd.ml [new file], Examples/bdd_examples.ml [new file]
+
+Added a new file giving a basic implementation (as a HOL derived rule) of
+ordered binary decision diagrams with complement edges, a canonical form for
+Boolean formulas. The style of implementation follows Brace, Rudell and
+Bryant's paper "Efficient implementation of a BDD package" (DAC 1990). This
+implementation is distantly descended from the hol90 implementation in "Binary
+Decision Diagrams as a HOL Derived Rule", but greatly simplified since HOL
+Light handles pointer-eq subterms more efficiently and so we can avoid
+introducing any additional variables.
+
+The two top-level functions are BDD_TAUT just taking a formula and BDD_DEFTAUT
+taking both a list of variables determining the BDD variable order (allowed to
+be empty in which case the default is used) and a formula that is also allowed
+to contain "definitions". The examples in Examples/bdd_examples.ml give an idea
+how to use these options.
+
+Fri 15th Mar 2024               passim
+
+Made a number of explicit type variable choices in theorems (and occasionally
+fixed up or added quantifiers), just so things look tidier.
+
+Thu 14th Mar 2024               Makefile, README, .github/workflows/main.yml, .gitignore [new file], hol_4.14.sh [new file], hol_4.sh [new file]
+
+Added an update from June Lee that automatically creates (as part of
+the default "make" target) a shell script "hol.sh" to run HOL Light
+directly.
+
+Wed 13th Mar 2024               Library/ringtheory.ml
+
+Added a few more ring theory lemmas, mainly basic machinery including the
+usual "Chinese remainder theorem" facts about Z_{m*n}, and also the simple
+but rather obscure fact that Z_n is a von Neumann regular ring iff n is
+squarefree:
+
+  ISOMORPHIC_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           integer_mod_ring (m * n) isomorphic_ring
+           prod_ring (integer_mod_ring m) (integer_mod_ring n) <=>
+           coprime(m,n)
+
+  RING_CARRIER_INTEGER_MOD_RING =
+    |- !n. ring_carrier (integer_mod_ring n) = IMAGE (\x. x rem &n) (:int)
+
+  RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           ring_homomorphism
+           (integer_mod_ring (m * n),
+            prod_ring (integer_mod_ring m) (integer_mod_ring n))
+           (\a. a rem &m,a rem &n)
+
+  RING_ISOMORPHISM_PROD_INTEGER_MOD_RING =
+    |- !m n.
+           ring_isomorphism
+           (integer_mod_ring (m * n),
+            prod_ring (integer_mod_ring m) (integer_mod_ring n))
+           (\a. a rem &m,a rem &n) <=>
+           coprime(m,n)
+
+  RING_OF_INT_PROD_RING =
+    |- !r s n. ring_of_int (prod_ring r s) n = ring_of_int r n,ring_of_int s n
+
+  RING_OF_NUM_PROD_RING =
+    |- !r s n. ring_of_num (prod_ring r s) n = ring_of_num r n,ring_of_num s n
+
+  VNREGULAR_INTEGER_MOD_RING =
+    |- !n. vnregular_ring (integer_mod_ring n) <=> squarefree n
+
+Wed 13th Mar 2024               Library/prime.ml, Library/pocklington.ml
+
+Added a few more number theory lemmas, mainly involving "squarefree":
+
+  FORALL_PRIME_INDEX =
+    |- (!p. prime p ==> (!P. (!x. P (index p x)) <=> (!k. P k))) /\
+       (!p. prime p ==> (!P. (!x. ~(x = 0) ==> P (index p x)) <=> (!k. P k)))
+
+  SQUAREFREE =
+    |- !n. squarefree n <=>
+           ~(n = 0) /\ (!m k. n divides m EXP k ==> n divides m)
+
+  SQUAREFREE_ALT =
+    |- !n. squarefree n <=> ~(n = 0) /\ (!m. n divides m EXP 2 ==> n divides m)
+
+  SQUAREFREE_DIVEXP =
+    |- !n q x. squarefree q /\ q divides x EXP n ==> q divides x
+
+  SQUAREFREE_DIVEXP_EQ =
+    |- !n q x. squarefree q /\ ~(n = 0) ==> (q divides x EXP n <=> q divides x)
+
+  SQUAREFREE_DIVIDES =
+    |- !q n.
+           squarefree q
+           ==> (q divides n <=> (!p. prime p /\ p divides q ==> p divides n))
+
+  SQUAREFREE_GCD =
+    |- !m n. squarefree m \/ squarefree n ==> squarefree (gcd (m,n))
+
+  SQUAREFREE_GCD_SQUARE =
+    |- !n. squarefree n <=> (!x. gcd (x EXP 2,n) divides x)
+
+Tue 12th Mar 2024               sets.ml, passim
+
+Added one basic lemma that was previously regenerated many times via
+SET_RULE
+
+  IMAGE_EQ =
+    |- !f g s. (!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s
+
+as well as a couple of elaborations of "image of a set is <= the set"
+using two different imaging functions:
+
+  CARD_IMAGE_LE2 =
+    |- !f g s.
+           FINITE s /\ (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y)
+           ==> CARD(IMAGE f s) <= CARD(IMAGE g s)
+
+  CARD_IMAGE_LT2 =
+    |- !f g s.
+           FINITE s /\
+           (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y) /\
+           ~(!x y. x IN s /\ y IN s /\ f x = f y ==> g x = g y)
+           ==> CARD(IMAGE f s) < CARD(IMAGE g s)
+
+Mon 11th Mar 2024               basics.ml, Minisat/minisat_prove.ml
+
+Added a function "atoms" to return the set (as a list with no repetitions
+but arbitrary order) of atomic formulas in a term, considering it as a
+propositional formula and any non-propositional subterms as atomic:
+
+  # atoms `x < 1 \/ x > 1 ==> ~(x = 1)`;;
+  val it : term list = [`x < 1`; `x > 1`; `x = 1`]
+
+Fri  1st Mar 2024               Library/words.ml
+
+Added a few more miscellaneous word lemmas:
+
+  BIT_REVERSEFIELDS_1 =
+    |- !x i.
+           bit i (word_reversefields 1 x) <=>
+           i < dimindex (:N) /\ bit (dimindex (:N) - 1 - i) x
+
+  WORD_CLZ_REVERSEFIELDS =
+    |- !x. word_clz (word_reversefields 1 x) = word_ctz x
+
+  WORD_CTZ_EMULATION_POPCOUNT =
+    |- !x. word_ctz x =
+           word_popcount (word_and (word_not x) (word_sub x (word 1)))
+
+  WORD_CTZ_REVERSEFIELDS =
+    |- !x. word_ctz (word_reversefields 1 x) = word_clz x
+
+  WORD_EVENPARITY_POPCOUNT =
+    |- !x. word (bitval (word_evenparity x)) =
+           word_zx (word_not (word (word_popcount x)))
+
+  WORD_MUL_EXPAND =
+    |- !x y.
+           word_mul x y =
+           word
+           (nsum {i | i < dimindex (:N)}
+           (\i. bitval (bit i x) * val (word_shl y i)))
+
+  WORD_MUL_EXPAND_ALT =
+    |- !x y.
+           word_mul x y =
+           word
+           (nsum {i | i < dimindex (:N)}
+           (\i. val
+                (word_and (word_neg (word (bitval (bit i x)))) (word_shl y i))))
+
+  WORD_ODDPARITY_POPCOUNT =
+    |- !x. word (bitval (word_oddparity x)) = word_zx (word (word_popcount x))
+
+  WORD_POPCOUNT_MUL =
+    |- !x y. word_popcount (word_mul x y) <= word_popcount x * word_popcount y
+
+and two new type constructor/destructor utility functions,
+"dest_word_ty" and "mk_word_ty", e.g.
+
+  #  dest_word_ty `:int64`;;
+  val it : num = 64
+
+Fri  1st Mar 2024               printer.ml
+
+Added a new printing option from June Lee, controlled by a flag
+"print_types_of_subterms".
+
+        0 - Behaviour as before, no printing of types
+        1 - prints types of subterms containing invented type variables
+        2 - prints the types of all constants and variables
+
+Thu 29th Feb 2024               Library/words.ml
+
+Augmented BIT_WORD_CONV to handle the two special cases of condition
+and mask words based on "bitval b":
+
+  BIT_WORD_CONV `bit 0 (word(bitval b):byte)`;;
+
+  BIT_WORD_CONV `bit 42 (word_neg(word(bitval b)):int64)`;;
+
+Tue 27th Feb 2024               Minisat/minisat_prove.ml, Minisat/README, Minisat/zc2mso/README
+
+Made the overall GEN_SAT_PROVE, SAT_PROVE and ZSAT_PROVE initially convert
+any non-variable atomic formulas into variables before calling the core
+procedure. This makes things work on more general tautologies where the
+atomic formulas are arbitrary.
+
+Also made a few modernizations to the two README files to better reflect
+the current experience with MiniSat and zchaff.
+
+
+Wed 21st Feb 2024               EC/jacobian.ml
+
+Added some alternative definitions of Jacobian-coordinate elliptic curve
+operations with fewer special case distinctions, "jacobian_add_unexceptional"
+and "jacobian_double_unexceptional". The key theorems still work for these,
+with the exception of using the addition formula for doubling, which still
+needs to be handled separately:
+
+  WEIERSTRASS_OF_JACOBIAN_ADD_UNEXCEPTIONAL =
+    |- !f a b p q.
+          field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+          a IN ring_carrier f /\ b IN ring_carrier f /\
+          jacobian_point f p /\ jacobian_point f q /\
+          ~(jacobian_eq f p q)
+          ==> weierstrass_of_jacobian f (jacobian_add_unexceptional (f,a,b) p q) =
+              weierstrass_add (f,a,b)
+               (weierstrass_of_jacobian f p)
+               (weierstrass_of_jacobian f q)
+
+  WEIERSTRASS_OF_JACOBIAN_DOUBLE_UNEXCEPTIONAL =
+    |- !f a b p.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p
+        ==> weierstrass_of_jacobian f (jacobian_double_unexceptional (f,a,b) p) =
+            weierstrass_add (f,a,b)
+             (weierstrass_of_jacobian f p)
+             (weierstrass_of_jacobian f p)
+
+Wed 21st Feb 2024               calc_rat.ml, class.ml, define.ml, fusion.ml, int.ml, tactics.ml, Library/words.ml, Help/passim
+
+Added an update from June Lee with two new tactics
+
+  NAME_ASSUMS_TAC - names unlabelled assumptions ("H0", "H1" etc.)
+
+  PRINT_GOAL_TAC - prints the current subgoal, useful for debugging
+
+as well as several improvements in the error messages from automated
+rules and tactics.
+
+Wed 21st Feb 2024               Proofrecording/README
+
+Fixed a broken link, thanks to Yiyuan Cao, in the Proofrecording
+documentation, with an updated link to Chantal Keller's code for
+replaying HOL Light proofs in Coq.
+
+Tue 20th Feb 2024               Library/words.ml
+
+Added a few additional word lemmas:
+
+  DIGITSUM_UNIQUE =
+    |- !B b c s n.
+           FINITE s /\ (!i. i IN s ==> b i < B) /\ (!i. i IN s ==> c i < B)
+           ==> (nsum s (\i. B EXP i * b i) = nsum s (\i. B EXP i * c i) <=>
+                (!i. i IN s ==> b i = c i))
+
+  VAL_EXPAND_SUBWORDS =
+    |- !k m x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> nsum {i | i < m}
+               (\i. 2 EXP (k * i) * val (word_subword x (k * i,k))) =
+               val x
+
+  VAL_SUBWORDS_EQ =
+    |- !k m f x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> ((!i. i < m ==> val (word_subword x (k * i,k)) = f i) <=>
+                (!i. i < m ==> f i < 2 EXP k) /\
+                val x = nsum {i | i < m} (\i. 2 EXP (k * i) * f i))
+
+  WORD_SUBWORD_ADD =
+    |- !x y.
+           dimindex (:M) = len /\
+           pos + len <= dimindex (:N) /\
+           val x MOD 2 EXP pos + val y MOD 2 EXP pos < 2 EXP pos
+           ==> word_subword (word_add x y) (pos,len) =
+               word_add (word_subword x (pos,len)) (word_subword y (pos,len))
+
+  WORD_SUBWORDS_EQ =
+    |- !k m f x.
+           dimindex (:M) = k /\ dimindex (:N) = k * m
+           ==> ((!i. i < m ==> val (word_subword x (k * i,k)) = f i) <=>
+                (!i. i < m ==> f i < 2 EXP k) /\
+                word (nsum {i | i < m} (\i. 2 EXP (k * i) * f i)) = x)
+
+Tue 13th Feb 2024               arith.ml
+
+Added a few more conditions for distributing DIV or MOD over addition:
+
+  DIV_ADD_EQ =
+    |- !n x y. x MOD n + y MOD n < n ==> (x + y) DIV n = x DIV n + y DIV n
+
+  DIV_ADD_EQ_EQ =
+    |- !n x y.
+           (x + y) DIV n = x DIV n + y DIV n <=> n = 0 \/ x MOD n + y MOD n < n
+
+  MOD_ADD_EQ =
+    |- !n x y. x MOD n + y MOD n < n ==> (x + y) MOD n = x MOD n + y MOD n
+
+  MOD_ADD_EQ_EQ =
+    |- !n x y.
+           (x + y) MOD n = x MOD n + y MOD n <=> n = 0 \/ x MOD n + y MOD n < n
+
+Tue  6th Feb 2024               Library/words.ml
+
+Added a couple of little word lemmas:
+
+  INT_VAL_WORD_SUB =
+    |- !x y.
+           &(val (word_sub x y)) =
+           (&(val x) - &(val y)) rem &2 pow dimindex(:N)
+
+  IVAL_EQ_VAL =
+    |- !x. val x < 2 EXP (dimindex(:N) - 1) ==> ival x = &(val x)
+
+Mon  5th Feb 2024               Divstep/idivstep.ml
+
+Added a few simple divstep lemmas, noting that once g = 0 the update
+matrix remains diagonal thereafter:
+
+  DIVSTEP_MAT_DIAGONAL =
+    |- d f n. divstep_mat n (d,f,&0) $1$2 = &0 /\
+              divstep_mat n (d,f,&0) $2$1 = &0
+
+  DIVSTEP_MAT_DIAGONAL_1 =
+    |- !d f g n. g = &0 ==> divstep_mat n (d,f,g) $1$2 = &0
+
+  DIVSTEP_MAT_DIAGONAL_2 =
+    |- !d f g n. g = &0 ==> divstep_mat n (d,f,g) $2$1 = &0
+
+  IDIVSTEP_STAYS_ZERO =
+    |- !d f g d' f' g'.
+        g = &0 /\ idivstep(d,f,g) = d',f',g' ==> g' = &0
+
+Fri 12th Jan 2024               preterm.ml, Help/type_invention_error.hlp
+
+Added an update from June Lee to provide more explicit information
+to accompany the type variable invention error triggered when the
+"type_invention_warning" flag is set, e.g.
+
+  # type_invention_error := true;;
+  val it : unit = ()
+  # `f x`;;
+  Exception:
+  Failure "typechecking error (cannot infer type of variables): f, x".
+
+Fri 12th Jan 2024               README, Makefile
+
+Added an update from June Lee which now correctly documents not only
+the use of the DMTCP checkpointer with HOL Light, but also two other
+checkpointing tools, CRIU and selfie.
+
+Fri  3rd Nov 2023               cart.ml, Library/words.ml
+
+Added various lemmas, mostly about machine words and with a focus
+on bounds for "word_popcount" (population count, Hamming weight)
+including its subadditivity (WORD_POPCOUNT_ADD). New theorems:
+
+  BITS_OF_WORD_SUBSET =
+    |- !x y. bits_of_word x SUBSET bits_of_word y <=>
+             (!i. bit i x ==> bit i y)
+
+  BITS_OF_WORD_SUBSET_ALT =
+    |- !x y.
+           bits_of_word x SUBSET bits_of_word y <=>
+           (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
+
+  BITS_OF_WORD_SUBSET_NUMSEG =
+    |- !x. bits_of_word x SUBSET {i | i < dimindex(:N)}
+
+  BIT_WORD_JOIN_GEN =
+    |- !e h l i.
+           l < 2 EXP e
+           ==> (ODD((2 EXP e * h + l) DIV 2 EXP i) <=>
+                (if i < e
+                 then ODD(l DIV 2 EXP i)
+                 else ODD(h DIV 2 EXP (i - e))))
+
+  NUMSEG_LT_DIMINDEX =
+    |- {i | i < dimindex(:N)} = 0..dimindex(:N) - 1
+
+  VAL_LE_SUBSET =
+    |- !x y. bits_of_word x SUBSET bits_of_word y ==> val x <= val y
+
+  WORD_OF_BITS_EMPTY =
+    |- word_of_bits {} = word 0
+
+  WORD_POPCOUNT_ADD =
+    |- !x y. word_popcount(word_add x y) <= word_popcount x + word_popcount y
+
+  WORD_POPCOUNT_ADD_DISJOINT =
+    |- !x y.
+           word_and x y = word 0
+           ==> word_popcount(word_add x y) = word_popcount x + word_popcount y
+
+  WORD_POPCOUNT_ADD_OR =
+    |- !x y. word_popcount(word_add x y) <= word_popcount(word_or x y)
+
+  WORD_POPCOUNT_AND =
+    |- !x y.
+           word_popcount(word_and x y) <=
+           MIN (word_popcount x) (word_popcount y)
+
+  WORD_POPCOUNT_BITVAL =
+    |- !b. word_popcount(word(bitval b)) <= 1
+
+  WORD_POPCOUNT_BOUND_SIZE =
+    |- !x n. val x < 2 EXP n ==> word_popcount x <= n
+
+  WORD_POPCOUNT_LE_BITS =
+    |- !x y.
+           (!i. i < dimindex(:M) /\ bit i x ==> bit i y)
+           ==> word_popcount x <= word_popcount y
+
+  WORD_POPCOUNT_NSUM =
+    |- !x. word_popcount x =
+           nsum {i | i < dimindex(:N)} (\i. bitval(bit i x))
+
+  WORD_POPCOUNT_OR =
+    |- !x y. word_popcount(word_or x y) <= word_popcount x + word_popcount y
+
+  WORD_POPCOUNT_OR_AND =
+    |- !x y.
+           word_popcount(word_or x y) + word_popcount(word_and x y) =
+           word_popcount x + word_popcount y
+
+  WORD_POPCOUNT_OR_DISJOINT =
+    |- !x y.
+           word_and x y = word 0
+           ==> word_popcount(word_or x y) = word_popcount x + word_popcount y
+
+  WORD_POPCOUNT_SHL =
+    |- !x n. word_popcount(word_shl x n) <= word_popcount x
+
+  WORD_POPCOUNT_USHR =
+    |- !x n. word_popcount(word_ushr x n) <= word_popcount x
+
+  WORD_POPCOUNT_WORD_OF_BITS =
+    |- !s. s SUBSET {i | i < dimindex(:N)}
+           ==> word_popcount(word_of_bits s) = CARD s
+
+  WORD_POPCOUNT_WORD_OF_BITS_GEN =
+    |- !s. word_popcount(word_of_bits s) =
+           CARD ({i | i < dimindex(:N)} INTER s)
+
+  WORD_POPCOUNT_XOR =
+    |- !x y. word_popcount(word_xor x y) <= word_popcount x + word_popcount y
+
+  WORD_POPCOUNT_XOR_AND =
+    |- !x y.
+           word_popcount(word_xor x y) + word_popcount(word_and x y) =
+           word_popcount(word_or x y)
+
+  WORD_POPCOUNT_XOR_AND2 =
+    |- !x y.
+           word_popcount(word_xor x y) + 2 * word_popcount(word_and x y) =
+           word_popcount x + word_popcount y
+
+Thu  2nd Nov 2023               Library/words.ml
+
+Added a construct "word_insert x (pos,len) y" which inserts a length len
+subword of word y at position pos into x (with a result possibly another
+wordsize), together with one basic lemma and support in BIT_WORD_CONV
+and WORD_RED_CONV/WORD_REDUCE_CONV:
+
+  word_insert =
+   |- !x' len x pos.
+         word_insert x (pos,len) x' =
+         word
+         (2 EXP (pos + len) * val x DIV 2 EXP (pos + len) +
+          2 EXP pos * val x' MOD 2 EXP len +
+          val x MOD 2 EXP pos)
+
+  BIT_WORD_INSERT =
+   |- !x x' pos len i.
+         bit i (word_insert x (pos,len) x') <=>
+         i < dimindex (:P) /\
+         (if pos <= i /\ i < pos + len then bit (i - pos) x' else bit i x)
+
+Fri 20th Oct 2023               tactics.ml, Help/print_all_thm.hlp, Help/print_goal_hyp_max_boxes.hlp [new file]
+
+Added a variable controlling prettyprinter box limits on the hypotheses
+of goals, from June Lee (PR https://github.com/jrh13/hol-light/pull/84).
+This is
+
+        print_goal_hyp_max_boxes
+
+and can be set either to None (the default) or Some limit.
+
+Fri 20th Oct 2023               hol.ml, Help/use_file_raise_failure.hlp [new file]
+
+Made the recent error behavior on loads switchable by a flag, since
+both behaviors can be useful. This is an update from June Lee
+(see PR https://github.com/jrh13/hol-light/pull/83). The flag is
+
+        use_file_raise_failure
+
+Fri 20th Oct 2023               load_camlp5_topfind.ml, update_database_4.14.ml
+
+Incorporated an update from June Lee to avoid loading compiler-libs.common
+when using OCaml 4.14. This does have the side-effect of requiring an
+explicit OCaml toplevel in more cases, but this is already recommended
+in the latest README:
+
+  ocamlmktop -o ocaml-hol
+
+Fri 20th Oct 2023               Makefile, pa_j_4.xx_8.02.ml [new file]
+
+Added support for another camlp5 version, 8.02, with a new file from
+Stephane Glondu (see PR https://github.com/jrh13/hol-light/pull/81)
+
+Thu 14th Sep 2023               hol.ml
+
+Finally adopted an old improvement from Quentin Carbonneaux to the loading of
+files containing errors via "loads" or "loadt", forcing an immediate stop on
+the first error.
+
+Thu 14th Sep 2023               README, hol.ml, load_camlp4.ml [new file], load_camlp5.ml [new file], load_camlp5_topfind.ml [new file]
+
+Added an improved approach from June Lee to the camlp5 and num dependencies,
+using Topfind to find them when the OCaml version is >= 4.14.
+
+Tue 18th Jul 2023               Library/pocklington.ml, Library/integer.ml, 100/reciprocity.ml, 100/wilson.ml
+
+Removed a couple of effective duplicates with this renaming
+
+        CONG_MOD_MULT -> CONG_DIVIDES_MODULUS
+
+        INT_CONG_MOD_MULT -> INT_CONG_INT_DIVIDES_MODULUS
+
+Tue 18th Jul 2023               int.ml
+
+Enhanced INT_ARITH, INT_ARITH_TAC and ASM_INT_ARITH_TAC with better reduction
+of constant-expressions and elimination of div and rem analogous to that
+already present for DIV and MOD in the corresponding natural number routines
+ARITH_RULE etc. For example, the new version can handle basic lemmas like this:
+
+  let lemma = prove
+   (`abs(n) <= &2 pow 320
+     ==> let p = &2 pow 255 - &19 in
+         let q = n div &2 pow 255 in
+         let q' = if q < &0 then q - &1 else q in
+         &0 <= n - q' * p /\ n - q' * p < &2 * p`,
+  REWRITE_TAC[LET_DEF; LET_END_DEF] THEN INT_ARITH_TAC);;
+
+Mon 17th Jul 2023               lib.ml
+
+Added two trivial but handy functions to convert an integer into a
+hex string (string_of_num_hex), or a string to any base <= 16
+(string_of_num_nary), e.g.
+
+  # string_of_num_nary 2 (Int 255);;
+  val it : string = "11111111"
+  # string_of_num_nary 16 (Int 255);;
+  val it : string = "ff"
+  # string_of_num_nary 10 (Int 255);;
+  val it : string = "255"
+  #  string_of_num_hex (Int 126);;
+  val it : string = "0x7e"
+
+Mon 17th Jul 2023               Help/passim, help.ml, doc-to-help.sed
+
+Renamed all the ".doc" documentation files (used by "help" as well as
+in autogeneration of HTML and LaTeX reference documentation) to have
+the ".hlp" extension instead. This avoids complaints from tools that
+make assumptions about file type based on the extension.
+
+Thu 13th Jun 2023               Library/words.ml
+
+Added a few more miscellaneous word theorems. TWOS_COMPLEMENT is only
+really word-specific in its use of the bitval constant, but anyway is
+intended for word-oriented applications.
+
+  BITVAL_MSB =
+    |- !x. bitval(bit (dimindex(:N) - 1) x) =
+           val x DIV 2 EXP (dimindex(:N) - 1)
+
+  INT_VAL_IWORD =
+    |- !x. &0 <= x /\ x < &2 pow dimindex(:N) ==> &(val(iword x)) = x
+
+  INT_VAL_IWORD_EQ =
+    |- !x. &(val(iword x)) = x <=> &0 <= x /\ x < &2 pow dimindex(:N)
+
+  INT_VAL_WORD_NEG =
+    |- !x. &(val(word_neg x)) =
+           &2 pow dimindex(:N) * &(bitval(~(x = word 0))) - &(val x)
+
+  REAL_VAL_WORD_NEG =
+    |- !x. &(val(word_neg x)) =
+           &2 pow dimindex(:N) * &(bitval(~(x = word 0))) - &(val x)
+
+  TWOS_COMPLEMENT =
+    |- !p n x.
+           (&n == x) (mod (&2 pow p)) /\
+           ~(p = 0) /\
+           n < 2 EXP p /\
+           --(&2 pow (p - 1)) <= x /\
+           x < &2 pow (p - 1)
+           ==> (2 EXP (p - 1) <= n <=> x < &0) /\
+               n DIV 2 EXP (p - 1) = bitval(x < &0) /\
+               &n - &2 pow p * &(bitval(x < &0)) = x
+
+Wed 12th Jul 2023               int.ml
+
+Added a couple of lemmas about bounding integer remainders in terms of
+a bound on the left hand argument, a trivial but occasionally useful
+case:
+
+  INT_REM_LE =
+    |- !m n p. (n = &0 \/ &0 <= m) /\ m <= p ==> m rem n <= p
+
+  INT_REM_LE_EQ =
+    |- !m n. m rem n <= m <=> n = &0 \/ &0 <= m
+
+Tue 20th Jun 2023               Library/prime.ml, Library/pocklington.ml
+
+Added a couple of simple lemmas that both, in slightly different ways,
+help to work around the inconvenience of congruences on N with limited
+support for subtraction, one by switching into Z and one by eliminating
+an ostensible case split:
+
+  PRIME_INT_DIVPROD_EQ =
+    |- !p a b.
+          prime p ==> (&p divides a * b <=> &p divides a \/ &p divides b)
+
+  CONG_CASE =
+    |- !n a x. a < n ==> ((x == a) (mod n) <=> ?q. x = q * n + a)
+
+Wed 24th May 2023               Divstep/idivstep.ml [new file], divstep_bounds.ml
+
+Added an integer-scaled version of "divstep", which scales the delta by a
+factor of 2 and assumes that it is an odd number. This defines various
+sub-functions for specific fields of the n-fold iteration of divstep.
+
+Sat 20th May 2023               Library/words.ml
+
+Added a few more lemmas about expressing "word_subword" as right+left
+shifts, including the corresponding sign-extended version, and uniqueness for
+"word_sxfrom":
+
+  IVAL_WORD_SXFROM_UNIQUE =
+    |- !w k x.
+           k < dimindex(:N)
+           ==> (ival(word_sxfrom k w) = x <=>
+                --(&2 pow k) <= x /\
+                x < &2 pow k /\
+                (ival w == x) (mod (&2 pow (k + 1))))
+
+  WORD_SUBWORD_AS_USHR_SHL =
+    |- !x pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword x (pos,len) =
+               word_ushr (word_shl x (dimindex(:N) - (pos + len)))
+               (dimindex (:N) - len)
+
+  WORD_SXFROM_SUBWORD_AS_ISHR_SHL =
+    |- !x pos len.
+           pos + len <= dimindex(:N) /\ 0 < len
+           ==> word_sxfrom (len - 1) (word_subword x (pos,len)) =
+               word_ishr (word_shl x (dimindex(:N) - (pos + len)))
+               (dimindex(:N) - len)
+
+Tue 16th May 2023               int.ml, Library/words.ml
+
+Added two more elementary integer remainder lemmas (analogous to similar
+ones for natural number MOD that are already there)
+
+  INT_REM_REM_LE =
+    |- !m n p. ~(n = &0) /\ abs n <= abs p ==> m rem n rem p = m rem n
+
+  INT_REM_REM_POW_MIN =
+    |- !x p m n. x rem p pow m rem p pow n = x rem p pow MIN m n
+
+and a few miscellaneous useful word lemmas:
+
+  DIVIDES_VAL_WORD =
+    |- !n x.
+         n <= dimindex(:N)
+         ==> (2 EXP n divides val(word x) <=> 2 EXP n divides x)
+
+  DIVIDES_VAL_WORD_EQ =
+    |- !n x.
+         2 EXP n divides val(word x) <=>
+         (if n < dimindex(:N) then 2 EXP n divides x else word x = word 0)
+
+  INT_DIVIDES_IVAL_IWORD =
+    |- !n x.
+         n <= dimindex(:N)
+         ==> (&2 pow n divides ival(iword x) <=> &2 pow n divides x)
+
+  INT_REM_IVAL_IWORD =
+    |- !x k.
+           k <= dimindex(:N) ==> ival(iword x) rem &2 pow k = x rem &2 pow k
+
+  IVAL_WORD_ISHR_SHL_UNIQUE =
+    |- !n x y.
+           ival(word_ishr (word_shl x n) n) = y <=>
+           ival(word_shl x n) = &2 pow n * y
+
+  MOD_VAL_WORD =
+    |- !n k. k <= dimindex(:N) ==> val(word n) MOD 2 EXP k = n MOD 2 EXP k
+
+  VAL_IVAL_REM =
+    |- !x. &(val x) = ival x rem &2 pow dimindex(:N)
+
+  WORD_ISHR_UNIQUE =
+    |- !x y n.
+           ival x = &2 pow n * y
+           ==> word_ishr x n = iword y
+
+  WORD_SHL_AS_IWORD =
+    |- !x n. word_shl x n = iword(ival x * &2 pow n)
+
+  WORD_SHL_IWORD =
+    |- !x n. word_shl (iword x) n = iword(&2 pow n * x)
+
+  WORD_SHL_WORD =
+    |- !x n. word_shl (word x) n = word(2 EXP n * x)
+
+  WORD_SUBWORD_AS_IWORD =
+    |- !w pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword w (pos,len) =
+               iword((ival w div &2 pow pos) rem &2 pow len)
+
+  WORD_SUBWORD_IWORD =
+    |- !x pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword (iword x) (pos,len) =
+               iword((x div &2 pow pos) rem &2 pow len)
+
+  WORD_SUBWORD_WORD =
+    |- !n pos len.
+           pos + len <= dimindex(:N)
+           ==> word_subword (word n) (pos,len) =
+               word((n DIV 2 EXP pos) MOD 2 EXP len)
+
+Tue 16th May 2023               nums.ml
+
+Added an update from Juneyoung Lee to extend the free variable feedback
+in the error messages (see change of Wed 25th Jan 2023 below) to the case
+of "new_specification", and hence by inheritance in "define".
+
+Fri 12th May 2023               Library/words.ml
+
+Added a construct "word_sxfrom" to sign-extend a word (within a fixed size)
+from an arbitrary bit position, together with a conversion WORD_SXFROM_CONV and
+the usual support in BIT_WORD_CONV, WORD_RED_CONV and WORD_REDUCE_CONV. As well
+as the basics about this, added a few more miscelleneous lemmas about signed
+words and their values.
+
+  word_sxfrom =
+    |- word_sxfrom n x =
+       word_ishr (word_shl x (dimindex(:N) - 1 - n)) (dimindex(:N) - 1 - n)
+
+  BIT_LSB_IWORD =
+    |- !x. bit 0 (iword x) <=> x rem &2 = &1
+
+  BIT_WORD_SXFROM =
+    |- !n i x. bit i (word_sxfrom n x) <=> i < dimindex(:N) /\ bit (MIN n i) x
+
+  EXISTS_IWORD =
+    |- !P. (?x. P x) <=> (?n. P (iword n))
+
+  FORALL_IVAL =
+    |- !P. (!x. P (ival x)) <=>
+           (!n. --(&2 pow (dimindex(:N) - 1)) <= n /\
+                n < &2 pow (dimindex(:N) - 1)
+                ==> P n)
+
+  FORALL_IVAL_GEN =
+    |- !P. (!x. P (ival x) x) <=>
+           (!n. --(&2 pow (dimindex(:N) - 1)) <= n /\
+                n < &2 pow (dimindex(:N) - 1)
+                ==> P n (iword n))
+
+  FORALL_IWORD =
+    |- !P. (!x. P x) <=> (!n. P (iword n))
+
+  IVAL_REM_2 =
+    |- !x. ival x rem &2 = &(bitval(bit 0 x))
+
+Fri 12th May 2023               int.ml, calc_int.ml
+
+Fixed a surprisingly gross bug in INT_ADD_CONV and REAL_INT_ADD_CONV
+which were not failing as they should on some inappropriate terms
+like `x 1 + x 2`.
+
+Wed 10th May 2023               int.ml
+
+Added a couple of trivial but handy properties about integer
+remainders modulo 2:
+
+  INT_REM_2_EXPAND =
+   |- !x. x rem &2 = (if &2 divides x then &0 else &1)
+
+  INT_REM_2_NEG =
+   |- !x. --x rem &2 = x rem &2
+
+Tue  9th May 2023               Library/grouptheory.ml
+
+Added a few more elementary group theory lemmas:
+
+  GROUP_INV_SUBGROUP =
+    |- !x. x IN group_carrier (subgroup_generated G s)
+           ==> group_inv G x IN group_carrier (subgroup_generated G s)
+
+  GROUP_MUL_SUBGROUP =
+    |- !x y.
+           x IN group_carrier (subgroup_generated G s) /\
+           y IN group_carrier (subgroup_generated G s)
+           ==> group_mul G x y IN group_carrier (subgroup_generated G s)
+
+  SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE =
+    |- !G H s f.
+           group_epimorphism (G,H) f /\
+           s SUBSET group_carrier G /\
+           subgroup_generated G s = G
+           ==> subgroup_generated H (IMAGE f s) = H
+
+  SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ =
+    |- !G H s t f.
+           group_homomorphism (G,H) f /\
+           s SUBSET group_carrier G /\
+           t SUBSET group_carrier G /\
+           subgroup_generated G s = subgroup_generated G t
+           ==> subgroup_generated H (IMAGE f s) =
+               subgroup_generated H (IMAGE f t)
+
+Wed 26th Apr 2023               Library/bitmatch.ml
+
+Added a function "bm_check_disjointness" written by Juneyoung Lee to check
+whether word bitmatch patterns are pairwise disjoint, and hence whether the
+semantics of the bitmatch is independent of their ordering. This can be quite
+painful to analyze by hand in complicated cases but can now be done easily:
+
+  # bm_check_disjointness
+      `bitmatch (x:(2)word) with | [T; x] -> T | [y; T] -> T`;;
+  Exception: Invalid_argument "Pattern number 1 and pattern number 0 overlap".
+
+Mon 24th Apr 2023               Divstep/* [new directory]
+
+Added a formalization, with an iteration bound proof from Dan Bernstein,
+of the Bernstein-Yang "divstep" algorithm as described in the paper:
+
+  Daniel J. Bernstein and Bo-Yin Yang
+  "Fast constant-time gcd computation and modular inversion"
+  https://gcd.cr.yp.to/safegcd-20190413.pdf
+
+Wed 19th Apr 2023               Library/words.ml
+
+Added a few more basic word lemmas about sign extension and related things:
+
+  BIT_WORD_SX =
+    |- !x i.
+         bit i (word_sx x) <=>
+         i < dimindex(:N) /\ bit (MIN i (dimindex(:M) - 1)) x
+
+  WORD_SHL_TRIVIAL =
+    |- !x n. dimindex(:N) <= n ==> word_shl x n = word 0
+
+  WORD_SX_ZX =
+    |- !x. dimindex(:N) <= dimindex(:M) ==> word_sx x = word_zx x
+
+  WORD_SX_ZX_GEN =
+    |- !x. word_sx x =
+           word_or
+           (word_shl (word_neg (word (bitval (bit (dimindex(:M) - 1) x))))
+                     (dimindex(:M)))
+           (word_zx x)
+
+Fixed BIT_WORD_CONV to handle both zero and sign extension (word_zx and
+word_sx) and made one further small improvement to WORD_BLAST, which among
+other things means it can get this formula from "Hacker's Delight" 2-5:
+
+  WORD_BLAST
+   `word_sub (word_xor ((word_zx:byte->int16) x) (word 0x80))
+             (word 0x80) =
+    word_sx x`;;
+
+Thu 13th Apr 2023               Library/words.ml
+
+Made a few additional enhancements and cleanups to WORD_BLAST, in particular
+making it try to use hypotheses of the form "val x < 2 EXP n" as well as
+explicit equations. This includes fixing a bug in the VAL_EXPAND_CONV
+expansion of "val x MOD 2 EXP n". For example, WORD_BLAST can now handle
+
+  WORD_BLAST
+   `val (x:int16) <= 255
+    ==> word_add (word_and x (word 0x000F)) (word_and x (word 0x00F0)) = x`;;
+
+Mon  3rd Apr 2023               Library/words.ml
+
+Improved the ability of WORD_RULE to handle some arithmetic-bitwise
+combinations (mainly arithmetic over bitwise rather than the reverse, so
+still not a full solution the general case):
+
+  WORD_RULE
+    `word_add x y = word_add (word_xor x y) (word_shl (word_and x y) 1)`;;
+
+Also added a fourth distinct words decision procedure, this one expanding
+word expressions for specific sizes in terms of bits then using arithmetic
+(not SAT as with full bit-blasting), e.g.
+
+  WORD_BLAST
+    `!x:int32. val(word_shl x 2) + 2 EXP 32 * val(word_ushr x 30) =
+              4 * val x`;;
+
+  WORD_BLAST
+    `word_add (word_and x (word 0x0F)) (word_and x (word 0xF0)):byte = x`;;
+
+These use a refactoring via new conversions:
+
+ - BINT_POLY_CONV: like INT_POLY_CONV but exploiting the fact that
+   higher powers of bit values b collapse as b^k = b (k >= 1)
+
+ - WORD_VAL_CONG_CONV: converts word equation into integer congruence
+   in terms of numeric values
+
+ - VAL_EXPAND_CONV: expand "val x" (as well as, for a numeral k,
+   "val x DIV 2 EXP k" and "val x MOD 2 EXP k") bitwise for words
+   of a specific size.
+
+Also added a few new lemmas:
+
+  BITVAL_EXP =
+    |- !b k. bitval b EXP k = (if k = 0 then 1 else bitval b)
+
+  INT_BITVAL_AND =
+    |- !b c. &(bitval(b /\ c)) = &(bitval b) * &(bitval c)
+
+  INT_BITVAL_IFF =
+    |- !b c.
+           &(bitval(b <=> c)) =
+           &1 - ((&(bitval b) + &(bitval c)) - &2 * &(bitval b) * &(bitval c))
+
+  INT_BITVAL_IMP =
+     |- !b c.
+           &(bitval(b ==> c)) =
+           (&1 - &(bitval b) + &(bitval c)) - (&1 - &(bitval b)) * &(bitval c)
+
+  INT_BITVAL_OR =
+     |- !b c.
+           &(bitval(b \/ c)) =
+           (&(bitval b) + &(bitval c)) - &(bitval b) * &(bitval c)
+
+  INT_BITVAL_POW =
+     |- !b k. &(bitval b) pow k = (if k = 0 then &1 else &(bitval b))
+
+  VAL =
+    |- !x. val x = nsum (0..dimindex(:N) - 1) (\i. 2 EXP i * bitval(bit i x))
+
+
+Mon  3rd Apr 2023               int.ml
+
+Added a collected clausal rewrite of all the "real_of_int" mapping
+properties
+
+  REAL_OF_INT_CLAUSES =
+    |- (!x y. real_of_int x = real_of_int y <=> x = y) /\
+       (!x y. real_of_int x >= real_of_int y <=> x >= y) /\
+       (!x y. real_of_int x > real_of_int y <=> x > y) /\
+       (!x y. real_of_int x <= real_of_int y <=> x <= y) /\
+       (!x y. real_of_int x < real_of_int y <=> x < y) /\
+       (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+       (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+       (!n. &n = real_of_int(&n)) /\
+       (!x. --real_of_int x = real_of_int(--x)) /\
+       (!x. abs(real_of_int x) = real_of_int(abs x)) /\
+       (!x y. max (real_of_int x) (real_of_int y) = real_of_int(max x y)) /\
+       (!x y. min (real_of_int x) (real_of_int y) = real_of_int(min x y)) /\
+       (!x. real_sgn (real_of_int x) = real_of_int(int_sgn x)) /\
+       (!x y. real_of_int x + real_of_int y = real_of_int(x + y)) /\
+       (!x y. real_of_int x - real_of_int y = real_of_int(x - y)) /\
+       (!x y. real_of_int x * real_of_int y = real_of_int(x * y)) /\
+       (!x n. real_of_int x pow n = real_of_int(x pow n))
+
+Thu 30th Mar 2023               Library/words.ml
+
+Tweaked BIT_WORD_CONV to rewrite bits beyond the end of a word to "F" when
+there are otherwise no applicable recursions, for example, on a variable:
+
+  # BIT_WORD_CONV `bit 40 (x:int32)`;;
+  val it : thm = |- bit 40 x <=> F
+
+Thu 30th Mar 2023               pa_j_4.xx_8.00.ml
+
+Restored to the latest version of the pa_j file the special "it" identifier
+automatically assigned to otherwise nameless toplevel expressions:
+
+  # 42;;
+  val it : int = 42
+
+Fri 10th Mar 2023               EC/ccsm2.ml [new file]
+
+Added one more specific elliptic curve to the collection, the
+SM2 curve. For more info see "https://www.cryptopp.com/wiki/SM2".
+The parameters are taken from Table 11 (SM2_P256) here:
+
+https://trustedcomputinggroup.org/wp-content/uploads/TCGAlgorithmRegistry_Rev01.15.pdf
+
+Mon 27th Feb 2023               Library/words.ml
+
+Added a general "reverse b-bit fields" operation generalizing the
+existing "word_bytereverse", based on material from Juneyoung Lee.
+The operation also works on inputs where the word size is not an
+exact multiple of the field width, mapping bits in the upper overspill
+from b * N DIV b upwards to themselves, for definiteness.
+
+  word_reversefields =
+    |- !b w.
+           word_reversefields b w =
+           word_of_bits
+           {i | i < dimindex(:N) /\
+                bit
+                (if i < b * dimindex(:N) DIV b
+                 then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+                 else i)
+                w}
+
+This is supported by an extension of BIT_WORD_CONV and WORD_RED_CONV
+as well as a custom conversion WORD_REVERSEFIELDS_CONV. Added a few
+more basic lemmas about this and other word concepts:
+
+  BIT_WORD_REVERSEFIELDS =
+    |- !x b i.
+           bit i (word_reversefields b x) <=>
+           i < dimindex(:N) /\
+           bit
+           (if i < b * dimindex(:N) DIV b
+            then b * (dimindex(:N) DIV b - 1 - i DIV b) + i MOD b
+            else i)
+           x
+
+  VAL_WORD_AND_POW2_BITVAL =
+    |- (!x k b.
+            val (word_and x (word (2 EXP k * bitval b))) =
+            2 EXP k * bitval (bit k x /\ b)) /\
+       (!x k b.
+            val (word_and (word (2 EXP k * bitval b)) x) =
+            2 EXP k * bitval (b /\ bit k x))
+
+  WORD_AND_POW2_BITVAL =
+    |- (!x k b.
+            word_and x (word (2 EXP k * bitval b)) =
+            word (2 EXP k * bitval (bit k x /\ b))) /\
+       (!x k b.
+            word_and (word (2 EXP k * bitval b)) x =
+            word (2 EXP k * bitval (b /\ bit k x)))
+
+  WORD_BYTEREVERSE_REVERSEFIELDS =
+    |- word_bytereverse = word_reversefields 8
+
+  WORD_REVERSEFIELDS_REVERSEFIELDS =
+    |- !x b. word_reversefields b (word_reversefields b x) = x
+
+  WORD_SHL_LSB =
+    |- !x. word_shl x (dimindex(:N) - 1) =
+           word (2 EXP (dimindex(:N) - 1) * bitval (bit 0 x))
+
+  WORD_SHL_LSB_ALT =
+    |- !x. word_shl x (dimindex(:N) - 1) =
+           (if bit 0 x then word (2 EXP (dimindex(:N) - 1)) else word 0)
+
+Mon 27th Feb 2023               calc_num.ml
+
+Updated NUM_DIV_CONV and NUM_MOD_CONV to handle the degenerate cases
+of the form `m DIV 0` and `m MOD 0` (where m is a numeral), which
+are fixed by definition to convenient values, 0 and m respectively.
+
+Fri 27th Jan 2023               Makefile, update_database_4.14.ml [new file], pa_j_4.xx_8.00.ml [renamed pa_j_8.xx.ml]
+
+Added an update from Juneyoung Lee based on work by Chet Murthy
+to make the "update_database" functionality work in OCaml 4.14.
+
+Wed 25th Jan 2023               fusion.ml
+
+Added an update from Juneyoung Lee that provides better feedback
+when definitions are disallowed because of free variables by
+listing those free variables in the failure string.
+
+Wed 25th Jan 2023               Makefile, pa_j_8.xx.ml [new file]
+
+Added an update from Quentin Carbonneaux with support for newer
+OCaml (4.14) and camlp5 (8.00) versions.
+
+Thu 19th Jan 2023               Library/words.ml
+
+Made a change from Juneyoung Lee generalizing the types of the "usimdN"
+constructors so that the source and destination types can differ:
+usimd2, usimd4 and usimd8.
+
+Tue 13th Dec 2022               100/isoperimetric.ml [new file], Multivariate/passim
+
+Added a proof of the isoperimetric theorem to the "100 greatest
+theorems" subdirectory. The proof roughly follows the sketch in
+Osserman's "The Isoperimetric Inequality" (Bulletin of the AMS,
+1978), straightforwardly generalized to avoid any smoothness
+assumption, and with the proof of Wirtinger's inequality taken from
+Hardy, Littlewood and Polya's "Inequalities". The Green's theorem
+line integral for area is done in a very limited ad hoc way just
+for this single application.
+
+As part of this added quite a few general supporting Multivariate
+theorems, notably a Hoelder-based bound (Hardy-Littlewood-Polya
+theorem 222) and a fairly general form of integration by
+substitution following Serrin and Varberg's paper "A general
+chain rule...". Their Theorem 1 on critical values is called
+CONVERSE_SARD_1 following their observation that it is very
+much like a converse to BABY_SARD. Our proof is via a more
+general CONVERSE_SARD simply using the existing theorem
+NEGLIGIBLE_DIFFERENTIABLE_PREIMAGE.
+
+Thu 17th Nov 2022               EC/exprojective.ml
+
+Added more to the Edwards extended projective coordinates material,
+notably defining a pure projective relational analog "projective"
+and various formulations of the doubling formula using both this
+and extended projective. New definitions:
+
+  edwards_exprojdouble =
+    |- edwards_exprojdouble (f,a,d) (X1,Y1,Z1,T1) =
+       edwards_prexprojdouble (f,a,d) (X1,Y1,Z1)
+
+  edwards_pcurve =
+    |- edwards_pcurve (f,a,d) (X,Y,Z) <=>
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_mul f (ring_pow f Z 2)
+       (ring_add f (ring_mul f a (ring_pow f X 2)) (ring_pow f Y 2)) =
+       ring_add f (ring_pow f Z 4)
+       (ring_mul f d (ring_mul f (ring_pow f X 2) (ring_pow f Y 2)))
+
+  edwards_prexprojdouble =
+    |- edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) =
+       ring_mul f (ring_of_num f 2)
+       (ring_mul f X1
+       (ring_mul f Y1
+       (ring_sub f
+        (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+        (ring_pow f Y1 2))
+       (ring_mul f a (ring_pow f X1 2))))),
+       ring_mul f
+       (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+       (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2))),
+       ring_mul f
+       (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+       (ring_sub f
+        (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+        (ring_pow f Y1 2))
+       (ring_mul f a (ring_pow f X1 2))),
+       ring_mul f (ring_of_num f 2)
+       (ring_mul f X1
+       (ring_mul f Y1
+       (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))))
+
+  edwards_prexprojdoublen =
+    |- edwards_prexprojdoublen (f,a,d) (X1,Y1,Z1) =
+       (let X3,Y3,Z3,T3 = edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) in
+        ring_neg f X3,ring_neg f Y3,ring_neg f Z3,ring_neg f T3)
+
+  edwards_projdouble =
+    |- edwards_projdouble (f,a,d) (X1,Y1,Z1) =
+       (let X2,Y2,Z2,T2 = edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) in
+        X2,Y2,Z2)
+
+  projective =
+    |- projective f (x,y) (X,Y,Z) <=>
+       x IN ring_carrier f /\
+       y IN ring_carrier f /\
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_div f X Z = x /\
+       ring_div f Y Z = y
+
+and theorems:
+
+  EDWARDS_EXPROJDOUBLE =
+    |- !f a d x1 y1 X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_exprojdouble (f,a,d) (X1,Y1,Z1,T1))
+
+  EDWARDS_EXPROJDOUBLE_EXPROJADD =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_exprojdouble (f,a,d) (X1,Y1,Z1,T1) =
+               edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1)
+
+  EDWARDS_PCURVE =
+    |- !f a d p Q.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           projective f p Q
+           ==> (edwards_curve (f,a,d) p <=> edwards_pcurve (f,a,d) Q)
+
+  EDWARDS_PREXPROJDOUBLE =
+    |- !f a d x1 y1 X1 Y1 Z1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           projective f (x1,y1) (X1,Y1,Z1)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_prexprojdouble (f,a,d) (X1,Y1,Z1))
+
+  EDWARDS_PREXPROJDOUBLEN =
+    |- !f a d x1 y1 X1 Y1 Z1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           projective f (x1,y1) (X1,Y1,Z1)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_prexprojdoublen (f,a,d) (X1,Y1,Z1))
+
+  EDWARDS_PREXPROJDOUBLEN_EXPROJADDN =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_prexprojdoublen (f,a,d) (X1,Y1,Z1) =
+               edwards_exprojaddn (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1)
+
+  EDWARDS_PREXPROJDOUBLE_EXPROJADD =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_prexprojdouble (f,a,d) (X1,Y1,Z1) =
+               edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1)
+
+  EDWARDS_PROJDOUBLE =
+    |- !f a d x1 y1 X1 Y1 Z1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           projective f (x1,y1) (X1,Y1,Z1)
+           ==> projective f (edwards_add (f,a,d) (x1,y1) (x1,y1))
+               (edwards_projdouble (f,a,d) (X1,Y1,Z1))
+
+  EXPROJECTIVE_PROJECTIVE =
+    |- !f x y X Y Z W.
+           field f
+           ==> (exprojective f (x,y) (X,Y,Z,W) <=>
+                projective f (x,y) (X,Y,Z) /\ ring_div f (ring_mul f X Y) Z = W)
+
+  EXPROJECTIVE_PROJECTIVE_ALT =
+    |- !f x y X Y Z W.
+           field f
+           ==> (exprojective f (x,y) (X,Y,Z,W) <=>
+                projective f (x,y) (X,Y,Z) /\
+                W IN ring_carrier f /\
+                ring_mul f X Y = ring_mul f W Z)
+
+  PROJECTIVE_ALT =
+    |- !f x y X Y Z.
+           field f
+           ==> (projective f (x,y) (X,Y,Z) <=>
+                x IN ring_carrier f /\
+                y IN ring_carrier f /\
+                X IN ring_carrier f /\
+                Y IN ring_carrier f /\
+                Z IN ring_carrier f /\
+                ~(Z = ring_0 f) /\
+                ring_mul f x Z = X /\
+                ring_mul f y Z = Y)
+
+  PROJECTIVE_EXPROJECTIVE =
+    |- !f x y X Y Z.
+           field f
+           ==> (projective f (x,y) (X,Y,Z) <=>
+                exprojective f (x,y) (X,Y,Z,ring_div f (ring_mul f X Y) Z))
+
+while removing the former EDWARDS_EXPROJADD_DOUBLE (which is effectively
+just EDWARDS_EXPROJDOUBLE_EXPROJADD reversed and with the new definition
+expanded).
+
+Wed  9th Nov 2022               Library/words.ml
+
+Added some natural notations for n-fold SIMD-style repetition of unary and
+binary operations on machine words, following the index type to decompose:
+
+  simd2 =
+    |- !f x y.
+           simd2 f x y =
+           word_join
+           (f (word_subword x (dimindex(:N),dimindex(:N)))
+           (word_subword y (dimindex(:N),dimindex(:N))))
+           (f (word_subword x (0,dimindex(:N)))
+           (word_subword y (0,dimindex(:N))))
+
+  simd4 =
+    |- !f. simd4 f = simd2 (simd2 f)
+
+  simd8 =
+    |- !f. simd8 f = simd2 (simd4 f)
+
+  simd16 =
+    |- !f. simd16 f = simd2 (simd8 f)
+
+  usimd2 =
+    |- !f x.
+           usimd2 f x =
+           word_join (f (word_subword x (dimindex(:N),dimindex(:N))))
+           (f (word_subword x (0,dimindex(:N))))
+  usimd4 =
+    |- !f. usimd4 f = usimd2 (usimd2 f)
+
+  usimd8 =
+    |- !f. usimd8 f = usimd2 (usimd4 f)
+
+  usimd16 =
+    |- !f. usimd16 f = usimd2 (usimd8 f)
+
+  SIMD2 =
+    |- !f xhi xlo yhi ylo.
+           simd2 f (word_join xhi xlo) (word_join yhi ylo) =
+           word_join (f xhi yhi) (f xlo ylo)
+
+  USIMD2 =
+    |- !f xhi xlo. usimd2 f (word_join xhi xlo) = word_join (f xhi) (f xlo)
+
+Mon  7th Nov 2022               EC/x25519.ml, EC/edwards.ml, EC/edwards448.ml
+
+Added the nonzeroness of the X25519 function on the standard basepoint X = 9:
+
+ RFCX25519_BASE_NONZERO =
+   |- !n. ~(rfcx25519(n,9) = 0)
+
+as well as systematically renaming these theorems to be more intuitive,
+albeit even more verbose:
+
+  EDWARDS_GROUP_ORDER_EQ_2        -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_2
+  EDWARDS_GROUP_ORDER_EQ_4        -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_4
+  EDWARDS_GROUP_ORDER_EQ_4_EQUIV  -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_4_EQUIV
+  EDWARDS_GROUP_ORDER_EQ_8        -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_8
+  EDWARDS_GROUP_ORDER_EQ_8_EQUIV  -> EDWARDS_GROUP_ELEMENT_ORDER_EQ_8_EQUIV
+
+Mon 17th Oct 2022               EC/exprojective.ml [new file], passim
+
+Added a new file with some basic material on extended projective coordinates
+for Edwards curves, with several variants of the basic extended projective
+addition with different scale factors and their core relationships with the
+affine representation:
+
+  edwards_excurve =
+    |- edwards_excurve (f,a,d) (X,Y,Z,W) <=>
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       W IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_add f (ring_mul f a (ring_pow f X 2)) (ring_pow f Y 2) =
+       ring_add f (ring_pow f Z 2) (ring_mul f d (ring_pow f W 2))
+
+  edwards_exprojadd =
+    |- edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) =
+       ring_mul f (ring_add f (ring_mul f X1 Y2) (ring_mul f Y1 X2))
+       (ring_sub f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2))),
+       ring_mul f
+       (ring_sub f (ring_mul f Y1 Y2) (ring_mul f a (ring_mul f X1 X2)))
+       (ring_add f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2))),
+       ring_mul f
+       (ring_sub f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2)))
+       (ring_add f (ring_mul f Z1 Z2) (ring_mul f d (ring_mul f T1 T2))),
+       ring_mul f
+       (ring_sub f (ring_mul f Y1 Y2) (ring_mul f a (ring_mul f X1 X2)))
+       (ring_add f (ring_mul f X1 Y2) (ring_mul f Y1 X2))
+
+  edwards_exprojadd4 =
+    |- edwards_exprojadd4 (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) =
+       (let X3,Y3,Z3,T3 =
+          edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) in
+        ring_mul f (ring_of_num f 4) X3,
+        ring_mul f (ring_of_num f 4) Y3,
+        ring_mul f (ring_of_num f 4) Z3,
+        ring_mul f (ring_of_num f 4) T3)
+
+  edwards_exprojaddn =
+    |- edwards_exprojaddn (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) =
+       (let X3,Y3,Z3,T3 =
+          edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2) in
+        ring_neg f X3,ring_neg f Y3,ring_neg f Z3,ring_neg f T3)
+
+  exprojective =
+    |- exprojective f (x,y) (X,Y,Z,W) <=>
+       x IN ring_carrier f /\
+       y IN ring_carrier f /\
+       X IN ring_carrier f /\
+       Y IN ring_carrier f /\
+       W IN ring_carrier f /\
+       Z IN ring_carrier f /\
+       ~(Z = ring_0 f) /\
+       ring_div f X Z = x /\
+       ring_div f Y Z = y /\
+       ring_div f W Z = ring_mul f x y
+
+  EDWARDS_EXCURVE =
+    |- !f a d p Q.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           exprojective f p Q
+           ==> (edwards_curve (f,a,d) p <=> edwards_excurve (f,a,d) Q)
+
+  EDWARDS_EXPROJADD =
+    |- !f a d x1 y1 X1 Y1 Z1 T1 x2 y2 X2 Y2 Z2 T2.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           edwards_curve (f,a,d) (x2,y2) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1) /\
+           exprojective f (x2,y2) (X2,Y2,Z2,T2)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x2,y2))
+               (edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2))
+
+  EDWARDS_EXPROJADD4 =
+    |- !f a d x1 y1 X1 Y1 Z1 T1 x2 y2 X2 Y2 Z2 T2.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           edwards_curve (f,a,d) (x2,y2) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1) /\
+           exprojective f (x2,y2) (X2,Y2,Z2,T2)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x2,y2))
+               (edwards_exprojadd4 (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2))
+
+  EDWARDS_EXPROJADDN =
+    |- !f a d x1 y1 X1 Y1 Z1 T1 x2 y2 X2 Y2 Z2 T2.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_nonsingular (f,a,d) /\
+           edwards_curve (f,a,d) (x1,y1) /\
+           edwards_curve (f,a,d) (x2,y2) /\
+           exprojective f (x1,y1) (X1,Y1,Z1,T1) /\
+           exprojective f (x2,y2) (X2,Y2,Z2,T2)
+           ==> exprojective f (edwards_add (f,a,d) (x1,y1) (x2,y2))
+               (edwards_exprojaddn (f,a,d) (X1,Y1,Z1,T1) (X2,Y2,Z2,T2))
+
+  EDWARDS_EXPROJADD_DOUBLE =
+    |- !f a d X1 Y1 Z1 T1.
+           field f /\
+           a IN ring_carrier f /\
+           d IN ring_carrier f /\
+           edwards_excurve (f,a,d) (X1,Y1,Z1,T1)
+           ==> edwards_exprojadd (f,a,d) (X1,Y1,Z1,T1) (X1,Y1,Z1,T1) =
+               ring_mul f (ring_of_num f 2)
+               (ring_mul f X1
+               (ring_mul f Y1
+               (ring_sub f
+                (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+                (ring_pow f Y1 2))
+               (ring_mul f a (ring_pow f X1 2))))),
+               ring_mul f
+               (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+               (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2))),
+               ring_mul f
+               (ring_add f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))
+               (ring_sub f
+                (ring_sub f (ring_mul f (ring_of_num f 2) (ring_pow f Z1 2))
+                (ring_pow f Y1 2))
+               (ring_mul f a (ring_pow f X1 2))),
+               ring_mul f (ring_of_num f 2)
+               (ring_mul f X1
+               (ring_mul f Y1
+               (ring_sub f (ring_pow f Y1 2) (ring_mul f a (ring_pow f X1 2)))))
+
+  EXPROJECTIVE_ALT =
+    |- !f x y X Y Z W.
+           field f
+           ==> (exprojective f (x,y) (X,Y,Z,W) <=>
+                x IN ring_carrier f /\
+                y IN ring_carrier f /\
+                X IN ring_carrier f /\
+                Y IN ring_carrier f /\
+                W IN ring_carrier f /\
+                Z IN ring_carrier f /\
+                ~(Z = ring_0 f) /\
+                ring_mul f x Z = X /\
+                ring_mul f y Z = Y /\
+                ring_mul f W Z = ring_mul f X Y)
+
+Also fixed some fumbled theorem names "EDWARD_..." to "EDWARDS_..." in the
+existing material.
+
+Mon 19th Sep 2022               Library/words.ml
+
+Added a definition of the byte reversal operation to the word library,
+including the following definition and basic lemmas as well as adding
+its reduction to the usual conversions like WORD_RED_CONV. The type
+is constrained so that the indexing type has to be effectively a
+multiple of 8 (i.e. of the form :(((N)tybit0)tybit0)tybit0).
+
+  word_bytereverse =
+   |- word_bytereverse x =
+      word_of_bits { i | i < 8 * dimindex(:N) /\
+                         bit (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8) x}
+
+  BIT_WORD_BYTEREVERSE =
+   |- !x i. bit i (word_bytereverse x) <=>
+            i < 8 * dimindex(:N) /\
+            bit (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8) x
+
+  WORD_BYTEREVERSE_BYTEREVERSE =
+   |- !x. word_bytereverse(word_bytereverse x) = x
+
+Thu 15th Sep 2022               EC/x25519.ml [new file]
+
+Added a definition of x25519, the curve25519 x-coordinate mapping that
+allows the y coordinate to live in an extension field, following
+Bernstein's original paper and RFC-7748. This development includes the
+auxiliary concept of a quadratic extension field, which is only used
+to construct the special case (Z/(2^255-19))[sqrt(2)]). There are
+two variants "purex25519" and "rfcx25519", with the latter adding the
+specific prenormalization from the RFC (considering the inputs as
+numbers).
+
+  curve25519x =
+    |- curve25519x f = f,ring_of_num f A_25519,ring_of_num f 1
+
+  curve25519x_curve25519 =
+    |- curve25519x (integer_mod_ring p_25519) = curve25519
+
+  curve25519x_group =
+    |- curve25519x_group f = montgomery_group (curve25519x f)
+
+  purex25519 =
+    |- !n q.
+           purex25519 (n,q) =
+           (@s. s < p_25519 /\
+                (!Q. Q IN group_carrier (curve25519x_group sqintmod_field) /\
+                     montgomery_xmap sqintmod_field Q =
+                     ring_of_num sqintmod_field q
+                     ==> montgomery_xmap sqintmod_field
+                         (group_pow (curve25519x_group sqintmod_field) Q n) =
+                         ring_of_num sqintmod_field s))
+
+  purex25519_def =
+    |- purex25519 (n,q) =
+       (if q MOD p_25519 = 0
+        then 0
+        else let X,Z = FST (x25519_ladder n (&q,&1)) in
+             let x = num_of_int (X rem &p_25519)
+             and z = num_of_int (Z rem &p_25519) in
+             if z = 0 then 0 else (x * inverse_mod p_25519 z) MOD p_25519)
+
+  quadratic_extension =
+    |- !a r.
+           quadratic_extension r a =
+           ring
+           (ring_carrier r CROSS ring_carrier r,
+            (ring_0 r,ring_0 r),
+            (ring_1 r,ring_0 r),
+            (\(x,y). ring_neg r x,ring_neg r y),
+            (\(x1,y1) (x2,y2). ring_add r x1 x2,ring_add r y1 y2),
+            (\(x1,y1) (x2,y2).
+                 ring_add r (ring_mul r x1 x2)
+                 (ring_mul r (ring_of_num r a) (ring_mul r y1 y2)),
+                 ring_add r (ring_mul r x1 y2) (ring_mul r x2 y1)))
+
+  rfcx25519 =
+    |- rfcx25519 (n,q) =
+       purex25519 (2 EXP 254 + n MOD 2 EXP 254 - n MOD 8,q MOD 2 EXP 255)
+
+  sqintmod_field =
+    |- sqintmod_field = quadratic_extension (integer_mod_ring p_25519) 2
+
+  x25519_ladder =
+    |- x25519_ladder n P =
+       (if n = 0
+        then (&1,&0),P
+        else x25519_ladderstep (n MOD 2 = 1) P (x25519_ladder (n DIV 2) P))
+
+  x25519_ladderstep =
+    |- x25519_ladderstep b P (P0,P1) =
+       (if b
+        then montgomery_xzdiffadd curve25519 P P1 P0,
+             montgomery_xzdouble curve25519 P1
+        else montgomery_xzdouble curve25519 P0,
+             montgomery_xzdiffadd curve25519 P P1 P0)
+
+  CURVE25519X_CURVE25519_GROUP =
+    |- curve25519x_group (integer_mod_ring p_25519) = curve25519_group
+
+  CURVE25519X_GROUP =
+    |- !f. field f /\ ring_char f = p_25519
+           ==> group_carrier (curve25519x_group f) =
+               montgomery_curve (curve25519x f) /\
+               group_id (curve25519x_group f) = NONE /\
+               group_inv (curve25519x_group f) = montgomery_neg (curve25519x f) /\
+               group_mul (curve25519x_group f) = montgomery_add (curve25519x f)
+
+  CURVE25519X_GROUP_GEN =
+    |- !f. field f /\ ~(ring_char f divides 14802493890)
+           ==> group_carrier (curve25519x_group f) =
+               montgomery_curve (curve25519x f) /\
+               group_id (curve25519x_group f) = NONE /\
+               group_inv (curve25519x_group f) = montgomery_neg (curve25519x f) /\
+               group_mul (curve25519x_group f) = montgomery_add (curve25519x f)
+
+  FIELD_QUADRATIC_EXTENSION =
+    |- !r a.
+           field r /\
+           (!d. d IN ring_carrier r ==> ~(ring_pow r d 2 = ring_of_num r a))
+           ==> field (quadratic_extension r a)
+
+  FIELD_SQINTMOD_FIELD =
+    |- field sqintmod_field
+
+  GROUP_POW_CURVE25519X_TORSION =
+    |- !f n.
+           field f /\ ring_char f = p_25519
+           ==> group_pow (curve25519x_group f) (SOME (ring_0 f,ring_0 f)) n =
+               (if EVEN n then NONE else SOME (ring_0 f,ring_0 f))
+
+  MONTGOMERY_NONSINGULAR_CURVE25519X =
+    |- !f. field f /\ ring_char f = p_25519
+           ==> montgomery_nonsingular (curve25519x f)
+
+  MONTGOMERY_NONSINGULAR_CURVE25519X_GEN =
+    |- !f. field f /\ ~(ring_char f divides 14802493890)
+           ==> montgomery_nonsingular (curve25519x f)
+
+  PUREX25519 =
+    |- !f n q Q.
+           field f /\
+           ring_char f = p_25519 /\
+           Q IN group_carrier (curve25519x_group f) /\
+           montgomery_xmap f Q = ring_of_num f q
+           ==> montgomery_xmap f (group_pow (curve25519x_group f) Q n) =
+               ring_of_num f (purex25519 (n,q))
+
+  PUREX25519_BOUND =
+    |- !n q. purex25519 (n,q) < p_25519
+
+  PUREX25519_LADDER =
+    |- !f x y n.
+           field f /\
+           ring_char f = p_25519 /\
+           SOME (ring_of_num f x,y) IN group_carrier (curve25519x_group f) /\
+           ~(ring_of_num f x = ring_0 f)
+           ==> (let (X,Z),X',Z' = x25519_ladder n (&x,&1) in
+                montgomery_xz f
+                (group_pow (curve25519x_group f) (SOME (ring_of_num f x,y)) n)
+                (ring_of_int f X,ring_of_int f Z) /\
+                montgomery_xz f
+                (group_pow (curve25519x_group f) (SOME (ring_of_num f x,y))
+                (n + 1))
+                (ring_of_int f X',ring_of_int f Z'))
+
+  PUREX25519_MOD =
+    |- !n q. purex25519 (n,q MOD p_25519) = purex25519 (n,q)
+
+  PUREX25519_UNIQUE =
+    |- !n q s.
+           purex25519 (n,q) = s <=>
+           s < p_25519 /\
+           (!Q. Q IN group_carrier (curve25519x_group sqintmod_field) /\
+                montgomery_xmap sqintmod_field Q = ring_of_num sqintmod_field q
+                ==> montgomery_xmap sqintmod_field
+                    (group_pow (curve25519x_group sqintmod_field) Q n) =
+                    ring_of_num sqintmod_field s)
+
+  PUREX25519_UNIQUE_IMP =
+    |- !n q s.
+           s < p_25519 /\
+           (!f Q.
+                field f /\
+                ring_char f = p_25519 /\
+                Q IN group_carrier (curve25519x_group f) /\
+                montgomery_xmap f Q = ring_of_num f q
+                ==> montgomery_xmap f (group_pow (curve25519x_group f) Q n) =
+                    ring_of_num f s)
+           ==> purex25519 (n,q) = s
+
+  QUADRATIC_EXTENSION =
+    |- (!r a.
+            ring_carrier (quadratic_extension r a) =
+            ring_carrier r CROSS ring_carrier r) /\
+       (!r a. ring_0 (quadratic_extension r a) = ring_0 r,ring_0 r) /\
+       (!r a. ring_1 (quadratic_extension r a) = ring_1 r,ring_0 r) /\
+       (!r a.
+            ring_neg (quadratic_extension r a) =
+            (\(x,y). ring_neg r x,ring_neg r y)) /\
+       (!r a.
+            ring_add (quadratic_extension r a) =
+            (\(x1,y1) (x2,y2). ring_add r x1 x2,ring_add r y1 y2)) /\
+       (!r a.
+            ring_mul (quadratic_extension r a) =
+            (\(x1,y1) (x2,y2).
+                 ring_add r (ring_mul r x1 x2)
+                 (ring_mul r (ring_of_num r a) (ring_mul r y1 y2)),
+                 ring_add r (ring_mul r x1 y2) (ring_mul r x2 y1)))
+
+  RFCX25519_PUREX25519 =
+    |- !n q.
+           n IN {2 EXP 254 + 8 * i | i < 2 EXP 251} /\ q < 2 EXP 255
+           ==> rfcx25519 (n,q) = purex25519 (n,q)
+
+  RING_CHAR_QUADRATIC_EXTENSION =
+    |- !r a. ring_char (quadratic_extension r a) = ring_char r
+
+  RING_CHAR_SQINTMOD_FIELD =
+    |- ring_char sqintmod_field = p_25519
+
+  RING_HOMOMORPHISM_INTO_QUADRATIC_EXTENSION =
+    |- !r a. ring_homomorphism (r,quadratic_extension r a) (\x. x,ring_0 r)
+
+  RING_MONOMORPHISM_INTO_QUADRATIC_EXTENSION =
+    |- !r a. ring_monomorphism (r,quadratic_extension r a) (\x. x,ring_0 r)
+
+  RING_OF_INT_QUADRATIC_EXTENSION =
+    |- !r a n.
+           ring_of_int (quadratic_extension r a) n = ring_of_int r n,ring_0 r
+
+  RING_OF_NUM_QUADRATIC_EXTENSION =
+    |- !r a n.
+           ring_of_num (quadratic_extension r a) n = ring_of_num r n,ring_0 r
+
+  SPECIALLY_NONSINGULAR_CURVE25519X =
+    |- !f X y.
+           field f /\
+           ring_char f = p_25519 /\
+           montgomery_curve (curve25519x f) (SOME (ring_of_num f X,y))
+           ==> (y = ring_0 f <=> ring_of_num f X = ring_0 f)
+
+  SQUARE_ROOTS_SQINTMOD_FIELD =
+    |- !n. ?x. x IN ring_carrier sqintmod_field /\
+               ring_pow sqintmod_field x 2 = ring_of_num sqintmod_field n
+
+Thu 15th Sep 2022               EC/montgomery.ml, EC/xzprojective.ml
+
+Added a definition of the X coordinate mapping for Montgomery curves
+(with zero default for the point at infinity) as used in the definition
+of curve25519-related functions, and a few lemmas, mainly about that.
+
+  montgomery_xmap
+    |- montgomery_xmap f NONE = ring_0 f /\ montgomery_xmap f (SOME (x,y)) = x
+
+  GROUP_POW_MONTGOMERY_TORSION =
+    |- !f a b P n.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           b IN ring_carrier f /\
+           montgomery_nonsingular (f,a,b)
+           ==> group_pow (montgomery_group (f,a,b)) (SOME (ring_0 f,ring_0 f))
+               n =
+               (if EVEN n then NONE else SOME (ring_0 f,ring_0 f))
+
+  MONTGOMERY_XMAP_EQ_0
+    |- !f a b P.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           b IN ring_carrier f /\
+           montgomery_nonsingular (f,a,b) /\
+           P IN group_carrier (montgomery_group (f,a,b))
+           ==> (montgomery_xmap f P = ring_0 f <=>
+                P = NONE \/ P = SOME (ring_0 f,ring_0 f))
+
+  MONTGOMERY_XMAP_EQ_0_POW
+    |- !f a b P n.
+           field f /\
+           ~(ring_char f = 2) /\
+           a IN ring_carrier f /\
+           b IN ring_carrier f /\
+           montgomery_nonsingular (f,a,b) /\
+           P IN group_carrier (montgomery_group (f,a,b)) /\
+           montgomery_xmap f P = ring_0 f
+           ==> montgomery_xmap f (group_pow (montgomery_group (f,a,b)) P n) =
+               ring_0 f
+
+  MONTGOMERY_XZ_XMAP
+    |- !f P X.
+           field f /\ X IN ring_carrier f /\ ~(X = ring_0 f)
+           ==> (montgomery_xz f P (X,ring_1 f) <=> montgomery_xmap f P = X)
+
+Tue 13th Sep 2022               Library/ringtheory.ml
+
+Added a miscellany of straightforward ring theory lemmas:
+
+  FIELD_NONTRIVIAL =
+   |- !f. field f ==> ~(ring_1 f = ring_0 f)
+
+  INTEGRAL_DOMAIN_NONTRIVIAL =
+   |- !r. integral_domain r ==> ~(ring_1 r = ring_0 r)
+
+  RING_CHAR_HOMOMORPHIC_IMAGE =
+    |- !r r' f. ring_homomorphism (r,r') f ==> ring_char r' divides ring_char r
+
+  RING_HOMOMORPHISM_FROM_INTEGER_MOD_RING =
+    |- !r p.
+           (?f. ring_homomorphism (integer_mod_ring p,r) f) <=>
+           ring_char r divides p
+
+  RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT =
+    |- !r p.
+           ring_homomorphism (integer_mod_ring p,r) (ring_of_int r) <=>
+           ring_char r divides p
+
+  RING_MONOMORPHISM_FROM_INTEGER_MOD_RING =
+    |- !r p.
+           (?f. ring_monomorphism (integer_mod_ring p,r) f) <=> ring_char r = p
+
+  RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT =
+    |- !r p.
+           ring_monomorphism (integer_mod_ring p,r) (ring_of_int r) <=>
+           ring_char r = p
+
+  RING_OF_INT_CLAUSES =
+    |- (!r. ring_0 r = ring_of_int r (&0)) /\
+       (!r. ring_1 r = ring_of_int r (&1)) /\
+       (!r n. ring_neg r (ring_of_int r n) = ring_of_int r (--n)) /\
+       (!r m n.
+            ring_add r (ring_of_int r m) (ring_of_int r n) =
+            ring_of_int r (m + n)) /\
+       (!r m n.
+            ring_sub r (ring_of_int r m) (ring_of_int r n) =
+            ring_of_int r (m - n)) /\
+       (!r m n.
+            ring_mul r (ring_of_int r m) (ring_of_int r n) =
+            ring_of_int r (m * n)) /\
+       (!r m n. ring_pow r (ring_of_int r m) n = ring_of_int r (m pow n))
+
+  RING_OF_INT_REM =
+    |- !f n. ring_of_int f (n rem &(ring_char f)) = ring_of_int f n
+
+  RING_OF_NUM_CHAR =
+   |- !r. ring_of_num r (ring_char r) = ring_0 r
+
+  RING_OF_NUM_CLAUSES =
+    |- (!r. ring_0 r = ring_of_num r 0) /\
+       (!r. ring_1 r = ring_of_num r 1) /\
+       (!r m n.
+            ring_add r (ring_of_num r m) (ring_of_num r n) =
+            ring_of_num r (m + n)) /\
+       (!r m n.
+            ring_mul r (ring_of_num r m) (ring_of_num r n) =
+            ring_of_num r (m * n)) /\
+       (!r m n. ring_pow r (ring_of_num r m) n = ring_of_num r (m EXP n))
+
+  RING_OF_NUM_MOD =
+   |- !f n. ring_of_num f (n MOD ring_char f) = ring_of_num f n
+
+as well as renaming the old RING_OF_INT_CLAUSES -> RING_OF_INT_CASES,
+with the above theorem taking the name RING_OF_INT_CLAUSES.
+
+Mon 12th Sep 2022               ind_types.ml
+
+Added a natural dual to FORALL_OPTION_THM:
+
+  EXISTS_OPTION_THM =
+    |- !P. (?x. P x) <=> P NONE \/ ?a. P(SOME a)
+
+Wed  7th Sep 2022               Library/ringtheory.ml
+
+Fixed a trivial bug in RING_TAC that could make it fail on trivial
+goals having no domain variables, e.g.
+
+  prove(`ring_0 r = ring_add r (ring_0 r) (ring_0 r)`,RING_TAC);;
+
+Fri 26th Aug 2022               realarith.ml
+
+Added an improvement from Chun Tian to REAL_LINEAR_PROVER, making
+it automatically recognize strict positivity of "successor" terms
+cast to reals, of the form `&(SUC n)`.
+
+  REAL_LT_NZ =
+    |- !n. ~(&n = &0) <=> (&0 < &n)
+
+  REAL_POS_LT =
+    |- !n. &0 < &(SUC n)
+
+Tue 23rd Aug 2022               EC/passim
+
+Added a few short names for the package of parameters defining some
+common elliptic curves:
+
+  curve25519 =
+    |- curve25519 = integer_mod_ring p_25519,&A_25519,&1
+
+  nistp256 =
+    |- nistp256 =
+       integer_mod_ring p_256,ring_neg (integer_mod_ring p_256) (&3),&b_256
+
+  nistp384 =
+    |- nistp384 =
+       integer_mod_ring p_384,ring_neg (integer_mod_ring p_384) (&3),&b_384
+
+  nistp521 =
+    |- nistp521 =
+       integer_mod_ring p_521,ring_neg (integer_mod_ring p_521) (&3),&b_521
+
+  secp256k1 =
+    |- secp256k1 =
+       integer_mod_ring p_256k1,&0,&7
+
+and a few additional Montgomery curve lemmas:
+
+  MONTGOMERY_NONSINGULAR_CURVE25519 =
+    |- montgomery_nonsingular curve25519
+
+  MONTGOMERY_STRONGLY_NONSINGULAR_CURVE25519 =
+    |- montgomery_strongly_nonsingular curve25519
+
+  MONTGOMERY_XZ_IN_CARRIER =
+    |- !P X Z.
+         montgomery_xz f P (X,Z)
+         ==> X IN ring_carrier f /\ Z IN ring_carrier f
+
+  MONTGOMERY_XZDOUBLE_GROUP =
+    |- !f a b p n q.
+         field f /\
+         ~(ring_char f = 2) /\
+         a IN ring_carrier f /\
+         b IN ring_carrier f /\
+         montgomery_nonsingular (f,a,b) /\
+         p IN group_carrier (montgomery_group (f,a,b)) /\
+         montgomery_xz f (group_pow (montgomery_group (f,a,b)) p n) q
+         ==> montgomery_xz f (group_pow (montgomery_group (f,a,b)) p (2 * n))
+             (montgomery_xzdouble (f,a,b) q)
+
+  MONTGOMERY_XZDIFFADD_GROUP =
+    |- !f a b p n q qm qn.
+         field f /\
+         ~(ring_char f = 2) /\
+         ~(ring_char f = 3) /\
+         a IN ring_carrier f /\
+         b IN ring_carrier f /\
+         montgomery_nonsingular (f,a,b) /\
+         ~(FST q = ring_0 f) /\
+         ~(SND q = ring_0 f) /\
+         p IN group_carrier (montgomery_group (f,a,b)) /\
+         montgomery_xz f p q /\
+         montgomery_xz f (group_pow (montgomery_group (f,a,b)) p (n + 1)) qm /\
+         montgomery_xz f (group_pow (montgomery_group (f,a,b)) p n) qn
+         ==> montgomery_xz f
+             (group_pow (montgomery_group (f,a,b)) p (2 * n + 1))
+             (montgomery_xzdiffadd (f,a,b) q qm qn)
+
 Mon  1st Aug 2022               Library/words.ml
 
 Added a straightforward variant of existing word lemmas:
@@ -484,7 +4538,7 @@ based on the intuition that the bit patterns are not overlapping
     |- !x. bits_of_num(val x) = bits_of_word x
 
   BITS_OF_WORD_WORD =
-    |- !n. bits_of_word (word n) = {i | i < dimindex (:N)} INTER bits_of_num n
+    |- !n. bits_of_word (word n) = {i | i < dimindex(:N)} INTER bits_of_num n
 
   DISJOINT_BITS_CLAUSES =
     |- (!k h l.

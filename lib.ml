@@ -252,12 +252,17 @@ let rec chop_list n l =
   try let m,l' = chop_list (n-1) (tl l) in (hd l)::m,l'
   with Failure _ -> failwith "chop_list";;
 
-let index x =
+let find_index p =
   let rec ind n l =
     match l with
-      [] -> failwith "index"
-    | (h::t) -> if x = h then n else ind (n + 1) t in
+      [] -> None
+    | (h::t) -> if p h then Some n else ind (n + 1) t in
   ind 0;;
+
+let index x l =
+  match find_index ((=) 0 o compare x) l with
+  | Some n -> n
+  | None -> failwith "index";;
 
 (* ------------------------------------------------------------------------- *)
 (* "Set" operations on lists.                                                *)
@@ -391,19 +396,33 @@ let gcd =
 (* Some useful functions on "num" type.                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let num_0 = Int 0
-and num_1 = Int 1
-and num_2 = Int 2
-and num_10 = Int 10;;
+let num_0 = num 0
+and num_1 = num 1
+and num_2 = num 2
+and num_10 = num 10;;
 
-let pow2 n = power_num num_2 (Int n);;
-let pow10 n = power_num num_10 (Int n);;
+let pow2 n = power_num num_2 (num n);;
+let pow10 n = power_num num_10 (num n);;
 
-let numdom r = (Num.numerator r, Num.denominator r);;
+let numerator = fst o numdom
+and denominator = snd o numdom;;
+
+(* gcd_num x y is defined in the NumExt module. *)
 
 let lcm_num x y =
   if x =/ num_0 && y =/ num_0 then num_0
   else abs_num((x */ y) // gcd_num x y);;
+
+let string_of_num_nary =
+  let digits = ["0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9";
+                "a"; "b"; "c"; "d"; "e"; "f"] in
+  let rec string_of_num base n =
+    let n0 = mod_num n base and n1 = quo_num n base in
+    let d0 = el (Num.int_of_num n0) digits in
+    if n1 =/ num_0 then d0 else (string_of_num base n1)^d0 in
+  fun b n -> string_of_num (num b) n;;
+
+let string_of_num_hex n = "0x" ^ string_of_num_nary 16 n;;
 
 (* ------------------------------------------------------------------------- *)
 (* All pairs arising from applying a function over two lists.                *)
@@ -454,9 +473,10 @@ let time f x =
       report("CPU time (user): "^(string_of_int(finish_time - start_time)));
       result
   with e ->
-      let finish_time = 0 (* Sys.time() *) in
-      print("Failed after (user) CPU time of "^
-            (string_of_int(finish_time - start_time))^": ");
+      let finish_time = Double.fromString "0.0" (* Sys.time() *) in
+      (* let msg = Printexc.to_string e in *)
+      report("Failed after (user) CPU time of "^
+             (string_of_float(finish_time -. start_time))^": "(* ^msg *));
       raise e;;
 
 (* ------------------------------------------------------------------------- *)
@@ -670,7 +690,11 @@ let choose (Func (_, t)) =
 (* ------------------------------------------------------------------------- *)
 
 (* Can't do it. *)
+(*
+let pp_print_fpf fmt (f:('a,'b)func) = Format.pp_print_string fmt "<func>";;
 
+let print_fpf f = pp_print_fpf Format.std_formatter f;;
+*)
 (* ------------------------------------------------------------------------- *)
 (* Set operations parametrized by equality (from Steven Obua).               *)
 (* ------------------------------------------------------------------------- *)
@@ -704,9 +728,9 @@ let num_of_string =
     "c",12; "C",12; "d",13; "D",13;
     "e",14; "E",14; "f",15; "F",15] in
   let valof b s =
-    let v = Int(assoc s values) in
+    let v = num(assoc s values) in
     if v </ b then v else failwith "num_of_string: invalid digit for base"
-  and two = num_2 and ten = num_10 and sixteen = Int 16 in
+  and two = num_2 and ten = num_10 and sixteen = num 16 in
   let rec num_of_stringlist b l =
     match l with
       [] -> failwith "num_of_string: no digits after base indicator"
@@ -735,7 +759,9 @@ let strings_of_file filename =
   Text_io.b_closeIn fd; data;;
 
 let string_of_file filename =
-  end_itlist (fun s t -> s^"\n"^t) (strings_of_file filename);;
+  let fd = open_in_bin filename in
+  let data = really_input_string fd (in_channel_length fd) in
+  (close_in fd; data);;
 
 let file_of_string filename s =
   let fd = Text_io.openOut filename in

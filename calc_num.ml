@@ -227,7 +227,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
   and mul_tm = rator(rator(rand(snd(strip_forall(concl EXP_2)))))
   and exp_tm = rator(rator(lhand(snd(strip_forall(concl EXP_2)))))
   and eq_tm = rator(rator(concl TWO)) in
-  let num_0 = Int 0 and num_1 = Int 1 and num_2 = Int 2 in
+  let num_0 = num 0 and num_1 = num 1 and num_2 = num 2 in
   let a_tm = mk_var("a",num_ty)
   and b_tm = mk_var("b",num_ty)
   and c_tm = mk_var("c",num_ty)
@@ -1050,8 +1050,8 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
             EQ_MP th1 th0
       | (Comb(Const("BIT1",_),mtm),Comb(Const("BIT1",_),ntm)) ->
           if k <= 50 || l <= 50 ||
-             Int k */ Int k <=/ Int l ||
-             Int l */ Int l <=/ Int k then
+             num k */ num k <=/ num l ||
+             num l */ num l <=/ num k then
             match (mtm,ntm) with
               (Comb(Const("BIT1",_),Comb(Const("BIT1",_),_)),_) ->
                  let th1 = NUM_ADC_RULE zero_tm tm in
@@ -1334,8 +1334,8 @@ let NUM_PRE_CONV =
   fun tm -> try let l,r = dest_comb tm in
                 if not (l = pre) then fail() else
                 let x = dest_numeral r in
-                if x =/ Int 0 then tth else
-                let tm' = mk_numeral (x -/ Int 1) in
+                if x =/ num 0 then tth else
+                let tm' = mk_numeral (x -/ num 1) in
                 let th1 = NUM_SUC_CONV (mk_comb(suc,tm')) in
                 MP (INST [tm',m; r,n] pth) th1
             with Failure _ -> failwith "NUM_PRE_CONV";;
@@ -1369,11 +1369,15 @@ let NUM_SUB_CONV =
 
 let NUM_DIV_CONV,NUM_MOD_CONV =
   let pth = prove
-   (`(q * n + r = m) ==> r < n ==> (m DIV n = q) /\ (m MOD n = r)`,
+   (`q * n + r = m ==> r < n ==> m DIV n = q /\ m MOD n = r`,
     MESON_TAC[DIVMOD_UNIQ])
+  and pth0 = prove
+   (`!m. m DIV 0 = 0 /\ m MOD 0 = m`,
+    REWRITE_TAC[DIV_ZERO; MOD_ZERO])
   and m = `m:num` and n = `n:num` and q = `q:num` and r = `r:num`
   and dtm = `(DIV)` and mtm = `(MOD)` in
   let NUM_DIVMOD_CONV x y =
+    if y =/ num_0 then SPEC (mk_numeral x) pth0 else
     let k = quo_num x y
     and l = mod_num x y in
     let th0 = INST [mk_numeral x,m; mk_numeral y,n;
@@ -1402,14 +1406,14 @@ let NUM_FACT_CONV =
     REWRITE_TAC[FACT])
   and w = `w:num` and x = `x:num` and y = `y:num` and z = `z:num` in
   let mksuc n =
-    let n' = n -/ (Int 1) in
+    let n' = n -/ (num 1) in
     NUM_SUC_CONV (mk_comb(suc,mk_numeral n')) in
   let rec NUM_FACT_CONV n =
-    if n =/ Int 0 then pth_0 else
+    if n =/ num 0 then pth_0 else
     let th0 = mksuc n in
     let tmx = rand(lhand(concl th0)) in
     let tm0 = rand(concl th0) in
-    let th1 = NUM_FACT_CONV (n -/ Int 1) in
+    let th1 = NUM_FACT_CONV (n -/ num 1) in
     let tm1 = rand(concl th1) in
     let th2 = NUM_MULT_CONV (mk_binop mul tm0 tm1) in
     let tm2 = rand(concl th2) in
@@ -1446,30 +1450,45 @@ let NUM_REL_CONV =
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
+let num_red_conv_list =
+  [`SUC(NUMERAL n)`,NUM_SUC_CONV;
+   `PRE(NUMERAL n)`,NUM_PRE_CONV;
+   `FACT(NUMERAL n)`,NUM_FACT_CONV;
+   `NUMERAL m < NUMERAL n`,NUM_LT_CONV;
+   `NUMERAL m <= NUMERAL n`,NUM_LE_CONV;
+   `NUMERAL m > NUMERAL n`,NUM_GT_CONV;
+   `NUMERAL m >= NUMERAL n`,NUM_GE_CONV;
+   `NUMERAL m = NUMERAL n`,NUM_EQ_CONV;
+   `EVEN(NUMERAL n)`,NUM_EVEN_CONV;
+   `ODD(NUMERAL n)`,NUM_ODD_CONV;
+   `NUMERAL m + NUMERAL n`,NUM_ADD_CONV;
+   `NUMERAL m - NUMERAL n`,NUM_SUB_CONV;
+   `NUMERAL m * NUMERAL n`,NUM_MULT_CONV;
+   `(NUMERAL m) EXP (NUMERAL n)`,NUM_EXP_CONV;
+   `(NUMERAL m) DIV (NUMERAL n)`,NUM_DIV_CONV;
+   `(NUMERAL m) MOD (NUMERAL n)`,NUM_MOD_CONV;
+   `MAX (NUMERAL m) (NUMERAL n)`,NUM_MAX_CONV;
+   `MIN (NUMERAL m) (NUMERAL n)`,NUM_MIN_CONV];;
+
 let NUM_RED_CONV =
-  let gconv_net = itlist (uncurry net_of_conv)
-    [`SUC(NUMERAL n)`,NUM_SUC_CONV;
-     `PRE(NUMERAL n)`,NUM_PRE_CONV;
-     `FACT(NUMERAL n)`,NUM_FACT_CONV;
-     `NUMERAL m < NUMERAL n`,NUM_LT_CONV;
-     `NUMERAL m <= NUMERAL n`,NUM_LE_CONV;
-     `NUMERAL m > NUMERAL n`,NUM_GT_CONV;
-     `NUMERAL m >= NUMERAL n`,NUM_GE_CONV;
-     `NUMERAL m = NUMERAL n`,NUM_EQ_CONV;
-     `EVEN(NUMERAL n)`,NUM_EVEN_CONV;
-     `ODD(NUMERAL n)`,NUM_ODD_CONV;
-     `NUMERAL m + NUMERAL n`,NUM_ADD_CONV;
-     `NUMERAL m - NUMERAL n`,NUM_SUB_CONV;
-     `NUMERAL m * NUMERAL n`,NUM_MULT_CONV;
-     `(NUMERAL m) EXP (NUMERAL n)`,NUM_EXP_CONV;
-     `(NUMERAL m) DIV (NUMERAL n)`,NUM_DIV_CONV;
-     `(NUMERAL m) MOD (NUMERAL n)`,NUM_MOD_CONV;
-     `MAX (NUMERAL m) (NUMERAL n)`,NUM_MAX_CONV;
-     `MIN (NUMERAL m) (NUMERAL n)`,NUM_MIN_CONV]
+  let gconv_net = itlist (uncurry net_of_conv) num_red_conv_list
     (basic_net()) in
   REWRITES_CONV gconv_net;;
 
 let NUM_REDUCE_CONV = DEPTH_CONV NUM_RED_CONV;;
+
+let num_compute_add_convs =
+  let convlist = map (fun pat,the_conv ->
+    let c,args = strip_comb pat in (c,length args,the_conv))
+    num_red_conv_list in
+  fun (compset:Compute.compset) ->
+    itlist (fun newc () -> Compute.add_conv newc compset) convlist ();;
+
+let NUM_COMPUTE_CONV =
+  let cs = Compute.bool_compset () in
+  Compute.set_skip cs `COND: bool -> A -> A -> A` (Some 1);
+  num_compute_add_convs cs;
+  Compute.WEAK_CBV_CONV cs;;
 
 let NUM_REDUCE_TAC = CONV_TAC NUM_REDUCE_CONV;;
 
@@ -1480,8 +1499,8 @@ let NUM_REDUCE_TAC = CONV_TAC NUM_REDUCE_CONV;;
 let num_CONV =
   let SUC_tm = `SUC` in
   fun tm ->
-    let n = dest_numeral tm -/ Int 1 in
-    if n </ Int 0 then failwith "num_CONV" else
+    let n = dest_numeral tm -/ num 1 in
+    if n </ num 0 then failwith "num_CONV" else
     let tm' = mk_numeral n in
     SYM(NUM_SUC_CONV (mk_comb(SUC_tm,tm')));;
 

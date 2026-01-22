@@ -563,7 +563,7 @@ let PROV_DEFINABLE = prove
 (* ------------------------------------------------------------------------- *)
 
 let GODEL_CRUDE = prove
- (`!Ax. definable {gform p | p IN Ax} ==> ?p. ~(true p <=> Ax |-- p)`,
+ (`!Ax. definable {gform p | p IN Ax} ==> ?p. ~(arithtrue p <=> Ax |-- p)`,
   REPEAT STRIP_TAC THEN MP_TAC TARSKI_THEOREM THEN
   FIRST_X_ASSUM(MP_TAC o MATCH_MP PROV_DEFINABLE) THEN
   MATCH_MP_TAC(TAUT `(~c ==> (a <=> b)) ==> a ==> ~b ==> c`) THEN

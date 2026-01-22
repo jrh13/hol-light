@@ -22,6 +22,12 @@ let c_256 = new_definition `c_256 = 0x7efba1662985be9403cb055c75d4f7e0ce8d84a9c5
 let b_256 = new_definition `b_256 = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b`;;
 let G_256 = new_definition `G_256 = SOME(&0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296:int,&0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5:int)`;;
 
+let nistp256 = define
+ `nistp256 =
+    (integer_mod_ring p_256,
+     ring_neg (integer_mod_ring p_256) (&3),
+     &b_256:int)`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Primality of the field characteristic and group order.                    *)
 (* ------------------------------------------------------------------------- *)
@@ -110,7 +116,7 @@ let GROUP_ELEMENT_ORDER_G256 = prove
   REWRITE_TAC[n_256] THEN CONV_TAC(LAND_CONV ECGROUP_POW_CONV) THEN
   REFL_TAC);;
 
-let FINITE_GROUP_CARRIER_256 = prove
+let FINITE_GROUP_CARRIER_P256 = prove
  (`FINITE(group_carrier p256_group)`,
   REWRITE_TAC[P256_GROUP] THEN MATCH_MP_TAC FINITE_WEIERSTRASS_CURVE THEN
   REWRITE_TAC[FINITE_INTEGER_MOD_RING; FIELD_INTEGER_MOD_RING; PRIME_P256] THEN
@@ -121,7 +127,7 @@ let SIZE_P256_GROUP = prove
   MATCH_MP_TAC GROUP_ADHOC_ORDER_UNIQUE_LEMMA THEN
   EXISTS_TAC `G_256:(int#int)option` THEN
   REWRITE_TAC[GENERATOR_IN_GROUP_CARRIER_256; GROUP_ELEMENT_ORDER_G256;
-              FINITE_GROUP_CARRIER_256] THEN
+              FINITE_GROUP_CARRIER_P256] THEN
   REWRITE_TAC[P256_GROUP] THEN CONJ_TAC THENL
    [W(MP_TAC o PART_MATCH (lhand o rand)
       CARD_BOUND_WEIERSTRASS_CURVE o lhand o snd) THEN
@@ -153,11 +159,21 @@ let SIZE_P256_GROUP = prove
     REWRITE_TAC[GSYM num_coprime; ARITH; COPRIME_2] THEN
     DISCH_THEN(MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN ASM_INT_ARITH_TAC]);;
 
+let P256_GROUP_ORDER = prove
+ (`CARD(group_carrier p256_group) = n_256`,
+  REWRITE_TAC[REWRITE_RULE[HAS_SIZE] SIZE_P256_GROUP]);;
+
+let P256_GROUP_ELEMENT_ORDER = prove
+ (`!P. P IN group_carrier p256_group
+       ==> group_element_order p256_group P =
+           if P = group_id p256_group then 1 else n_256`,
+  MESON_TAC[SIZE_P256_GROUP; HAS_SIZE; GROUP_ELEMENT_ORDER_PRIME; PRIME_N256]);;
+
 let GENERATED_P256_GROUP = prove
  (`subgroup_generated p256_group {G_256} = p256_group`,
   SIMP_TAC[SUBGROUP_GENERATED_ELEMENT_ORDER;
            GENERATOR_IN_GROUP_CARRIER_256;
-           FINITE_GROUP_CARRIER_256] THEN
+           FINITE_GROUP_CARRIER_P256] THEN
   REWRITE_TAC[GROUP_ELEMENT_ORDER_G256;
               REWRITE_RULE[HAS_SIZE] SIZE_P256_GROUP]);;
 

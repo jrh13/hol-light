@@ -1638,7 +1638,7 @@ module Proofobjects : Proofobject_primitives = struct
 
   let ask_ut () =
     try (
-      let filein = Pervasives.open_in "interpretation.txt" in
+      let filein = open_in "interpretation.txt" in
       let line = ref 0 in
 
       try
@@ -1792,7 +1792,7 @@ module Proofobjects : Proofobject_primitives = struct
        with | Sys_error s -> raise (Sys_error ("move_temp1: "^s)));
 
       (try
-         let buf = Pervasives.open_in file_temp_name in
+         let buf = open_in file_temp_name in
          (try
             while true do
               out "\n";

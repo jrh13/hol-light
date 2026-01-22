@@ -130,7 +130,7 @@ let (VALID:tactic->tactic) =
 (* Various simple combinators for tactics, identity tactic etc.              *)
 (* ------------------------------------------------------------------------- *)
 
-let (THEN),(THENL) =
+let (THEN),(THENL),then1_ =
   let propagate_empty i [] = []
   and propagate_thm th i [] = INSTANTIATE_ALL i th in
   let compose_justs n just1 just2 insts2 i ths =
@@ -161,8 +161,7 @@ let (THEN),(THENL) =
       let _,gls,_ as gstate = tac1 g in
       if gls = [] then tacsequence gstate []
       else tacsequence gstate tac2l in
-  then_,thenl_;;
-let then_, thenl_ = (THEN), (THENL);;
+  then_,thenl_,(fun tac1 tac2 -> thenl_ tac1 [tac2]);;
 
 let ((ORELSE): tactic -> tactic -> tactic) =
   fun tac1 tac2 g ->
@@ -295,6 +294,20 @@ let (REMOVE_THEN:string->thm_tactic->tactic) =
     let asl1,asl2 = chop_list(index s (map fst asl)) asl in
     let asl' = asl1 @ tl asl2 in
     ttac th (asl',w);;
+
+let NAME_ASSUMS_TAC: tactic =
+  fun (asl,g) ->
+    let idx: int ref = ref 0 in
+    let has (name:string) = exists (fun (name',_) -> name = name') asl in
+    let rec next_hyp_name (): string =
+      let n = "H" ^ (string_of_int !idx) in
+      idx := !idx + 1;
+      if has n then next_hyp_name ()
+      else n in
+    let asl = map
+      (fun (name,a) -> if name = "" then (next_hyp_name(),a) else (name,a))
+      asl in
+    ALL_TAC (asl,g);;
 
 (* ------------------------------------------------------------------------- *)
 (* General tools to augment a required set of theorems with assumptions.     *)
@@ -748,33 +761,50 @@ let ANTS_TAC =
 (* A printer for goals etc.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let (pp_print_goal: formatter->goal->unit) =
-  let string_of_int3 n =
-    if n < 10 then "  "^string_of_int n
-    else if n < 100 then " "^string_of_int n
-    else string_of_int n in
-  let print_hyp fmt n (s,th) =
-    pp_open_hbox fmt ();
-    pp_print_string fmt (string_of_int3 n);
-    pp_print_string fmt " [";
-    pp_open_hvbox fmt 0;
-    pp_print_qterm fmt (concl th);
-    pp_close_box fmt ();
-    pp_print_string fmt "]";
-    (if not (s = "") then (pp_print_string fmt (" ("^s^")")) else ());
-    pp_close_box fmt ();
-    pp_print_newline fmt () in
-  let rec print_hyps fmt n asl =
-    if asl = [] then () else
-    (print_hyp fmt n (hd asl);
-     print_hyps fmt (n + 1) (tl asl)) in
-  fun fmt (asl,w) ->
-    pp_print_newline fmt ();
-    if asl <> [] then (print_hyps fmt 0 (rev asl); pp_print_newline fmt ());
-    pp_print_qterm fmt w; pp_print_newline fmt ();;
+(* A parameter to prettyprinter's max boxes for printing hypotheses.         *)
+(* Set to None if the formatter's default max boxes value is to be used.     *)
+let print_goal_hyp_max_boxes = ref None;;
 
-let (pp_print_goalstack: formatter->goalstack->unit) =
-  let print_goalstate fmt k gs =
+let (pp_print_goal:formatter->goal->unit),
+    (pp_print_colored_goal:formatter->goal->unit) =
+  let with_color (color_flag:bool) =
+    let string_of_int3 n =
+      if n < 10 then "  "^string_of_int n
+      else if n < 100 then " "^string_of_int n
+      else string_of_int n in
+    let print_hyp fmt n (s,th) =
+      pp_open_hbox fmt ();
+      pp_print_string fmt (string_of_int3 n);
+      pp_print_string fmt " [";
+      pp_open_hvbox fmt 0;
+      let old_max_boxes = pp_get_max_boxes fmt () in
+      (match !print_goal_hyp_max_boxes with
+      | None -> ()
+      | Some hb -> pp_set_max_boxes fmt hb);
+      (if color_flag then pp_print_colored_qterm else pp_print_qterm)
+        fmt (concl th);
+      pp_set_max_boxes fmt old_max_boxes;
+      pp_close_box fmt ();
+      pp_print_string fmt "]";
+      (if not (s = "") then (pp_print_string fmt (" ("^s^")")) else ());
+      pp_close_box fmt ();
+      pp_print_newline fmt () in
+    let rec print_hyps fmt n asl =
+      if asl = [] then () else
+      (print_hyp fmt n (hd asl);
+      print_hyps fmt (n + 1) (tl asl)) in
+    fun fmt (asl,w) ->
+      pp_print_newline fmt ();
+      if asl <> []
+      then (print_hyps fmt 0 (rev asl); pp_print_newline fmt ())
+      else ();
+      (if color_flag then pp_print_colored_qterm else pp_print_qterm) fmt w;
+      pp_print_newline fmt () in
+  with_color false, with_color true;;
+
+let (pp_print_goalstack:formatter->goalstack->unit),
+    (pp_print_colored_goalstack:formatter->goalstack->unit) =
+  let print_goalstate color_flag fmt k gs =
     let (_,gl,_) = gs in
     let n = length gl in
     let s = if n = 0 then "No subgoals" else
@@ -782,21 +812,29 @@ let (pp_print_goalstack: formatter->goalstack->unit) =
            ^" ("^(string_of_int n)^" total)" in
     pp_print_string fmt s; pp_print_newline fmt ();
     if gl = [] then () else
-    do_list (pp_print_goal fmt o C el gl) (rev(0--(k-1))) in
-  fun fmt l ->
+    do_list
+      ((if color_flag then pp_print_colored_goal else pp_print_goal) fmt
+        o C el gl)
+      (rev(0--(k-1))) in
+  let fn color_flag fmt l =
     if l = [] then pp_print_string fmt "Empty goalstack"
     else if tl l = [] then
       let (_,gl,_ as gs) = hd l in
-      print_goalstate fmt 1 gs
+      print_goalstate color_flag fmt 1 gs
     else
       let (_,gl,_ as gs) = hd l
       and (_,gl0,_) = hd(tl l) in
       let p = length gl - length gl0 in
       let p' = if p < 1 then 1 else p + 1 in
-      print_goalstate fmt p' gs;;
+      print_goalstate color_flag fmt p' gs in
+  fn false, fn true;;
 
 let print_goal = Pretty.print_stdout pp_print_goal;;
 let print_goalstack = Pretty.print_stdout pp_print_goalstack;;
+let PRINT_GOAL_TAC: tactic = fun gl -> print_goal gl; ALL_TAC gl;;
+let PRINT_COLORED_GOAL_TAC: tactic =
+    fun gl -> pp_print_colored_goal Format.std_formatter gl; ALL_TAC gl;;
+let REMARK_TAC (s:string): tactic = fun gl -> remark s; ALL_TAC gl;;
 
 (* ------------------------------------------------------------------------- *)
 (* Convert a tactic into a refinement on head subgoal in current state.      *)
@@ -887,6 +925,37 @@ let e tac = refine(by(VALID tac));;
 
 let r n = refine(rotate n);;
 
+(* A sequence of 'e tac; r n' where n is the number of subgoals after e tac. *)
+(* This command is useful when you want to interactively try a list of       *)
+(* tactics after THENL, e.g.,                                                *)
+(*   TAC THENL [ TAC_A; TAC_B; .. ]                                          *)
+(* 'e TAC;; er TAC_A;;' will execute TAC, execute TAC_A, then switch to the  *)
+(* second subgoal of 'e TAC' which will be the input goalstate of TAC_B.     *)
+let er tac =
+  let e_result = e tac in
+  let n_subgoals_to_rotate, n_subgoals =
+    match !current_goalstack with
+    | (_,gl,_)::(_,glprev,_)::_ ->
+      let n_subgoals = length gl in
+      if n_subgoals = 0 then 0, 0
+      else (n_subgoals - length glprev + 1), n_subgoals
+    | _ -> failwith "current_goalstack must have at least 2 items after 'e'" in
+
+  if n_subgoals_to_rotate = 0 || n_subgoals = 1 then begin
+    remark "(Rotating zero subgoal)\n\n";
+    e_result
+  end else begin
+    (if !verbose then print_goalstack !current_goalstack);
+    remark (Printf.sprintf "\n(Rotating %d subgoal%s...)\n\n"
+        n_subgoals_to_rotate
+        (if n_subgoals_to_rotate = 1 then "" else "s"));
+    let new_g = r n_subgoals_to_rotate in
+    (* pop the latest subgoal so that one b() can fully roll back the state *)
+    let cur_gs = !current_goalstack in
+    let _ = current_goalstack := hd cur_gs :: tl (tl cur_gs) in
+    new_g
+  end;;
+
 let set_goal(asl,w) =
   current_goalstack :=
     [mk_goalstate(map (fun t -> "",ASSUME t) asl,w)];
@@ -920,14 +989,3 @@ let top_goal() =
 let top_thm() =
   let (_,[],f)::_ = !current_goalstack in
   f null_inst [];;
-
-(* ------------------------------------------------------------------------- *)
-(* Install the goal-related printers.                                        *)
-(* ------------------------------------------------------------------------- *)
-
-let pp_goal =
-  Pretty_printer.token o Pretty.print_to_string pp_print_goal;;
-
-let pp_goalstack =
-  Pretty_printer.token o Pretty.print_to_string pp_print_goalstack;;
-

@@ -7,9 +7,9 @@ needs "Library/prime.ml";;
 
 prioritize_num();;
 
-let num_0 = Int 0;;
-let num_1 = Int 1;;
-let num_2 = Int 2;;
+let num_0 = num 0;;
+let num_1 = num 1;;
+let num_2 = num 2;;
 
 (* ------------------------------------------------------------------------- *)
 (* Mostly for compatibility. Should eliminate this eventually.               *)
@@ -128,6 +128,13 @@ let CONG_CASES = prove
   DISCH_THEN(MP_TAC o MATCH_MP(ARITH_RULE
    `x + a = y + b ==> x = (b - a) + y \/ y = (a - b) + x`)) THEN
   REWRITE_TAC[GSYM LEFT_SUB_DISTRIB] THEN MESON_TAC[MULT_SYM]);;
+
+let CONG_CASE = prove
+ (`!n a x:num. a < n ==> ((x == a) (mod n) <=> ?q. x = q * n + a)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CONG_CASES; OR_EXISTS_THM] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[] THEN
+  MATCH_MP_TAC num_INDUCTION THEN SIMP_TAC[MULT_CLAUSES; ADD_CLAUSES] THEN
+  ASM_ARITH_TAC);;
 
 let CONG_MULT_LCANCEL = prove
  (`!a n x y. coprime(a,n) /\ (a * x == a * y) (mod n) ==> (x == y) (mod n)`,
@@ -297,10 +304,6 @@ let MOD_MULT_CONG = prove
    (fun th -> MESON_TAC[th; CONG_TRANS; CONG_SYM]) THEN
   MATCH_MP_TAC CONG_DIVIDES_MODULUS THEN EXISTS_TAC `a * b` THEN
   ASM_SIMP_TAC[CONG_MOD; MULT_EQ_0; DIVIDES_RMUL; DIVIDES_REFL]);;
-
-let CONG_MOD_MULT = prove
- (`!x y m n. (x == y) (mod n) /\ m divides n ==> (x == y) (mod m)`,
-  NUMBER_TAC);;
 
 let CONG_MOD_LT = prove
  (`!y. y < n ==> (x MOD n = y <=> (x == y) (mod n))`,
@@ -843,7 +846,7 @@ let INVERSE_MOD_INVERSION = prove
 let INVERSE_MOD_CONV =
   let rec gcdex(m,n) =
     if n </ m then let (x,y) = gcdex(n,m) in (y,x)
-    else if m =/ Int 0 then (Int 0,Int 1) else
+    else if m =/ num 0 then (num 0,num 1) else
     let q = quo_num n m in
     let r = n -/ q */ m in
     let (x,y) = gcdex(r,m) in (y -/ q */ x,x) in
@@ -967,6 +970,63 @@ let SQUAREFREE_EXP = prove
   REWRITE_TAC[squarefree] THEN DISCH_THEN(MP_TAC o SPEC `n:num`) THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC DIVIDES_EXP_LE_IMP THEN
   ASM_ARITH_TAC);;
+
+let SQUAREFREE_DIVIDES = prove
+ (`!q n. squarefree q
+         ==> (q divides n <=> !p. prime p /\ p divides q ==> p divides n)`,
+  REWRITE_TAC[SQUAREFREE_PRIME_INDEX] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[IMP_CONJ; DIVIDES_INDEX; PRIME_IMP_NZ] THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_SIMP_TAC[INDEX_PRIME] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `p:num` THEN FIRST_X_ASSUM(MP_TAC o SPEC `p:num`) THEN
+  ASM_CASES_TAC `prime p` THEN ASM_REWRITE_TAC[MESON[LE_0]
+   `(if p then 1 else 0) <= x <=> p ==> 1 <= x`] THEN
+  ONCE_REWRITE_TAC[TAUT `p ==> q ==> r <=> q ==> p ==> r`] THEN
+  ASM_REWRITE_TAC[FORALL_UNWIND_THM1] THEN ARITH_TAC);;
+
+let SQUAREFREE_DIVEXP = prove
+ (`!n q x. squarefree q /\ q divides x EXP n ==> q divides x`,
+  SIMP_TAC[IMP_CONJ; SQUAREFREE_DIVIDES; PRIME_DIVEXP_EQ]);;
+
+let SQUAREFREE_DIVEXP_EQ = prove
+ (`!n q x. squarefree q /\ ~(n = 0) ==> (q divides x EXP n <=> q divides x)`,
+  MESON_TAC[DIVIDES_REXP; SQUAREFREE_DIVEXP]);;
+
+let SQUAREFREE,SQUAREFREE_ALT = (CONJ_PAIR o prove)
+ (`(!n. squarefree n <=> ~(n = 0) /\ !m k. n divides m EXP k ==> n divides m) /\
+   (!n. squarefree n <=> ~(n = 0) /\ !m. n divides m EXP 2 ==> n divides m)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN MATCH_MP_TAC(TAUT
+    `((p ==> q) /\ (q ==> r)) /\ (r ==> p) ==> (p <=> q) /\ (p <=> r)`) THEN
+  CONJ_TAC THENL [MESON_TAC[SQUAREFREE_DIVEXP; SQUAREFREE_0]; STRIP_TAC] THEN
+  REWRITE_TAC[SQUAREFREE_PRIME] THEN
+  X_GEN_TAC `p:num` THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `r:num` SUBST_ALL_TAC o
+   GEN_REWRITE_RULE I [divides]) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `p * r:num`) THEN RULE_ASSUM_TAC
+    (REWRITE_RULE[MULT_EQ_0; EXP_EQ_0; ARITH_EQ; DE_MORGAN_THM]) THEN
+  ASM_SIMP_TAC[EXP_2; GSYM MULT_ASSOC; DIVIDES_LMUL2_EQ; NOT_IMP] THEN
+  CONJ_TAC THENL [CONV_TAC NUMBER_RULE; ALL_TAC] THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [ARITH_RULE `r = 1 * r`] THEN
+  ASM_SIMP_TAC[DIVIDES_RMUL2_EQ; DIVIDES_ONE] THEN ASM_MESON_TAC[PRIME_1]);;
+
+let SQUAREFREE_GCD = prove
+ (`!m n. squarefree m \/ squarefree n ==> squarefree(gcd(m,n))`,
+  MESON_TAC[SQUAREFREE_DIVISOR; GCD]);;
+
+let SQUAREFREE_GCD_SQUARE = prove
+ (`!n. squarefree n <=> !x. gcd(x EXP 2,n) divides x`,
+  GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_REWRITE_TAC[SQUAREFREE_0; GCD_0] THEN
+    DISCH_THEN(MP_TAC o SPEC `2`) THEN REWRITE_TAC[DIVIDES_MOD] THEN ARITH_TAC;
+    ASM_REWRITE_TAC[DIVIDES_INDEX; SQUAREFREE_PRIME_INDEX]] THEN
+  ASM_SIMP_TAC[GCD_ZERO; INDEX_GCD; INDEX_EXP; EXP_EQ_0;
+               RIGHT_IMP_FORALL_THM; TAUT `p \/ q <=> ~p ==> q`] THEN
+  SIMP_TAC[GCD_ZERO; EXP_EQ_0; TAUT `p \/ q <=> ~p ==> q`] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `p:num` THEN
+  ASM_CASES_TAC `prime p` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THENL [ARITH_TAC; DISCH_THEN(MP_TAC o SPEC `p:num`)] THEN
+  ASM_SIMP_TAC[INDEX_PRIME; PRIME_IMP_NZ] THEN ARITH_TAC);;
 
 let SQUAREFREE_NPRODUCT = prove
  (`!s. FINITE s
@@ -2551,9 +2611,9 @@ time PRIME_TEST `65536`;;
 
 time PRIME_TEST `65537`;;
 
-time PROVE_PRIMEFACT (Int 222);;
+time PROVE_PRIMEFACT (num 222);;
 
-time PROVE_PRIMEFACT (Int 151);;
+time PROVE_PRIMEFACT (num 151);;
 
 (* ------------------------------------------------------------------------- *)
 (* The "Landau trick" in Erdos's proof of Chebyshev-Bertrand theorem.        *)

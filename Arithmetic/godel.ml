@@ -405,7 +405,7 @@ let HSENTENCE_FIX_STRONG = prove
  (`!A Arep.
         (!v t. holds v (Arep t) <=> (termval v t) IN IMAGE gform A)
         ==> !v. holds v (hsentence Arep) <=> A |-- Not(hsentence Arep)`,
-  REWRITE_TAC[hsentence; true_def; HOLDS_FIXPOINT] THEN
+  REWRITE_TAC[hsentence; arithtrue; HOLDS_FIXPOINT] THEN
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP ARITH_PROV) THEN
   REWRITE_TAC[IN] THEN CONV_TAC(ONCE_DEPTH_CONV ETA_CONV) THEN
@@ -415,14 +415,14 @@ let HSENTENCE_FIX_STRONG = prove
 let HSENTENCE_FIX = prove
  (`!A Arep.
         (!v t. holds v (Arep t) <=> (termval v t) IN IMAGE gform A)
-        ==> (true(hsentence Arep) <=> A |-- Not(hsentence Arep))`,
-  REWRITE_TAC[true_def] THEN MESON_TAC[HSENTENCE_FIX_STRONG]);;
+        ==> (arithtrue(hsentence Arep) <=> A |-- Not(hsentence Arep))`,
+  REWRITE_TAC[arithtrue] THEN MESON_TAC[HSENTENCE_FIX_STRONG]);;
 
 let GSENTENCE_FIX = prove
  (`!A Arep.
         (!v t. holds v (Arep t) <=> (termval v t) IN IMAGE gform A)
-        ==> (true(gsentence Arep) <=> ~(A |-- gsentence Arep))`,
-  REWRITE_TAC[true_def; holds; gsentence] THEN
+        ==> (arithtrue(gsentence Arep) <=> ~(A |-- gsentence Arep))`,
+  REWRITE_TAC[arithtrue; holds; gsentence] THEN
   MESON_TAC[HSENTENCE_FIX_STRONG]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -433,10 +433,10 @@ let ground = new_definition
   `ground t <=> (FVT t = {})`;;
 
 let complete_for = new_definition
-  `complete_for P A <=> !p. P p /\ true p ==> A |-- p`;;
+  `complete_for P A <=> !p. P p /\ arithtrue p ==> A |-- p`;;
 
 let sound_for = new_definition
-  `sound_for P A <=> !p. P p /\ A |-- p ==> true p`;;
+  `sound_for P A <=> !p. P p /\ A |-- p ==> arithtrue p`;;
 
 let consistent = new_definition
   `consistent A <=> ~(?p. A |-- p /\ A |-- Not p)`;;
@@ -463,14 +463,14 @@ let DEFINABLE_BY_ONEVAR = prove
   MESON_TAC[]);;
 
 let CLOSED_NOT_TRUE = prove
- (`!p. closed p ==> (true(Not p) <=> ~(true p))`,
-  REWRITE_TAC[closed; true_def; holds] THEN
+ (`!p. closed p ==> (arithtrue(Not p) <=> ~(arithtrue p))`,
+  REWRITE_TAC[closed; arithtrue; holds] THEN
   MESON_TAC[HOLDS_VALUATION; NOT_IN_EMPTY]);;
 
 let G1 = prove
  (`!A. definable_by (SIGMA 1) (IMAGE gform A)
        ==> ?G. PI 1 G /\ closed G /\
-               (sound_for (PI 1 INTER closed) A ==> true G /\ ~(A |-- G)) /\
+               (sound_for (PI 1 INTER closed) A ==> arithtrue G /\ ~(A |-- G)) /\
                (sound_for (SIGMA 1 INTER closed) A ==> ~(A |-- Not G))`,
   GEN_TAC THEN
   REWRITE_TAC[sound_for; INTER; IN_ELIM_THM; DEFINABLE_BY_ONEVAR] THEN
@@ -493,14 +493,14 @@ let G1 = prove
     ALL_TAC] THEN
   ABBREV_TAC `G = gsentence (\t. formsubst ((a |-> t) V) Arep)` THEN
   REPEAT STRIP_TAC THENL [ASM_MESON_TAC[IN]; ALL_TAC] THEN
-  SUBGOAL_THEN `true(Not G)` MP_TAC THENL
+  SUBGOAL_THEN `arithtrue(Not G)` MP_TAC THENL
    [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[IN] THEN
     REWRITE_TAC[SIGMA; SIGMAPI_CLAUSES] THEN ASM_MESON_TAC[closed; FV; PI];
     ALL_TAC] THEN
   FIRST_ASSUM(SUBST1_TAC o MATCH_MP CLOSED_NOT_TRUE) THEN
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
-  SUBGOAL_THEN `true False` MP_TAC THENL
-   [ALL_TAC; REWRITE_TAC[true_def; holds]] THEN
+  SUBGOAL_THEN `arithtrue False` MP_TAC THENL
+   [ALL_TAC; REWRITE_TAC[arithtrue; holds]] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   REWRITE_TAC[closed; IN; SIGMA; SIGMAPI_CLAUSES; FV] THEN
   ASM_MESON_TAC[CONSISTENT_ALT]);;
@@ -517,14 +517,14 @@ let COMPLETE_SOUND_SENTENCE = prove
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN(fun th -> X_GEN_TAC `p:form` THEN MP_TAC(SPEC `Not p` th)) THEN
   REWRITE_TAC[SIGMAPI_CLAUSES] THEN
-  REWRITE_TAC[closed; FV; true_def; holds] THEN
+  REWRITE_TAC[closed; FV; arithtrue; holds] THEN
   ASM_MESON_TAC[HOLDS_VALUATION; NOT_IN_EMPTY]);;
 
 let G1_TRAD = prove
  (`!A. consistent A /\
        complete_for (SIGMA 1 INTER closed) A /\
        definable_by (SIGMA 1) (IMAGE gform A)
-       ==> ?G. PI 1 G /\ closed G /\ true G /\ ~(A |-- G) /\
+       ==> ?G. PI 1 G /\ closed G /\ arithtrue G /\ ~(A |-- G) /\
                (sound_for (SIGMA 1 INTER closed) A ==> ~(A |-- Not G))`,
   REWRITE_TAC[SIGMA] THEN REPEAT STRIP_TAC THEN
   MP_TAC(SPEC `A:form->bool` G1) THEN ASM_REWRITE_TAC[SIGMA; PI] THEN

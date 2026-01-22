@@ -1,11 +1,8 @@
 ###############################################################################
 # Makefile for HOL Light                                                      #
 #                                                                             #
-# Simple "make" just builds the camlp4 syntax extension "pa_j.cmo", which is  #
-# necessary to load the HOL Light core into the OCaml toplevel.               #
-#                                                                             #
-# The later options such as "make hol" create standalone images, but only     #
-# work under Linux when the "ckpt" checkpointing program is installed.        #
+# Simple "make" just builds the camlp4/camlp5 syntax extension "pa_j.cmo",    #
+# which is necessary to load the HOL Light core into the OCaml toplevel.      #
 #                                                                             #
 # See the README file for more detailed information about the build process.  #
 #                                                                             #
@@ -22,84 +19,157 @@ BINDIR=${HOME}/bin
 HOLSRC=system.ml lib.ml fusion.ml basics.ml nets.ml preterm.ml          \
        parser.ml printer.ml equal.ml bool.ml drule.ml tactics.ml        \
        itab.ml simp.ml theorems.ml ind_defs.ml class.ml trivia.ml       \
-       canon.ml meson.ml metis.ml quot.ml recursion.ml pair.ml          \
+       canon.ml meson.ml firstorder.ml metis.ml thecops.ml quot.ml      \
+       impconv.ml recursion.ml pair.ml compute.ml                       \
        nums.ml arith.ml wf.ml calc_num.ml normalizer.ml grobner.ml      \
        ind_types.ml lists.ml realax.ml calc_int.ml realarith.ml         \
        real.ml calc_rat.ml int.ml sets.ml iterate.ml cart.ml define.ml  \
-       help.ml database.ml update_database.ml
+       help.ml database.ml update_database.ml hol_lib.ml hol_loader.ml
 
 # Some parameters to help decide how to build things
 
 OCAML_VERSION=`ocamlc -version | cut -c1-4`
 OCAML_BINARY_VERSION=`ocamlc -version | cut -c1-3`
 OCAML_UNARY_VERSION=`ocamlc -version | cut -c1`
-CAMLP5_BINARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1`
-CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 -d'-' | cut -c1-6`
+
+# If set to 1, build hol_lib.cmo and make hol.sh to use it.
+# NOTE: This extends the trusted base of HOL Light to include the inliner
+# script, inline_load.ml. inline_load.ml is an OCaml program that receives
+# an HOL Light proof and replaces the loads/loadt/needs function invocations
+# with their actual contents. Please turn this flag on only if having this
+# additional trusted base is considered okay.
+
+HOLLIGHT_USE_MODULE?=0
 
 # Main target
 
-default: update_database.ml pa_j.cmo;
+default: update_database.ml pa_j.cmo hol.sh;
+
+# Create a local OPAM switch and install dependencies on it.
+# This will use the latest OCaml version that fully supports features of
+# HOL Light.
+# ledit is installed for line editing of OCaml REPL
+# Use --no-install to avoid installing HOL Light through the opam file
+# in this directory.
+switch:; \
+  opam update ; \
+  opam switch create . ocaml-base-compiler.4.14.0 --no-install ; \
+  eval $(opam env) ; \
+  opam install -y zarith ledit ; \
+  opam pin -y add camlp5 8.03.06
+
+switch-5:; \
+  opam update ; \
+  opam switch create . ocaml-base-compiler.5.4.0 --no-install ; \
+  eval $(opam env) ; \
+  opam install -y zarith ledit ; \
+  opam pin -y add camlp5 8.04.00
 
 # Choose an appropriate "update_database.ml" file
 
-update_database.ml:; cp update_database_${OCAML_UNARY_VERSION}.ml update_database.ml
+update_database.ml:; \
+  cp update_database/`update_database/chooser.sh` update_database.ml
 
 # Build the camlp4 syntax extension file (camlp5 for OCaml >= 3.10)
 
 pa_j.cmo: pa_j.ml; if test ${OCAML_BINARY_VERSION} = "3.0" ; \
                    then ocamlc -c -pp "camlp4r pa_extend.cmo q_MLast.cmo" -I `camlp4 -where` pa_j.ml ; \
-                   else if test ${OCAML_BINARY_VERSION} = "3.1" -o ${OCAML_VERSION} = "4.00" -o ${OCAML_VERSION} = "4.01"  -o ${OCAML_VERSION} = "4.02" -o ${OCAML_VERSION} = "4.03" -o ${OCAML_VERSION} = "4.04" -o ${OCAML_VERSION} = "4.05" ; \
-                        then  ocamlc -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` pa_j.ml ; \
-                        else ocamlc -safe-string -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` pa_j.ml ; \
-                        fi \
+                   elif test ${OCAML_BINARY_VERSION} = "3.1" -o ${OCAML_VERSION} = "4.00" -o ${OCAML_VERSION} = "4.01"  -o ${OCAML_VERSION} = "4.02" -o ${OCAML_VERSION} = "4.03" -o ${OCAML_VERSION} = "4.04" -o ${OCAML_VERSION} = "4.05" ; \
+                   then ocamlc -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` pa_j.ml ; \
+                   else ocamlc -safe-string -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` -I `ocamlfind query camlp-streams` pa_j.ml ; \
                    fi
 
-# Choose an appropriate camlp4 or camlp5 syntax extension.
-#
-# For OCaml < 3.10 (OCAML_BINARY_VERSION = "3.0"), this uses the built-in
-# camlp4, and in general there are different versions for each OCaml version
-#
-# For OCaml >= 3.10 (OCAML_BINARY_VERSION = "3.1" or "4.x"), this uses the
-# separate program camlp5. Now the appropriate syntax extensions is determined
-# based on the camlp5 version. The main distinction is < 6.00 and >= 6.00, but
-# there are some other incompatibilities, unfortunately.
+pa_j.ml: pa_j/pa_j_3.07.ml pa_j/pa_j_3.08.ml pa_j/pa_j_3.09.ml \
+         pa_j/pa_j_3.1x_5.xx.ml pa_j/pa_j_3.1x_6.xx.ml \
+         pa_j/pa_j_4.xx_8.00.ml pa_j/pa_j_4.xx_8.02.ml \
+         pa_j/pa_j_4.xx_8.03.ml pa_j/pa_j_4.xx_8.03.06.ml \
+         pa_j/pa_j_5.4_8.04.00.ml ; \
+  cp pa_j/`pa_j/chooser.sh` pa_j.ml
 
-pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx.ml; \
-        if test ${OCAML_BINARY_VERSION} = "3.0"  ; \
-        then cp pa_j_${OCAML_VERSION}.ml pa_j.ml ; \
-        else if test ${CAMLP5_BINARY_VERSION} = "7" ; \
-             then if test ${CAMLP5_VERSION} = "7.01" -o ${CAMLP5_VERSION} = "7.02" -o ${CAMLP5_VERSION} = "7.03" -o ${CAMLP5_VERSION} = "7.04" -o ${CAMLP5_VERSION} = "7.05" -o ${CAMLP5_VERSION} = "7.06" ; \
-									then cp pa_j_4.xx_7.06.ml pa_j.ml; \
-									else cp pa_j_4.xx_7.xx.ml pa_j.ml; \
-									fi \
-             else if test ${CAMLP5_VERSION} = "6.02.1" ; \
-                  then cp pa_j_3.1x_6.02.1.ml pa_j.ml; \
-                  else if test ${CAMLP5_VERSION} = "6.02.2" -o ${CAMLP5_VERSION} = "6.02.3" -o ${CAMLP5_VERSION} = "6.03" -o ${CAMLP5_VERSION} = "6.04" -o ${CAMLP5_VERSION} = "6.05" -o ${CAMLP5_VERSION} = "6.06" ; \
-                       then cp pa_j_3.1x_6.02.2.ml pa_j.ml; \
-                       else if test ${CAMLP5_VERSION} = "6.06" -o ${CAMLP5_VERSION} = "6.07" -o ${CAMLP5_VERSION} = "6.08" -o ${CAMLP5_VERSION} = "6.09" -o ${CAMLP5_VERSION} = "6.10" -o ${CAMLP5_VERSION} = "6.11" -o ${CAMLP5_VERSION} = "6.12" -o ${CAMLP5_VERSION} = "6.13" -o ${CAMLP5_VERSION} = "6.14" -o ${CAMLP5_VERSION} = "6.15" -o ${CAMLP5_VERSION} = "6.16" -o ${CAMLP5_VERSION} = "6.17" ; \
-                            then cp pa_j_3.1x_6.11.ml pa_j.ml; \
-                            else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
-                            fi \
-                       fi \
-                  fi \
-             fi \
+# Choose an appropriate bignum library.
+
+bignum.cmo: bignum_zarith.ml bignum_num.ml ; \
+        if test ${OCAML_VERSION} = "4.14" -o ${OCAML_UNARY_VERSION} = "5" ; \
+        then ocamlfind ocamlc -package zarith -c -o bignum.cmo bignum_zarith.ml ; \
+        else ocamlc -c -o bignum.cmo bignum_num.ml ; \
         fi
 
-# Build a standalone hol image called "hol" (needs Linux and ckpt program)
+bignum.cmx: bignum_zarith.ml bignum_num.ml ; \
+        if test ${OCAML_VERSION} = "4.14" -o ${OCAML_UNARY_VERSION} = "5" ; \
+        then ocamlfind ocamlopt -package zarith -c -o bignum.cmx bignum_zarith.ml ; \
+        else ocamlopt -c -o bignum.cmx bignum_num.ml ; \
+        fi
 
-hol: pa_j.cmo ${HOLSRC} update_database.ml;                    \
+hol_loader.cmo: hol_loader.ml ; \
+        ocamlc -verbose -c hol_loader.ml -o hol_loader.cmo
+
+hol_loader.cmx: hol_loader.ml ; \
+        ocamlopt -verbose -c hol_loader.ml -o hol_loader.cmx
+
+hol_lib_inlined.ml: ${HOLSRC} inline_load.ml ; \
+        HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml hol_lib.ml hol_lib_inlined.ml -omit-prelude
+
+hol_lib.cmo: pa_j.cmo hol_lib_inlined.ml hol_loader.cmo bignum.cmo ; \
+        ocamlc -verbose -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" hol_loader.cmo hol_lib_inlined.ml bignum.cmo -o hol_lib.cmo
+
+hol_lib.cma: hol_lib.cmo bignum.cmo hol_loader.cmo ; \
+        ocamlfind ocamlc -package zarith -linkpkg -a -o hol_lib.cma bignum.cmo hol_loader.cmo hol_lib.cmo
+
+hol_lib.cmx: pa_j.cmo hol_lib_inlined.ml hol_loader.cmx bignum.cmx ; \
+        OCAMLRUNPARAM=l=1000000000 ocamlopt.byte -verbose -c \
+              -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" \
+              hol_lib_inlined.ml hol_loader.cmx bignum.cmx -o hol_lib.cmx
+
+hol_lib.cmxa: hol_lib.cmx hol_loader.cmx bignum.cmx ; \
+        ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx hol_loader.cmx hol_lib.cmx
+
+# Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
+
+hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml
+	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
+		if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; then \
+			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo hol_loader.cmo ; \
+			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g" hol_4.14.sh > hol.sh ; \
+		else \
+			ocamlmktop -o ocaml-hol nums.cma bignum.cmo hol_loader.cmo ; \
+			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g" hol_4.sh > hol.sh ; \
+		fi ; \
+		chmod +x hol.sh ; \
+	else \
+		echo 'FAILURE: hol.sh assumes Linux' ; \
+	fi
+
+# If HOLLIGHT_USE_MODULE is set, add hol_lib.cmo to dependency of hol.sh
+# Also, build unit_tests using OCaml bytecode compiler as well as OCaml native compiler.
+
+ifeq ($(HOLLIGHT_USE_MODULE),1)
+hol.sh: hol_lib.cmo
+unit_tests_inlined.ml: unit_tests.ml inline_load.ml ; \
+        HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml unit_tests.ml unit_tests_inlined.ml
+unit_tests.byte: unit_tests_inlined.ml hol_lib.cmo inline_load.ml hol.sh ; \
+        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmo hol_loader.cmo hol_lib.cmo unit_tests_inlined.ml -o unit_tests.byte
+unit_tests.native: unit_tests_inlined.ml hol_lib.cmx inline_load.ml hol.sh ; \
+        ocamlfind ocamlopt -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmx hol_loader.cmx hol_lib.cmx unit_tests_inlined.ml -o unit_tests.native
+
+default: hol_lib.cma hol_lib.cmxa unit_tests.byte unit_tests.native
+endif
+
+# Build a standalone hol image called "hol" (needs Linux and DMTCP)
+
+hol: hol.sh make-checkpoint.sh update_database.ml;                      \
      if test `uname` = Linux; then                                      \
-     echo -e '#use "make.ml";;\nloadt "update_database.ml";;\nself_destruct "";;' | ckpt -a SIGUSR1 -n hol.snapshot ocaml;\
-     mv hol.snapshot hol;                                               \
+     ./make-checkpoint.sh hol "loadt \"update_database.ml\"" ;          \
      else                                                               \
      echo '******************************************************';     \
-     echo 'FAILURE: Image build assumes Linux and ckpt program';        \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
      echo '******************************************************';     \
      fi
 
 # Build an image with multivariate calculus preloaded.
 
-hol.multivariate: ./hol                                                 \
+hol.multivariate: hol.sh make-checkpoint.sh Multivariate/make.ml        \
      Library/card.ml Library/permutations.ml Library/products.ml        \
      Library/floor.ml Multivariate/misc.ml Library/iter.ml              \
      Multivariate/metric.ml Multivariate/vectors.ml                     \
@@ -109,38 +179,81 @@ hol.multivariate: ./hol                                                 \
      Multivariate/derivatives.ml Multivariate/clifford.ml               \
      Multivariate/integration.ml Multivariate/measure.ml                \
      Multivariate/multivariate_database.ml update_database.ml;          \
-     echo -e 'loadt "Multivariate/make.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate analysis";;' | ./hol; mv hol.snapshot hol.multivariate;
+     if test `uname` = Linux; then                                      \
+     ./make-checkpoint.sh hol.multivariate "loadt \"Multivariate/make.ml\"; loadt \"update_database.ml\""; \
+     else                                                               \
+     echo '******************************************************';     \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
+     echo '******************************************************';     \
+     fi
 
 # Build an image with analysis and SOS procedure preloaded
 
-hol.sosa: ./hol                                                         \
+hol.sosa: hol.sh make-checkpoint.sh                                     \
      Library/analysis.ml Library/transc.ml                              \
      Examples/sos.ml update_database.ml;                                \
-     echo -e 'loadt "Library/analysis.ml";;\nloadt "Library/transc.ml";;\nloadt "Examples/sos.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with analysis and SOS";;' | ./hol; mv hol.snapshot hol.sosa;
+     if test `uname` = Linux; then                                      \
+     ./make-checkpoint.sh hol.sosa "loadt \"Library/analysis.ml\"; loadt \"Library/transc.ml\"; loadt \"Examples/sos.ml\"; loadt \"update_database.ml\""; \
+     else                                                               \
+     echo '******************************************************';     \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
+     echo '******************************************************';     \
+     fi
 
 # Build an image with cardinal arithmetic preloaded
 
-hol.card: ./hol Library/card.ml; update_database.ml;                    \
-        echo -e 'loadt "Library/card.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with cardinal arithmetic";;' | ./hol; mv hol.snapshot hol.card;
+hol.card: hol.sh make-checkpoint.sh Library/card.ml update_database.ml; \
+     if test `uname` = Linux; then                                      \
+     ./make-checkpoint.sh hol.card "loadt \"Library/card.ml\"; loadt \"update_database.ml\""; \
+     else                                                               \
+     echo '******************************************************';     \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';               \
+     echo '******************************************************';     \
+     fi
 
 # Build an image with multivariate-based complex analysis preloaded
 
-hol.complex: ./hol.multivariate                                         \
-        Library/binomial.ml Multivariate/complexes.ml                   \
-        Multivariate/canal.ml Multivariate/transcendentals.ml           \
-        Multivariate/realanalysis.ml Multivariate/moretop.ml            \
-        Multivariate/cauchy.ml Multivariate/complex_database.ml         \
-        update_database.ml;                                             \
-        echo -e 'loadt "Multivariate/complexes.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transcendentals.ml";;\nloadt "Multivariate/realanalysis.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
+hol.complex: hol.sh make-checkpoint.sh                                  \
+     Multivariate/make.ml                                            \
+     Library/card.ml Library/permutations.ml Library/products.ml     \
+     Library/floor.ml Multivariate/misc.ml Library/iter.ml           \
+     Multivariate/metric.ml Multivariate/vectors.ml                  \
+     Multivariate/determinants.ml Multivariate/topology.ml           \
+     Multivariate/convex.ml Multivariate/paths.ml                    \
+     Multivariate/polytope.ml Multivariate/degree.ml                 \
+     Multivariate/derivatives.ml Multivariate/clifford.ml            \
+     Multivariate/integration.ml Multivariate/measure.ml             \
+     Multivariate/multivariate_database.ml                           \
+     Library/binomial.ml Multivariate/complexes.ml                   \
+     Multivariate/canal.ml Multivariate/transcendentals.ml           \
+     Multivariate/realanalysis.ml Multivariate/moretop.ml            \
+     Multivariate/cauchy.ml Multivariate/complex_database.ml         \
+     update_database.ml;                                             \
+     if test `uname` = Linux; then                                   \
+     ./make-checkpoint.sh hol.complex "loadt \"Multivariate/make.ml\"; loadt \"update_database.ml\"; loadt \"Multivariate/complexes.ml\"; loadt \"Multivariate/canal.ml\"; loadt \"Multivariate/transcendentals.ml\"; loadt \"Multivariate/realanalysis.ml\"; loadt \"Multivariate/cauchy.ml\"; loadt \"Multivariate/complex_database.ml\"; loadt \"update_database.ml\""; \
+     else                                                           \
+     echo '******************************************************'; \
+     echo 'FAILURE: Image build assumes Linux and DMTCP';           \
+     echo '******************************************************'; \
+     fi
 
 # Build all those
-
-all: hol hol.multivariate hol.sosa hol.card hol.complex;
+all: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex;
 
 # Build binaries and copy them to binary directory
 
-install: hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivariate hol.sosa hol.card hol.complex ${BINDIR}
+install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivariate hol.sosa hol.card hol.complex ${BINDIR}
 
 # Clean up all compiled files
 
-clean:; rm -f update_database.ml pa_j.ml pa_j.cmi pa_j.cmo hol hol.multivariate hol.sosa hol.card hol.complex;
+clean:; \
+  rm -rf bignum.c* bignum.o \
+         update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
+         hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
+         hol_loader.c* hol_loader.o \
+         unit_tests_inlined.* unit_tests.native unit_tests.byte \
+         ocaml-hol hol.sh hol hol.ckpt \
+         hol.multivariate hol.multivariate.ckpt \
+         hol.sosa hol.sosa.ckpt \
+         hol.card hol.card.ckpt \
+         hol.complex hol.complex.ckpt

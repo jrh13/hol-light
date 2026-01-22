@@ -1,0 +1,38 @@
+\DOC unset_verbose_symbols
+
+\TYPE {unset_verbose_symbols : unit -> unit}
+
+\SYNOPSIS
+Disables more verbose descriptive names for quantifiers and logical constants
+
+\DESCRIBE
+A call to {unset_verbose_symbols()} disables the more verbose syntax for the
+logical quantifiers and constants that is set up by default and can be
+explicitly enabled by the dual function {set_verbose_symbols()}.
+
+\EXAMPLE
+Notice how the printing of theorems changes from using the verbose descriptive
+names for quantifiers by default:
+{
+  # num_Axiom;;
+  val it : thm =
+    |- forall e f.
+           existsunique fn. fn 0 = e /\ (forall n. fn (SUC n) = f (fn n) n)
+}
+\noindent to using the more concise symbolic names
+{
+  # unset_verbose_symbols();;
+  val it : unit = ()
+  # num_Axiom;;
+  val it : thm = |- !e f. ?!fn. fn 0 = e /\ (!n. fn (SUC n) = f (fn n) n)
+}
+
+\FAILURE
+Only fails if some of the names have already been used for incompatible
+constants.
+
+\SEEALSO
+overload_interface, override_interface, remove_interface, set_verbose_symbols,
+the_interface.
+
+\ENDDOC

@@ -1,14 +1,20 @@
-(* =========================================================== *)
-(* Formal verification functions                               *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
 
-needs "taylor/m_taylor.hl";;
-needs "verifier/certificate.hl";;
-needs "misc/misc_vars.hl";;
-needs "verifier_options.hl";;
-needs "verifier/m_verifier_build.hl";;
+(* -------------------------------------------------------------------------- *)
+(* Formal verification functions                                              *)
+(* -------------------------------------------------------------------------- *)
+
+needs "Formal_ineqs/taylor/m_taylor.hl";;
+needs "Formal_ineqs/verifier/certificate.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
+needs "Formal_ineqs/verifier/m_verifier_build.hl";;
 
 module M_verifier = struct
 
@@ -81,7 +87,7 @@ let eval_subset_trans =
 	  s_var = mk_var ("s", type_of s_tm) and
 	  t_var = mk_var ("t", type_of t_tm) and
 	  u_var = mk_var ("u", type_of u_tm) in
-	(MY_PROVE_HYP st_th o MY_PROVE_HYP tu_th o
+	(MY_PROVE_HYP st_th o MY_PROVE_HYP tu_th o 
 	   INST[s_tm, s_var; t_tm, t_var; u_tm, u_var] o inst_first_type_var ty) SUBSET_TRANS';;
 
 let eval_subset_refl =
@@ -90,7 +96,7 @@ let eval_subset_refl =
       let ty = (hd o snd o dest_type o type_of) s_tm and
 	  s_var = mk_var ("s", type_of s_tm) in
 	(INST[s_tm, s_var] o inst_first_type_var ty) SUBSET_REFL';;
-
+    
 
 
 let SUBSET_INTERVAL_IMP = prove(`!a b c d. (!i. i IN 1..dimindex (:N) ==> a$i <= c$i /\ d$i <= b$i) ==>
@@ -115,7 +121,7 @@ let gen_subset_interval_lemma n =
     MY_RULE th2;;
 
 
-let subset_interval_thms_array = Array.init (max_dim + 1)
+let subset_interval_thms_array = Array.init (max_dim + 1) 
   (fun n -> if n < 1 then TRUTH else gen_subset_interval_lemma n);;
 
 
@@ -131,7 +137,7 @@ let m_subset_interval n a_tm b_tm c_tm d_tm =
       c_s = dest_vector c_tm and
       d_s = dest_vector d_tm in
 
-  let th0 = (INST (zip a_s a_vars) o INST (zip b_s b_vars) o
+  let th0 = (INST (zip a_s a_vars) o INST (zip b_s b_vars) o 
 	       INST (zip c_s c_vars) o INST (zip d_s d_vars)) subset_interval_thms_array.(n) in
   let prove_le tm =
     let ltm, rtm = dest_binop le_op_real tm in
@@ -143,9 +149,9 @@ let m_subset_interval n a_tm b_tm c_tm d_tm =
 (*************************************)
 
 let M_RESTRICT_RIGHT_LEMMA = prove(`!j x z y w u y' w'. m_cell_domain (x:real^N,z) y w /\
-				    (!i. i IN 1..dimindex (:N) ==> ~(i = j) ==>
+				    (!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> 
 				       u$i = x$i /\ y'$i = y$i /\ w'$i = w$i) /\
-				    u$j = z$j /\ y'$j = z$j /\ w'$j = &0 ==>
+				    u$j = z$j /\ y'$j = z$j /\ w'$j = &0 ==>  
     m_cell_domain (u,z) y' w' /\ interval [u,z] SUBSET interval [x,z]`,
    REWRITE_TAC[m_cell_domain; SUBSET_INTERVAL; GSYM IN_NUMSEG] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
      CONJ_TAC THENL
@@ -173,9 +179,9 @@ let M_RESTRICT_RIGHT_LEMMA = prove(`!j x z y w u y' w'. m_cell_domain (x:real^N,
 
 
 let M_RESTRICT_LEFT_LEMMA = prove(`!j x z y w u y' w'. m_cell_domain (x:real^N,z) y w /\
-				    (!i. i IN 1..dimindex (:N) ==> ~(i = j) ==>
+				    (!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> 
 				       u$i = z$i /\ y'$i = y$i /\ w'$i = w$i) /\
-				    u$j = x$j /\ y'$j = x$j /\ w'$j = &0 ==>
+				    u$j = x$j /\ y'$j = x$j /\ w'$j = &0 ==> 
     m_cell_domain (x,u) y' w' /\ interval [x,u] SUBSET interval [x,z]`,
    REWRITE_TAC[m_cell_domain; SUBSET_INTERVAL; GSYM IN_NUMSEG] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
      CONJ_TAC THENL
@@ -216,19 +222,19 @@ let gen_restrict_lemma n j left_flag =
       y'_tm = mk_vector_list (map (fun i -> List.nth (if i = j then b else ys) (i - 1)) (1--n)) and
       w'_tm = mk_vector_list (map (fun i -> if i = j then `&0` else List.nth ws (i - 1)) (1--n)) in
 
-  let th0 = (SPEC_ALL o ISPECL [j_tm; x_tm; z_tm; y_tm; w_tm; u_tm; y'_tm; w'_tm])
+  let th0 = (SPEC_ALL o ISPECL [j_tm; x_tm; z_tm; y_tm; w_tm; u_tm; y'_tm; w'_tm]) 
     (if left_flag then M_RESTRICT_LEFT_LEMMA else M_RESTRICT_RIGHT_LEMMA) in
   let th1 = REWRITE_RULE[dimindex_array.(n); IN_NUMSEG; gen_in_interval n; ARITH] th0 in
   let th2 = REWRITE_RULE (Array.to_list comp_thms_array.(n)) th1 in
     MY_RULE_FLOAT th2;;
 
 
-let left_restrict_thms_array = Array.init (max_dim + 1)
+let left_restrict_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH else gen_restrict_lemma n j true));;
 
 
-let right_restrict_thms_array = Array.init (max_dim + 1)
+let right_restrict_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH else gen_restrict_lemma n j false));;
 
@@ -303,7 +309,7 @@ let m_taylor_cell_pass n pp m_taylor_th =
       failwith "m_taylor_cell_pass: hi < &0 <=> F"
     else
       (MY_PROVE_HYP upper_th o MY_PROVE_HYP hi_lt0_th o
-	 INST[f_tm, f_var; domain_tm, domain_var; hi_tm, hi_var_real] o
+	 INST[f_tm, f_var; domain_tm, domain_var; hi_tm, hi_var_real] o 
 	 inst_first_type_var n_type_array.(n)) M_CELL_PASS_LEMMA';;
 
 let m_taylor_cell_list_pass n pp m_taylor_th =
@@ -321,7 +327,7 @@ let m_taylor_cell_list_pass n pp m_taylor_th =
       failwith "m_taylor_cell_list_pass: hi < &0 <=> F"
     else
       (MY_PROVE_HYP upper_th o MY_PROVE_HYP hi_lt0_th o
-	 INST[f_tm, f_var; domain_tm, domain_var; hi_tm, hi_var_real] o
+	 INST[f_tm, f_var; domain_tm, domain_var; hi_tm, hi_var_real] o 
 	 inst_first_type_var n_type_array.(n)) M_CELL_LIST_PASS1_LEMMA';;
 
 
@@ -398,8 +404,8 @@ let m_cell_list_pass_subdomain domain2_tm pass_th =
 
 (******************************)
 
-let GLUE_LEMMA = prove(`!j x z v u P Q.
-			 (!i. 1 <= i /\ i <= dimindex (:N) ==> ~(i = j) ==>
+let GLUE_LEMMA = prove(`!j x z v u P Q. 
+			 (!i. 1 <= i /\ i <= dimindex (:N) ==> ~(i = j) ==> 
 			    u$i = x$i /\ v$i = z$i) ==>
 			 v$j = u$j ==>
 			     (!p. p IN interval [x,v] ==> P p) ==>
@@ -433,11 +439,11 @@ let GLUE_LEMMA = prove(`!j x z v u P Q.
      USE_THEN "eq1" (new_rewrite [] []) THEN ASM_REWRITE_TAC[] THEN
      USE_THEN "ineq" (new_rewrite [] []) THEN ASM_REWRITE_TAC[]);;
 
-let M_CELL_PASS_GLUE_LEMMA = prove(`!j x z v u f.
-				     (!i. 1 <= i /\ i <= dimindex (:N) ==> ~(i = j) ==>
+let M_CELL_PASS_GLUE_LEMMA = prove(`!j x z v u f. 
+				     (!i. 1 <= i /\ i <= dimindex (:N) ==> ~(i = j) ==> 
 					u$i = x$i /\ v$i = z$i) ==>
 				     v$j = u$j ==>
-					 m_cell_pass f (x,v) ==>
+					 m_cell_pass f (x,v) ==> 
 					 m_cell_pass f (u,z) ==>
 					 m_cell_pass f (x,z:real^N)`,
 				   REPEAT GEN_TAC THEN REWRITE_TAC[m_cell_pass] THEN
@@ -450,11 +456,11 @@ let ITLIST_DISJ_APPEND = prove(`!P l1 l2. ITLIST (\a r. P a \/ r) (APPEND l1 l2)
 			       GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC[APPEND; ITLIST; APPEND_NIL] THEN
 				 ASM_REWRITE_TAC[ITLIST; DISJ_ACI]);;
 
-let M_CELL_LIST_PASS_GLUE_LEMMA = prove(`!j x z v u fs1 fs2.
-				     (!i. 1 <= i /\ i <= dimindex (:N) ==> ~(i = j) ==>
+let M_CELL_LIST_PASS_GLUE_LEMMA = prove(`!j x z v u fs1 fs2. 
+				     (!i. 1 <= i /\ i <= dimindex (:N) ==> ~(i = j) ==> 
 					u$i = x$i /\ v$i = z$i) ==>
 				     v$j = u$j ==>
-					 m_cell_list_pass fs1 (x,v) ==>
+					 m_cell_list_pass fs1 (x,v) ==> 
 					 m_cell_list_pass fs2 (u,z) ==>
 					 m_cell_list_pass (APPEND fs1 fs2) (x,z:real^N)`,
 				   REPEAT GEN_TAC THEN REWRITE_TAC[m_cell_list_pass; ITLIST_DISJ_APPEND] THEN
@@ -479,7 +485,7 @@ let gen_glue_lemma n j =
     gen_th M_CELL_PASS_GLUE_LEMMA, gen_th M_CELL_LIST_PASS_GLUE_LEMMA;;
 
 
-let glue_thms_array = Array.init (max_dim + 1)
+let glue_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH, TRUTH else gen_glue_lemma n j));;
 
@@ -492,15 +498,15 @@ let CELL_LIST_PASS_ACC_INTRO = prove(`m_cell_list_pass fs1 domain <=> m_cell_lis
 
 let CELL_LIST_PASS_ACC_ELIM = SYM CELL_LIST_PASS_ACC_INTRO;;
 
-let CELL_LIST_PASS_ACC_REV = prove(`m_cell_list_pass (APPEND acc (CONS h fs2)) domain
+let CELL_LIST_PASS_ACC_REV = prove(`m_cell_list_pass (APPEND acc (CONS h fs2)) domain 
 				   <=> m_cell_list_pass (APPEND (CONS h acc) fs2) domain`,
 				   REWRITE_TAC[m_cell_list_pass; ITLIST_DISJ_APPEND; ITLIST; DISJ_ACI]);;
 
-let CELL_LIST_PASS_NIL1 = prove(`m_cell_list_pass (APPEND (APPEND [] fs2) acc) domain
+let CELL_LIST_PASS_NIL1 = prove(`m_cell_list_pass (APPEND (APPEND [] fs2) acc) domain 
 				<=> m_cell_list_pass (APPEND fs2 acc) domain`,
 				REWRITE_TAC[APPEND]);;
 
-let CELL_LIST_PASS_NIL2 = prove(`m_cell_list_pass (APPEND (APPEND fs1 []) acc) domain
+let CELL_LIST_PASS_NIL2 = prove(`m_cell_list_pass (APPEND (APPEND fs1 []) acc) domain 
 				<=> m_cell_list_pass (APPEND fs1 acc) domain`,
 				REWRITE_TAC[APPEND_NIL]);;
 
@@ -602,7 +608,7 @@ let DIFF2_DOMAIN_IMP_CONTINUOUS_ON = prove(`!(f:real^N->real) domain. diff2_doma
 
 
 
-let M_CELL_INCREASING_PASS_LEMMA = prove(`!j x z u domain lo f.
+let M_CELL_INCREASING_PASS_LEMMA = prove(`!j x z u domain lo f. 
 					   interval [x,z] SUBSET interval [domain] ==>
 					   diff2c_domain domain f ==>
 					   (!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = x$i) ==>
@@ -669,7 +675,7 @@ let M_CELL_INCREASING_PASS_LEMMA = prove(`!j x z u domain lo f.
 
 
 
-let M_CELL_DECREASING_PASS_LEMMA = prove(`!j x z u domain hi f.
+let M_CELL_DECREASING_PASS_LEMMA = prove(`!j x z u domain hi f. 
 					   interval [x,z] SUBSET interval [domain] ==>
 					   diff2c_domain domain f ==>
 					   (!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = z$i) ==>
@@ -735,7 +741,7 @@ let M_CELL_DECREASING_PASS_LEMMA = prove(`!j x z u domain hi f.
 
 
 
-let M_CELL_CONVEX_PASS_LEMMA = prove(`!j x z u v lo f.
+let M_CELL_CONVEX_PASS_LEMMA = prove(`!j x z u v lo f. 
 		diff2c_domain (x,z) f ==>
 		(!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = z$i /\ v$i = x$i) ==>
 		u$j = x$j ==> v$j = z$j ==>
@@ -837,7 +843,7 @@ let ITLIST_DISJ_EXISTS = prove(`!P l. ITLIST (\x r. P x \/ r) l F <=> ?x:A. MEM 
 				   DISJ2_TAC THEN EXISTS_TAC `x:A` THEN ASM_REWRITE_TAC[]
 				 ]);;
 
-let M_CELL_LIST_PASS_ALT = prove(`!fs domain. m_cell_list_pass fs domain <=>
+let M_CELL_LIST_PASS_ALT = prove(`!fs domain. m_cell_list_pass fs domain <=> 
 				   (!y:real^N. y IN interval [domain] ==> ?f. MEM f fs /\ f y < &0)`,
 				 REWRITE_TAC[m_cell_list_pass; ITLIST_DISJ_EXISTS]);;
 
@@ -855,18 +861,18 @@ let ONE_POINT_INTERVAL = prove(`!x:real^N. interval [x,x] = {x}`,
 				 ARITH_TAC);;
 
 
-let M_CELL_LIST_INCREASING_PASS_LEMMA = prove(`!j x z u domain fs.
+let M_CELL_LIST_INCREASING_PASS_LEMMA = prove(`!j x z u domain fs. 
 						interval [x,z] SUBSET interval [domain] ==>
 						(!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = x$i) ==>
 						u$j = z$j ==>
-						    ALL (\f. diff2c_domain domain f /\
+						    ALL (\f. diff2c_domain domain f /\ 
 							   (!y. y IN interval [domain] ==> &0 <= partial j f y)) fs ==>
 						    m_cell_list_pass fs (u,z) ==>
 						    m_cell_list_pass fs (x,z:real^N)`,
-   REWRITE_TAC[SUBSET; M_CELL_LIST_PASS_ALT] THEN REPEAT STRIP_TAC THEN
+   REWRITE_TAC[SUBSET; M_CELL_LIST_PASS_ALT] THEN REPEAT STRIP_TAC THEN 
      ABBREV_TAC `(xx:real^N) = lambda i. if i = j then (x:real^N)$i else (y:real^N)$i` THEN
        ABBREV_TAC `(zz:real^N) = lambda i. if i = j then (z:real^N)$i else (y:real^N)$i` THEN
-	
+	 
 	 SUBGOAL_THEN `interval [xx:real^N,zz] SUBSET interval [domain]` ASSUME_TAC THENL [
 	   MATCH_MP_TAC SUBSET_TRANS THEN EXISTS_TAC `interval [x:real^N,z]` THEN ASM_REWRITE_TAC[SUBSET] THEN
 	     REWRITE_TAC[IN_INTERVAL] THEN X_GEN_TAC `t:real^N` THEN DISCH_THEN (LABEL_TAC "in1") THEN
@@ -879,7 +885,7 @@ let M_CELL_LIST_INCREASING_PASS_LEMMA = prove(`!j x z u domain fs.
 	     ARITH_TAC;
 	   ALL_TAC
 	 ] THEN
-	
+	 
 	 SUBGOAL_THEN `y IN interval [xx:real^N,zz]` ASSUME_TAC THENL [
 	   REWRITE_TAC[IN_INTERVAL] THEN GEN_TAC THEN DISCH_TAC THEN
 	     EXPAND_TAC "xx" THEN EXPAND_TAC "zz" THEN ASM_SIMP_TAC[LAMBDA_BETA] THEN
@@ -888,7 +894,7 @@ let M_CELL_LIST_INCREASING_PASS_LEMMA = prove(`!j x z u domain fs.
 	     DISCH_THEN (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[];
 	   ALL_TAC
 	 ] THEN
-	
+	 
 	 FIRST_X_ASSUM (MP_TAC o SPEC `zz:real^N`) THEN ANTS_TAC THENL [
 	   REWRITE_TAC[IN_INTERVAL] THEN GEN_TAC THEN DISCH_TAC THEN
 	     EXPAND_TAC "zz" THEN ASM_SIMP_TAC[LAMBDA_BETA] THEN
@@ -914,15 +920,15 @@ let M_CELL_LIST_INCREASING_PASS_LEMMA = prove(`!j x z u domain fs.
 
 
 
-let M_CELL_LIST_DECREASING_PASS_LEMMA = prove(`!j x z u domain fs.
+let M_CELL_LIST_DECREASING_PASS_LEMMA = prove(`!j x z u domain fs. 
 						interval [x,z] SUBSET interval [domain] ==>
 						(!i. i IN 1..dimindex (:N) ==> ~(i = j) ==> u$i = z$i) ==>
 						u$j = x$j ==>
-						    ALL (\f. diff2c_domain domain f /\
+						    ALL (\f. diff2c_domain domain f /\ 
 							   (!y. y IN interval [domain] ==> partial j f y <= &0)) fs ==>
 						    m_cell_list_pass fs (x,u) ==>
 						    m_cell_list_pass fs (x,z:real^N)`,
-   REWRITE_TAC[SUBSET; M_CELL_LIST_PASS_ALT] THEN REPEAT STRIP_TAC THEN
+   REWRITE_TAC[SUBSET; M_CELL_LIST_PASS_ALT] THEN REPEAT STRIP_TAC THEN 
      ABBREV_TAC `(xx:real^N) = lambda i. if i = j then (x:real^N)$i else (y:real^N)$i` THEN
        ABBREV_TAC `(zz:real^N) = lambda i. if i = j then (z:real^N)$i else (y:real^N)$i` THEN
 	 SUBGOAL_THEN `interval [xx:real^N,zz] SUBSET interval [domain]` ASSUME_TAC THENL [
@@ -967,7 +973,7 @@ let M_CELL_LIST_DECREASING_PASS_LEMMA = prove(`!j x z u domain fs.
 	 ] THEN
 	 ASM_SIMP_TAC[ONE_POINT_INTERVAL; IN_SING]);;
 
-	
+	 
 
 (*********************)
 
@@ -994,11 +1000,11 @@ let gen_mono_lemma0 th =
   let domain_var = mk_var ("domain", type_of domain_tm) in
     (UNDISCH_ALL o REWRITE_RULE[SUBSET_REFL] o DISCH_ALL o INST[domain_tm, domain_var]) th;;
 
-let incr_gen_thms_array = Array.init (max_dim + 1)
+let incr_gen_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH else gen_increasing_lemma n j));;
 
-let incr_thms_array = Array.init (max_dim + 1)
+let incr_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH else gen_mono_lemma0 incr_gen_thms_array.(n).(j)));;
 
@@ -1019,11 +1025,11 @@ let gen_decreasing_lemma n j =
     (UNDISCH_ALL o ONCE_REWRITE_RULE[GSYM ZERO_EQ_ZERO_CONST] o DISCH (last (hyp th3))) th3;;
 
 
-let decr_gen_thms_array = Array.init (max_dim + 1)
+let decr_gen_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH else gen_decreasing_lemma n j));;
 
-let decr_thms_array = Array.init (max_dim + 1)
+let decr_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH else gen_mono_lemma0 decr_gen_thms_array.(n).(j)));;
 
@@ -1045,7 +1051,7 @@ let gen_convex_max_lemma n j =
     (UNDISCH_ALL o ONCE_REWRITE_RULE[GSYM ZERO_EQ_ZERO_CONST] o DISCH (last (hyp th3))) th3;;
 
 
-let convex_thms_array = Array.init (max_dim + 1)
+let convex_thms_array = Array.init (max_dim + 1) 
   (fun n -> Array.init (n + 1)
      (fun j -> if j < 1 then TRUTH else gen_convex_max_lemma n j));;
 
@@ -1067,8 +1073,8 @@ let m_glue_cells n j pass_th1 pass_th2 =
       z_vars = map (fun i -> z_vars_array.(i)) (1--n) and
       f_var = mk_var ("f", type_of f_tm) and
       t_tm = List.nth x2s (j - 1) in
-
-  let th0 = (INST[t_tm, t_var_real; f_tm, f_var] o
+    
+  let th0 = (INST[t_tm, t_var_real; f_tm, f_var] o 
 	       INST (zip z2s z_vars) o INST (zip x1s x_vars)) (fst glue_thms_array.(n).(j)) in
     (MY_PROVE_HYP pass_th1 o MY_PROVE_HYP pass_th2) th0;;
 
@@ -1088,8 +1094,8 @@ let m_glue_cells_list n j pass_th1 pass_th2 =
       fs1_var = mk_var ("fs1", type_of fs1_tm) and
       fs2_var = mk_var ("fs2", type_of fs2_tm) and
       t_tm = List.nth x2s (j - 1) in
-
-  let th0 = (INST[t_tm, t_var_real; fs1_tm, fs1_var; fs2_tm, fs2_var] o
+    
+  let th0 = (INST[t_tm, t_var_real; fs1_tm, fs1_var; fs2_tm, fs2_var] o 
 	       INST (zip z2s z_vars) o INST (zip x1s x_vars)) (snd glue_thms_array.(n).(j)) in
     (MY_PROVE_HYP pass_th1 o MY_PROVE_HYP pass_th2) th0;;
 
@@ -1112,13 +1118,13 @@ let m_mono_pass_gen n j decr_flag diff2_th partial_mono_th sub_th pass_th =
       bound_var = mk_var ((if decr_flag then "hi" else "lo"), real_ty) in
 
   let le_th0 = (if decr_flag then float_le0 else float_ge0) bound_tm in
-  let le_th = try EQT_ELIM le_th0 with Failure _ ->
+  let le_th = try EQT_ELIM le_th0 with Failure _ -> 
     failwith (sprintf "m_mono_pass_gen: j = %d, th = %s" j (string_of_thm le_th0)) in
 
   let th0 = (INST[f_tm, f_var; bound_tm, bound_var; domain, domain_var] o
-	  INST (zip xs x_vars) o INST (zip zs z_vars))
+	  INST (zip xs x_vars) o INST (zip zs z_vars)) 
     (if decr_flag then decr_gen_thms_array.(n).(j) else incr_gen_thms_array.(n).(j)) in
-    (MY_PROVE_HYP le_th o MY_PROVE_HYP pass_th o MY_PROVE_HYP diff2_th o
+    (MY_PROVE_HYP le_th o MY_PROVE_HYP pass_th o MY_PROVE_HYP diff2_th o 
        MY_PROVE_HYP sub_th o MY_PROVE_HYP partial_mono_th) th0;;
 
 
@@ -1140,9 +1146,9 @@ let m_incr_pass n pp j m_taylor_th pass_th0 =
   let x_vars = map (fun i -> x_vars_array.(i)) (1--n) and
       z_vars = map (fun i -> z_vars_array.(i)) (1--n) and
       f_var = mk_var ("f", type_of f_tm) in
-  let th0 = (INST[f_tm, f_var; lo_tm, lo_var_real] o
+  let th0 = (INST[f_tm, f_var; lo_tm, lo_var_real] o 
 	       INST (zip zs z_vars) o INST (zip xs x_vars)) incr_thms_array.(n).(j) in
-    (MY_PROVE_HYP lo_ge0_th o MY_PROVE_HYP pass_th0 o
+    (MY_PROVE_HYP lo_ge0_th o MY_PROVE_HYP pass_th0 o 
        MY_PROVE_HYP diff2_th o MY_PROVE_HYP partial_bound) th0;;
 
 
@@ -1163,9 +1169,9 @@ let m_decr_pass n pp j m_taylor_th pass_th0 =
   let x_vars = map (fun i -> x_vars_array.(i)) (1--n) and
       z_vars = map (fun i -> z_vars_array.(i)) (1--n) and
       f_var = mk_var ("f", type_of f_tm) in
-  let th0 = (INST[f_tm, f_var; hi_tm, hi_var_real] o
+  let th0 = (INST[f_tm, f_var; hi_tm, hi_var_real] o 
 	       INST (zip zs z_vars) o INST (zip xs x_vars)) decr_thms_array.(n).(j) in
-    (MY_PROVE_HYP hi_le0_th o MY_PROVE_HYP pass_th0 o
+    (MY_PROVE_HYP hi_le0_th o MY_PROVE_HYP pass_th0 o 
        MY_PROVE_HYP diff2_th o MY_PROVE_HYP partial_bound) th0;;
 
 (*************************)
@@ -1186,7 +1192,7 @@ let m_convex_pass n j diff2_th partial2_bound_th pass1_th pass2_th =
       f_var = mk_var ("f", type_of f_tm) in
 
   let le_th0 = float_ge0 bound_tm in
-  let le_th =
+  let le_th = 
     try EQT_ELIM le_th0 with Failure _ -> failwith ("m_convex_pass: "^string_of_thm le_th0) in
 
   let th0 = (INST[f_tm, f_var; bound_tm, lo_var_real] o
@@ -1201,7 +1207,7 @@ let m_convex_pass n j diff2_th partial2_bound_th pass1_th pass2_th =
 
 (* split_domain *)
 
-let split_domain n pp j domain_th =
+let split_domain n pp j domain_th = 
   let domain_tm, y_tm, _ = dest_m_cell_domain (concl domain_th) in
   let x_tm, z_tm = dest_pair domain_tm in
   let xs = dest_vector x_tm and
@@ -1231,7 +1237,7 @@ let restrict_domain n j left_flag domain_th =
     (if left_flag then left_restrict_thms_array.(n).(j) else right_restrict_thms_array.(n).(j)) in
   let ths = CONJUNCTS (MY_PROVE_HYP domain_th th0) in
     hd ths, hd (tl ths);;
-
+  
 
 
 
@@ -1248,7 +1254,7 @@ let m_verify_raw (report_start, total_size) n pp fs certificate domain_th0 th_li
     let rec apply_trans sub_ths th0 acc =
       match sub_ths with
 	| [] -> rev acc
-	| th :: ths ->
+	| th :: ths -> 
 	    let th' = eval_subset_trans th th0 in
 	      apply_trans ths th' (th' :: acc) in
 
@@ -1265,7 +1271,7 @@ let m_verify_raw (report_start, total_size) n pp fs certificate domain_th0 th_li
       let xx, zz = dest_pair domain in
       let df0_flags = itlist (fun m b -> m.df0_flag && b) mono true in
       let _ = !info_print_level < 2 || (report (sprintf "df0_flags = %b" df0_flags); true) in
-      let taylor_th, diff2_th =
+      let taylor_th, diff2_th = 
 	if df0_flags then
 	  TRUTH, fs.diff2_f xx zz
 	else
@@ -1306,13 +1312,13 @@ let m_verify_raw (report_start, total_size) n pp fs certificate domain_th0 th_li
 	match certificate with
 	  | Result_mono (mono, r1) ->
 	      let _ = !info_print_level < 2 ||
-		(let mono_strs =
-		   map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "")
+		(let mono_strs = 
+		   map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "") 
 			  m.variable m.df0_flag) mono in
 		   report (sprintf "Mono: [%s]" (String.concat ";" mono_strs)); true) in
 		verify_mono mono domain_th r1
 
-	  | Result_pass (_, f0_flag) ->
+	  | Result_pass (_, f0_flag) -> 
 	      let _ = k := !k + 1 in
 	      let _ = !info_print_level < 2 ||
 		(report (sprintf "Verifying: %d/%d (f0_flag = %b)" !k r_size f0_flag); true) in
@@ -1325,8 +1331,8 @@ let m_verify_raw (report_start, total_size) n pp fs certificate domain_th0 th_li
 		    m_taylor_cell_pass0 n (fs.f pp xx zz)
 		else
 		  let taylor_th = fs.taylor pp pp domain_th in
-		    m_taylor_cell_pass n pp taylor_th
-		
+		    m_taylor_cell_pass n pp taylor_th  
+		  
 	  | Result_glue (i, convex_flag, r1, r2) ->
 	      let domain1_th, domain2_th =
 		if convex_flag then
@@ -1350,15 +1356,15 @@ let m_verify_raw (report_start, total_size) n pp fs certificate domain_th0 th_li
 
 	  | Result_pass_ref i ->
 	      let _ = !info_print_level < 2 || (report (sprintf "Ref: %d" i); true) in
-		if i > 0 then
+		if i > 0 then 
 		  List.nth th_list (i - 1)
 		else
 		  let domain, _, _ = (dest_m_cell_domain o concl) domain_th in
 		  let pass_th = List.nth th_list (-i - 1) in
 		    m_cell_pass_subdomain domain pass_th
-		
+		    
 	  | _ -> failwith "False result" in
-
+    
     rec_verify domain_th0 certificate;;
 
 
@@ -1368,11 +1374,11 @@ let m_verify_raw (report_start, total_size) n pp fs certificate domain_th0 th_li
 let m_verify_raw0 n pp fs certificate xx zz =
   m_verify_raw (0, 0) n pp fs certificate (mk_m_center_domain n pp xx zz) [];;
 
-	
+	    
 
 let m_verify_list n pp fs certificate_list xx zz =
   let domain_hash = Hashtbl.create (length certificate_list * 10) in
-  let mem, find, add = Hashtbl.mem domain_hash,
+  let mem, find, add = Hashtbl.mem domain_hash, 
     Hashtbl.find domain_hash, Hashtbl.add domain_hash in
 
   let get_m_cell_domain n pp domain0 path =
@@ -1381,7 +1387,7 @@ let m_verify_list n pp fs certificate_list xx zz =
 	| [] -> domain_th
 	| (s, j) :: ps ->
 	    let hash' = hash^s^(string_of_int j) in
-	      if mem hash' then
+	      if mem hash' then 
 		get_rec (find hash') ps hash'
 	      else
 		if s = "l" || s = "r" then
@@ -1433,7 +1439,7 @@ let m_p_verify_raw (report_start, total_size) n p_split fs certificate domain_th
     let rec apply_trans sub_ths th0 acc =
       match sub_ths with
 	| [] -> rev acc
-	| th :: ths ->
+	| th :: ths -> 
 	    let th' = eval_subset_trans th th0 in
 	      apply_trans ths th' (th' :: acc) in
 
@@ -1450,7 +1456,7 @@ let m_p_verify_raw (report_start, total_size) n p_split fs certificate domain_th
       let xx, zz = dest_pair domain in
       let df0_flags = itlist (fun m b -> m.df0_flag && b) mono true in
       let _ = !info_print_level < 2 || (report (sprintf "df0_flags = %b" df0_flags); true) in
-      let taylor_th, diff2_th =
+      let taylor_th, diff2_th = 
 	if df0_flags then
 	  TRUTH, fs.diff2_f xx zz
 	else
@@ -1486,15 +1492,15 @@ let m_p_verify_raw (report_start, total_size) n p_split fs certificate domain_th
 	match certificate with
 	  | P_result_mono (p_stat, mono, r1) ->
 	      let _ = !info_print_level < 2 ||
-		(let mono_strs =
-		   map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "")
+		(let mono_strs = 
+		   map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "") 
 			  m.variable m.df0_flag) mono in
 		   report (sprintf "Mono: [%s]" (String.concat ";" mono_strs)); true) in
 		verify_mono p_stat mono domain_th r1
 
 	  | P_result_pass (p_stat, _, f0_flag) ->
 	      let _ = k := !k + 1; kk := !kk + 1 in
-	      let _ = !info_print_level < 2 ||
+	      let _ = !info_print_level < 2 || 
 		(report (sprintf "Verifying: %d/%d (f0_flag = %b)" !k r_size f0_flag); true) in
 	      let _ = !info_print_level <> 1 ||
 		(let r = int_of_float (float_of_int !kk /. r_size2 *. 100.0) in
@@ -1505,8 +1511,8 @@ let m_p_verify_raw (report_start, total_size) n p_split fs certificate domain_th
 		    m_taylor_cell_pass0 n (fs.f p_stat.pp xx zz)
 		else
 		  let taylor_th = fs.taylor p_stat.pp p_stat.pp domain_th in
-		    m_taylor_cell_pass n p_stat.pp taylor_th
-		
+		    m_taylor_cell_pass n p_stat.pp taylor_th  
+		  
 	  | P_result_glue (p_stat, i, convex_flag, r1, r2) ->
 	      let domain1_th, domain2_th =
 		if convex_flag then
@@ -1530,13 +1536,13 @@ let m_p_verify_raw (report_start, total_size) n p_split fs certificate domain_th
 
 	  | P_result_ref i ->
 	      let _ = !info_print_level < 2 || (report (sprintf "Ref: %d" i); true) in
-		if i > 0 then
+		if i > 0 then 
 		  List.nth th_list (i - 1)
 		else
 		  let domain, _, _ = (dest_m_cell_domain o concl) domain_th in
 		  let pass_th = List.nth th_list (-i - 1) in
 		    m_cell_pass_subdomain domain pass_th in
-
+    
     rec_verify domain_th0 certificate;;
 
 (*****************)
@@ -1544,11 +1550,11 @@ let m_p_verify_raw (report_start, total_size) n p_split fs certificate domain_th
 let m_p_verify_raw0 n p_split fs certificate xx zz =
   m_p_verify_raw (0, 0) n p_split fs certificate (mk_m_center_domain n p_split xx zz) [];;
 
-	
+	    
 
 let m_p_verify_list n p_split fs certificate_list xx zz =
   let domain_hash = Hashtbl.create (length certificate_list * 10) in
-  let mem, find, add = Hashtbl.mem domain_hash,
+  let mem, find, add = Hashtbl.mem domain_hash, 
     Hashtbl.find domain_hash, Hashtbl.add domain_hash in
 
   let get_m_cell_domain n pp domain0 path =
@@ -1557,7 +1563,7 @@ let m_p_verify_list n p_split fs certificate_list xx zz =
 	| [] -> domain_th
 	| (s, j) :: ps ->
 	    let hash' = hash^s^(string_of_int j) in
-	      if mem hash' then
+	      if mem hash' then 
 		get_rec (find hash') ps hash'
 	      else
 		if s = "l" || s = "r" then
@@ -1581,7 +1587,7 @@ let m_p_verify_list n p_split fs certificate_list xx zz =
   let k = ref 0 in
   let kk = ref 0 in
   let total_size = end_itlist (+) (map (p_result_size o snd) certificate_list) in
-
+  
   let rec rec_verify certificate_list th_list =
     match certificate_list with
       | [] -> last th_list
@@ -1610,7 +1616,7 @@ let m_verify_disj_raw (report_start, total_size) n pp fs_list certificate domain
     let rec apply_trans sub_ths th0 acc =
       match sub_ths with
 	| [] -> rev acc
-	| th :: ths ->
+	| th :: ths -> 
 	    let th' = eval_subset_trans th th0 in
 	      apply_trans ths th' (th' :: acc) in
 
@@ -1627,7 +1633,7 @@ let m_verify_disj_raw (report_start, total_size) n pp fs_list certificate domain
       let xx, zz = dest_pair domain in
       let df0_flags = itlist (fun m b -> m.df0_flag && b) mono true in
       let _ = !info_print_level < 2 || (report (sprintf "df0_flags = %b" df0_flags); true) in
-      let taylor_th, diff2_th =
+      let taylor_th, diff2_th = 
 	if df0_flags then
 	  TRUTH, fs.diff2_f xx zz
 	else
@@ -1670,14 +1676,14 @@ let m_verify_disj_raw (report_start, total_size) n pp fs_list certificate domain
 	      failwith "Mono: not implemented"
 	      (*
 	      let _ = !info_print_level < 2 ||
-		(let mono_strs =
-		   map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "")
+		(let mono_strs = 
+		   map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "") 
 			  m.variable m.df0_flag) mono in
 		   report (sprintf "Mono: [%s]" (String.concat ";" mono_strs)); true) in
 		verify_mono mono domain_th r1
 	      *)
 
-	  | Result_pass (j, f0_flag) ->
+	  | Result_pass (j, f0_flag) -> 
 	      let _ = k := !k + 1 in
 	      let _ = !info_print_level < 2 ||
 		(report (sprintf "Verifying: %d/%d (f0_flag = %b)" !k r_size f0_flag); true) in
@@ -1692,8 +1698,8 @@ let m_verify_disj_raw (report_start, total_size) n pp fs_list certificate domain
 		    m_taylor_cell_list_pass0 n (fs.f pp xx zz)
 		else
 		  let taylor_th = fs.taylor pp pp domain_th in
-		    m_taylor_cell_list_pass n pp taylor_th
-		
+		    m_taylor_cell_list_pass n pp taylor_th  
+		  
 	  | Result_glue (i, convex_flag, r1, r2) ->
 	      let domain1_th, domain2_th =
 		if convex_flag then
@@ -1721,15 +1727,15 @@ let m_verify_disj_raw (report_start, total_size) n pp fs_list certificate domain
 
 	  | Result_pass_ref i ->
 	      let _ = !info_print_level < 2 || (report (sprintf "Ref: %d" i); true) in
-		if i > 0 then
+		if i > 0 then 
 		  List.nth th_list (i - 1)
 		else
 		  let domain, _, _ = (dest_m_cell_domain o concl) domain_th in
 		  let pass_th = List.nth th_list (-i - 1) in
 		    m_cell_list_pass_subdomain domain pass_th
-		
+		    
 	  | _ -> failwith "False result" in
-
+    
     rec_verify domain_th0 certificate;;
 
 
@@ -1755,9 +1761,9 @@ let m_p_verify_disj_raw (report_start, total_size) n p_split fs_list certificate
 	| P_result_mono (p_stat, mono, r1) ->
 	    failwith "Mono: not implemented"
 
-	| P_result_pass (p_stat, j, f0_flag) ->
+	| P_result_pass (p_stat, j, f0_flag) -> 
 	    let _ = k := !k + 1; kk := !kk + 1 in
-	    let _ = !info_print_level < 2 ||
+	    let _ = !info_print_level < 2 || 
 	      (report (sprintf "Verifying: %d/%d (f0_flag = %b)" !k r_size f0_flag); true) in
 	    let _ = !info_print_level <> 1 ||
 	      (let r = int_of_float (float_of_int !kk /. r_size2 *. 100.0) in
@@ -1769,8 +1775,8 @@ let m_p_verify_disj_raw (report_start, total_size) n p_split fs_list certificate
 		  m_taylor_cell_list_pass0 n (fs.f p_stat.pp xx zz)
 	      else
 		let taylor_th = fs.taylor p_stat.pp p_stat.pp domain_th in
-		  m_taylor_cell_list_pass n p_stat.pp taylor_th
-		
+		  m_taylor_cell_list_pass n p_stat.pp taylor_th  
+		  
 	| P_result_glue (p_stat, i, convex_flag, r1, r2) ->
 	    let domain1_th, domain2_th =
 	      if convex_flag then
@@ -1789,14 +1795,14 @@ let m_p_verify_disj_raw (report_start, total_size) n p_split fs_list certificate
 
 	| P_result_ref i ->
 	    let _ = !info_print_level < 2 || (report (sprintf "Ref: %d" i); true) in
-	      if i > 0 then
+	      if i > 0 then 
 		List.nth th_list (i - 1)
 	      else
 		let domain, _, _ = (dest_m_cell_domain o concl) domain_th in
 		let pass_th = List.nth th_list (-i - 1) in
 		  m_cell_list_pass_subdomain domain pass_th
-		
-	| _ -> failwith "False result"
+		    
+	| _ -> failwith "False result" 
   in
     rec_verify domain_th0 certificate;;
 

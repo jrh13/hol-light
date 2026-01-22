@@ -887,8 +887,13 @@ let list_INDUCT,list_RECURSION =
    (parse_inductive_type_specification "list = NIL | CONS A list");;
 
 let FORALL_OPTION_THM = prove
- (`!P. (!x. P x) <=> P NONE /\ !a. P(SOME a)`,
+ (`!P:A option->bool. (!x. P x) <=> P NONE /\ !a. P(SOME a)`,
   GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[option_INDUCT] THEN SIMP_TAC[]);;
+
+let EXISTS_OPTION_THM = prove
+ (`!P:A option->bool. (?x. P x) <=> P NONE \/ ?a. P(SOME a)`,
+  GEN_TAC THEN REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[FORALL_OPTION_THM] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Tools for proving injectivity and distinctness of constructors.           *)
@@ -1069,7 +1074,7 @@ let ISO_USAGE = prove
  (`ISO f g
    ==> (!P. (!x. P x) <=> (!x. P(g x))) /\
        (!P. (?x. P x) <=> (?x. P(g x))) /\
-       (!a b. (a = g b) <=> (f a = b))`,
+       (!(a:A) (b:B). (a = g b) <=> (f a = b))`,
   REWRITE_TAC[ISO; FUN_EQ_THM] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)

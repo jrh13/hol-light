@@ -973,18 +973,56 @@ let define =
     let ajs = map (hd o hyp) ths in
     let th = ASSUME(list_mk_conj ajs) in
     f,itlist GEN avs (itlist PROVE_HYP (CONJUNCTS th) (end_itlist CONJ ths)) in
+
+  (* If t is a benign redefinition of some constant, the left hand side(s) of
+     t is some Const.
+     If the constant has a polymorphic type, other occurrences of the constant
+     in the definition (t) may have different types.
+     However, when the constant was being defined, it could not have been
+     a constant but a variable with the same name; and the typing rule of Var
+     did not allow different occurrences of Var to have different types.
+     This discrepancy between typing rules of Const and Var makes the benign
+     redefinition check hard.
+     type_instantiate_defining_const addresses this problem by making every
+     occurrence of the defining constant have the same type.
+  *)
+  let type_instantiate_defining_const t =
+    (* Assume that t is already strip_forall-ed. *)
+    (* Get the defining constant. This sequence is identical to the beginning
+       of close_definition_clauses. *)
+    let cjs = conjuncts t in
+    let fs = map (repeat rator o lhs o snd o strip_forall) cjs in
+    let f = hd fs in (* Arbitrarily choose one of the left hands *)
+    if not (is_const f)
+    then t (* t cannot be a benign redefinition. Just return the input. *)
+    else
+      (* Instantiate type variables of all other occurrences of the 'f'
+         constant *)
+      let fname = name_of f in
+      let f_occurs = find_terms
+        (fun t' -> is_const t' && name_of t' = fname && t' <> f) t in
+      itlist
+        (fun f' t_updated -> instantiate (term_match [] f' f) t_updated)
+        f_occurs t in
+
   fun tm ->
     let tm' = snd(strip_forall tm) in
-    try let th,th' = tryfind (fun th -> th,PART_MATCH I th tm')
+    try (* normalize tm' so that the defining constant have a same type *)
+        let tm' = type_instantiate_defining_const tm' in
+        let th,th' = tryfind (fun th -> th,PART_MATCH I th tm')
                              (!the_definitions) in
         if can (PART_MATCH I th') (concl th) then
          (warn true "Benign redefinition"; th')
         else failwith ""
     with Failure _ ->
       let f,th = close_definition_clauses tm in
-      let etm = mk_exists(f,hd(hyp th)) in
-      let th1 = prove_general_recursive_function_exists etm in
-      let th2 = new_specification[fst(dest_var f)] th1 in
-      let g = mk_mconst(dest_var f) in
-      let th3 = PROVE_HYP th2 (INST [g,f] th) in
-      the_definitions := th3::(!the_definitions); th3;;
+      if not (is_var f) then
+        (* If f is not Var, mk_exists will fail. *)
+        failwith ("define: '" ^ (string_of_term f) ^ "' is already defined")
+      else
+        let etm = mk_exists(f,hd(hyp th)) in
+        let th1 = prove_general_recursive_function_exists etm in
+        let th2 = new_specification[fst(dest_var f)] th1 in
+        let g = mk_mconst(dest_var f) in
+        let th3 = PROVE_HYP th2 (INST [g,f] th) in
+        the_definitions := th3::(!the_definitions); th3;;

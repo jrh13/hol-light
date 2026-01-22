@@ -134,9 +134,9 @@ let REAL_NDIV_LEMMA3 = prove
 
 let log2 =                              (*** least p >= 0 with x <= 2^p ***)
   let rec log2 x y =
-    if x </ Int 1 then y
-    else log2 (quo_num x (Int 2)) (y +/ Int 1) in
-  fun x -> log2 (x -/ Int 1) (Int 0);;
+    if x </ num 1 then y
+    else log2 (quo_num x (num 2)) (y +/ num 1) in
+  fun x -> log2 (x -/ num 1) (num 0);;
 
 (* ------------------------------------------------------------------------- *)
 (* Theorems justifying the steps.                                            *)
@@ -1756,17 +1756,17 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
   let ndiv x y =
     let q = quo_num x y in
     let r = x -/ (q */ y) in
-    if le_num (abs_num(Int 2 */ r)) (abs_num y) then q
-    else if le_num (abs_num(Int 2 */ (r -/ y))) (abs_num y) then q +/ Int 1
-    else if le_num (abs_num(Int 2 */ (r +/ y))) (abs_num y) then q -/ Int 1
+    if le_num (abs_num(num 2 */ r)) (abs_num y) then q
+    else if le_num (abs_num(num 2 */ (r -/ y))) (abs_num y) then q +/ num 1
+    else if le_num (abs_num(num 2 */ (r +/ y))) (abs_num y) then q -/ num 1
     else let s = (string_of_num x)^" and "^(string_of_num y) in
          failwith ("ndiv: "^s) in
 
-  let raw_wrap (f:num->num) = (ref(Int(-1),Int 0),f) in
+  let raw_wrap (f:num->num) = (ref(num(-1),num 0),f) in
 
   let raw_eval(r,(f:num->num)) n =
     let (n0,y0) = !r in
-    if le_num n n0 then ndiv y0 (power_num (Int 2) (n0 -/ n))
+    if le_num n n0 then ndiv y0 (power_num (num 2) (n0 -/ n))
     else let y = f n in (r := (n,y); y) in
 
   let thm_eval =
@@ -1777,7 +1777,7 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
       if le_num n n0 then
         if n =/ n0 then y0th else
           let th1 = NUM_SUC_CONV
-            (mk_comb(SUC_tm,mk_numeral(n0 -/ (n +/ Int 1)))) in
+            (mk_comb(SUC_tm,mk_numeral(n0 -/ (n +/ num 1)))) in
           let th2 = MATCH_MP REALCALC_DOWNGRADE th1 in
           let th3 = NUM_ADD_CONV(mk_add(mk_numeral(n)) (mk_numeral(n0 -/ n))) in
           let th4 = MATCH_MP th2 th3 in
@@ -1790,7 +1790,7 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
           let tm5f,tm5g = dest_comb(rand tm5d) in
           let tm5h = rand(rand tm5f) in
           let bin = mk_realintconst
-           (ndiv (dest_realintconst tm5e) (power_num (Int 2) (dest_numeral tm5h))) in
+           (ndiv (dest_realintconst tm5e) (power_num (num 2) (dest_numeral tm5h))) in
           let th7 = AP_TERM (rator(rand tm5f)) th1 in
           let th8 = GEN_REWRITE_RULE LAND_CONV [CONJUNCT2 real_pow] th7 in
           let th9 = SYM(GEN_REWRITE_RULE (LAND_CONV o RAND_CONV) [th6] th8) in
@@ -1806,24 +1806,24 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
           MATCH_MP th5 (EQT_ELIM th18)
       else let yth = f n in (r := (n,yth); yth) in
 
-  let thm_wrap (f:num->thm) = (ref(Int(-1),TRUTH),f) in
+  let thm_wrap (f:num->thm) = (ref(num(-1),TRUTH),f) in
 
   let find_msd =
     let rec find_msd n f =
-      if Int 1 </ abs_num(raw_eval f n) then n
-      else find_msd (n +/ Int 1) f in
-    find_msd (Int 0) in
+      if num 1 </ abs_num(raw_eval f n) then n
+      else find_msd (n +/ num 1) f in
+    find_msd (num 0) in
 
   let find_acc =
     let rec find_msd n f =
-      if Int 32 </ abs_num(raw_eval f n) then n
-      else find_msd (n +/ Int 1) f in
-    find_msd (Int 0) in
+      if num 32 </ abs_num(raw_eval f n) then n
+      else find_msd (n +/ num 1) f in
+    find_msd (num 0) in
 
   let find_ubound f =
     let k = find_acc f in
     let a = abs_num(raw_eval f k) in
-    k -/ log2 (a +/ Int 1) in
+    k -/ log2 (a +/ num 1) in
 
   let REALCALC_EXP_CONV =
     let t_tm = `t:num->real`
@@ -1836,18 +1836,18 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
     and x_tm = `x:real` in
     let rec calculate_m acc i r =
       if acc >=/ r then i else
-      let i' = i +/ Int 1 in
+      let i' = i +/ num 1 in
       calculate_m (i' */ acc) i' r in
     let calculate_exp_sequence =
       let rec calculate_exp_sequence p2 s i =
-        if i </ Int 0 then []
-        else if i =/ Int 0 then [p2] else
-        let acc = calculate_exp_sequence p2 s (i -/ Int 1) in
+        if i </ num 0 then []
+        else if i =/ num 0 then [p2] else
+        let acc = calculate_exp_sequence p2 s (i -/ num 1) in
         let t = hd acc in
         let t' = ndiv (s */ t) (p2 */ i) in
         t'::acc in
-      fun p s m -> let p2 = power_num (Int 2) p in
-                   rev(calculate_exp_sequence p2 s (m -/ Int 1)) in
+      fun p s m -> let p2 = power_num (num 2) p in
+                   rev(calculate_exp_sequence p2 s (m -/ num 1)) in
     let pth = prove
      (`abs(x) <= &1 ==>
        abs(s - &2 pow p * x) < &1 ==>
@@ -1866,27 +1866,27 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
       ONCE_REWRITE_RULE[prove(`0 + n = n`,REWRITE_TAC[ADD_CLAUSES])] in
     fun (fn1,fn2) ->
       let raw_fn n =
-        let m = calculate_m (Int 1) (Int 0)
-                  (Int 3 */ (power_num (Int 2) (n +/ Int 2))) in
-        let e = log2 (Int 2 */ m) in
-        let p = n +/ e +/ Int 2 in
+        let m = calculate_m (num 1) (num 0)
+                  (num 3 */ (power_num (num 2) (n +/ num 2))) in
+        let e = log2 (num 2 */ m) in
+        let p = n +/ e +/ num 2 in
         let s = raw_eval fn1 p in
         let seq = calculate_exp_sequence p s m in
-        let u0 = itlist (+/) seq (Int 0) in
-        ndiv u0 (power_num (Int 2) (e +/ Int 2))
+        let u0 = itlist (+/) seq (num 0) in
+        ndiv u0 (power_num (num 2) (e +/ num 2))
       and thm_fn n =
-        let m = calculate_m (Int 1) (Int 0)
-                  (Int 3 */ (power_num (Int 2) (n +/ Int 2))) in
-        let e = log2 (Int 2 */ m) in
-        let p = n +/ e +/ Int 2 in
+        let m = calculate_m (num 1) (num 0)
+                  (num 3 */ (power_num (num 2) (n +/ num 2))) in
+        let e = log2 (num 2 */ m) in
+        let p = n +/ e +/ num 2 in
         let sth = thm_eval fn2 p in
         let tm1 = rand(lhand(concl sth)) in
         let s_num = lhand tm1 in
         let x_num = rand(rand tm1) in
         let s = dest_realintconst s_num in
         let seq = calculate_exp_sequence p s m in
-        let u0 = itlist (+/) seq (Int 0) in
-        let u = ndiv u0 (power_num (Int 2) (e +/ Int 2)) in
+        let u0 = itlist (+/) seq (num 0) in
+        let u = ndiv u0 (power_num (num 2) (e +/ num 2)) in
         let m_num = mk_numeral m
         and n_num = mk_numeral n
         and e_num = mk_numeral e
@@ -1923,18 +1923,18 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
     and k_tm = `k:num`
     and x_tm = `x:real` in
     let rec calculate_m acc k2 m r =
-      if acc */ (m +/ Int 1) >=/ r then m else
-      calculate_m (k2 */ acc) k2 (m +/ Int 1) r in
+      if acc */ (m +/ num 1) >=/ r then m else
+      calculate_m (k2 */ acc) k2 (m +/ num 1) r in
     let calculate_ln_sequence =
       let rec calculate_ln_sequence p2 s i =
-        if i </ Int 0 then []
-        else if i =/ Int 0 then [s] else
-        let acc = calculate_ln_sequence p2 s (i -/ Int 1) in
+        if i </ num 0 then []
+        else if i =/ num 0 then [s] else
+        let acc = calculate_ln_sequence p2 s (i -/ num 1) in
         let t = hd acc in
-        let t' = ndiv (Int(-1) */ s */ t */ i) (p2 */ (i +/ Int 1)) in
+        let t' = ndiv (num(-1) */ s */ t */ i) (p2 */ (i +/ num 1)) in
         t'::acc in
-      fun p s m -> let p2 = power_num (Int 2) p in
-                   rev(calculate_ln_sequence p2 s (m -/ Int 1)) in
+      fun p s m -> let p2 = power_num (num 2) p in
+                   rev(calculate_ln_sequence p2 s (m -/ num 1)) in
     let pth = prove
      (`&0 <= x /\ x <= inv(&2 pow k) ==>
        abs(s - &2 pow p * x) < &1 ==>
@@ -1961,30 +1961,30 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
     fun (fn1,fn2) ->
       let raw_fn n =
         let k = find_ubound fn1 in
-        if k </ Int 1 then failwith "ln of number not provably <= 1/2" else
-        let k2 = power_num (Int 2) k in
-        let m = calculate_m k2 k2 (Int 0) (power_num (Int 2) (n +/ Int 2)) in
-        let e = log2 (Int 3 */ m) in
-        let p = n +/ e +/ Int 2 in
+        if k </ num 1 then failwith "ln of number not provably <= 1/2" else
+        let k2 = power_num (num 2) k in
+        let m = calculate_m k2 k2 (num 0) (power_num (num 2) (n +/ num 2)) in
+        let e = log2 (num 3 */ m) in
+        let p = n +/ e +/ num 2 in
         let s = raw_eval fn1 p in
         let seq = calculate_ln_sequence p s m in
-        let u0 = itlist (+/) seq (Int 0) in
-        ndiv u0 (power_num (Int 2) (e +/ Int 2))
+        let u0 = itlist (+/) seq (num 0) in
+        ndiv u0 (power_num (num 2) (e +/ num 2))
       and thm_fn n =
         let k = find_ubound fn1 in
-        if k </ Int 1 then failwith "ln of number not provably <= 1/2" else
-        let k2 = power_num (Int 2) k in
-        let m = calculate_m k2 k2 (Int 0) (power_num (Int 2) (n +/ Int 2)) in
-        let e = log2 (Int 3 */ m) in
-        let p = n +/ e +/ Int 2 in
+        if k </ num 1 then failwith "ln of number not provably <= 1/2" else
+        let k2 = power_num (num 2) k in
+        let m = calculate_m k2 k2 (num 0) (power_num (num 2) (n +/ num 2)) in
+        let e = log2 (num 3 */ m) in
+        let p = n +/ e +/ num 2 in
         let sth = thm_eval fn2 p in
         let tm1 = rand(lhand(concl sth)) in
         let s_num = lhand tm1 in
         let x_num = rand(rand tm1) in
         let s = dest_realintconst s_num in
         let seq = calculate_ln_sequence p s m in
-        let u0 = itlist (+/) seq (Int 0) in
-        let u = ndiv u0 (power_num (Int 2) (e +/ Int 2)) in
+        let u0 = itlist (+/) seq (num 0) in
+        let u = ndiv u0 (power_num (num 2) (e +/ num 2)) in
         let m_num = mk_numeral m
         and n_num = mk_numeral n
         and e_num = mk_numeral e
@@ -2014,13 +2014,13 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
   let REALCALC_SQRT_CONV =
     let num_sqrt =
       let rec isolate_sqrt (a,b) y =
-      if abs_num(a -/ b) <=/ Int 1 then
+      if abs_num(a -/ b) <=/ num 1 then
         if abs_num(a */ a -/ y) <=/ a then a else b
       else
-        let c = quo_num (a +/ b) (Int 2) in
+        let c = quo_num (a +/ b) (num 2) in
         if c */ c <=/ y then isolate_sqrt (c,b) y
         else isolate_sqrt (a,c) y in
-      fun n -> isolate_sqrt (Int 0,n) n in
+      fun n -> isolate_sqrt (num 0,n) n in
     let MATCH_pth = MATCH_MP REALCALC_SQRT in
     let b_tm = `b:real` in
     let PROVE_1_LE_SQRT =
@@ -2041,7 +2041,7 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
                 with Failure _ -> failwith "Need root body >= &1" in
     fun (fn1,fn2) ->
       let raw_fn n =
-        num_sqrt(power_num (Int 2) n */ raw_eval fn1 n)
+        num_sqrt(power_num (num 2) n */ raw_eval fn1 n)
       and thm_fn n =
         let th1 = MATCH_pth(thm_eval fn2 n) in
         let th2 = MP th1 (PROVE_1_LE_SQRT(lhand(concl th1))) in
@@ -2057,9 +2057,9 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
     if is_ratconst tm then
       let x = rat_of_term tm in
       let raw_fn acc =
-        floor_num ((power_num (Int 2) acc) */ x)
+        floor_num ((power_num (num 2) acc) */ x)
       and thm_fn acc =
-        let a = floor_num ((power_num (Int 2) acc) */ x) in
+        let a = floor_num ((power_num (num 2) acc) */ x) in
         let atm = mk_realintconst a in
         let rtm = mk_comb(mk_comb(mul_tm,mk_comb(pow2_tm,mk_numeral acc)),tm) in
         let btm = mk_comb(abs_tm,mk_comb(mk_comb(sub_tm,atm),rtm)) in
@@ -2091,25 +2091,25 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
       REALCALC_SQRT_CONV(REALCALC_CONV r)
     else if lop = inv_tm then
       let rfn,tfn = REALCALC_CONV r in
-      let x0 = raw_eval rfn (Int 0) in
+      let x0 = raw_eval rfn (num 0) in
       let ax0 = abs_num x0 in
-      let r = log2(ax0) -/ Int 1 in
+      let r = log2(ax0) -/ num 1 in
       let get_ek(acc) =
-        if r < Int 0 then
+        if r < num 0 then
           let p = find_msd rfn in
-          let e = acc +/ p +/ Int 1 in
+          let e = acc +/ p +/ num 1 in
           let k = e +/ p in e,k
         else
-          let k = let k0 = acc +/ Int 1 -/ (Int 2 */ r) in
-                  if k0 </ Int 0 then Int 0 else k0 in
+          let k = let k0 = acc +/ num 1 -/ (num 2 */ r) in
+                  if k0 </ num 0 then num 0 else k0 in
           let e = r +/ k in e,k in
       let raw_fn acc =
         let _,k = get_ek(acc) in
-        let nk2 = power_num (Int 2) (acc +/ k) in
+        let nk2 = power_num (num 2) (acc +/ k) in
         ndiv nk2 (raw_eval rfn k) in
       let thm_fn acc =
         let e,k = get_ek(acc) in
-        let nk2 = power_num (Int 2) (acc +/ k) in
+        let nk2 = power_num (num 2) (acc +/ k) in
         let th1 = thm_eval tfn k in
         let atm = lhand(rand(lhand(concl th1))) in
         let a = dest_realintconst atm in
@@ -2142,10 +2142,10 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
       let rfn1,tfn1 = REALCALC_CONV l
       and rfn2,tfn2 = REALCALC_CONV r in
       let raw_fn acc =
-        let acc' = acc +/ Int 2 in
-        ndiv (raw_eval rfn1 acc' +/ raw_eval rfn2 acc') (Int 4)
+        let acc' = acc +/ num 2 in
+        ndiv (raw_eval rfn1 acc' +/ raw_eval rfn2 acc') (num 4)
       and thm_fn acc =
-        let acc' = acc +/ Int 2 in
+        let acc' = acc +/ num 2 in
         let th1 = INST [mk_numeral acc,n_tm] REALCALC_ADD in
         let th2 = MATCH_MP th1 (NUM_ADD_CONV (lhand(lhand(concl th1)))) in
         let th3 = thm_eval tfn1 acc' in
@@ -2154,7 +2154,7 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
         let th6 = MATCH_MP th4 th5 in
         let n1 = dest_realintconst(lhand(rand(lhand(concl th3))))
         and n2 = dest_realintconst(lhand(rand(lhand(concl th5)))) in
-        let ci = mk_realintconst(ndiv (n1 +/ n2) (Int 4)) in
+        let ci = mk_realintconst(ndiv (n1 +/ n2) (num 4)) in
         let th7 = INST [ci,c_tm] th6 in
         let th8 = EQT_ELIM(REAL_INT_REDUCE_CONV(lhand(concl th7))) in
         MP th7 th8 in
@@ -2163,20 +2163,20 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
       let rfn1,tfn1 = REALCALC_CONV l
       and rfn2,tfn2 = REALCALC_CONV r in
       let get_kl(acc) =
-        let n' = acc +/ Int 2 in
-        let r = quo_num n' (Int 2) in
+        let n' = acc +/ num 2 in
+        let r = quo_num n' (num 2) in
         let s = n' -/ r in
         let p = log2(abs_num(raw_eval rfn1 r))
         and q = log2(abs_num(raw_eval rfn2 s)) in
-        let k = q +/ r +/ Int 1
-        and l = p +/ s +/ Int 1 in
-        if p =/ Int 0 && q = Int 0 then
-          if k </ l then k +/ Int 1,l else k,l +/ Int 1
+        let k = q +/ r +/ num 1
+        and l = p +/ s +/ num 1 in
+        if p =/ num 0 && q = num 0 then
+          if k </ l then k +/ num 1,l else k,l +/ num 1
         else k,l in
       let raw_fn acc =
         let k,l = get_kl acc in
         let m = (k +/ l) -/ acc in
-        ndiv (raw_eval rfn1 k */ raw_eval rfn2 l) (power_num (Int 2) m) in
+        ndiv (raw_eval rfn1 k */ raw_eval rfn2 l) (power_num (num 2) m) in
       let thm_fn acc =
         let k,l = get_kl acc in
         let m = (k +/ l) -/ acc in
@@ -2184,7 +2184,7 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
         and th1b = thm_eval tfn2 l in
         let a = dest_realintconst(lhand(rand(lhand(concl th1a))))
         and b = dest_realintconst(lhand(rand(lhand(concl th1b)))) in
-        let c = ndiv (a */ b) (power_num (Int 2) m) in
+        let c = ndiv (a */ b) (power_num (num 2) m) in
         let ntm = mk_numeral acc
         and mtm = mk_numeral m
         and ctm = mk_realintconst c in
@@ -2253,10 +2253,10 @@ let realcalc_rel_conv =
     `(>)`,(>/); `(>=)`,(>=/);
     `(=):real->real->bool`,(=/)] in
   let rec find_n rfn1 rfn2 n =
-    if n >/ Int 1000 then
+    if n >/ num 1000 then
        failwith "realcalc_rel_conv: too close to discriminate" else
-    if abs_num(raw_eval rfn1 n -/ raw_eval rfn2 n) >=/ Int 4 then n
-    else find_n rfn1 rfn2 (n +/ Int 1) in
+    if abs_num(raw_eval rfn1 n -/ raw_eval rfn2 n) >=/ num 4 then n
+    else find_n rfn1 rfn2 (n +/ num 1) in
   fun tm ->
     let lop,r = dest_comb tm in
     let op,l = dest_comb lop in
@@ -2265,7 +2265,7 @@ let realcalc_rel_conv =
       with Failure _ -> failwith "realcalc_rel_conv: unknown operator" in
     let rfn1,tfn1 = REALCALC_CONV l
     and rfn2,tfn2 = REALCALC_CONV r in
-    let n = find_n rfn1 rfn2 (Int 1) in
+    let n = find_n rfn1 rfn2 (num 1) in
     pop (raw_eval rfn1 n) (raw_eval rfn2 n);;
 
 let REALCALC_REL_CONV =
@@ -2274,10 +2274,10 @@ let REALCALC_REL_CONV =
     `(>)`,REALCALC_GT; `(>=)`,REALCALC_GE;
     `(=):real->real->bool`,REALCALC_EQ] in
   let rec find_n rfn1 rfn2 n =
-    if n >/ Int 1000 then
+    if n >/ num 1000 then
        failwith "realcalc_rel_conv: too close to discriminate" else
-    if abs_num(raw_eval rfn1 n -/ raw_eval rfn2 n) >=/ Int 4 then n
-    else find_n rfn1 rfn2 (n +/ Int 1) in
+    if abs_num(raw_eval rfn1 n -/ raw_eval rfn2 n) >=/ num 4 then n
+    else find_n rfn1 rfn2 (n +/ num 1) in
   fun tm ->
     let lop,r = dest_comb tm in
     let op,l = dest_comb lop in
@@ -2285,7 +2285,7 @@ let REALCALC_REL_CONV =
     with Failure _ -> failwith "realcalc_rel_conv: unknown operator" in
     let rfn1,tfn1 = REALCALC_CONV l
     and rfn2,tfn2 = REALCALC_CONV r in
-    let n = find_n rfn1 rfn2 (Int 1) in
+    let n = find_n rfn1 rfn2 (num 1) in
     let th1 = thm_eval tfn1 n
     and th2 = thm_eval tfn2 n in
     let th3 = MATCH_MP pth (CONJ th1 th2) in

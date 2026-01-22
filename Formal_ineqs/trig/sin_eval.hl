@@ -1,8 +1,20 @@
-needs "misc/misc_functions.hl";;
-needs "misc/misc_vars.hl";;
-needs "arith/interval_arith.hl";;
-needs "trig/atn_eval.hl";;
-needs "trig/cos_eval.hl";;
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: sin                               *)
+(* -------------------------------------------------------------------------- *)
+
+needs "Formal_ineqs/misc/misc_functions.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
+needs "Formal_ineqs/arith/interval_arith.hl";;
+needs "Formal_ineqs/trig/atn_eval.hl";;
+needs "Formal_ineqs/trig/cos_eval.hl";;
 
 module type Sin_eval_sig =
   sig
@@ -70,12 +82,12 @@ let float_interval_sin pp x_th =
   let bounds = rand (concl cos_x_pi2) in
   let ltm, high_tm = dest_comb bounds in
   let low_tm = rand ltm in
-  let th0 = INST[x_tm, x_var_real; low_tm, low_var_real;
+  let th0 = INST[x_tm, x_var_real; low_tm, low_var_real; 
 		 high_tm, high_var_real] sin_reduce_th in
     MY_PROVE_HYP cos_x_pi2 th0;;
 
 
-end;;			
+end;;			    
 
 
 (*

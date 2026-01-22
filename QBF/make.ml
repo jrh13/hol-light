@@ -2,8 +2,9 @@
 (* Ondrej Kuncar's HOL Light QBF code.                                       *)
 (* ========================================================================= *)
 
-#load "ocamlgraph/graph.cma";;
-#directory "+ocamlgraph";;
+#use "topfind";;
+#require "ocamlgraph";;
+
 loads "Minisat/make.ml";;
 loads "QBF/mygraph.ml";;
 loads "QBF/qbfr.ml";;

@@ -1,0 +1,19 @@
+\DOC REMARK_TAC
+
+\TYPE {REMARK_TAC : string -> tactic}
+
+\SYNOPSIS
+A tactic version of {remark}.
+
+\DESCRIBE
+Given any goal {A ?- p}, the tactic {REMARK_TAC s} prints the string s
+to standard output.
+As {remark} does, this outputs a string only if {verbose} flag is set.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+PRINT_GOAL_TAC, remark, verbose
+
+\ENDDOC

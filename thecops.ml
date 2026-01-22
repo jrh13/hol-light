@@ -930,7 +930,7 @@ let string_of_iclause_i = print_to_string (pp_print_iclause pp_print_index)
 let string_of_nclause c = print_to_string (pp_print_nclause pp_print_null) c
 let string_of_matrix m = print_to_string (pp_print_matrix pp_print_null) m
 
-let pp_print_matrix_ni = pp_print_matrix pp_print_null
+let pp_print_matrix_ni fmt x = pp_print_matrix pp_print_null fmt x
 
 let print_iclause c = pp_nl (pp_print_iclause pp_print_null) std_formatter c
 let print_iclause_i = pp_nl (pp_print_iclause pp_print_index) std_formatter

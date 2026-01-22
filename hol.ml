@@ -9,9 +9,7 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-let hol_version = "2.20++";;
-
-let hol_dir = ref "hol-light/";;
+let hol_version = "3.1.0";;
 
 (* ------------------------------------------------------------------------- *)
 (* Should eventually change to "ref(Filename.temp_dir_name)".                *)
@@ -22,91 +20,48 @@ let hol_dir = ref "hol-light/";;
 let temp_path = ref "/tmp";;
 
 (* ------------------------------------------------------------------------- *)
-(* Various tweaks to OCaml and general library functions.                    *)
+(* Load the load/need functions.                                             *)
 (* ------------------------------------------------------------------------- *)
 
-loads "system.ml";;      (* Set up proper parsing                            *)
-loads "candle_nums.ml";; (* Load bignums                                     *)
-loads "lib.ml";;         (* Various useful general library functions         *)
+loads "hol_loader.ml"
 
 (* ------------------------------------------------------------------------- *)
-(* Candle things.                                                            *)
+(* Load the core files.                                                      *)
 (* ------------------------------------------------------------------------- *)
-
-loads "candle_kernel.ml";;               (* Brings Candle kernel into scope. *)
-loads "candle_pretty.ml";;               (* Pretty printer code.             *)
-
-(* ------------------------------------------------------------------------- *)
-(* Some extra support stuff needed outside the core.                         *)
-(* ------------------------------------------------------------------------- *)
-
-loads "basics.ml";;     (* Additional syntax operations and other utilities  *)
-loads "nets.ml";;       (* Term nets for fast matchability-based lookup      *)
-
-(* ------------------------------------------------------------------------- *)
-(* The interface.                                                            *)
-(* ------------------------------------------------------------------------- *)
-
-loads "printer.ml";;    (* Crude prettyprinter                               *)
-loads "preterm.ml";;    (* Preterms and their interconversion with terms     *)
-loads "parser.ml";;     (* Lexer and parser                                  *)
-
-(* ------------------------------------------------------------------------- *)
-(* Higher level deductive system.                                            *)
-(* ------------------------------------------------------------------------- *)
-
-loads "equal.ml";;      (* Basic equality reasoning and conversionals        *)
-loads "bool.ml";;       (* Boolean theory and basic derived rules            *)
-loads "drule.ml";;      (* Additional derived rules                          *)
-loads "tactics.ml";;    (* Tactics, tacticals and goal stack                 *)
-loads "itab.ml";;       (* Toy prover for intuitionistic logic               *)
-loads "simp.ml";;       (* Basic rewriting and simplification tools          *)
-
-loads "theorems.ml";;   (* Additional theorems (mainly for quantifiers) etc. *)
-loads "ind_defs.ml";;   (* Derived rules for inductive definitions           *)
-loads "class.ml";;      (* Classical reasoning: Choice and Extensionality    *)
-loads "trivia.ml";;     (* Some very basic theories, e.g. type ":1"          *)
-loads "canon.ml";;      (* Tools for putting terms in canonical forms        *)
-loads "meson.ml";;      (* First order automation: MESON (model elimination) *)
-loads "metis.ml";;      (* More advanced first-order automation: Metis       *)
 
 (*
-loads "firstorder.ml";; (* More utilities for first-order shadow terms       *)
-loads "thecops.ml";;    (* Connection-based automation: leanCoP and nanoCoP  *)
+let use_module =
+  try Sys.getenv "HOLLIGHT_USE_MODULE" = "1" with Not_found -> false;;
+if use_module
+then loads "hol_lib_use_module.ml"
+else loads "hol_lib.ml";;
 *)
-
-loads "quot.ml";;       (* Derived rules for defining quotient types         *)
-loads "impconv.ml";;    (* More powerful implicational rewriting etc.        *)
+loads "hol_lib.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Mathematical theories and additional proof tools.                         *)
+(* Install printers.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-loads "pair.ml";;       (* Theory of pairs                                   *)
 (*
-loads "compute.ml";;    (* General call-by-value reduction tool for terms    *)
+#install_printer pp_print_num;;
+
+#install_printer pp_print_fpf;;
+
+let set_color_printer (use_color:bool) =
+  let printers =
+    if use_color
+    then ["pp_print_colored_qterm"; "pp_print_colored_qtype";
+          "pp_print_colored_thm"; "pp_print_colored_goal";
+          "pp_print_colored_goalstack"]
+    else ["pp_print_qterm"; "pp_print_qtype"; "pp_print_thm"; "pp_print_goal";
+          "pp_print_goalstack"] in
+  let _ = map (fun name ->
+      Topdirs.dir_install_printer Format.std_formatter (Lident name))
+    printers in
+  ();;
+
+set_color_printer true;;
 *)
-
-loads "nums.ml";;       (* Axiom of Infinity, definition of natural numbers  *)
-loads "recursion.ml";;  (* Tools for primitive recursion on inductive types  *)
-loads "arith.ml";;      (* Natural number arithmetic                         *)
-loads "wf.ml";;         (* Theory of wellfounded relations                   *)
-loads "calc_num.ml";;   (* Calculation with natural numbers                  *)
-loads "normalizer.ml";; (* Polynomial normalizer for rings and semirings     *)
-loads "grobner.ml";;    (* Groebner basis procedure for most semirings       *)
-loads "ind_types.ml";;  (* Tools for defining inductive types                *)
-loads "lists.ml";;      (* Theory of lists                                   *)
-loads "realax.ml";;     (* Definition of real numbers                        *)
-loads "calc_int.ml";;   (* Calculation with integer-valued reals             *)
-loads "realarith.ml";;  (* Universal linear real decision procedure          *)
-loads "real.ml";;       (* Derived properties of reals                       *)
-
-loads "calc_rat.ml";;   (* Calculation with rational-valued reals            *)
-loads "int.ml";;        (* Definition of integers                            *)
-loads "sets.ml";;       (* Basic set theory                                  *)
-loads "iterate.ml";;    (* Iterated operations                               *)
-loads "cart.ml";;       (* Finite Cartesian products                         *)
-loads "define.ml";;     (* Support for general recursive definitions         *)
 
 (* ------------------------------------------------------------------------- *)
 (* In-logic computation function.                                            *)

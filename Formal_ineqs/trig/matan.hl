@@ -1,4 +1,16 @@
-needs "trig/series.hl";;
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2014 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Formal interval evaluation of functions: matan (theory)                    *)
+(* -------------------------------------------------------------------------- *)
+
+needs "Formal_ineqs/trig/series.hl";;
 
 module Matan = struct
 
@@ -8,9 +20,9 @@ prioritize_real();;
 
 (* matan *)
 
-let matan = new_definition `matan x =
+let matan = new_definition `matan x = 
   if (x = &0) then &1
-  else if (x > &0) then atn (sqrt x) / (sqrt x)
+  else if (x > &0) then atn (sqrt x) / (sqrt x) 
   else  (log ((&1 + sqrt( -- x))/(&1 - sqrt( -- x)))) / (&2 * sqrt (-- x))`;;
 
 (* Auxiliary definitions for matan derivatives *)
@@ -126,7 +138,7 @@ let matan_power_series = prove(`!x. abs x < &1
      ] THEN
      REWRITE_TAC[GSYM REAL_POW_POW; REAL_SQRT_POW_2] THEN
        ASM_SIMP_TAC[REAL_ARITH `~(x > &0) ==> abs (--x) = --x`] THEN
-       ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN
+       ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN 
        REWRITE_TAC[REAL_POW_MUL; REAL_POW_ONE; REAL_MUL_RID; real_div; REAL_MUL_AC]);;
 
 
@@ -181,7 +193,7 @@ let matan_has_derivative_gt0 = prove(`!x. &0 < x ==>
 	 ASM_REWRITE_TAC[matan];
        ALL_TAC
      ] THEN
-     REAL_DIFF_TAC THEN
+     REAL_DIFF_TAC THEN 
      SUBGOAL_THEN `~(sqrt x = &0)` ASSUME_TAC THENL [
        ASM_SIMP_TAC[SQRT_EQ_0; REAL_ARITH `&0 < x ==> ~(x = &0)`];
        ALL_TAC
@@ -200,7 +212,7 @@ let matan_real_derivative_gt0 = prove(`!x. &0 < x ==>
 
 let matan_real_derivative_abs1 = prove(`!x. abs x < &1 ==>
 	matan real_differentiable atreal x
-	/\ ((\i. ((-- &1) pow (SUC i) * &(SUC i) / &(2 * i + 3)) * x pow i)
+	/\ ((\i. ((-- &1) pow (SUC i) * &(SUC i) / &(2 * i + 3)) * x pow i) 
 	      real_sums (real_derivative matan x)) (from 0)`,
    GEN_TAC THEN DISCH_TAC THEN
      MP_TAC (MATCH_MP power_series_has_derivative2 matan_power_series) THEN
@@ -220,7 +232,7 @@ let matan_real_derivative_abs1 = prove(`!x. abs x < &1 ==>
 
 
 let matan_real_derivative_abs1_bound = prove(`!x m. abs x < &1 ==>
-	abs (real_derivative matan x
+	abs (real_derivative matan x 
 	     - sum (0..m) (\i. ((-- &1) pow (SUC i) * &(SUC i) / &(2 * i + 3)) * x pow i))
 	<= abs x pow (SUC m) / (&2 * (&1 - abs x))`,
    REPEAT STRIP_TAC THEN
@@ -246,13 +258,13 @@ let matan_real_derivative_abs1_bound = prove(`!x m. abs x < &1 ==>
      REWRITE_TAC[REAL_FIELD `inv (&2) * (&2 * a + b) = a + inv(&2) * b`] THEN
      REWRITE_TAC[ADD1; GSYM REAL_OF_NUM_ADD; REAL_LE_LADD] THEN
      REAL_ARITH_TAC);;
-
+     
 
 (* matan second derivative *)
 
 let matan_has_derivative2_gt0 = prove(`!x. &0 < x ==>
-       ((\x. inv (&2 * x * (x + &1)) - atn(sqrt(x)) / (&2 * x * sqrt(x))) has_real_derivative
-	  (&3 / &4) * (atn(sqrt(x)) / (x pow 2 * sqrt(x)))
+       ((\x. inv (&2 * x * (x + &1)) - atn(sqrt(x)) / (&2 * x * sqrt(x))) has_real_derivative 
+	  (&3 / &4) * (atn(sqrt(x)) / (x pow 2 * sqrt(x))) 
 	- (&3 / &4) * inv(x pow 2 * (x + &1))
 	- (&1 / &2) * inv(x * (x + &1) pow 2)) (atreal x)`,
    REPEAT STRIP_TAC THEN
@@ -277,7 +289,7 @@ let matan_has_derivative2_gt0 = prove(`!x. &0 < x ==>
 
 let matan_second_derivative_gt0 = prove(`!x. &0 < x ==>
 	real_derivative (real_derivative matan) x =
-					    (&3 / &4) * (atn(sqrt(x)) / (x pow 2 * sqrt(x)))
+					    (&3 / &4) * (atn(sqrt(x)) / (x pow 2 * sqrt(x))) 
 					    - (&3 / &4) * inv(x pow 2 * (x + &1))
 					    - (&1 / &2) * inv(x * (x + &1) pow 2)`,
    REPEAT STRIP_TAC THEN
@@ -382,14 +394,14 @@ let matan_second_derivative_abs1_alt = prove(`!x. abs x < &1 ==>
      REMOVE_THEN "a" (MP_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
      REMOVE_THEN "b" (MP_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
      ASM_SIMP_TAC[] THEN REAL_ARITH_TAC);;
-
-
+     
+       
 
 (* matan second derivative bound *)
 
 let matan_d2_bound_ge1_high = prove(`!x. &1 <= x ==>
 		      real_derivative (real_derivative matan) x <= #0.65`,
-   REPEAT STRIP_TAC THEN
+   REPEAT STRIP_TAC THEN 
      ASM_SIMP_TAC[REAL_ARITH `&1 <= x ==> &0 < x`; matan_second_derivative_gt0] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN
      EXISTS_TAC `(&3 / &4) * atn(sqrt x) / (x pow 2 * sqrt x)` THEN
@@ -417,7 +429,7 @@ let matan_d2_bound_ge1_high = prove(`!x. &1 <= x ==>
        EXPAND_TAC "y" THEN MATCH_MP_TAC REAL_LE_RSQRT THEN ASM_REWRITE_TAC[REAL_POW_ONE];
        ALL_TAC
      ] THEN
-     MATCH_MP_TAC REAL_LE_TRANS THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN 
      EXISTS_TAC `atn (&1) / (&1 pow 5)` THEN CONJ_TAC THENL [
        ONCE_REWRITE_TAC[GSYM REAL_LE_NEG2] THEN
 	 ABBREV_TAC `f = \y. --(atn y / y pow 5)` THEN
@@ -435,7 +447,7 @@ let matan_d2_bound_ge1_high = prove(`!x. &1 <= x ==>
 	     EXPAND_TAC "f" THEN REAL_DIFF_TAC THEN
 	     ASM_SIMP_TAC[REAL_ARITH `&1 <= x' ==> ~(x' = &0)`; REAL_POW_NZ] THEN
 	     REWRITE_TAC[ARITH_RULE `5 - 1 = 4 /\ 5 * 2 = 10`; REAL_POW_POW] THEN
-	     SUBGOAL_THEN `!n. ~(x' pow n = &0)` ASSUME_TAC THENL [
+	     SUBGOAL_THEN `!n. ~(x' pow n = &0)` ASSUME_TAC THENL [ 
 	       GEN_TAC THEN MATCH_MP_TAC REAL_POW_NZ THEN
 		 UNDISCH_TAC `&1 <= x'` THEN REAL_ARITH_TAC;
 	       ALL_TAC
@@ -485,7 +497,7 @@ let matan_d2_bound_ge1_high = prove(`!x. &1 <= x ==>
 
 let matan_d2_bound_ge1_low = prove(`!x. &1 <= x ==>
 		      -- #0.65 <= real_derivative (real_derivative matan) x`,
-   REPEAT STRIP_TAC THEN
+   REPEAT STRIP_TAC THEN 
      ASM_SIMP_TAC[REAL_ARITH `&1 <= x ==> &0 < x`; matan_second_derivative_gt0] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN
      EXISTS_TAC `-- (&3 / &4) * inv (x pow 2 * (x + &1)) - (&1 / &2) * inv (x * (x + &1) pow 2)` THEN
@@ -493,7 +505,7 @@ let matan_d2_bound_ge1_low = prove(`!x. &1 <= x ==>
        REWRITE_TAC[REAL_ARITH `-- #0.65 <= --(&3 / &4) * a - (&1 / &2) * b <=>  &3 * a + &2 * b <= #2.6`] THEN
 	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&3 * inv(&2) + &2 * inv(&2)` THEN
 	 CONJ_TAC THENL [ ALL_TAC; REAL_ARITH_TAC ] THEN
-	 MATCH_MP_TAC REAL_LE_ADD2 THEN
+	 MATCH_MP_TAC REAL_LE_ADD2 THEN 
 	 CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[REAL_POS] THEN MATCH_MP_TAC REAL_LE_INV2 THEN REWRITE_TAC[REAL_ARITH `&0 < &2`] THEN ONCE_REWRITE_TAC[REAL_ARITH `&2 = &1 * &2`] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_POS] THENL [
 	   ASM_SIMP_TAC[REAL_POW_LE_1] THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
 	   ALL_TAC
@@ -504,7 +516,7 @@ let matan_d2_bound_ge1_low = prove(`!x. &1 <= x ==>
      ] THEN
      REWRITE_TAC[REAL_ARITH `--(&3 / &4) * a - b <= c - (&3 / &4) * a - b <=> &0 <= c`] THEN
      MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [ REAL_ARITH_TAC; ALL_TAC ] THEN
-     MATCH_MP_TAC REAL_LE_DIV THEN
+     MATCH_MP_TAC REAL_LE_DIV THEN 
      ASM_SIMP_TAC[ATN_POS_LE; SQRT_POS_LE; REAL_ARITH `&1 <= x ==> &0 <= x`] THEN
      MATCH_MP_TAC REAL_LE_MUL THEN
      ASM_SIMP_TAC[REAL_LE_POW_2; SQRT_POS_LE; REAL_ARITH `&1 <= x ==> &0 <= x`]);;
@@ -520,12 +532,12 @@ let matan_d2_bound_01 = prove(`!x. &0 <= x /\ x < &1 ==>
      STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 / &4 + &3 / &20` THEN
      CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
-     ABBREV_TAC `f = (&1 - x) / (&4 * (&1 + x) pow 2)` THEN
+     ABBREV_TAC `f = (&1 - x) / (&4 * (&1 + x) pow 2)` THEN 
      ABBREV_TAC `r = real_infsum (:num) (\i. -- &1 pow i / &(2 * i + 5) * x pow i)` THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs f + abs (&3 / &4 * r)` THEN
      REWRITE_TAC[REAL_ABS_TRIANGLE] THEN
      MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL [
-      EXPAND_TAC "f" THEN REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_MUL; REAL_ABS_NUM] THEN
+      EXPAND_TAC "f" THEN REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_MUL; REAL_ABS_NUM] THEN 
 	SUBGOAL_THEN `&0 < &4 /\ &0 < &4 * abs ((&1 + x) pow 2)` ASSUME_TAC THENL [
 	  CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
 	    MATCH_MP_TAC REAL_LT_MUL THEN CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
@@ -608,7 +620,7 @@ let matan_d2_bound_01 = prove(`!x. &0 <= x /\ x < &1 ==>
        ALL_TAC
      ] THEN
      REWRITE_TAC[REALLIM_1_OVER_N]);;
-	
+	 
 
 let matan_d2_bound_neg_low = prove(`!x. -- &1 < x /\ x < &0 ==>
 				     &0 <= real_derivative (real_derivative matan) x`,
@@ -688,9 +700,9 @@ let matan_d2_bound_neg_high = prove(`!x. -- #0.2 <= x /\ x < &0 ==>
      ] THEN
      REWRITE_TAC[ARITH_RULE `2 * 1 + 5 = 7`] THEN
      REAL_ARITH_TAC);;
-
+    
 (* The main bound result *)
-
+ 
 let matan_d2_bound = prove(`!x. -- #0.2 <= x ==>
 			     abs (real_derivative (real_derivative matan) x) <= #0.65`,
    REPEAT STRIP_TAC THEN

@@ -29,10 +29,14 @@ elif type ckpt > /dev/null; then
 else
     make clean; make
     (cd Mizarlight; make clean; make)
-    hollight="ocaml -init hol.ml"
+    hollight=./hol.sh
+    export HOLLIGHT_DIR=`$hollight -dir`
 fi
 
-make -j $(getconf _NPROCESSORS_ONLN) "HOLLIGHT=$hollight" SHELL=bash \
+if [ "${NUMCORES}" == "" ]; then
+  NUMCORES=$(getconf _NPROCESSORS_ONLN)
+fi
+make -j ${NUMCORES} "HOLLIGHT=$hollight" SHELL=bash \
     -f holtest.mk all
 
 # Remove "#"s in the follwing lines to build the proof-recording version

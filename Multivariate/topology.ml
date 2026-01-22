@@ -11865,8 +11865,7 @@ let COMPONENTS_SEPARATED_UNION = prove
         ==> components(s UNION t) = components(s) UNION components(t)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[components] THEN
   REWRITE_TAC[SIMPLE_IMAGE; IMAGE_UNION] THEN BINOP_TAC THEN
-  MATCH_MP_TAC(SET_RULE
-   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  MATCH_MP_TAC IMAGE_EQ THEN
   X_GEN_TAC `x:real^N` THEN REWRITE_TAC[GSYM SUBSET_ANTISYM] THENL
    [ALL_TAC; ONCE_REWRITE_TAC[UNION_COMM]] THEN
   ASM_SIMP_TAC[CONNECTED_COMPONENT_SEPARATED_UNION]);;
@@ -15045,6 +15044,12 @@ let IS_INTERVAL_SING = prove
  (`!a:real^N. is_interval {a}`,
   SIMP_TAC[is_interval; IN_SING; IMP_CONJ; CART_EQ; REAL_LE_ANTISYM]);;
 
+let INTERVAL_EQ_SING = prove
+ (`(!a b x:real^N. interval[a,b] = {x} <=> a = x /\ b = x) /\
+   (!a b x:real^N. ~(interval(a,b) = {x}))`,
+  REWRITE_TAC[GSYM(CONJUNCT1 INTERVAL_SING); EQ_INTERVAL] THEN
+  REWRITE_TAC[INTERVAL_SING; NOT_INSERT_EMPTY]);;
+
 let IS_INTERVAL_SCALING = prove
  (`!s:real^N->bool c. is_interval s ==> is_interval(IMAGE (\x. c % x) s)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THENL
@@ -17857,8 +17862,7 @@ let CONNECTED_CARD_LT_IFF_TRIVIAL = prove
 let SMALL_IMP_TOTALLY_DISCONNECTED = prove
  (`!s:real^N->bool. s <_c (:real) ==> components s = IMAGE (\x. {x}) s`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[components; SIMPLE_IMAGE] THEN
-  MATCH_MP_TAC(SET_RULE
-   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  MATCH_MP_TAC IMAGE_EQ THEN
   X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN REWRITE_TAC[] THEN
   MATCH_MP_TAC(SET_RULE `s x /\ (?a. s SUBSET {a}) ==> s = {x}`) THEN
   ASM_REWRITE_TAC[CONNECTED_COMPONENT_REFL_EQ] THEN
@@ -35509,8 +35513,7 @@ let ANALYTIC_CONTINUOUS_IMAGE = prove
                     SUBSET_UNIV];
       REWRITE_TAC[IMAGE_UNIONS]] THEN
     REWRITE_TAC[SIMPLE_IMAGE; GSYM IMAGE_o] THEN AP_TERM_TAC THEN
-    MATCH_MP_TAC(SET_RULE
-     `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+    MATCH_MP_TAC IMAGE_EQ THEN
     X_GEN_TAC `s:num->num` THEN REWRITE_TAC[o_THM; IN_UNIV] THEN
     W(MP_TAC o PART_MATCH (lhand o rand) CONTINUOUS_IMAGE_NESTED_INTERS_GEN o
           lhand o snd) THEN

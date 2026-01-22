@@ -1,13 +1,19 @@
-(* =========================================================== *)
-(* Informal verification procedures                            *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Informal verification procedures                                           *)
+(* -------------------------------------------------------------------------- *)
 
 (* Dependencies *)
-needs "informal/informal_taylor.hl";;
-needs "verifier/certificate.hl";;
-needs "verifier_options.hl";;
+needs "Formal_ineqs/informal/informal_taylor.hl";;
+needs "Formal_ineqs/verifier/certificate.hl";;
+needs "Formal_ineqs/verifier_options.hl";;
 
 module Informal_verifier = struct
 
@@ -77,7 +83,7 @@ let mk_verification_functions_poly pp0 f partials partials2 =
   let eval0 = mk_eval_function pp0 f in
   let eval1 = map (fun i -> mk_eval_function pp0 ((rand o concl o List.nth partials) (i - 1))) (1--n) in
   let eval2 = map (fun i ->
-		     map (fun j ->
+		     map (fun j -> 
 			    let d2 = List.nth (List.nth partials2 (i - 1)) (j - 1) in
 			      mk_eval_function pp0 ((rand o concl) d2)) (1--i)) (1--n) in
     {
@@ -89,13 +95,13 @@ let mk_verification_functions_poly pp0 f partials partials2 =
 
 
 (* split_domain *)
-let split_domain pp j domain =
+let split_domain pp j domain = 
   let n = length domain.w in
   let t = List.nth domain.y (j - 1) in
   let vv = map (fun i -> if i = j then t else List.nth domain.hi (i - 1)) (1--n) in
   let uu = map (fun i -> if i = j then t else List.nth domain.lo (i - 1)) (1--n) in
     mk_m_center_domain pp domain.lo vv, mk_m_center_domain pp uu domain.hi;;
-
+  
 
 (* restrict_domain *)
 let restrict_domain j left_flag domain =
@@ -134,24 +140,24 @@ let m_verify_raw (report_start, total_size) p_split p_min p_max fs_list certific
   let rec find_p p_fun p_list =
     match p_list with
       | [] -> failwith "find_p: no good p found"
-      | p :: ps ->
+      | p :: ps -> 
 	  let _ = if !info_print_level >= 2 then
 	    report (sprintf "Testing p = %d (other: %d)" p (length ps))
 	  else () in
-	  let flag =
-	    (try p_fun p
-	     with
-	       | Failure msg ->
-		   let _ = if !info_print_level >= 2 then
+	  let flag =  
+	    (try p_fun p 
+	     with 
+	       | Failure msg -> 
+		   let _ = if !info_print_level >= 2 then 
 		     report (sprintf "Failure at p = %d: %s" p msg)
 		   else () in
-		     false
-	       | Division_by_zero ->
+		     false 
+	       | Division_by_zero -> 
 		   let _ = if !info_print_level >= 2 then
 		     report (sprintf "Failure at p = %d: Division_by_zero" p)
 		   else () in
 		     false) in
-	    if flag then
+	    if flag then 
 	      let _ = if !info_print_level >= 2 then report (sprintf "p = %d" p) else () in p
 	    else find_p p_fun ps in
 
@@ -188,7 +194,7 @@ let m_verify_raw (report_start, total_size) p_split p_min p_max fs_list certific
 	else
 	  map (eval_m_taylor_partial_lower pp m.variable) taylors in
     let monos = map gen_mono mono in
-      rev_itlist (fun (m, bounds) pass ->
+      rev_itlist (fun (m, bounds) pass -> 
 		    let flag = m.decr_flag in
 		      forall (m_mono_pass_gen flag) bounds && pass) (rev (zip mono monos)) true in
 
@@ -205,10 +211,10 @@ let m_verify_raw (report_start, total_size) p_split p_min p_max fs_list certific
   let rec rec_verify domain certificate =
     match certificate with
       | Result_mono (mono, r1) ->
-	  let _ =
+	  let _ = 
 	    if !info_print_level >= 2 then
-	      let mono_strs =
-		map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "")
+	      let mono_strs = 
+		map (fun m -> sprintf "%s%d (%b)" (if m.decr_flag then "-" else "") 
 		       m.variable m.df0_flag) mono in
 		report (sprintf "Mono: [%s]" (String.concat ";" mono_strs))
 	    else () in
@@ -219,9 +225,9 @@ let m_verify_raw (report_start, total_size) p_split p_min p_max fs_list certific
 		 P_result_mono ({pp = pp}, mono, tree1), inds
 	     with Failure _ -> failwith "mono: failed")
 
-      | Result_pass (j, f0_flag) ->
+      | Result_pass (j, f0_flag) -> 
 	  let _ = k := !k + 1; kk := !kk + 1 in
-	  let _ =
+	  let _ = 
 	    if !info_print_level >= 2 then
 	      report (sprintf "Verifying: %d/%d (f0_flag = %b)" !k r_size f0_flag)
 	    else () in
@@ -265,7 +271,7 @@ let m_verify_raw (report_start, total_size) p_split p_min p_max fs_list certific
 	      P_result_ref i, inds
 
       | _ -> failwith "False result" in
-
+    
     rec_verify domain0 certificate;;
 
 
@@ -276,11 +282,11 @@ let m_verify_raw (report_start, total_size) p_split p_min p_max fs_list certific
 let m_verify_raw0 p_split p_min p_max fs_list certificate xx zz =
   m_verify_raw (0, 0) p_split p_min p_max fs_list certificate (mk_m_center_domain p_split xx zz) [];;
 
-	
+	    
 (* m_verify_list *)
 let m_verify_list p_split p_min p_max fs_list certificate_list xx zz =
   let domain_hash = Hashtbl.create (length certificate_list * 10) in
-  let mem, find, add = Hashtbl.mem domain_hash,
+  let mem, find, add = Hashtbl.mem domain_hash, 
     Hashtbl.find domain_hash, Hashtbl.add domain_hash in
 
   let get_m_cell_domain pp domain0 path =
@@ -289,7 +295,7 @@ let m_verify_list p_split p_min p_max fs_list certificate_list xx zz =
 	| [] -> domain
 	| (s, j) :: ps ->
 	    let hash' = hash^s^(string_of_int j) in
-	      if mem hash' then
+	      if mem hash' then 
 		get_rec (find hash') ps hash'
 	      else
 		if s = "l" || s = "r" then
@@ -313,7 +319,7 @@ let m_verify_list p_split p_min p_max fs_list certificate_list xx zz =
   let k = ref 0 in
   let kk = ref 0 in
   let total_size = end_itlist (+) (map (result_size o snd) certificate_list) in
-
+  
   let rec rec_verify certificate_list dom_list tree_list =
     match certificate_list with
       | [] -> rev tree_list

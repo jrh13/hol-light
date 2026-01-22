@@ -4,7 +4,7 @@ HOL Light is an interactive theorem prover / proof checker. It is
 written in Objective CAML (OCaml) and uses the toplevel from OCaml as
 its front end. This is the HOL Light homepage:
 
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/index.html
+        https://hol-light.github.io/
 
 and this is the root of the Github code repository:
 
@@ -13,32 +13,35 @@ and this is the root of the Github code repository:
 Basic installation instructions are below. For more detailed information
 on usage, see the Tutorial:
 
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/tutorial.pdf
+        https://hol-light.github.io/tutorial.pdf
 
 Refer to the reference manual for more details of individual functions:
 
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.html (HTML files)
-        http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.pdf (one PDF file)
+        https://hol-light.github.io/references/HTML/reference.html (HTML files)
+        https://hol-light.github.io/references/reference.pdf (one PDF file)
 
         *       *       *       *       *       *       *       *
 
                              INSTALLATION
 
-If you use Debian Linux or some other Debian-based Linux distribution
-(Knoppix, Mint, Ubuntu, etc.), there is actually a "hol-light" package,
-thanks to Hendrik Tews, so installation of HOL Light and all its
-prerequisites is as simple as
+The Objective CAML (OCaml) implementation is a prerequisite for running
+HOL Light. HOL Light should work with any recent version of OCaml; I've
+tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2,
+4.00, 4.05, 4.14, 5.1.0 and 5.2.0.
 
-  sudo apt-get install hol-light
+The easiest way to install HOL Light is through OPAM, an OCaml package
+manager. After installing OPAM (https://opam.ocaml.org/doc/Install.html),
+run the following command:
 
-For other OSs, more work is involved. The Objective CAML (OCaml)
-implementation is a prerequisite for running HOL Light. HOL Light
-should work with any recent version of OCaml; I've tried it on at
-least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2 and 4.00.
-However, for versions >= 3.10 (in 3.10 there was an incompatible
-change in the camlp4 preprocessor) you will also need to get camlp5
-(version >= 4.07). Installing both items of software should not be too
-difficult, depending on the platform.
+    opam install hol_light
+    # To compile the core module of HOL Light and use, add hol_light_module
+    # opam install hol_light hol_light_module
+
+This will build 'hol.sh' and copy it at the 'bin' path of your OPAM setting,
+making it executable at any location.
+
+To manually build HOL Light, OCaml and a few packages that HOL Light depends on
+are necessary.
 
  1. OCaml: there are packages for many Linux distributions. For
     example, on a debian derivative like Ubuntu, you may just need
@@ -52,46 +55,18 @@ difficult, depending on the platform.
 
         http://caml.inria.fr/ocaml/index.en.html
 
-    The HOL Light system uses the OCaml "Num" library for rational
-    arithmetic. As of OCaml 4.06, this is no longer included in
-    the core system and will need to be added separately. You can
-    do this using the OCaml package manager "opam" if you use it by
+ 2. Dependencies: Using OPAM (OCaml package manager) is the easiest way to
+    install dependent packages (https://opam.ocaml.org/doc/Install.html).
+    If you have OPAM installed on your machine, running the following command
+    inside this directory will create a local OPAM switch which uses the
+    latest OCaml version that fully supports features of as well as all
+    dependencies installed:
 
-        opam install num
+        make switch # or 'make switch-5' for OCaml 5
+        eval $(opam env)
 
-    Alternatively you can download the sources from here
-
-        https://github.com/ocaml/num
-
-    and build and install them following the instructions on that
-    page, for example
-
-        git clone https://github.com/ocaml/num mynums
-        cd mynums
-        make all
-        sudo make install [assuming no earlier errors]
-
- 2. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
-    Somtimes you need a recent version of camlp5 to be compatible with
-    your OCaml. I recommend downloading the sources for a recent
-    version from
-
-        https://camlp5.github.io/
-
-    and building it in "strict" mode before installing it, thus:
-
-        cd software/camlp5-rel701 [or wherever you unpacked sources to]
-        ./configure --strict
-        make
-        sudo make install       [assuming no earlier errors]
-
-    There are also packages for camlp5, so you may be able to get away
-    with just something like
-
-        sudo apt-get install camlp5
-
-    However, you may get a version in "transitional" instead of
-    "strict" mode (do "camlp5 -pmode" to check which you have).
+    To manually install dependencies, the DEPENDENCIES chapter of this document
+    explains it.
 
 Now for HOL Light itself. The instructions below assume a Unix-like
 environment such as Linux [or Cygwin (see www.cygwin.com) under
@@ -133,32 +108,28 @@ be available for some platforms. First the basic approach:
 
       export CAMLP5LIB=$HOME/mylib/ocaml/camlp5
 
-(2) Do 'ocaml'. (Actually for OCaml >= 4.02 I prefer 'ocaml -safe-string'
+(2) If you are using a Unix-like environment, simply run `./hol.sh`.
+    This should rebuild all the core HOL Light theories, and terminate after
+    a few minutes with the usual OCaml prompt, something like:
+
+                Camlp5 parsing version (HOL-Light) 8.03.00
+
+        #
+
+    HOL Light is now ready for the user to start proving theorems.
+
+    If you are not using a Unix-like environment, do
+    'ocaml'. (Actually for OCaml >= 4.02 I prefer 'ocaml -safe-string'
     to avoid mutable strings, while you may need something else like
-    'ocamlnum' on some platforms --- see [*] below.) You should see a
-    prompt, something like:
+    'ocamlnum' on some platforms --- see [*] below.)
+    If you are using OCaml 4.14, you need to create a top-level OCaml
+    using 'ocamlmktop -o ocaml-hol' and use 'ocaml-hol' because the default
+    'ocaml' does not have 'compiler-libs' that is necessary to run HOL Light.
 
-                Objective Caml version 4.01.0
+    At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
+    command, not the prompt) followed by a newline.
 
-        #
-
-(3) At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
-    command, not the prompt) followed by a newline. This should rebuild
-    all the core HOL Light theories, and terminate after a few minutes
-    with the usual OCaml prompt, something like:
-
-        val search : term list -> (string * thm) list = <fun>
-        - : unit = ()
-        File "help.ml" already loaded
-        - : unit = ()
-        - : unit = ()
-        - : unit = ()
-                Camlp5 parsing version 7.03
-
-        #
-
-    HOL Light is now ready for the user to start proving theorems. You
-    can also use the load process (2) and (3) in other directories, but
+    You can also use the load process (2) in other directories, but
     you should either set the environment variable HOLLIGHT_DIR to point
     to the directory containing the HOL source files, or change the
     first line of "hol.ml" to give that explicitly, from
@@ -175,101 +146,149 @@ be available for some platforms. First the basic approach:
 
 Now for the alternative approach of building a standalone image.
 The level of convenience depends on the checkpointing program you
-have installed. The earlier checkpointing programs in this list
-are more convenient to use but seem less easy to get going on
-recent Linux kernel/libc combinations.
+have installed. As of 2025, there are three programs you can use.
 
-(1) If you have the 'ckpt' program installed, then the Makefile will
-    conveniently create a HOL Light binary. You can get 'ckpt' here:
+(1) DMTCP: If you have DMTCP, 'make hol' will build a checkpointed
+    HOL Light binary 'hol'. To launch it, simply run './hol'. To launch
+    multiple instances, run './hol -p <fresh port number>'.
 
-        http://www.cs.wisc.edu/~zandy/ckpt/
+    you can download DMTCP from here:
 
-    Once 'ckpt' is installed, simply type
+        https://github.com/dmtcp/dmtcp/releases
 
-        make hol
+    To build DMTCP, please refer to
+    https://github.com/dmtcp/dmtcp/blob/master/INSTALL.md .
+    As of 2025, DMTCP only supports Linux.
 
-    in the 'hol-light' directory, and a standalone HOL Light image
-    called 'hol' should be created. If desired you can move or copy
-    this to some other place such as '~/bin' or '/usr/local/bin'. You
-    then simply type 'hol' (or './hol') to start the system up and
-    start proving theorems.
+    You can also build your custom checkpoint using 'make-checkpoint.sh'
+    which exists in this directory.
 
-    Note that although the HOL binary will work on its own, it
-    does not pre-load all the source files. You will probably want
-    to keep the sources available to be loaded later as needed (if
-    you need additional mathematical theories or tools), so it's
-    better to unpack the HOL distribution somewhere permanent
-    before doing 'make hol'.
+(2) CRIU: CRIU is similar to DMTCP but faster. However, it requires sudo
+    priviledge depending on your environment (e.g., WSL2).
+    you can download from here:
 
-    If you later develop a large body of proofs or tools, you can
-    save the augmented system using the command "self_destruct"
-    (this is the same approach as in the Makefile) rather than
-    re-load each time. For example, the following will create a
-    HOL Light binary (always called 'hol.snapshot'):
+        https://criu.org/Download/criu
 
-        self_destruct "My version of HOL Light";;
+    To build CRIU, please refer to https://criu.org/Installation .
+    To checkpoint,
 
-(2) Another checkpointing option is CryoPID, which you can get
-    here:
+        1. Start ocaml process and load HOL Light.
 
-        http://cryopid.berlios.de/
+        2. From another terminal, run
 
-    In this case, the Makefile doesn't have a convenient way of
-    making HOL binaries, but you can make one yourself once HOL
-    Light is loaded and you are sitting in its toplevel loop.
-    (This also works if you have your own extensions loaded, and
-    indeed this is when it's most useful.) Instead of the
-    'self_destruct' command, use 'checkpoint', which is similar
-    except that the current process is not terminated once the
-    binary (again called hol.snapshot) is created:
+            criu dump -o dump.log -t <ocaml process id> --shell-job
 
-        checkpoint "My version of HOL Light";;
+        3. To restore, run
 
-(3) A third option which seems to work with recent Linuxes is
-    DMTCP, which you can download from here:
+            criu restore -o restore.log --shell-job
 
-      http://dmtcp.sourceforge.net/
+    Please refer to https://criu.org/Simple_loop for details.
 
-    You may try installing from the packages (e.g.
-    'sudo dpkg -i dmtcp.deb'), but I found it was better to
-    compile from source. HOL Light does not have convenient
-    commands or scripts to exploit DMTCP, but you can proceed
-    as follows:
+(3) selfie: This is a convenient OCaml checkpointing tool developed by
+    Quentin Carbonneaux. Please git clone git://c9x.me/selfie.git and
+    run `make selfie.cma` from the directory.
+    Open ocaml and run
 
-        1. Start ocaml running under the DMTCP coordinator:
+        # #load "selfie.cma";;
+        # #use "selfie.ml";;
 
-              dmtcp_checkpoint -n ocaml
+    Now you can use `snap "output.img";;` to checkpoint the process.
 
-        2. Use ocaml to load HOL Light as usual, for example:
-
-              #use "hol.ml";;
-
-        3. From another terminal, issue the checkpoint command:
-
-             dmtcp_command --checkpoint
-
-        4. (Don't forget this!) Kill the original ocaml process,
-           e.g. by just typing control-d to the Ocaml prompt.
-
-        5. Step 3 created a checkpoint of the OCaml process and
-           a shell script to invoke it, both in the directory in
-           which ocaml was started. Running that should restore
-           the OCaml process with all your state and bindings:
-
-             ./dmtcp_restart_script.sh
-
-(4) If none of these options work, you may find some others on the
-    following Web page. Unfortunately I don't know of any such
-    checkpointing program for either Windows or Mac OS X; I would
-    be glad to hear of one.
-
-        http://checkpointing.org
 
 The directories "Library" and "Examples" may give an idea of the
 kind of thing that might be done, or may be useful in further work.
 
 Thanks to Carl Witty for help with Camlp4 porting and advice on
 checkpointing programs.
+
+        *       *       *       *       *       *       *       *
+
+                             DEPENDENCIES
+
+ 1. zarith or num: The HOL Light system uses the OCaml "Num" library
+    or "Zarith" library for rational arithmetic. If OCaml 4.14 or above is used,
+    HOL Light will use Zarith. You can install it using the OCaml package
+    manager "opam" by
+
+        opam install zarith
+
+    If OCaml 4.05 is used, HOL Light will use Num which is included in
+    the core system. If you are using an OCaml version between 4.06 and 4.13,
+    Num must be installed separately because it is no longer included in
+    the core system. You can use "opam" by
+
+        opam install num
+
+    Alternatively you can download the sources from here
+
+        https://github.com/ocaml/num
+
+    and build and install them following the instructions on that
+    page, for example
+
+        git clone https://github.com/ocaml/num mynums
+        cd mynums
+        make all
+        sudo make install [assuming no earlier errors]
+
+ 2. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
+    Somtimes you need a recent version of camlp5 to be compatible with
+    your OCaml. For example, OCaml 4.05 is compatible with camlp5 7.10 and
+    OCaml 4.14 and above is compatible with camlp5 8.02 and 8.03. I recommend
+    downloading the sources for a recent version from
+
+        https://github.com/camlp5/camlp5/releases ('tags' tab has full series)
+
+    and building it in "strict" mode before installing it, thus:
+
+        cd software/camlp5-rel701 [or wherever you unpacked sources to]
+        ./configure --strict
+        make
+        sudo make install       [assuming no earlier errors]
+
+    There are also packages for camlp5, so you may be able to get away
+    with just something like
+
+        sudo apt-get install camlp5
+
+    or
+
+        opam pin add camlp5 <version (e.g., 7.10 for ocaml 4.05)>
+
+    However, you may get a version in "transitional" instead of
+    "strict" mode (do "camlp5 -pmode" to check which you have).
+
+        *       *       *       *       *       *       *       *
+
+                         COMPILING HOL LIGHT
+
+Running 'HOLLIGHT_USE_MODULE=1 make' will compile hol_lib.ml and generate
+hol_lib.cmo/hol_lib.cmx. This will also create hol.sh which will configure
+hol.ml to use the compiled hol_lib.cmo (but not hol_lib.cmx). Compiling
+HOL Light will only work on OCaml 4.14 or above.
+
+To compile an OCaml file that opens Hol_lib using OCaml native compiler,
+use the following commands:
+
+    hol.sh compile <input.ml> <output.cmx>
+    hol.sh link <output.cmx> <output.native>
+
+To compile an OCaml file that opens Hol_lib using OCaml bytecode compiler,
+use the following command.
+
+    ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+      -I (HOL dir) (HOL dir)/bignum.cmo (HOL dir)/hol_loader.cmo \
+      (HOL dir)/hol_lib.cmo (input.ml) -o (output)
+
+The load functions (loads/loadt/needs) are not available anymore in this
+approach. Please use 'ocaml inline_loads.ml <input.ml> <output.ml>' to inline
+their invocations.
+
+NOTE: Compiling HOL Light with 'HOLLIGHT_USE_MODULE=1' extends the trusted base
+of HOL Light to include the inliner script, inline_loads.ml. inline_loads.ml is
+an OCaml program that receives an HOL Light proof and replaces the
+loads/loadt/needs function invocations with their actual contents. Please turn
+this flag on only if having this additional trusted base is considered okay.
 
         *       *       *       *       *       *       *       *
 

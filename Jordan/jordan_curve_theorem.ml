@@ -323,7 +323,7 @@ let closure_open_ball = prove_by_refinement(
   REWRITE_TAC[open_ball;  ];
   MESON_TAC[];
   DISCH_TAC;
-  LEFT_TAC "r'";
+  LEFT_TAC "r";
   JOIN 0 5;
   USE 0 (MATCH_MP (INR open_ball_center));
   CHO 0;
@@ -1604,7 +1604,7 @@ let h_edge_disj = prove_by_refinement(
   ARITH_TAC;
   DISCH_THEN CHOOSE_TAC;
   TYPE_THEN `real_of_int (FST q) + x` EXISTS_TAC;
-  LEFT_TAC "v'";
+  LEFT_TAC "v";
   TYPE_THEN `real_of_int (SND q)` EXISTS_TAC ;
   TYPE_THEN `point (real_of_int (FST q) + x,real_of_int (SND q))` EXISTS_TAC;
   ASM_REWRITE_TAC[];
@@ -1715,8 +1715,8 @@ let v_edge_disj = prove_by_refinement(
   IMATCH_MP_TAC  half_pos;
   ARITH_TAC;
   DISCH_THEN CHOOSE_TAC;
-  LEFT_TAC "v'";
-  LEFT_TAC "v'";
+  LEFT_TAC "v";
+  LEFT_TAC "v";
   TYPE_THEN `real_of_int (SND q) + x` EXISTS_TAC;
   TYPE_THEN `real_of_int (FST  q)` EXISTS_TAC ;
   TYPE_THEN `point (real_of_int (FST q),real_of_int (SND q) +x)` EXISTS_TAC;
@@ -1976,7 +1976,7 @@ let square_disj = prove_by_refinement(
   DISCH_THEN_REWRITE;
   REWRITE_TAC[squ];
   NAME_CONFLICT_TAC;
-  CONV_TAC (dropq_conv "u''");
+  CONV_TAC (dropq_conv "u");
   TYPE_THEN `real_of_int (FST q) + (&.1/(&.2))` EXISTS_TAC;
   TYPE_THEN `real_of_int (SND q) + (&.1/(&.2))` EXISTS_TAC;
   REWRITE_TAC[int_suc];
@@ -5553,7 +5553,7 @@ let fibre_card = prove_by_refinement(
   USE 5 (REWRITE_RULE[EMPTY_EXISTS]);
   CHO 5;
   USE 1 (CONV_RULE NAME_CONFLICT_CONV);
-  USE 1 (CONV_RULE (dropq_conv "x''"));
+  USE 1 (CONV_RULE (dropq_conv "x"));
   TSPEC `u` 1;
   REWR 1;
   TSPEC `f u` 2;
@@ -5602,11 +5602,11 @@ let fibre_card = prove_by_refinement(
   CONV_TAC (dropq_conv "x'");
   NAME_CONFLICT_TAC;
   GEN_TAC;
-  LEFT_TAC  "x''";
+  LEFT_TAC  "x'";
   GEN_TAC;
-  RIGHT_TAC "y''";
+  RIGHT_TAC "y'";
   DISCH_THEN_REWRITE ;
-  RIGHT_TAC "y''";
+  RIGHT_TAC "y'";
   DISCH_ALL_TAC;
   USE 9 GSYM;
   REWR 8;
@@ -8499,7 +8499,7 @@ let par_cell_partition = prove_by_refinement(
   REWR 3;
   USE 3(REWRITE_RULE[INR IN_SING;pointI;point_inj ;]);
   ASM_REWRITE_TAC[GSYM pointI];
-  LEFT_TAC "u'";
+  LEFT_TAC "u";
   TYPE_THEN `{(pointI p')}` EXISTS_TAC;
   ASM_SIMP_TAC[par_cell_point];
   REWRITE_TAC[INR IN_SING];
@@ -12049,23 +12049,19 @@ let IMAGE_INTERS = prove_by_refinement(
   TYPE_THEN `x'` EXISTS_TAC;
   ASM_MESON_TAC[];
   DISCH_ALL_TAC;
-  USE 3 (CONV_RULE (dropq_conv "u'"));
-  USE 3 (CONV_RULE (dropq_conv "y'"));
+  USE 3 (CONV_RULE (dropq_conv "u"));
+  USE 3 (CONV_RULE (dropq_conv "x"));
   USE 2(REWRITE_RULE[EMPTY_EXISTS]);
   CHO 2;
+  CHO 3;
   COPY 3;
   TSPEC `u` 3;
-  CHO 3;
-  REWR 3;
-  TYPE_THEN `x'` EXISTS_TAC;
-  ASM_REWRITE_TAC[];
+  TYPE_THEN `x' u` EXISTS_TAC;
+  CONJ_TAC;
   DISCH_ALL_TAC;
   USE 0(REWRITE_RULE[INJ]);
-  TSPEC `u'` 4;
-  CHO 4;
-  REWR 4;
-  TYPEL_THEN [`x'`;`x''`] (USE 0 o ISPECL);
   USE 1(REWRITE_RULE[UNIONS;ISUBSET]);
+  ASM_MESON_TAC[];
   ASM_MESON_TAC[];
   ]);;
 
@@ -13391,15 +13387,14 @@ let image_curve_cell_reflA  = prove_by_refinement(
  ****)
   REWRITE_TAC[INR IN_SING; UNWIND_THM2];
   NAME_CONFLICT_TAC;
-  CONV_TAC (dropq_conv "x'");
-  CONV_TAC (dropq_conv "y'");
+  CONV_TAC (dropq_conv "x");
 (**** Removed by JRH
   REWRITE_TAC[GSPEC];
  ****)
   (*  *)
   EQ_TAC ;
   REP_BASIC_TAC;
-  TYPE_THEN `reflAi r n'` EXISTS_TAC;
+  TYPE_THEN `reflAi r n` EXISTS_TAC;
   ASM_REWRITE_TAC[];
   IMATCH_MP_TAC  EQ_EXT;
   REWRITE_TAC[INR IN_SING; reflA_pointI; reflAi_inv;];
@@ -13408,7 +13403,7 @@ let image_curve_cell_reflA  = prove_by_refinement(
  ****)
   (*   *)
   REP_BASIC_TAC;
-  TYPE_THEN `reflAi r n'` EXISTS_TAC;
+  TYPE_THEN `reflAi r n` EXISTS_TAC;
   ASM_REWRITE_TAC[reflAi_inv;];
   IMATCH_MP_TAC  EQ_EXT;
   REWRITE_TAC[INR IN_SING;reflA_pointI;];
@@ -13477,15 +13472,15 @@ let image_curve_cell_reflB  = prove_by_refinement(
  ***)
   REWRITE_TAC[INR IN_SING; UNWIND_THM2];
   NAME_CONFLICT_TAC;
-  CONV_TAC (dropq_conv "x'");
-  CONV_TAC (dropq_conv "y'");
+  CONV_TAC (dropq_conv "x");
+  CONV_TAC (dropq_conv "y");
 (*** JRH removed this to avoid GSPEC
   REWRITE_TAC[GSPEC];
  ***)
   (*  *)
   EQ_TAC ;
   REP_BASIC_TAC;
-  TYPE_THEN `reflBi r n'` EXISTS_TAC;
+  TYPE_THEN `reflBi r n` EXISTS_TAC;
   ASM_REWRITE_TAC[];
   IMATCH_MP_TAC  EQ_EXT;
   REWRITE_TAC[INR IN_SING; reflB_pointI; reflBi_inv;];
@@ -13494,7 +13489,7 @@ let image_curve_cell_reflB  = prove_by_refinement(
  ****)
   (*   *)
   REP_BASIC_TAC;
-  TYPE_THEN `reflBi r n'` EXISTS_TAC;
+  TYPE_THEN `reflBi r n` EXISTS_TAC;
   ASM_REWRITE_TAC[reflBi_inv;];
   IMATCH_MP_TAC  EQ_EXT;
   REWRITE_TAC[INR IN_SING;reflB_pointI;];
@@ -13570,7 +13565,7 @@ let image_curve_cell_reflC  = prove_by_refinement(
   (*  *)
   EQ_TAC ;
   REP_BASIC_TAC;
-  TYPE_THEN `reflCi n'` EXISTS_TAC;
+  TYPE_THEN `reflCi n` EXISTS_TAC;
   ASM_REWRITE_TAC[];
   IMATCH_MP_TAC  EQ_EXT;
   REWRITE_TAC[INR IN_SING; reflC_pointI; reflCi_inv;];
@@ -13579,7 +13574,7 @@ let image_curve_cell_reflC  = prove_by_refinement(
  ****)
   (*   *)
   REP_BASIC_TAC;
-  TYPE_THEN `reflCi n'` EXISTS_TAC;
+  TYPE_THEN `reflCi n` EXISTS_TAC;
   ASM_REWRITE_TAC[reflCi_inv;];
   IMATCH_MP_TAC  EQ_EXT;
   REWRITE_TAC[INR IN_SING;reflC_pointI;];
@@ -18161,12 +18156,7 @@ let graph_inc_subset = prove_by_refinement(
   (* {{{ proof *)
   [
   REWRITE_TAC[graph;IMAGE;SUBSET;];
-  NAME_CONFLICT_TAC;
-  REP_BASIC_TAC;
-  USE 2 (CONV_RULE (dropq_conv "x''"));
-  TSPEC  `e'` 2;
-  REWR 2;
-  ASM_MESON_TAC[];
+  ASM_MESON_TAC[]
   ]);;
   (* }}} *)
 
@@ -18278,7 +18268,7 @@ let graph_isomorphic_graph = prove_by_refinement(
   REP_BASIC_TAC;
   REWRITE_TAC[SUBSET;IMAGE;];
   NAME_CONFLICT_TAC;
-  CONV_TAC (dropq_conv "x''");
+  CONV_TAC (dropq_conv "x");
   REP_BASIC_TAC;
   TYPE_THEN `?y'. (graph_edge G y' /\ (v y' = x'))` SUBGOAL_TAC;
   UND 1;
@@ -19147,7 +19137,7 @@ let graph_edge_iso = prove_by_refinement(
   REWRITE_TAC[graph_edge_mod_i;IMAGE_I;];
   EQ_TAC;
   REP_BASIC_TAC;
-  TYPE_THEN `e'' = e'` SUBGOAL_TAC;
+  TYPE_THEN `e' = e` SUBGOAL_TAC;
   RULE_ASSUM_TAC(REWRITE_RULE  [INJ]);
   FIRST_ASSUM IMATCH_MP_TAC ;
   ASM_REWRITE_TAC[];
@@ -22250,7 +22240,7 @@ let simple_arc_end_trans  = prove_by_refinement(
   REWRITE_TAC[IMAGE;INR IN_SING;];
   NAME_CONFLICT_TAC;
   ASM_REWRITE_TAC[];
-  CONV_TAC (dropq_conv "x''");
+  CONV_TAC (dropq_conv "x'");
   GEN_TAC;
   DISCH_THEN_REWRITE;
   UND 27;
@@ -23649,7 +23639,7 @@ let simple_closed_curve_pt = prove_by_refinement(
   MESON_TAC[];
   REWRITE_TAC[EQ_EMPTY;IMAGE;INTER;image_sing;INR IN_SING;];
   NAME_CONFLICT_TAC;
-  CONV_TAC (dropq_conv "x''");
+  CONV_TAC (dropq_conv "x");
   REP_GEN_TAC;
   REP_BASIC_TAC;
   TYPE_THEN `x' = &0` SUBGOAL_TAC;
@@ -25459,7 +25449,7 @@ let type_bij = prove_by_refinement(
   REWRITE_TAC[];
   NAME_CONFLICT_TAC;
   GEN_TAC;
-  TYPE_THEN `gYX x''` EXISTS_TAC;
+  TYPE_THEN `gYX x` EXISTS_TAC;
   ASM_REWRITE_TAC[];
   (* -- *)
   IMATCH_MP_TAC  bij_inj_image;
@@ -25631,7 +25621,7 @@ let k33_isgraph = prove_by_refinement(
   DISCH_THEN DISJ_CASES_TAC;
   ASM_MESON_TAC[];
   ASM_MESON_TAC[];
-  TYPE_THEN `(x,T)` EXISTS_TAC;
+  TYPE_THEN `(x'',T)` EXISTS_TAC;
   TYPE_THEN `(y,F)` EXISTS_TAC;
   REWRITE_TAC[];
   REWRITE_TAC[PAIR_SPLIT];
@@ -42487,18 +42477,9 @@ let unbound_set_x_axis = prove_by_refinement(
   REP_BASIC_TAC;
   REWRITE_TAC[unbounded_set;unbounded;];
   NAME_CONFLICT_TAC;
-  LEFT_TAC "r'";
-  LEFT_TAC "r'";
   THM_INTRO_TAC[`G`] unbounded_set_nonempty;
   FULL_REWRITE_TAC[EMPTY_EXISTS;unbounded_set;unbounded];
-  TYPE_THEN `r` EXISTS_TAC;
-  TYPE_THEN `(\ (s:real). r)` EXISTS_TAC;
-  COPY 2;
-  TSPEC `s'` 2;
-  TSPEC  `s''` 5;
-  USE 4 (MATCH_MP component_symm);
-  USE 4 (MATCH_MP component_replace);
-  ASM_REWRITE_TAC[];
+  ASM_MESON_TAC[component_symm;component_replace];
   ]);;
   (* }}} *)
 
@@ -45723,122 +45704,7 @@ let graph_eps_scale_image = prove_by_refinement(
   TYPE_THEN `x'` UNABBREV_TAC;
   TSPEC `x''` 3;
   REP_BASIC_TAC;
-  TYPE_THEN `u'` EXISTS_TAC;
-  REWRITE_TAC[IMAGE];
-  UNIFY_EXISTS_TAC;
-  ASM_REWRITE_TAC[];
-  (* -A *)
-  SUBCONJ_TAC;
-  FULL_REWRITE_TAC[IMAGE2];
-  TYPE_THEN   `im = IMAGE (eps_scale eps r)` ABBREV_TAC ;
-  REWRITE_TAC[IMAGE];
-  TYPE_THEN `im` UNABBREV_TAC;
-  USE 11(REWRITE_RULE[IMAGE]);
-  UND 2 THEN DISCH_THEN (THM_INTRO_TAC[`x`]);
-  CONJ_TAC;
-  UNIFY_EXISTS_TAC;
-  (* ? *)
-  TYPE_THEN `eps = T` ASM_CASES_TAC;
-  ASM_SIMP_TAC [eps_hyper_scale;eps_hyper_inj];
-  REWRITE_TAC[eps_scale;r_scale];
-  COND_CASES_TAC;
-  TYPE_THEN `eps = F` SUBAGOAL_TAC;
-  ASM_MESON_TAC[];
-  TYPE_THEN `eps` UNABBREV_TAC;
-  THM_INTRO_TAC[`F`;`r`;`x 0`] eps_hyper_scale_perp;
-  AP_TERM_TAC;
-  REWRITE_TAC[eps_scale;u_scale];
-  COND_CASES_TAC;
-  (* -- *)
-  TYPE_THEN `eps_hyper F (x 1)` EXISTS_TAC;
-  TYPE_THEN `eps = F` ASM_CASES_TAC;
-  ASM_SIMP_TAC [eps_hyper_scale;eps_hyper_inj];
-  REWRITE_TAC[eps_scale;u_scale];
-  COND_CASES_TAC;
-  TYPE_THEN `eps = T` SUBAGOAL_TAC;
-  ASM_MESON_TAC[];
-  TYPE_THEN `eps` UNABBREV_TAC;
-  THM_INTRO_TAC[`T`;`r`;`x 1`] eps_hyper_scale_perp;
-  AP_TERM_TAC;
-  REWRITE_TAC[eps_scale;r_scale];
-  COND_CASES_TAC;
-  (* -B *)
-  CONJ_TAC;
-  USE 12(REWRITE_RULE[IMAGE2]);
-  TYPE_THEN   `im = IMAGE (eps_scale eps r)` ABBREV_TAC ;
-  USE 12(REWRITE_RULE[IMAGE]);
-  UND 1 THEN DISCH_THEN (THM_INTRO_TAC[`x`]);
-  TYPE_THEN `im` UNABBREV_TAC;
-  LEFT_TAC  "eps''";
-  TYPE_THEN `eps'` EXISTS_TAC;
-  TYPE_THEN `eps' = ~eps` ASM_CASES_TAC;
-  ASM_SIMP_TAC [eps_hyper_scale_perp];
-  MESON_TAC[];
-  TYPE_THEN `eps' = eps` SUBAGOAL_TAC;
-  UND 13 THEN MESON_TAC[];
-  ASM_SIMP_TAC[eps_hyper_scale];
-  MESON_TAC[];
-  (* - *)
-  FIRST_ASSUM IMATCH_MP_TAC ;
-  TYPE_THEN `eps'` EXISTS_TAC;
-  FULL_REWRITE_TAC[IMAGE2];
-  TYPE_THEN   `im = IMAGE (eps_scale eps r)` ABBREV_TAC ;
-  USE 12 (REWRITE_RULE[IMAGE]);
-  TYPE_THEN `im` UNABBREV_TAC;
-  UND 1 THEN DISCH_THEN (THM_INTRO_TAC[`x`]);
-  REWR 12;
-  TYPE_THEN `eps'' = ~eps` ASM_CASES_TAC;
-  UND 12 THEN ASM_SIMP_TAC[eps_hyper_scale_perp];
-  TYPE_THEN `x` UNABBREV_TAC;
-  TYPE_THEN `eps''` UNABBREV_TAC;
-  TYPE_THEN `eps'' = eps` SUBAGOAL_TAC;
-  UND 14 THEN MESON_TAC[];
-  TYPE_THEN `eps''` UNABBREV_TAC;
-  UND 12 THEN ASM_SIMP_TAC[eps_hyper_scale];
-  FULL_REWRITE_TAC[eps_hyper_inj];
-  UND 12 THEN COND_CASES_TAC;
-  TYPE_THEN `z` UNABBREV_TAC;
-  TYPE_THEN `&0 < r * z'` SUBAGOAL_TAC;
-  IMATCH_MP_TAC  REAL_LT_MUL;
-  PROOF_BY_CONTR_TAC;
-  UND 12 THEN UND 13 THEN REAL_ARITH_TAC;
-  TYPE_THEN `z'` UNABBREV_TAC;
-  TYPE_THEN `x` UNABBREV_TAC;
-  ]);;
-  (* }}} *)
-
-let graph_eps_scale_image = prove_by_refinement(
-  `!G E eps r. (&0 < r) /\ graph_support_eps G E ==> graph_support_eps
-       (plane_graph_image (eps_scale eps r)G)
-       (IMAGE2 (eps_scale eps r) E)
-          `,
-  (* {{{ proof *)
-  [
-  REWRITE_TAC[graph_support_eps];
-  THM_INTRO_TAC[`eps`;`r`] homeomorphism_eps_scale;
-  SUBCONJ_TAC;
-  IMATCH_MP_TAC  plane_graph_image_plane;
-  (* - *)
-  REWRITE_TAC[plane_graph_image_e;plane_graph_image_v];
-  SUBCONJ_TAC;
-  REWRITE_TAC[IMAGE2];
-  IMATCH_MP_TAC  FINITE_IMAGE;
-  (* - *)
-  SUBCONJ_TAC;
-  FULL_REWRITE_TAC[IMAGE2];
-  TYPE_THEN `im = IMAGE (eps_scale eps r)` ABBREV_TAC ;
-  USE 10 (REWRITE_RULE[IMAGE]);
-  UND 3 THEN DISCH_THEN (THM_INTRO_TAC[`x`]);
-  FULL_REWRITE_TAC [SUBSET;UNIONS];
-  REWRITE_TAC[IMAGE];
-  CONV_TAC (dropq_conv "u");
-  TYPE_THEN `im` UNABBREV_TAC;
-  USE 3(CONV_RULE NAME_CONFLICT_CONV);
-  USE 13 (REWRITE_RULE[IMAGE]);
-  TYPE_THEN `x'` UNABBREV_TAC;
-  TSPEC `x''` 3;
-  REP_BASIC_TAC;
-  TYPE_THEN `u'` EXISTS_TAC;
+  TYPE_THEN `u` EXISTS_TAC;
   REWRITE_TAC[IMAGE];
   UNIFY_EXISTS_TAC;
   ASM_REWRITE_TAC[];
@@ -45956,7 +45822,7 @@ let graph_eps_translate_image = prove_by_refinement(
   TYPE_THEN `x'` UNABBREV_TAC;
   TSPEC `x''` 3;
   REP_BASIC_TAC;
-  TYPE_THEN `u'` EXISTS_TAC;
+  TYPE_THEN `u` EXISTS_TAC;
   REWRITE_TAC[IMAGE];
   UNIFY_EXISTS_TAC;
   ASM_REWRITE_TAC[];
@@ -47872,9 +47738,9 @@ let simple_arc_finite_lemma3 = prove_by_refinement(
   UND 6 THEN DISCH_THEN (THM_INTRO_TAC[]);
   TYPE_THEN `x` EXISTS_TAC;
   ASM_REWRITE_TAC[];
-  TSPEC `u'` 1;
+  TSPEC `u` 1;
   REWRITE_TAC[];
-  TYPE_THEN `u'` UNABBREV_TAC;
+  TYPE_THEN `u` UNABBREV_TAC;
   UND 0 THEN DISCH_THEN (THM_INTRO_TAC[`z`;`eps`]);
   TYPE_THEN `z` UNABBREV_TAC;
   (* --E *)
@@ -47889,7 +47755,7 @@ let simple_arc_finite_lemma3 = prove_by_refinement(
   USE 0 (MATCH_MP point_onto);
   THM_INTRO_TAC[`p`] cell_unions;
   USE 1 (REWRITE_RULE[UNIONS]);
-  TYPE_THEN `u` EXISTS_TAC;
+  TYPE_THEN `u'` EXISTS_TAC;
   TYPE_THEN `C` EXISTS_TAC;
   FULL_REWRITE_TAC[cell];
   UND 29 THEN REP_CASES_TAC;
@@ -47915,7 +47781,7 @@ let simple_arc_finite_lemma3 = prove_by_refinement(
   FULL_REWRITE_TAC[ONCE_REWRITE_RULE[EQ_SYM_EQ] line2D_F];
   FULL_REWRITE_TAC[point_inj];
   TYPE_THEN `p'` UNABBREV_TAC;
-  TYPE_THEN `u` UNABBREV_TAC;
+  TYPE_THEN `u'` UNABBREV_TAC;
   (* ---F *)
   FULL_REWRITE_TAC[GSYM int_neg_num_th;GSYM int_lt;];
   UND 30 THEN UND 31 THEN INT_ARITH_TAC;
@@ -49316,7 +49182,7 @@ let grid_image_bounded = prove_by_refinement(
   NAME_CONFLICT_TAC;
   RIGHT 2 "i";
   RIGHT 2 "x";
-  TYPE_THEN `x''` UNABBREV_TAC;
+  TYPE_THEN `x` UNABBREV_TAC;
   FULL_REWRITE_TAC[unbounded_diff;DIFF;ctop_unions ];
   UND 2 THEN REWRITE_TAC[];
   UND 6 THEN DISCH_THEN (THM_INTRO_TAC[`x'`]);
@@ -52074,7 +51940,7 @@ let grid_image_bounded_ver2 = prove_by_refinement(
   TSPECH `N` 8189;
   RIGHTH 2874 "i";
   RIGHTH 3911 "x";
-  TYPE_THEN `x''` UNABBREV_TAC;
+  TYPE_THEN `x` UNABBREV_TAC;
   TYPE_THEN `0 <| N` SUBAGOAL_TAC;
   UNDH 4600 THEN UNDH 6734 THEN ARITH_TAC;
   FULL_REWRITE_TAC[unbounded_diff;DIFF;ctop_unions ];
@@ -54825,8 +54691,8 @@ let no_k33_planar_graph_data = prove_by_refinement(
   NAME_CONFLICT_TAC;
   CONJ_TAC;
   MESON_TAC[];
-  TYPE_THEN `u'` UNABBREV_TAC ;
-  TYPE_THEN `x' = i` SUBAGOAL_TAC;
+  TYPE_THEN `u` UNABBREV_TAC ;
+  TYPE_THEN `x = i` SUBAGOAL_TAC;
   ASM_MESON_TAC[];
   ASM_REWRITE_TAC[];
   (* - *)
@@ -54840,8 +54706,8 @@ let no_k33_planar_graph_data = prove_by_refinement(
   NAME_CONFLICT_TAC;
   CONJ_TAC;
   MESON_TAC[];
-  TYPE_THEN `u'` UNABBREV_TAC ;
-  TYPE_THEN `x' = j` SUBAGOAL_TAC;
+  TYPE_THEN `u` UNABBREV_TAC ;
+  TYPE_THEN `x = j` SUBAGOAL_TAC;
   ASM_MESON_TAC[];
   ASM_REWRITE_TAC[];
   (* -A *)

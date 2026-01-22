@@ -279,7 +279,7 @@ let FINITE_INT_SEG = prove
 (* ------------------------------------------------------------------------- *)
 
 let neutral = new_definition
-  `neutral op = @x. !y. (op x y = y) /\ (op y x = y)`;;
+  `neutral op = @x:A. !y. (op x y = y) /\ (op y x = y)`;;
 
 let monoidal = new_definition
   `monoidal op <=> (!x y. op x y = op y x) /\
@@ -288,7 +288,7 @@ let monoidal = new_definition
 
 let MONOIDAL_AC = prove
  (`!op. monoidal op
-        ==> (!a. op (neutral op) a = a) /\
+        ==> (!a:A. op (neutral op) a = a) /\
             (!a. op a (neutral op) = a) /\
             (!a b. op a b = op b a) /\
             (!a b c. op (op a b) c = op a (op b c)) /\
@@ -299,58 +299,61 @@ let support = new_definition
   `support op (f:A->B) s = {x | x IN s /\ ~(f x = neutral op)}`;;
 
 let iterate = new_definition
-  `iterate op (s:A->bool) f =
+  `iterate op s (f:A->B) =
         if FINITE(support op f s)
         then ITSET (\x a. op (f x) a) (support op f s) (neutral op)
         else neutral op`;;
 
 let IN_SUPPORT = prove
- (`!op f x s. x IN (support op f s) <=> x IN s /\ ~(f x = neutral op)`,
+ (`!op (f:A->B) x s. x IN (support op f s) <=> x IN s /\ ~(f x = neutral op)`,
   REWRITE_TAC[support; IN_ELIM_THM]);;
 
 let SUPPORT_SUPPORT = prove
- (`!op f s. support op f (support op f s) = support op f s`,
+ (`!op (f:A->B) s. support op f (support op f s) = support op f s`,
   REWRITE_TAC[support; IN_ELIM_THM; EXTENSION] THEN REWRITE_TAC[CONJ_ACI]);;
 
 let SUPPORT_EMPTY = prove
- (`!op f s. (!x. x IN s ==> (f(x) = neutral op)) <=> (support op f s = {})`,
+ (`!op (f:A->B) s. (!x. x IN s ==> f(x) = neutral op) <=> support op f s = {}`,
   REWRITE_TAC[IN_SUPPORT; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
   MESON_TAC[]);;
 
 let SUPPORT_SUBSET = prove
- (`!op f s. (support op f s) SUBSET s`,
+ (`!op (f:A->B) s. (support op f s) SUBSET s`,
   SIMP_TAC[SUBSET; IN_SUPPORT]);;
 
 let FINITE_SUPPORT = prove
- (`!op f s. FINITE s ==> FINITE(support op f s)`,
+ (`!op (f:A->B) s. FINITE s ==> FINITE(support op f s)`,
   MESON_TAC[SUPPORT_SUBSET; FINITE_SUBSET]);;
 
 let SUPPORT_CLAUSES = prove
- (`(!f. support op f {} = {}) /\
-   (!f x s. support op f (x INSERT s) =
-       if f(x) = neutral op then support op f s
-       else x INSERT (support op f s)) /\
-   (!f x s. support op f (s DELETE x) = (support op f s) DELETE x) /\
-   (!f s t. support op f (s UNION t) =
-                    (support op f s) UNION (support op f t)) /\
-   (!f s t. support op f (s INTER t) =
-                    (support op f s) INTER (support op f t)) /\
-   (!f s t. support op f (s DIFF t) =
-                    (support op f s) DIFF (support op f t)) /\
-   (!f g s.  support op g (IMAGE f s) = IMAGE f (support op (g o f) s))`,
+ (`(!(f:A->C). support op f {} = {}) /\
+   (!(f:A->C) x s. support op f (x INSERT s) =
+        if f(x) = neutral op then support op f s
+        else x INSERT (support op f s)) /\
+   (!(f:A->C) x s. support op f (s DELETE x) = (support op f s) DELETE x) /\
+   (!(f:A->C) s t. support op f (s UNION t) =
+                   (support op f s) UNION (support op f t)) /\
+   (!(f:A->C) s t. support op f (s INTER t) =
+                   (support op f s) INTER (support op f t)) /\
+   (!(f:A->C) s t. support op f (s DIFF t) =
+                   (support op f s) DIFF (support op f t)) /\
+   (!(f:A->B) (g:B->C) s.
+                   support op g (IMAGE f s) = IMAGE f (support op (g o f) s))`,
   REWRITE_TAC[support; EXTENSION; IN_ELIM_THM; IN_INSERT; IN_DELETE; o_THM;
     IN_IMAGE; NOT_IN_EMPTY; IN_UNION; IN_INTER; IN_DIFF; COND_RAND] THEN
   REPEAT STRIP_TAC THEN TRY COND_CASES_TAC THEN ASM_MESON_TAC[]);;
 
 let SUPPORT_DELTA = prove
- (`!op s f a. support op (\x. if x = a then f(x) else neutral op) s =
-              if a IN s then support op f {a} else {}`,
+ (`!op s (f:A->B) a.
+        support op (\x. if x = a then f(x) else neutral op) s =
+        if a IN s then support op f {a} else {}`,
   REWRITE_TAC[EXTENSION; support; IN_ELIM_THM; IN_SING] THEN
   REPEAT GEN_TAC THEN REPEAT COND_CASES_TAC THEN
   ASM_REWRITE_TAC[IN_ELIM_THM; NOT_IN_EMPTY]);;
 
 let FINITE_SUPPORT_DELTA = prove
- (`!op f a. FINITE(support op (\x. if x = a then f(x) else neutral op) s)`,
+ (`!op (f:A->B) a.
+        FINITE(support op (\x. if x = a then f(x) else neutral op) s)`,
   REWRITE_TAC[SUPPORT_DELTA] THEN REPEAT GEN_TAC THEN
   COND_CASES_TAC THEN SIMP_TAC[FINITE_RULES; FINITE_SUPPORT]);;
 
@@ -359,13 +362,14 @@ let FINITE_SUPPORT_DELTA = prove
 (* ------------------------------------------------------------------------- *)
 
 let ITERATE_SUPPORT = prove
- (`!op f s. iterate op (support op f s) f = iterate op s f`,
+ (`!op (f:A->B) s. iterate op (support op f s) f = iterate op s f`,
   SIMP_TAC[iterate; SUPPORT_SUPPORT]);;
 
 let ITERATE_EXPAND_CASES = prove
- (`!op f s. iterate op s f =
-              if FINITE(support op f s) then iterate op (support op f s) f
-              else neutral op`,
+ (`!op (f:A->B) s.
+        iterate op s f =
+        if FINITE(support op f s) then iterate op (support op f s) f
+        else neutral op`,
   SIMP_TAC[iterate; SUPPORT_SUPPORT]);;
 
 let ITERATE_CLAUSES_GEN = prove
@@ -389,18 +393,20 @@ let ITERATE_CLAUSES_GEN = prove
 
 let ITERATE_CLAUSES = prove
  (`!op. monoidal op
-        ==> (!f. iterate op {} f = neutral op) /\
-            (!f x s. FINITE(s)
-                     ==> (iterate op (x INSERT s) f =
-                          if x IN s then iterate op s f
-                          else op (f x) (iterate op s f)))`,
+        ==> (!(f:A->C). iterate op {} f = neutral op) /\
+            (!(f:B->C) x s.
+                FINITE(s)
+                ==> (iterate op (x INSERT s) f =
+                     if x IN s then iterate op s f
+                     else op (f x) (iterate op s f)))`,
   SIMP_TAC[ITERATE_CLAUSES_GEN; FINITE_SUPPORT]);;
 
 let ITERATE_UNION = prove
  (`!op. monoidal op
-        ==> !f s t. FINITE s /\ FINITE t /\ DISJOINT s t
-                    ==> (iterate op (s UNION t) f =
-                         op (iterate op s f) (iterate op t f))`,
+        ==> !(f:A->B) s t.
+                FINITE s /\ FINITE t /\ DISJOINT s t
+                ==> (iterate op (s UNION t) f =
+                     op (iterate op s f) (iterate op t f))`,
   let lemma = prove
    (`(s UNION (x INSERT t) = x INSERT (s UNION t)) /\
      (DISJOINT s (x INSERT t) <=> ~(x IN s) /\ DISJOINT s t)`,
@@ -423,9 +429,10 @@ let ITERATE_UNION_GEN = prove
 
 let ITERATE_DIFF = prove
  (`!op. monoidal op
-        ==> !f s t. FINITE s /\ t SUBSET s
-                    ==> (op (iterate op (s DIFF t) f) (iterate op t f) =
-                         iterate op s f)`,
+        ==> !(f:A->B) s t.
+                FINITE s /\ t SUBSET s
+                ==> (op (iterate op (s DIFF t) f) (iterate op t f) =
+                     iterate op s f)`,
   let lemma = prove
    (`t SUBSET s ==> (s = (s DIFF t) UNION t) /\ DISJOINT (s DIFF t) t`,
     SET_TAC[]) in
@@ -442,10 +449,11 @@ let ITERATE_DIFF_GEN = prove
 
 let ITERATE_INCL_EXCL = prove
  (`!op. monoidal op
-        ==> !s t f. FINITE s /\ FINITE t
-                    ==> op (iterate op s f) (iterate op t f) =
-                        op (iterate op (s UNION t) f)
-                           (iterate op (s INTER t) f)`,
+        ==> !s t (f:A->B).
+                FINITE s /\ FINITE t
+                ==> op (iterate op s f) (iterate op t f) =
+                    op (iterate op (s UNION t) f)
+                       (iterate op (s INTER t) f)`,
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC[SET_RULE
     `a UNION b = ((a DIFF b) UNION (b DIFF a)) UNION (a INTER b)`] THEN
@@ -537,8 +545,9 @@ let ITERATE_DELETE = prove
 
 let ITERATE_DELTA = prove
  (`!op. monoidal op
-        ==> !f a s. iterate op s (\x. if x = a then f(x) else neutral op) =
-                    if a IN s then f(a) else neutral op`,
+        ==> !(f:A->B) a s.
+                iterate op s (\x. if x = a then f(x) else neutral op) =
+                if a IN s then f(a) else neutral op`,
   GEN_TAC THEN DISCH_TAC THEN ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
   REWRITE_TAC[SUPPORT_DELTA] THEN REPEAT GEN_TAC THEN COND_CASES_TAC THEN
   ASM_SIMP_TAC[ITERATE_CLAUSES] THEN REWRITE_TAC[SUPPORT_CLAUSES] THEN
@@ -693,9 +702,10 @@ let ITERATE_UNION_NONZERO = prove
 
 let ITERATE_OP = prove
  (`!op. monoidal op
-        ==> !f g s. FINITE s
-                    ==> iterate op s (\x. op (f x) (g x)) =
-                        op (iterate op s f) (iterate op s g)`,
+        ==> !(f:A->B) g s.
+                FINITE s
+                ==> iterate op s (\x. op (f x) (g x)) =
+                    op (iterate op s f) (iterate op s g)`,
   GEN_TAC THEN DISCH_TAC THEN
   GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   ASM_SIMP_TAC[ITERATE_CLAUSES; MONOIDAL_AC]);;
@@ -809,9 +819,9 @@ let ITERATE_OP_GEN = prove
 let ITERATE_CLAUSES_NUMSEG = prove
  (`!op. monoidal op
         ==> (!m. iterate op (m..0) f = if m = 0 then f(0) else neutral op) /\
-            (!m n. iterate op (m..SUC n) f =
-                      if m <= SUC n then op (iterate op (m..n) f) (f(SUC n))
-                      else iterate op (m..n) f)`,
+            (!m n. iterate op (m..SUC n) f :A =
+                   if m <= SUC n then op (iterate op (m..n) f) (f(SUC n))
+                   else iterate op (m..n) f)`,
   REWRITE_TAC[NUMSEG_CLAUSES] THEN REPEAT STRIP_TAC THEN
   COND_CASES_TAC THEN
   ASM_SIMP_TAC[ITERATE_CLAUSES; FINITE_NUMSEG; IN_NUMSEG; FINITE_EMPTY] THEN
@@ -820,7 +830,7 @@ let ITERATE_CLAUSES_NUMSEG = prove
 
 let ITERATE_CLAUSES_NUMSEG_LT = prove
  (`!op. monoidal op
-        ==> iterate op {i | i < 0} f = neutral op /\
+        ==> iterate op {i | i < 0} f :A = neutral op /\
             (!k. iterate op {i | i < SUC k} f =
                  op (iterate op {i | i < k} f) (f k))`,
   SIMP_TAC[NUMSEG_CLAUSES_LT; ITERATE_CLAUSES; FINITE_NUMSEG_LT] THEN
@@ -828,7 +838,7 @@ let ITERATE_CLAUSES_NUMSEG_LT = prove
 
 let ITERATE_CLAUSES_NUMSEG_LE = prove
  (`!op. monoidal op
-        ==> iterate op {i | i <= 0} f = f 0 /\
+        ==> iterate op {i | i <= 0} f :A = f 0 /\
             (!k. iterate op {i | i <= SUC k} f =
                  op (iterate op {i | i <= k} f) (f(SUC k)))`,
   SIMP_TAC[NUMSEG_CLAUSES_LE; ITERATE_CLAUSES;
@@ -838,7 +848,7 @@ let ITERATE_CLAUSES_NUMSEG_LE = prove
 
 let ITERATE_PAIR = prove
  (`!op. monoidal op
-        ==> !f m n. iterate op (2*m..2*n+1) f =
+        ==> !f m n. iterate op (2*m..2*n+1) f :A =
                     iterate op (m..n) (\i. op (f(2*i)) (f(2*i+1)))`,
   GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
   INDUCT_TAC THEN CONV_TAC NUM_REDUCE_CONV THENL
@@ -1182,7 +1192,7 @@ let ITERATO_CLAUSES_NUMSEG_LEFT = prove
 (* ------------------------------------------------------------------------- *)
 
 let nproduct = new_definition
-  `nproduct = iterate(( * ):num->num->num)`;;
+  `nproduct:(A->bool)->(A->num)->num = iterate(( * ):num->num->num)`;;
 
 let NEUTRAL_MUL = prove
  (`neutral(( * ):num->num->num) = 1`,
@@ -1194,16 +1204,17 @@ let MONOIDAL_MUL = prove
   REWRITE_TAC[monoidal; NEUTRAL_MUL] THEN ARITH_TAC);;
 
 let NPRODUCT_CLAUSES = prove
- (`(!f. nproduct {} f = 1) /\
-   (!x f s. FINITE(s)
-            ==> (nproduct (x INSERT s) f =
-                 if x IN s then nproduct s f else f(x) * nproduct s f))`,
+ (`(!f:A->num. nproduct {} f = 1) /\
+   (!x (f:B->num) s.
+        FINITE(s)
+        ==> (nproduct (x INSERT s) f =
+             if x IN s then nproduct s f else f(x) * nproduct s f))`,
   REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_MUL]);;
 
 let iproduct = new_definition
-  `iproduct = iterate (( * ):int->int->int)`;;
+  `iproduct:(A->bool)->(A->int)->int = iterate (( * ):int->int->int)`;;
 
 let NEUTRAL_INT_MUL = prove
  (`neutral(( * ):int->int->int) = &1`,
@@ -1215,16 +1226,17 @@ let MONOIDAL_INT_MUL = prove
   REWRITE_TAC[monoidal; NEUTRAL_INT_MUL] THEN INT_ARITH_TAC);;
 
 let IPRODUCT_CLAUSES = prove
- (`(!f. iproduct {} f = &1) /\
-   (!x f s. FINITE(s)
-            ==> (iproduct (x INSERT s) f =
-                 if x IN s then iproduct s f else f(x) * iproduct s f))`,
+ (`(!f:A->int. iproduct {} f = &1) /\
+   (!x (f:B->int) s.
+        FINITE(s)
+        ==> (iproduct (x INSERT s) f =
+             if x IN s then iproduct s f else f(x) * iproduct s f))`,
   REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_INT_MUL]);;
 
 let product = new_definition
-  `product = iterate (( * ):real->real->real)`;;
+  `product:(A->bool)->(A->real)->real = iterate (( * ):real->real->real)`;;
 
 let NEUTRAL_REAL_MUL = prove
  (`neutral(( * ):real->real->real) = &1`,
@@ -1236,16 +1248,17 @@ let MONOIDAL_REAL_MUL = prove
   REWRITE_TAC[monoidal; NEUTRAL_REAL_MUL] THEN REAL_ARITH_TAC);;
 
 let PRODUCT_CLAUSES = prove
- (`(!f. product {} f = &1) /\
-   (!x f s. FINITE(s)
-            ==> (product (x INSERT s) f =
-                 if x IN s then product s f else f(x) * product s f))`,
+ (`(!f:A->real. product {} f = &1) /\
+   (!x (f:B->real) s.
+        FINITE(s)
+        ==> (product (x INSERT s) f =
+             if x IN s then product s f else f(x) * product s f))`,
   REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_REAL_MUL]);;
 
 let isum = new_definition
- `isum = iterate((+):int->int->int)`;;
+ `isum:(A->bool)->(A->int)->int = iterate((+):int->int->int)`;;
 
 let NEUTRAL_INT_ADD = prove
  (`neutral((+):int->int->int) = &0`,
@@ -1257,10 +1270,11 @@ let MONOIDAL_INT_ADD = prove
   REWRITE_TAC[monoidal; NEUTRAL_INT_ADD] THEN INT_ARITH_TAC);;
 
 let ISUM_CLAUSES = prove
- (`(!f. isum {} f = &0) /\
-   (!x f s. FINITE(s)
-            ==> (isum (x INSERT s) f =
-                 if x IN s then isum s f else f(x) + isum s f))`,
+ (`(!f:A->int. isum {} f = &0) /\
+   (!x (f:B->int) s.
+        FINITE(s)
+        ==> (isum (x INSERT s) f =
+             if x IN s then isum s f else f(x) + isum s f))`,
   REWRITE_TAC[isum; GSYM NEUTRAL_INT_ADD] THEN
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_INT_ADD]);;
@@ -1272,7 +1286,7 @@ let ISUM_CLAUSES = prove
 prioritize_num();;
 
 let nsum = new_definition
-  `nsum = iterate (+)`;;
+  `nsum:(A->bool)->(A->num)->num = iterate (+)`;;
 
 let NEUTRAL_ADD = prove
  (`neutral((+):num->num->num) = 0`,
@@ -1284,27 +1298,30 @@ let MONOIDAL_ADD = prove
   REWRITE_TAC[monoidal; NEUTRAL_ADD] THEN ARITH_TAC);;
 
 let NSUM_DEGENERATE = prove
- (`!f s. ~(FINITE {x | x IN s /\ ~(f x = 0)}) ==> nsum s f = 0`,
+ (`!f s:A->bool. ~(FINITE {x | x IN s /\ ~(f x = 0)}) ==> nsum s f = 0`,
   REPEAT GEN_TAC THEN REWRITE_TAC[nsum] THEN
   SIMP_TAC[iterate; support; NEUTRAL_ADD]);;
 
 let NSUM_CLAUSES = prove
- (`(!f. nsum {} f = 0) /\
-   (!x f s. FINITE(s)
-            ==> (nsum (x INSERT s) f =
-                 if x IN s then nsum s f else f(x) + nsum s f))`,
+ (`(!f:A->num. nsum {} f = 0) /\
+   (!x (f:B->num) s.
+        FINITE(s)
+        ==> (nsum (x INSERT s) f =
+             if x IN s then nsum s f else f(x) + nsum s f))`,
   REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_ADD]);;
 
 let NSUM_UNION = prove
- (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
-           ==> (nsum (s UNION t) f = nsum s f + nsum t f)`,
+ (`!f s t:A->bool.
+        FINITE s /\ FINITE t /\ DISJOINT s t
+        ==> nsum (s UNION t) f = nsum s f + nsum t f`,
   SIMP_TAC[nsum; ITERATE_UNION; MONOIDAL_ADD]);;
 
 let NSUM_DIFF = prove
- (`!f s t. FINITE s /\ t SUBSET s
-           ==> (nsum (s DIFF t) f = nsum s f - nsum t f)`,
+ (`!f s t:A->bool.
+        FINITE s /\ t SUBSET s
+        ==> nsum (s DIFF t) f = nsum s f - nsum t f`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(ARITH_RULE `(x + z = y:num) ==> (x = y - z)`) THEN
   ASM_SIMP_TAC[nsum; ITERATE_DIFF; MONOIDAL_ADD]);;
@@ -1317,22 +1334,23 @@ let NSUM_INCL_EXCL = prove
   MATCH_MP_TAC ITERATE_INCL_EXCL THEN REWRITE_TAC[MONOIDAL_ADD]);;
 
 let NSUM_SUPPORT = prove
- (`!f s. nsum (support (+) f s) f = nsum s f`,
+ (`!f s:A->bool. nsum (support (+) f s) f = nsum s f`,
   SIMP_TAC[nsum; iterate; SUPPORT_SUPPORT]);;
 
 let NSUM_ADD = prove
- (`!f g s. FINITE s ==> (nsum s (\x. f(x) + g(x)) = nsum s f + nsum s g)`,
+ (`!f g s:A->bool.
+        FINITE s ==> (nsum s (\x. f(x) + g(x)) = nsum s f + nsum s g)`,
   SIMP_TAC[nsum; ITERATE_OP; MONOIDAL_ADD]);;
 
 let NSUM_ADD_GEN = prove
- (`!f g s.
-       FINITE {x | x IN s /\ ~(f x = 0)} /\ FINITE {x | x IN s /\ ~(g x = 0)}
-       ==> nsum s (\x. f x + g x) = nsum s f + nsum s g`,
+ (`!f g s:A->bool.
+        FINITE {x | x IN s /\ ~(f x = 0)} /\ FINITE {x | x IN s /\ ~(g x = 0)}
+        ==> nsum s (\x. f x + g x) = nsum s f + nsum s g`,
   REWRITE_TAC[GSYM NEUTRAL_ADD; GSYM support; nsum] THEN
   MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_ADD);;
 
 let NSUM_EQ_0 = prove
- (`!f s. (!x:A. x IN s ==> (f(x) = 0)) ==> (nsum s f = 0)`,
+ (`!f s:A->bool. (!x. x IN s ==> f(x) = 0) ==> nsum s f = 0`,
   REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
   SIMP_TAC[ITERATE_EQ_NEUTRAL; MONOIDAL_ADD]);;
 
@@ -1358,16 +1376,17 @@ let NSUM_RMUL = prove
   ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[NSUM_LMUL]);;
 
 let NSUM_LE = prove
- (`!f g s. FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x))
-           ==> nsum s f <= nsum s g`,
+ (`!f g s:A->bool.
+        FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x))
+        ==> nsum s f <= nsum s g`,
   ONCE_REWRITE_TAC[IMP_CONJ] THEN
   GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[NSUM_CLAUSES; LE_REFL; LE_ADD2; IN_INSERT]);;
 
 let NSUM_LT = prove
  (`!f g s:A->bool.
-        FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) /\
-        (?x. x IN s /\ f(x) < g(x))
+         FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) /\
+         (?x. x IN s /\ f(x) < g(x))
          ==> nsum s f < nsum s g`,
   REPEAT GEN_TAC THEN
   REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
@@ -1378,23 +1397,24 @@ let NSUM_LT = prove
   ASM_SIMP_TAC[LTE_ADD2; NSUM_LE; IN_DELETE; FINITE_DELETE]);;
 
 let NSUM_LT_ALL = prove
- (`!f g s. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
-           ==> nsum s f < nsum s g`,
+ (`!f g s:A->bool.
+        FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
+        ==> nsum s f < nsum s g`,
   MESON_TAC[MEMBER_NOT_EMPTY; LT_IMP_LE; NSUM_LT]);;
 
 let NSUM_EQ = prove
- (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (nsum s f = nsum s g)`,
+ (`!f g s:A->bool. (!x. x IN s ==> f x = g x) ==> nsum s f = nsum s g`,
   REWRITE_TAC[nsum] THEN
   MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_ADD]);;
 
 let NSUM_CONST = prove
- (`!c s. FINITE s ==> (nsum s (\n. c) = (CARD s) * c)`,
+ (`!c s:A->bool. FINITE s ==> (nsum s (\n. c) = (CARD s) * c)`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[NSUM_CLAUSES; CARD_CLAUSES] THEN
   REPEAT STRIP_TAC THEN ARITH_TAC);;
 
 let NSUM_POS_BOUND = prove
- (`!f b s. FINITE s /\ nsum s f <= b ==> !x:A. x IN s ==> f x <= b`,
+ (`!f b s:A->bool. FINITE s /\ nsum s f <= b ==> !x:A. x IN s ==> f x <= b`,
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[NSUM_CLAUSES; NOT_IN_EMPTY; IN_INSERT] THEN
@@ -1402,7 +1422,7 @@ let NSUM_POS_BOUND = prove
    `0 <= x /\ 0 <= y /\ x + y <= b ==> x <= b /\ y <= b`]);;
 
 let NSUM_EQ_0_IFF = prove
- (`!s. FINITE s ==> (nsum s f = 0 <=> !x. x IN s ==> f x = 0)`,
+ (`!s:A->bool. FINITE s ==> (nsum s f = 0 <=> !x. x IN s ==> f x = 0)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[NSUM_EQ_0] THEN
   ASM_MESON_TAC[ARITH_RULE `n = 0 <=> n <= 0`; NSUM_POS_BOUND]);;
 
@@ -1419,11 +1439,11 @@ let NSUM_POS_LT_ALL = prove
   ASM_MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE]);;
 
 let NSUM_DELETE = prove
- (`!f s a. FINITE s /\ a IN s ==> f(a) + nsum(s DELETE a) f = nsum s f`,
+ (`!f s a:A. FINITE s /\ a IN s ==> f(a) + nsum(s DELETE a) f = nsum s f`,
   SIMP_TAC[nsum; ITERATE_DELETE; MONOIDAL_ADD]);;
 
 let NSUM_SING = prove
- (`!f x. nsum {x} f = f(x)`,
+ (`!f x:A. nsum {x} f = f(x)`,
   SIMP_TAC[NSUM_CLAUSES; FINITE_RULES; NOT_IN_EMPTY; ADD_CLAUSES]);;
 
 let NSUM_DELTA = prove
@@ -1440,8 +1460,9 @@ let NSUM_SWAP = prove
   SIMP_TAC[NSUM_CLAUSES; NSUM_0; NSUM_ADD; ETA_AX]);;
 
 let NSUM_IMAGE = prove
- (`!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
-           ==> (nsum (IMAGE f s) g = nsum s (g o f))`,
+ (`!(f:A->B) g s.
+        (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+        ==> (nsum (IMAGE f s) g = nsum s (g o f))`,
   REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
   MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_ADD]);;
 
@@ -1456,19 +1477,10 @@ let NSUM_UNIV = prove
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_UNIV THEN
   REWRITE_TAC[MONOIDAL_ADD]);;
 
-let ITERATE_UNIV = prove
- (`!op. monoidal op
-        ==> !f s. support op f UNIV SUBSET s
-                  ==> iterate op s f = iterate op UNIV f`,
-  REWRITE_TAC[support; SUBSET; IN_ELIM_THM] THEN
-  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
-  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_SUPERSET) THEN
-  ASM SET_TAC[]);;
-
 let NSUM_UNION_RZERO = prove
  (`!f:A->num u v.
         FINITE u /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = 0))
-        ==> (nsum (u UNION v) f = nsum u f)`,
+        ==> nsum (u UNION v) f = nsum u f`,
   let lemma = prove(`u UNION v = u UNION (v DIFF u)`,SET_TAC[]) in
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[lemma] THEN
   MATCH_MP_TAC NSUM_SUPERSET THEN ASM_MESON_TAC[IN_UNION; IN_DIFF; SUBSET]);;
@@ -1476,11 +1488,12 @@ let NSUM_UNION_RZERO = prove
 let NSUM_UNION_LZERO = prove
  (`!f:A->num u v.
         FINITE v /\ (!x. x IN u /\ ~(x IN v) ==> (f(x) = 0))
-        ==> (nsum (u UNION v) f = nsum v f)`,
+        ==> nsum (u UNION v) f = nsum v f`,
   MESON_TAC[NSUM_UNION_RZERO; UNION_COMM]);;
 
 let NSUM_RESTRICT = prove
- (`!f s. FINITE s ==> (nsum s (\x. if x IN s then f(x) else 0) = nsum s f)`,
+ (`!f s:A->bool.
+        FINITE s ==> nsum s (\x. if x IN s then f(x) else 0) = nsum s f`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC[]);;
 
 let NSUM_BOUND = prove
@@ -1505,8 +1518,8 @@ let NSUM_BOUND_LT = prove
     ASM_SIMP_TAC[NSUM_CONST; LE_REFL]]);;
 
 let NSUM_BOUND_LT_ALL = prove
- (`!s f b. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < b)
-           ==> nsum s f <  (CARD s) * b`,
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b)
+           ==> nsum s f < (CARD s) * b`,
   MESON_TAC[MEMBER_NOT_EMPTY; LT_IMP_LE; NSUM_BOUND_LT]);;
 
 let NSUM_BOUND_LT_GEN = prove
@@ -1519,8 +1532,9 @@ let NSUM_BOUND_LT_GEN = prove
     ASM_REWRITE_TAC[ARITH_RULE `a + 1 <= b <=> a < b`]]);;
 
 let NSUM_UNION_EQ = prove
- (`!s t u. FINITE u /\ (s INTER t = {}) /\ (s UNION t = u)
-           ==> (nsum s f + nsum t f = nsum u f)`,
+ (`!s t u:A->bool.
+        FINITE u /\ (s INTER t = {}) /\ (s UNION t = u)
+        ==> nsum s f + nsum t f = nsum u f`,
   MESON_TAC[NSUM_UNION; DISJOINT; FINITE_SUBSET; SUBSET_UNION]);;
 
 let NSUM_EQ_SUPERSET = prove
@@ -1537,7 +1551,7 @@ let NSUM_RESTRICT_SET = prove
   MATCH_MP_TAC ITERATE_RESTRICT_SET THEN REWRITE_TAC[MONOIDAL_ADD]);;
 
 let NSUM_NSUM_RESTRICT = prove
- (`!R f s t.
+ (`!(R:A->B->bool) f s t.
         FINITE s /\ FINITE t
         ==> (nsum s (\x. nsum {y | y IN t /\ R x y} (\y. f x y)) =
              nsum t (\y. nsum {x | x IN s /\ R x y} (\x. f x y)))`,
@@ -1545,7 +1559,7 @@ let NSUM_NSUM_RESTRICT = prove
   DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP NSUM_SWAP th]));;
 
 let CARD_EQ_NSUM = prove
- (`!s. FINITE s ==> ((CARD s) = nsum s (\x. 1))`,
+ (`!s:A->bool. FINITE s ==> ((CARD s) = nsum s (\x. 1))`,
   SIMP_TAC[NSUM_CONST; MULT_CLAUSES]);;
 
 let NSUM_MULTICOUNT_GEN = prove
@@ -1621,7 +1635,7 @@ let NSUM_SUBSET = prove
   ASM_SIMP_TAC[NSUM_EQ_0] THEN ARITH_TAC);;
 
 let NSUM_SUBSET_SIMPLE = prove
- (`!u v f. FINITE v /\ u SUBSET v ==> nsum u f <= nsum v f`,
+ (`!u v f:A->num. FINITE v /\ u SUBSET v ==> nsum u f <= nsum v f`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_SUBSET THEN
   ASM_MESON_TAC[IN_DIFF; SUBSET; FINITE_SUBSET]);;
 
@@ -1661,9 +1675,9 @@ let NSUM_IMAGE_NONZERO = prove
 
 let NSUM_BIJECTION = prove
  (`!f p s:A->bool.
-                (!x. x IN s ==> p(x) IN s) /\
-                (!y. y IN s ==> ?!x. x IN s /\ p(x) = y)
-                ==> nsum s f = nsum s (f o p)`,
+        (!x. x IN s ==> p(x) IN s) /\
+        (!y. y IN s ==> ?!x. x IN s /\ p(x) = y)
+        ==> nsum s f = nsum s (f o p)`,
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_BIJECTION THEN
   REWRITE_TAC[MONOIDAL_ADD]);;
 
@@ -1692,16 +1706,18 @@ let NSUM_EQ_GENERAL_INVERSES = prove
   REWRITE_TAC[MONOIDAL_ADD]);;
 
 let NSUM_INJECTION = prove
- (`!f p s. FINITE s /\
-           (!x. x IN s ==> p x IN s) /\
-           (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
-           ==> nsum s (f o p) = nsum s f`,
+ (`!f p s:A->bool.
+        FINITE s /\
+        (!x. x IN s ==> p x IN s) /\
+        (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
+        ==> nsum s (f o p) = nsum s f`,
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
   REWRITE_TAC[MONOIDAL_ADD]);;
 
 let NSUM_UNION_NONZERO = prove
- (`!f s t. FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> f(x) = 0)
-           ==> nsum (s UNION t) f = nsum s f + nsum t f`,
+ (`!f s t:A->bool.
+        FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> f(x) = 0)
+        ==> nsum (s UNION t) f = nsum s f + nsum t f`,
   REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
   MATCH_MP_TAC ITERATE_UNION_NONZERO THEN REWRITE_TAC[MONOIDAL_ADD]);;
 
@@ -1889,12 +1905,13 @@ let CONG_NSUM = prove
   CONV_TAC NUMBER_RULE);;
 
 let th = prove
- (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
-              ==> nsum s (\i. f(i)) = nsum s g) /\
+ (`(!f g s:A->bool.
+        (!x. x IN s ==> f(x) = g(x))
+        ==> nsum s (\i. f(i)) = nsum s g) /\
    (!f g a b. (!i. a <= i /\ i <= b ==> f(i) = g(i))
               ==> nsum(a..b) (\i. f(i)) = nsum(a..b) g) /\
-   (!f g p.   (!x. p x ==> f x = g x)
-              ==> nsum {y | p y} (\i. f(i)) = nsum {y | p y} g)`,
+   (!f g p. (!x. p x ==> f x = g x)
+            ==> nsum {y | p y} (\i. f(i)) = nsum {y | p y} g)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ THEN
   ASM_SIMP_TAC[IN_ELIM_THM; IN_NUMSEG]) in
   extend_basic_congs (map SPEC_ALL (CONJUNCTS th));;
@@ -1958,7 +1975,7 @@ let EXPAND_NSUM_CONV =
 prioritize_real();;
 
 let sum = new_definition
-  `sum = iterate (+)`;;
+  `sum:(A->bool)->(A->real)->real = iterate (+)`;;
 
 let NEUTRAL_REAL_ADD = prove
  (`neutral((+):real->real->real) = &0`,
@@ -1970,26 +1987,28 @@ let MONOIDAL_REAL_ADD = prove
   REWRITE_TAC[monoidal; NEUTRAL_REAL_ADD] THEN REAL_ARITH_TAC);;
 
 let SUM_DEGENERATE = prove
- (`!f s. ~(FINITE {x | x IN s /\ ~(f x = &0)}) ==> sum s f = &0`,
+ (`!f s:A->bool. ~(FINITE {x | x IN s /\ ~(f x = &0)}) ==> sum s f = &0`,
   REPEAT GEN_TAC THEN REWRITE_TAC[sum] THEN
   SIMP_TAC[iterate; support; NEUTRAL_REAL_ADD]);;
 
 let SUM_CLAUSES = prove
- (`(!f. sum {} f = &0) /\
-   (!x f s. FINITE(s)
-            ==> (sum (x INSERT s) f =
-                 if x IN s then sum s f else f(x) + sum s f))`,
+ (`(!f:A->real. sum {} f = &0) /\
+   (!x (f:B->real) s.
+        FINITE(s)
+        ==> (sum (x INSERT s) f =
+             if x IN s then sum s f else f(x) + sum s f))`,
   REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_UNION = prove
- (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
-           ==> (sum (s UNION t) f = sum s f + sum t f)`,
+ (`!f s t:A->bool.
+        FINITE s /\ FINITE t /\ DISJOINT s t
+        ==> sum (s UNION t) f = sum s f + sum t f`,
   SIMP_TAC[sum; ITERATE_UNION; MONOIDAL_REAL_ADD]);;
 
 let SUM_DIFF = prove
- (`!f s t. FINITE s /\ t SUBSET s ==> (sum (s DIFF t) f = sum s f - sum t f)`,
+ (`!f s t:A->bool. FINITE s /\ t SUBSET s ==> (sum (s DIFF t) f = sum s f - sum t f)`,
   SIMP_TAC[REAL_EQ_SUB_LADD; sum; ITERATE_DIFF; MONOIDAL_REAL_ADD]);;
 
 let SUM_INCL_EXCL = prove
@@ -2000,15 +2019,15 @@ let SUM_INCL_EXCL = prove
   MATCH_MP_TAC ITERATE_INCL_EXCL THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_SUPPORT = prove
- (`!f s. sum (support (+) f s) f = sum s f`,
+ (`!f s:A->bool. sum (support (+) f s) f = sum s f`,
   SIMP_TAC[sum; iterate; SUPPORT_SUPPORT]);;
 
 let SUM_ADD = prove
- (`!f g s. FINITE s ==> (sum s (\x. f(x) + g(x)) = sum s f + sum s g)`,
+ (`!f g s:A->bool. FINITE s ==> (sum s (\x. f(x) + g(x)) = sum s f + sum s g)`,
   SIMP_TAC[sum; ITERATE_OP; MONOIDAL_REAL_ADD]);;
 
 let SUM_ADD_GEN = prove
- (`!f g s.
+ (`!f g s:A->bool.
        FINITE {x | x IN s /\ ~(f x = &0)} /\ FINITE {x | x IN s /\ ~(g x = &0)}
        ==> sum s (\x. f x + g x) = sum s f + sum s g`,
   REWRITE_TAC[GSYM NEUTRAL_REAL_ADD; GSYM support; sum] THEN
@@ -2042,16 +2061,17 @@ let SUM_RMUL = prove
   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[SUM_LMUL]);;
 
 let SUM_NEG = prove
- (`!f s. sum s (\x. --(f(x))) = --(sum s f)`,
+ (`!f s:A->bool. sum s (\x. --(f(x))) = --(sum s f)`,
   ONCE_REWRITE_TAC[REAL_ARITH `--x = --(&1) * x`] THEN
   SIMP_TAC[SUM_LMUL]);;
 
 let SUM_SUB = prove
- (`!f g s. FINITE s ==> (sum s (\x. f(x) - g(x)) = sum s f - sum s g)`,
+ (`!f g s:A->bool. FINITE s ==> sum s (\x. f(x) - g(x)) = sum s f - sum s g`,
   ONCE_REWRITE_TAC[real_sub] THEN SIMP_TAC[SUM_NEG; SUM_ADD]);;
 
 let SUM_LE = prove
- (`!f g s. FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) ==> sum s f <= sum s g`,
+ (`!f g s:A->bool.
+        FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) ==> sum s f <= sum s g`,
   ONCE_REWRITE_TAC[IMP_CONJ] THEN
   GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; REAL_LE_REFL; REAL_LE_ADD2; IN_INSERT]);;
@@ -2070,8 +2090,9 @@ let SUM_LT = prove
   ASM_SIMP_TAC[REAL_LTE_ADD2; SUM_LE; IN_DELETE; FINITE_DELETE]);;
 
 let SUM_LT_ALL = prove
- (`!f g s. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
-           ==> sum s f < sum s g`,
+ (`!f g s:A->bool.
+        FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
+        ==> sum s f < sum s g`,
   MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE; SUM_LT]);;
 
 let SUM_POS_LT = prove
@@ -2093,18 +2114,18 @@ let SUM_POS_LT_ALL = prove
   ASM_MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE]);;
 
 let SUM_EQ = prove
- (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (sum s f = sum s g)`,
+ (`!f g s:A->bool. (!x. x IN s ==> (f x = g x)) ==> (sum s f = sum s g)`,
   REWRITE_TAC[sum] THEN
   MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_ABS = prove
- (`!f s. FINITE(s) ==> abs(sum s f) <= sum s (\x. abs(f x))`,
+ (`!f s:A->bool. FINITE(s) ==> abs(sum s f) <= sum s (\x. abs(f x))`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; REAL_ABS_NUM; REAL_LE_REFL;
            REAL_ARITH `abs(a) <= b ==> abs(x + a) <= abs(x) + b`]);;
 
 let SUM_ABS_LE = prove
- (`!f:A->real g s.
+ (`!f:A->real g s:A->bool.
         FINITE s /\ (!x. x IN s ==> abs(f x) <= g x)
         ==> abs(sum s f) <= sum s g`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
@@ -2113,7 +2134,7 @@ let SUM_ABS_LE = prove
   ASM_REWRITE_TAC[]);;
 
 let SUM_CONST = prove
- (`!c s. FINITE s ==> (sum s (\n. c) = &(CARD s) * c)`,
+ (`!c s:A->bool. FINITE s ==> (sum s (\n. c) = &(CARD s) * c)`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; CARD_CLAUSES; GSYM REAL_OF_NUM_SUC] THEN
   REPEAT STRIP_TAC THEN REAL_ARITH_TAC);;
@@ -2130,8 +2151,9 @@ let SUM_POS_LE = prove
   ASM_SIMP_TAC[SUM_0; IN_ELIM_THM]);;
 
 let SUM_POS_BOUND = prove
- (`!f b s. FINITE s /\ (!x. x IN s ==> &0 <= f x) /\ sum s f <= b
-           ==> !x:A. x IN s ==> f x <= b`,
+ (`!f b s:A->bool.
+        FINITE s /\ (!x. x IN s ==> &0 <= f x) /\ sum s f <= b
+        ==> !x:A. x IN s ==> f x <= b`,
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; NOT_IN_EMPTY; IN_INSERT] THEN
@@ -2139,8 +2161,9 @@ let SUM_POS_BOUND = prove
    REAL_ARITH `&0 <= x /\ &0 <= y /\ x + y <= b ==> x <= b /\ y <= b`]);;
 
 let SUM_POS_EQ_0 = prove
- (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f x) /\ (sum s f = &0)
-         ==> !x. x IN s ==> f x = &0`,
+ (`!f s:A->bool.
+        FINITE s /\ (!x. x IN s ==> &0 <= f x) /\ (sum s f = &0)
+        ==> !x. x IN s ==> f x = &0`,
   REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN
   MESON_TAC[SUM_POS_BOUND; SUM_POS_LE]);;
 
@@ -2158,19 +2181,19 @@ let SUM_ZERO_EXISTS = prove
   MATCH_MP_TAC SUM_POS_EQ_0 THEN ASM_REWRITE_TAC[SUM_NEG; REAL_NEG_0]);;
 
 let SUM_DELETE = prove
- (`!f s a. FINITE s /\ a IN s ==> sum (s DELETE a) f = sum s f - f(a)`,
+ (`!f s a:A. FINITE s /\ a IN s ==> sum (s DELETE a) f = sum s f - f(a)`,
   SIMP_TAC[REAL_ARITH `y = z - x <=> x + y = z:real`; sum; ITERATE_DELETE;
            MONOIDAL_REAL_ADD]);;
 
 let SUM_DELETE_CASES = prove
- (`!f s a. FINITE s
-           ==> sum (s DELETE a) f = if a IN s then sum s f - f(a)
-                                    else sum s f`,
+ (`!f s a:A. FINITE s
+             ==> sum (s DELETE a) f = if a IN s then sum s f - f(a)
+                                      else sum s f`,
   REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
   ASM_SIMP_TAC[SET_RULE `~(a IN s) ==> (s DELETE a = s)`; SUM_DELETE]);;
 
 let SUM_SING = prove
- (`!f x. sum {x} f = f(x)`,
+ (`!f x:A. sum {x} f = f(x)`,
   SIMP_TAC[SUM_CLAUSES; FINITE_RULES; NOT_IN_EMPTY; REAL_ADD_RID]);;
 
 let SUM_DELTA = prove
@@ -2187,8 +2210,9 @@ let SUM_SWAP = prove
   SIMP_TAC[SUM_CLAUSES; SUM_0; SUM_ADD; ETA_AX]);;
 
 let SUM_IMAGE = prove
- (`!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
-           ==> (sum (IMAGE f s) g = sum s (g o f))`,
+ (`!(f:A->B) g s.
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> sum (IMAGE f s) g = sum s (g o f)`,
   REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
   MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
@@ -2206,7 +2230,7 @@ let SUM_UNIV = prove
 let SUM_UNION_RZERO = prove
  (`!f:A->real u v.
         FINITE u /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = &0))
-        ==> (sum (u UNION v) f = sum u f)`,
+        ==> sum (u UNION v) f = sum u f`,
   let lemma = prove(`u UNION v = u UNION (v DIFF u)`,SET_TAC[]) in
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[lemma] THEN
   MATCH_MP_TAC SUM_SUPERSET THEN
@@ -2215,11 +2239,12 @@ let SUM_UNION_RZERO = prove
 let SUM_UNION_LZERO = prove
  (`!f:A->real u v.
         FINITE v /\ (!x. x IN u /\ ~(x IN v) ==> (f(x) = &0))
-        ==> (sum (u UNION v) f = sum v f)`,
+        ==> sum (u UNION v) f = sum v f`,
   MESON_TAC[SUM_UNION_RZERO; UNION_COMM]);;
 
 let SUM_RESTRICT = prove
- (`!f s. FINITE s ==> (sum s (\x. if x IN s then f(x) else &0) = sum s f)`,
+ (`!f s:A->bool.
+        FINITE s ==> sum s (\x. if x IN s then f(x) else &0) = sum s f`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_EQ THEN ASM_SIMP_TAC[]);;
 
 let SUM_BOUND = prove
@@ -2249,7 +2274,7 @@ let SUM_BOUND_LT = prove
     ASM_SIMP_TAC[SUM_CONST; REAL_LE_REFL]]);;
 
 let SUM_BOUND_LT_ALL = prove
- (`!s f b. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < b)
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b)
            ==> sum s f <  &(CARD s) * b`,
   MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE; SUM_BOUND_LT]);;
 
@@ -2260,8 +2285,9 @@ let SUM_BOUND_LT_GEN = prove
             HAS_SIZE]);;
 
 let SUM_UNION_EQ = prove
- (`!s t u. FINITE u /\ (s INTER t = {}) /\ (s UNION t = u)
-           ==> (sum s f + sum t f = sum u f)`,
+ (`!s t u:A->bool.
+        FINITE u /\ s INTER t = {} /\ s UNION t = u
+        ==> sum s f + sum t f = sum u f`,
   MESON_TAC[SUM_UNION; DISJOINT; FINITE_SUBSET; SUBSET_UNION]);;
 
 let SUM_EQ_SUPERSET = prove
@@ -2273,12 +2299,12 @@ let SUM_EQ_SUPERSET = prove
   MESON_TAC[SUM_SUPERSET; SUM_EQ]);;
 
 let SUM_RESTRICT_SET = prove
- (`!P s f. sum {x | x IN s /\ P x} f = sum s (\x. if P x then f x else &0)`,
+ (`!P s f. sum {x:A | x IN s /\ P x} f = sum s (\x. if P x then f x else &0)`,
   REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
   MATCH_MP_TAC ITERATE_RESTRICT_SET THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_SUM_RESTRICT = prove
- (`!R f s t.
+ (`!(R:A->B->bool) f s t.
         FINITE s /\ FINITE t
         ==> (sum s (\x. sum {y | y IN t /\ R x y} (\y. f x y)) =
              sum t (\y. sum {x | x IN s /\ R x y} (\x. f x y)))`,
@@ -2286,7 +2312,7 @@ let SUM_SUM_RESTRICT = prove
   DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP SUM_SWAP th]));;
 
 let CARD_EQ_SUM = prove
- (`!s. FINITE s ==> (&(CARD s) = sum s (\x. &1))`,
+ (`!s:A->bool. FINITE s ==> (&(CARD s) = sum s (\x. &1))`,
   SIMP_TAC[SUM_CONST; REAL_MUL_RID]);;
 
 let SUM_MULTICOUNT_GEN = prove
@@ -2351,7 +2377,7 @@ let SUM_GROUP_RELATION = prove
   AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
 
 let REAL_OF_NUM_SUM = prove
- (`!f s. FINITE s ==> (&(nsum s f) = sum s (\x. &(f x)))`,
+ (`!f s:A->bool. FINITE s ==> (&(nsum s f) = sum s (\x. &(f x)))`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; NSUM_CLAUSES; GSYM REAL_OF_NUM_ADD]);;
 
@@ -2374,9 +2400,9 @@ let SUM_SUBSET = prove
   ASM_SIMP_TAC[FINITE_DIFF; REAL_LE_RNEG; REAL_ADD_LID]);;
 
 let SUM_SUBSET_SIMPLE = prove
- (`!u v f. FINITE v /\ u SUBSET v /\ (!x:A. x IN (v DIFF u) ==> &0 <= f(x))
-
-           ==> sum u f <= sum v f`,
+ (`!u v f.
+        FINITE v /\ u SUBSET v /\ (!x:A. x IN (v DIFF u) ==> &0 <= f(x))
+        ==> sum u f <= sum v f`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_SUBSET THEN
   ASM_MESON_TAC[IN_DIFF; SUBSET; FINITE_SUBSET]);;
 
@@ -2401,9 +2427,9 @@ let SUM_IMAGE_NONZERO = prove
 
 let SUM_BIJECTION = prove
  (`!f p s:A->bool.
-                (!x. x IN s ==> p(x) IN s) /\
-                (!y. y IN s ==> ?!x. x IN s /\ p(x) = y)
-                ==> sum s f = sum s (f o p)`,
+        (!x. x IN s ==> p(x) IN s) /\
+        (!y. y IN s ==> ?!x. x IN s /\ p(x) = y)
+        ==> sum s f = sum s (f o p)`,
   REWRITE_TAC[sum] THEN MATCH_MP_TAC ITERATE_BIJECTION THEN
   REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
@@ -2432,7 +2458,8 @@ let SUM_EQ_GENERAL_INVERSES = prove
   REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_INJECTION = prove
- (`!f p s. FINITE s /\
+ (`!f p s:A->bool.
+           FINITE s /\
            (!x. x IN s ==> p x IN s) /\
            (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
            ==> sum s (f o p) = sum s f`,
@@ -2440,8 +2467,9 @@ let SUM_INJECTION = prove
   REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_UNION_NONZERO = prove
- (`!f s t. FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> f(x) = &0)
-           ==> sum (s UNION t) f = sum s f + sum t f`,
+ (`!f s t:A->bool.
+        FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> f(x) = &0)
+        ==> sum (s UNION t) f = sum s f + sum t f`,
   REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
   MATCH_MP_TAC ITERATE_UNION_NONZERO THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
@@ -2468,8 +2496,8 @@ let SUM_CASES = prove
   MATCH_MP_TAC ITERATE_CASES THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_CASES_1 = prove
- (`!s a. FINITE s /\ a IN s
-         ==> sum s (\x. if x = a then y else f(x)) = sum s f + (y - f a)`,
+ (`!s a:A. FINITE s /\ a IN s
+           ==> sum s (\x. if x = a then y else f(x)) = sum s f + (y - f a)`,
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SUM_CASES] THEN
   ASM_SIMP_TAC[GSYM DELETE; SUM_DELETE] THEN
   ASM_SIMP_TAC[SET_RULE `a IN s ==> {x | x IN s /\ x = a} = {a}`] THEN
@@ -2746,12 +2774,13 @@ let SUM_COMBINE_L = prove
 (* ------------------------------------------------------------------------- *)
 
 let th = prove
- (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
-              ==> sum s (\i. f(i)) = sum s g) /\
+ (`(!f g s:A->bool.
+        (!x. x IN s ==> f(x) = g(x))
+        ==> sum s (\i. f(i)) = sum s g) /\
    (!f g a b. (!i. a <= i /\ i <= b ==> f(i) = g(i))
               ==> sum(a..b) (\i. f(i)) = sum(a..b) g) /\
-   (!f g p.   (!x. p x ==> f x = g x)
-              ==> sum {y | p y} (\i. f(i)) = sum {y | p y} g)`,
+   (!f g p. (!x. p x ==> f x = g x)
+            ==> sum {y | p y} (\i. f(i)) = sum {y | p y} g)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_EQ THEN
   ASM_SIMP_TAC[IN_ELIM_THM; IN_NUMSEG]) in
   extend_basic_congs (map SPEC_ALL (CONJUNCTS th));;

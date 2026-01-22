@@ -128,12 +128,24 @@ let ANTICHAIN_SUBSET = prove
 (* ------------------------------------------------------------------------- *)
 
 let QOSET_REFL = prove
+ (`!l:A->A->bool. qoset l ==> !x. fld(l) x ==> l x x`,
+  REWRITE_TAC[qoset; IN] THEN MESON_TAC[]);;
+
+let QOSET_TRANS = prove
+ (`!l:A->A->bool. qoset l ==> !x y z. l x y /\ l y z ==> l x z`,
+  REWRITE_TAC[qoset] THEN MESON_TAC[]);;
+
+let QOSET_REFL_EQ = prove
  (`!l (x:A). qoset l ==> (l x x <=> x IN fld l)`,
   REWRITE_TAC[qoset; fld; IN_ELIM_THM] THEN MESON_TAC[]);;
 
+let QOSET_FLDEQ = prove
+ (`!l:A->A->bool. qoset l ==> (!x. fld(l) x <=> l x x)`,
+  MESON_TAC[QOSET_REFL_EQ; IN]);;
+
 let QOSET_FLD = prove
  (`!l:A->A->bool. qoset l ==> fld l = {x | l x x}`,
-  SIMP_TAC[QOSET_REFL] THEN SET_TAC[]);;
+  SIMP_TAC[QOSET_REFL_EQ] THEN SET_TAC[]);;
 
 let WOSET_IMP_TOSET = prove
  (`!l:A->A->bool. woset l ==> toset l`,
@@ -1388,8 +1400,9 @@ let SUBWOSET_ISO_INSEG = prove
 (* ======================================================================== *)
 
 let HP = prove
- (`!l:A->A->bool. poset l ==>
-        ?P. chain(l) P /\ !Q. chain(l) Q  /\ P SUBSET Q ==> (Q = P)`,
+ (`!l:A->A->bool.
+        qoset l
+        ==> ?P. chain(l) P /\ !Q. chain(l) Q  /\ P SUBSET Q ==> Q = P`,
   GEN_TAC THEN DISCH_TAC THEN
   X_CHOOSE_THEN `w:A->A->bool` MP_TAC (SPEC `\x:A. T` WO) THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
@@ -1407,7 +1420,7 @@ let HP = prove
       GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
     REWRITE_TAC[] THEN DISCH_TAC THEN
     DISCH_THEN(MP_TAC o SPECL [`u:A`; `u:A`]) THEN
-    IMP_RES_THEN(ASSUME_TAC o GSYM) POSET_FLDEQ THEN ASM_REWRITE_TAC[]] THEN
+    IMP_RES_THEN(ASSUME_TAC o GSYM) QOSET_FLDEQ THEN ASM_REWRITE_TAC[]] THEN
   SUBGOAL_THEN
     `?f. !x. f x = if fld(l) x /\
                       !y. properly w  y x ==> l x (f y) \/ l (f y) x
@@ -1419,7 +1432,7 @@ let HP = prove
       REWRITE_TAC[] THEN REPEAT GEN_TAC THEN
       REPEAT COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
       ASM_MESON_TAC[]]; ALL_TAC] THEN
-  IMP_RES_THEN(IMP_RES_THEN ASSUME_TAC) POSET_REFL THEN
+  IMP_RES_THEN(IMP_RES_THEN ASSUME_TAC) QOSET_REFL THEN
   SUBGOAL_THEN `(f:A->A) b = b` ASSUME_TAC THENL
    [FIRST_ASSUM(SUBST1_TAC o SYM o SPEC `b:A`) THEN
     REWRITE_TAC[COND_ID] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
@@ -1443,7 +1456,7 @@ let HP = prove
     IMP_RES_THEN(MP_TAC o SPECL [`x:A`; `y:A`]) WOSET_TOTAL_LT THEN
     ASM_REWRITE_TAC[] THEN
     DISCH_THEN(REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC) THENL
-     [ASM_REWRITE_TAC[] THEN IMP_RES_THEN MATCH_MP_TAC POSET_REFL;
+     [ASM_REWRITE_TAC[] THEN IMP_RES_THEN MATCH_MP_TAC QOSET_REFL;
       ONCE_REWRITE_TAC[DISJ_SYM] THEN
       FIRST_ASSUM(SUBST1_TAC o SYM o SPEC `y:A`);
       FIRST_ASSUM(SUBST1_TAC o SYM o SPEC `x:A`)] THEN
@@ -1474,46 +1487,51 @@ let HP = prove
 
 (* ======================================================================== *)
 (* (4) HAUSDORFF MAXIMAL PRINCIPLE ==> ZORN'S LEMMA                         *)
+(* The version for qosets (preorders) is proved first as ZL_STRONG.         *)
 (* ======================================================================== *)
 
-let ZL = prove
- (`!l:A->A->bool. poset l /\
-           (!P. chain(l) P ==> (?y. fld(l) y /\ !x. P x ==> l x y)) ==>
-        ?y. fld(l) y /\ !x. l y x ==> (y = x)`,
-  GEN_TAC THEN STRIP_TAC THEN
+let ZL_STRONG = prove
+ (`!l:A->A->bool.
+        qoset l /\
+        (!c. chain(l) c ==> ?y. y IN fld(l) /\ !x. x IN c ==> l x y)
+        ==> ?y. y IN fld(l) /\ !x. l y x ==> l x y`,
+  REWRITE_TAC[IN] THEN GEN_TAC THEN STRIP_TAC THEN
   FIRST_ASSUM(X_CHOOSE_THEN `M:A->bool` STRIP_ASSUME_TAC o MATCH_MP HP) THEN
-  UNDISCH_TAC `!P. chain(l:A->A->bool) P
-                   ==> (?y. fld(l) y /\ !x. P x ==> l x y)` THEN
+  UNDISCH_TAC `!c. chain(l:A->A->bool) c
+                   ==> (?y. fld(l) y /\ !x. c x ==> l x y)` THEN
   DISCH_THEN(MP_TAC o SPEC `M:A->bool`) THEN ASM_REWRITE_TAC[] THEN
   DISCH_THEN(X_CHOOSE_THEN `m:A` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `m:A` THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `z:A` THEN
-  DISCH_TAC THEN GEN_REWRITE_TAC I [TAUT `a <=> ~ ~a`] THEN DISCH_TAC THEN
-  SUBGOAL_THEN `chain(l) (\x:A. M x \/ (x = z))` MP_TAC THENL
+  DISCH_TAC THEN
+  SUBGOAL_THEN `chain(l) (\x:A. M x \/ x = z)` MP_TAC THENL
    [REWRITE_TAC[chain; IN] THEN BETA_TAC THEN REPEAT GEN_TAC THEN
     DISCH_THEN(CONJUNCTS_THEN DISJ_CASES_TAC) THEN
     ASM_REWRITE_TAC[] THENL
      [UNDISCH_TAC `chain(l:A->A->bool) M` THEN REWRITE_TAC[chain; IN] THEN
       DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[];
-      DISJ1_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP POSET_TRANS) THEN
+      DISJ1_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP QOSET_TRANS) THEN
       EXISTS_TAC `m:A` THEN ASM_REWRITE_TAC[] THEN
       FIRST_ASSUM MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC;
-      DISJ2_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP POSET_TRANS) THEN
+      DISJ2_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP QOSET_TRANS) THEN
       EXISTS_TAC `m:A` THEN ASM_REWRITE_TAC[] THEN
       FIRST_ASSUM MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC;
-      FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP POSET_REFL) THEN
+      FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP QOSET_REFL) THEN
       REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN EXISTS_TAC `m:A` THEN
       ASM_REWRITE_TAC[]];
     ALL_TAC] THEN
-  SUBGOAL_THEN `M SUBSET (\x:A. M x \/ (x = z))` MP_TAC THENL
+  SUBGOAL_THEN `M SUBSET (\x:A. M x \/ x = z)` MP_TAC THENL
    [REWRITE_TAC[SUBSET_PRED] THEN GEN_TAC THEN BETA_TAC THEN
     DISCH_THEN(fun th -> REWRITE_TAC[th]); ALL_TAC] THEN
-  GEN_REWRITE_TAC I [TAUT `(a ==> b ==> c) <=> (b /\ a ==> c)`] THEN
-  DISCH_THEN(fun th -> FIRST_ASSUM(MP_TAC o C MATCH_MP th)) THEN
-  REWRITE_TAC[] THEN GEN_REWRITE_TAC RAND_CONV [FUN_EQ_THM] THEN
-  DISCH_THEN(MP_TAC o SPEC `z:A`) THEN BETA_TAC THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(fun th -> FIRST_ASSUM(ASSUME_TAC o C MATCH_MP th)) THEN
-  FIRST_ASSUM(MP_TAC o SPECL [`m:A`; `z:A`] o MATCH_MP POSET_ANTISYM) THEN
-  ASM_REWRITE_TAC[]);;
+  ASM_MESON_TAC[]);;
+
+let ZL = prove
+ (`!l:A->A->bool.
+        poset l /\
+        (!P. chain(l) P ==> ?y. fld(l) y /\ !x. P x ==> l x y)
+        ==> ?y. fld(l) y /\ !x. l y x ==> y = x`,
+  GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(REWRITE_RULE[IN] (ISPEC `l:A->A->bool` ZL_STRONG)) THEN
+  ASM_SIMP_TAC[POSET_IMP_QOSET] THEN ASM_MESON_TAC[POSET_ANTISYM]);;
 
 (* ======================================================================== *)
 (* (5) ZORN'S LEMMA ==> KURATOWSKI'S LEMMA                                  *)

@@ -1,0 +1,77 @@
+\DOC use_file_raise_failure
+
+\TYPE {use_file_raise_failure : bool ref}
+
+\SYNOPSIS
+Flag determining whether unsuccessful loading of an OCaml file must raise
+{Failure}.
+
+\DESCRIBE
+The reference variable {use_file_raise_failure} is used by the function
+{use_file} to determine whether an unsuccessful loading of a source file must
+raise {Failure} or simply print an error message on the screen.
+The default value is {false}.
+The behavior of {loads} and {loadt} are also affected by this flag because they
+internally invoke {use_file}.
+
+If this flag is set to {true}, recursive loading will immediately fail after any
+unsuccessful loading of a source file.
+This is helpful for pinpointing the failing location from loading multiple source
+files.
+On the other hand, this will cause Toplevel forget all OCaml bindings
+(`{let .. = ..;;}') that have been made during the load before the erroneous point,
+leading to a state whose OCaml definitions and constant definitions in HOL Light
+are inconsistent.
+
+If this flag is set to {false}, unsuccessful loading will simply print a error
+message and continue to the next statement.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+Consider {a.ml} that has the following text:
+{
+   loadt "b.ml";;
+   print_endline "b.ml loaded";;
+}
+\noindent and {b.ml}:
+{
+   undefined_var := 3;; (* Raises a failure *)
+}
+
+If {use_file_raise_failure} is set to {false} (which is default), the message
+in {a.ml} is printed even if {b.ml} fails.
+{
+   # loadt "a.ml";;
+   File "/home/ubuntu/hol-light-aqjune/b.ml", line 1, characters 0-13:
+                              1 | undefined_var := 3;; (* Raises a failure *)
+                                  ^^^^^^^^^^^^^
+                              Error: Unbound value undefined_var
+   Error in included file /home/ubuntu/hol-light-aqjune/b.ml
+   - : unit = ()
+   b.ml loaded
+   - : unit = ()
+   val it : unit = ()
+}
+However, if it is set to {true}, the message is not printed because loading
+{a.ml} also fails immediately after loading {b.ml}.
+Also, the stack trace is printed because the failure reaches to the top level.
+{
+   # use_file_raise_failure := true;;
+   val it : unit = ()
+   # loadt "a.ml";;
+   File "/home/ubuntu/hol-light-aqjune/b.ml", line 1, characters 0-13:
+   1 | undefined_var := 3;; (* Raises a failure *)
+       ^^^^^^^^^^^^^
+   Error: Unbound value undefined_var
+   Exception:
+   Failure "Error in included file /home/ubuntu/hol-light-aqjune/b.ml".
+   Exception:
+   Failure "Error in included file /home/ubuntu/hol-light-aqjune/a.ml".
+}
+
+\SEEALSO
+use_file, loads, loadt.
+
+\ENDDOC

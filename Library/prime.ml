@@ -92,6 +92,10 @@ let DIVIDES_RMUL2_EQ = prove
  (`!a b c. ~(c = 0) ==> ((a * c) divides (b * c) <=> a divides b)`,
   NUMBER_TAC);;
 
+let DIVIDES_EQ_ZERO = prove
+ (`!p n. n < p ==> (p divides n <=> n = 0)`,
+  MESON_TAC[DIVIDES_0; DIVIDES_LE_STRONG; NOT_LE; LT]);;
+
 let DIVIDES_CASES = prove
  (`!m n. n divides m ==> m = 0 \/ m = n \/ 2 * n <= m`,
   SIMP_TAC[ARITH_RULE `m = n \/ 2 * n <= m <=> m = n * 1 \/ n * 2 <= m`] THEN
@@ -649,6 +653,13 @@ let PRIME_DIVPROD = prove
 let PRIME_DIVPROD_EQ = prove
  (`!p a b. prime(p) ==> (p divides (a * b) <=> p divides a \/ p divides b)`,
   MESON_TAC[PRIME_DIVPROD; DIVIDES_LMUL; DIVIDES_RMUL]);;
+
+let PRIME_INT_DIVPROD_EQ = prove
+ (`!p a b:int.
+        prime p ==> (&p divides a * b <=> &p divides a \/ &p divides b)`,
+  REWRITE_TAC[FORALL_INT_CASES; INT_MUL_LNEG; INT_MUL_RNEG; INT_NEG_NEG] THEN
+  REWRITE_TAC[INTEGER_RULE `(a:int) divides --b <=> a divides b`] THEN
+  REWRITE_TAC[GSYM num_divides; PRIME_DIVPROD_EQ; INT_OF_NUM_CLAUSES]);;
 
 let PRIME_GE_2 = prove
  (`!p. prime(p) ==> 2 <= p`,
@@ -1633,6 +1644,15 @@ let INDEX_GCD = prove
   REWRITE_TAC[ARITH_RULE `k <= m /\ k <= n <=> k <= MIN m n`] THEN
   MESON_TAC[LE_REFL; LE_ANTISYM; LE_TRANS]);;
 
+let FORALL_PRIME_INDEX = prove
+ (`(!p. prime p ==> !P. ((!x. P(index p x)) <=> !k. P k)) /\
+   (!p. prime p ==> !P. ((!x. ~(x = 0) ==> P(index p x)) <=> !k. P k))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `k:num` THEN FIRST_X_ASSUM(MP_TAC o SPEC `p EXP k`) THEN
+  ASM_SIMP_TAC[INDEX_EXP; INDEX_REFL; EXP_EQ_0; PRIME_IMP_NZ] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP PRIME_GE_2) THEN ARITH_TAC);;
+
 let INDEX_FACT_PRIME_MULT = prove
  (`!p n. prime p ==> index p (FACT(p * n)) = n + index p (FACT n)`,
   REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THEN
@@ -1708,6 +1728,14 @@ let PRIME_POWER_EXISTS = prove
     REWRITE_TAC[PRIME_ALT; IMP_CONJ_ALT; DIVIDES_MOD] THEN
     CONV_TAC(ONCE_DEPTH_CONV EXPAND_CASES_CONV) THEN
     REWRITE_TAC[LT] THEN ARITH_TAC]);;
+
+let PRIME_POWER_EXISTS_ALT = prove
+ (`!n p.
+         prime p
+         ==> ((?i. n = p EXP i) <=>
+              (!d. d divides n ==> d = 1 \/ p divides d))`,
+  SIMP_TAC[PRIME_POWER_EXISTS] THEN
+  MESON_TAC[DIVIDES_TRANS; DIVIDES_PRIME_PRIME; PRIME_FACTOR; PRIME_1]);;
 
 let PRIME_FACTORIZATION_ALT = prove
  (`!n. ~(n = 0) ==> nproduct {p | prime p} (\p. p EXP index p n) = n`,
@@ -2367,7 +2395,7 @@ let COPRIME_CONV =
   and x_tm = `x:num` and y_tm = `y:num`
   and d_tm = `d:num` and coprime_tm = `coprime` in
   let rec bezout (m,n) =
-    if m =/ Int 0 then (Int 0,Int 1) else if n =/ Int 0 then (Int 1,Int 0)
+    if m =/ num 0 then (num 0,num 1) else if n =/ num 0 then (num 1,num 0)
     else if m <=/ n then
       let q = quo_num n m and r = mod_num n m in
       let (x,y) = bezout(m,r) in
@@ -2378,12 +2406,12 @@ let COPRIME_CONV =
    if pop <> coprime_tm then failwith "COPRIME_CONV" else
    let l,r = dest_pair ptm in
    let m = dest_numeral l and n = dest_numeral r in
-   if m =/ Int 0 && n =/ Int 0 then pth_oo else
+   if m =/ num 0 && n =/ num 0 then pth_oo else
    let (x,y) = bezout(m,n) in
    let d = x */ m +/ y */ n in
    let th =
-     if d =/ Int 1 then
-       if x >/ Int 0 then
+     if d =/ num 1 then
+       if x >/ num 0 then
           INST [l,m_tm; r,n_tm; mk_numeral x,x_tm;
                 mk_numeral(minus_num y),y_tm] pth_yes_l
        else
@@ -2414,7 +2442,7 @@ let GCD_CONV =
     MESON_TAC[pth1; GCD_SYM]) in
   let gcd_tm = `gcd` in
   let rec bezout (m,n) =
-    if m =/ Int 0 then (Int 0,Int 1) else if n =/ Int 0 then (Int 1,Int 0)
+    if m =/ num 0 then (num 0,num 1) else if n =/ num 0 then (num 1,num 0)
     else if m <=/ n then
       let q = quo_num n m and r = mod_num n m in
       let (x,y) = bezout(m,r) in
@@ -2424,7 +2452,7 @@ let GCD_CONV =
             if gt <> gcd_tm then failwith "GCD_CONV" else
             let mtm,ntm = dest_pair lr in
             let m = dest_numeral mtm and n = dest_numeral ntm in
-            if m =/ Int 0 && n =/ Int 0 then pth0 else
+            if m =/ num 0 && n =/ num 0 then pth0 else
             let x0,y0 = bezout(m,n) in
             let x = abs_num x0 and y = abs_num y0 in
             let xtm = mk_numeral x and ytm = mk_numeral y in

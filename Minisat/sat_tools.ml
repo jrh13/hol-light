@@ -94,7 +94,7 @@ let invokeSat sat_solver fname t vc =
     if ((name = "minisat") || (name = "minisatp") || (code = good_exit))
     then ()
     else print_string("Warning:\n Failure signalled by\n " ^ run_cmd ^ "\n") in
-  let ins        = Pervasives.open_in outfile in
+  let ins        = open_in outfile in
   let sat_res    = input_all ins in
   let _          = close_in ins in
   let result     = substringContains failure_string sat_res in

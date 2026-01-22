@@ -262,6 +262,26 @@ let BINOM = prove
   ONCE_REWRITE_TAC[ADD_SYM] THEN
   REWRITE_TAC[GSYM BINOM_FACT; ADD_SUB] THEN REWRITE_TAC[MULT_AC]);;
 
+let DIVIDES_GCD_BINOM = prove
+ (`!n k. n divides gcd(n,k) * binom(n,k)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `k = 0` THENL
+   [ASM_REWRITE_TAC[] THEN CONV_TAC NUMBER_RULE; ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (rand o lhand o rand) BINOM_BOTH_STEP_DOWN o
+    rand o rand o snd) THEN
+  ASM_REWRITE_TAC[] THEN POP_ASSUM MP_TAC THEN CONV_TAC NUMBER_RULE);;
+
+let DIVIDES_COPRIME_BINOM = prove
+ (`!n k. coprime(n,k) ==> n divides binom (n,k)`,
+  MESON_TAC[DIVIDES_GCD_BINOM; MULT_CLAUSES; NUMBER_RULE
+   `coprime(n,k) <=> gcd(n,k) = 1`]);;
+
+let DIVIDES_PRIME_BINOM = prove
+ (`!n p. prime p /\ 0 < n /\ n < p ==> p divides binom(p,n)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DIVIDES_COPRIME_BINOM THEN
+  ASM_CASES_TAC `(p:num) divides n` THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN ASM_ARITH_TAC;
+    ASM_MESON_TAC[PRIME_COPRIME_EQ_NONDIVISIBLE]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Additional lemmas.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -346,16 +366,16 @@ let NUM_BINOM_CONV =
       MP_CONV NUM_LT_CONV th
     else if n =/ k then
       INST [mk_numeral n,n_tm] pth_1
-    else if Int 2 */ k </ n then
+    else if num 2 */ k </ n then
       let th1 = INST [mk_numeral n,n_tm; mk_numeral k,k_tm] pth_swap in
       let th2 = MP th1 (EQT_ELIM(NUM_LE_CONV (lhand(concl th1)))) in
       let th3 = CONV_RULE(funpow 3 RAND_CONV NUM_SUB_CONV) th2 in
       TRANS th3 (BINOM_RULE(n,n -/ k))
     else
-      let th1 = BINOM_RULE(n -/ Int 1,k) in
+      let th1 = BINOM_RULE(n -/ num 1,k) in
       let y = dest_numeral(rand(concl th1)) in
       let x = (n // (n -/ k)) */ y in
-      let th2 = INST [mk_numeral(n -/ Int 1),n_tm; mk_numeral k,k_tm;
+      let th2 = INST [mk_numeral(n -/ num 1),n_tm; mk_numeral k,k_tm;
                       mk_numeral x,x_tm; mk_numeral y,y_tm] pth_step in
       let th3 = MP_CONV NUM_REDUCE_CONV (MP_CONV NUM_LE_CONV (MP th2 th1)) in
       CONV_RULE (LAND_CONV(RAND_CONV(LAND_CONV NUM_SUC_CONV))) th3 in

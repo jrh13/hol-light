@@ -1,17 +1,23 @@
-(* =========================================================== *)
-(* Main formal verification functions                          *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+(* ========================================================================== *)
+(*      Formal verification of nonlinear inequalities in HOL Light            *)
+(*                                                                            *)
+(*      Copyright (c) 2012 Alexey Solovyev                                    *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
 
-needs "verifier/m_verifier.hl";;
-needs "verifier/m_verifier_build.hl";;
-needs "taylor/m_taylor_arith2.hl";;
-needs "misc/misc_vars.hl";;
+(* -------------------------------------------------------------------------- *)
+(* Main formal verification functions                                         *)
+(* -------------------------------------------------------------------------- *)
 
-needs "verifier/certificate.hl";;
-needs "informal/informal_search.hl";;
-needs "informal/informal_verifier.hl";;
+needs "Formal_ineqs/verifier/m_verifier.hl";;
+needs "Formal_ineqs/verifier/m_verifier_build.hl";;
+needs "Formal_ineqs/taylor/m_taylor_arith2.hl";;
+needs "Formal_ineqs/misc/misc_vars.hl";;
+
+needs "Formal_ineqs/verifier/certificate.hl";;
+needs "Formal_ineqs/informal/informal_search.hl";;
+needs "Formal_ineqs/informal/informal_verifier.hl";;
 
 
 module M_verifier_main = struct
@@ -115,7 +121,7 @@ let test_expression bin_ops unary_ops =
 	let lhs, rhs = dest_comb tm in
 	let c, _ = dest_const lhs in
 	  if mem c unary_ops then test rhs else false
-      with Failure _ -> false
+      with Failure _ -> false 
     in
       fun tm ->
 	frees tm = [] ||
@@ -139,7 +145,7 @@ let is_poly =
 let rec mk_funs =
   (* add *)
   let mk_add n (f1, ti1) (f2, ti2) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x and
 	   b = f2 p1 p2 x in
 	 eval_m_taylor_add2 n p1 p2 a b),
@@ -149,7 +155,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_add p1 p2 a b) in
     (* sub *)
   let mk_sub n (f1, ti1) (f2, ti2) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x and
 	   b = f2 p1 p2 x in
 	 eval_m_taylor_sub2 n p1 p2 a b),
@@ -159,7 +165,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_sub p1 p2 a b) in
     (* mul *)
   let mk_mul n (f1, ti1) (f2, ti2) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x and
 	   b = f2 p1 p2 x in
 	 eval_m_taylor_mul2 n p1 p2 a b),
@@ -179,7 +185,7 @@ let rec mk_funs =
 	   ieval_pow p1 p2 a) in
     (* neg *)
   let mk_neg n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_neg2 n a),
     (fun p1 p2 x ->
@@ -187,7 +193,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_neg a) in
     (* abs *)
   let mk_real_abs n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_abs2 n p2 a),
     (fun p1 p2 x ->
@@ -195,7 +201,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_abs p2 a) in
     (* sqrt *)
   let mk_sqrt n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_sqrt2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -203,7 +209,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_sqrt p1 p2 a) in
     (* inv *)
   let mk_inv n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_inv2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -211,7 +217,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_inv p1 p2 a) in
     (* exp *)
   let mk_exp n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_exp2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -219,7 +225,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_exp p1 p2 a) in
     (* log *)
   let mk_log n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_log2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -227,7 +233,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_log p1 p2 a) in
     (* atn *)
   let mk_atn n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_atn2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -235,7 +241,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_atn p1 p2 a) in
     (* cos *)
   let mk_cos n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_cos2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -243,7 +249,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_cos p1 p2 a) in
     (* sin *)
   let mk_sin n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_sin2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -251,7 +257,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_sin p1 p2 a) in
     (* acs *)
   let mk_acs n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_acs2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -259,7 +265,7 @@ let rec mk_funs =
 	 Informal_taylor.eval_m_taylor_acs p1 p2 a) in
     (* asn *)
   let mk_asn n (f1, ti1) =
-    (fun p1 p2 x ->
+    (fun p1 p2 x -> 
        let a = f1 p1 p2 x in
 	 eval_m_taylor_asn2 n p1 p2 a),
     (fun p1 p2 x ->
@@ -274,8 +280,8 @@ let rec mk_funs =
        let a = ti1 p1 p2 x in
 	 Informal_taylor.eval_m_taylor_matan p1 p2 a) in
 
-    (* binary operations *)	
-  let bin_ops =
+    (* binary operations *)	   
+  let bin_ops = 
     ["real_add", mk_add;
      "real_sub", mk_sub;
      "real_mul", mk_mul] in
@@ -323,7 +329,7 @@ let rec mk_funs =
 	  try mk_bin n pp x_var body_tm with Failure _ ->
 	    mk_unary n pp x_var body_tm;;
 
-	
+	   
 (* Prepares verification functions *)
 (* fun_tm must be in the form `\x. f x` *)
 let mk_verification_functions =
@@ -341,15 +347,15 @@ let mk_verification_functions =
 	  let eval0 = mk_eval_function pp fun_tm in
 	  let eval0_informal = Informal_taylor.mk_eval_function pp fun_tm in
 	  let _ = params := {
-	    !params with
-	      raw_intervals1 = false;
+	    !params with 
+	      raw_intervals1 = false; 
 	      convex_flag = false
-	  } in
+	  } in 
 	    {
-	      taylor = eval_taylor;
-	      f = eval0;
-	      df = dummy_df;
-	      ddf = dummy_ddf;
+	      taylor = eval_taylor; 
+	      f = eval0; 
+	      df = dummy_df; 
+	      ddf = dummy_ddf; 
 	      diff2_f = dummy_diff2
 	    },
       {
@@ -359,7 +365,7 @@ let mk_verification_functions =
 	Informal_verifier.ddf = dummy_ddf
       };;
 
-
+   
 (********************************)
 
 let convert_to_float_list pp lo_flag list_tm =
@@ -375,7 +381,7 @@ let convert_to_float_list pp lo_flag list_tm =
 let mk_float_domain pp (xx_tm, zz_tm) =
   let xx_list = dest_list xx_tm and
       zz_list = dest_list zz_tm in
-  let n = length xx_list in
+  let n = length xx_list in 
   let get_intervals tms =
     let i_funs = map build_interval_fun tms in
       map (fun f -> eval_interval_fun pp f [] []) i_funs in
@@ -390,9 +396,9 @@ let mk_float_domain pp (xx_tm, zz_tm) =
       c_vars = mk_real_vars n "c" and
       d_vars = mk_real_vars n "d" in
   let th0 = (INST (zip xx_list c_vars) o INST (zip zz_list d_vars) o
-	       INST (zip a_vals a_vars) o INST (zip b_vals b_vars))
+	       INST (zip a_vals a_vars) o INST (zip b_vals b_vars)) 
     subset_interval_thms_array.(n) in
-    itlist MY_PROVE_HYP (xx_ineqs @ zz_ineqs) th0,
+    itlist MY_PROVE_HYP (xx_ineqs @ zz_ineqs) th0, 
   (mk_list (a_vals, real_ty), mk_list (b_vals, real_ty));;
 
 
@@ -405,18 +411,18 @@ let mk_standard_ineq =
       lemma_le = REAL_ARITH `a <= b <=> a - b <= &0` and
       lemma_imp = TAUT `(P <=> Q) ==> (Q ==> P)` in
     fun thms tm ->
-      let th0 = (REWRITE_CONV([real_gt; real_ge; real_div] @ thms)
+      let th0 = (REWRITE_CONV([real_gt; real_ge; real_div] @ thms) 
 		   THENC DEPTH_CONV let_CONV) tm in
       let rhs = rand (concl th0) in
-      let th1 = (ONCE_REWRITE_CONV[lemma_le] THENC
-		   ONCE_REWRITE_CONV[lemma_lt] THENC
+      let th1 = (ONCE_REWRITE_CONV[lemma_le] THENC 
+		   ONCE_REWRITE_CONV[lemma_lt] THENC 
 		   PURE_REWRITE_CONV[REAL_NEG_0; REAL_SUB_RZERO; REAL_SUB_LZERO]) rhs in
       let th2 = TRANS th0 th1 in
       let ineqs = striplist dest_disj (rand (concl th2)) in
       let le_flags = map (can (dest_binop le_op_real)) ineqs in
-	if exists I le_flags then
-	  let q_le_tms, q_lt_tms = unzip
-	    (map2 (fun i b ->
+	if exists I le_flags then 
+	  let q_le_tms, q_lt_tms = unzip 
+	    (map2 (fun i b -> 
 		     let var = mk_var ("Q" ^ string_of_int i, real_ty) in
 		       mk_binop (if b then le_op_real else lt_op_real) var `&0`,
   		       mk_binop lt_op_real var `&0`)
@@ -425,7 +431,7 @@ let mk_standard_ineq =
 	      qs_lt = end_itlist (curry mk_disj) q_lt_tms and
 	      p_tm = `P:bool` in
 	    (* |- (P <=> Q1 <= &0 \/ ...) ==> (Q1 < &0 \/ ... ==> P) *)
-	  let q_th = MESON[REAL_LT_IMP_LE]
+	  let q_th = MESON[REAL_LT_IMP_LE] 
 	    (mk_imp (mk_eq (p_tm, qs_le), mk_imp (qs_lt, p_tm))) in
 	    (* |- Q1 < &0 \/ ... ==> P *)
 	    MATCH_MP q_th th2
@@ -436,20 +442,20 @@ let mk_standard_ineq =
 let expr_to_vector_fun =
   let comp_op = `$` in
     fun expr_tm ->
-      let vars = List.sort Pervasives.compare (frees expr_tm) in
+      let vars = List.sort compare (frees expr_tm) in
       let n = length vars in
       let x_var = mk_var ("x", n_vector_type_array.(if n = 0 then 1 else n)) in
       let x_tm = mk_icomb (comp_op, x_var) in
       let vars2 = map (fun i -> mk_comb (x_tm, mk_small_numeral i)) (1--n) in
-	mk_abs (x_var, subst (zip vars2 vars) expr_tm),
+	mk_abs (x_var, subst (zip vars2 vars) expr_tm), 
       (if n = 0 then mk_vector_list [x_var] else mk_vector_list vars);;
 
-(* Converts a list of terms in the form [`x + y`; `z`]
+(* Converts a list of terms in the form [`x + y`; `z`]  
    into a list of terms [`\x:real^3. x$1 + x$2`; `\x:real^3. x$3` *)
 let exprs_to_vector_fun =
   let comp_op = `$` in
     fun expr_tms ->
-      let vars = List.sort Pervasives.compare (unions (map frees expr_tms)) in
+      let vars = List.sort compare (unions (map frees expr_tms)) in
       let n = length vars in
       let x_var = mk_var ("x", n_vector_type_array.(if n = 0 then 1 else n)) in
       let x_tm = mk_icomb (comp_op, x_var) in
@@ -484,19 +490,19 @@ let dest_ineq ineq_tm =
       let lhs, rhs = dest_binop le_op_real tm in
       let lo_flag = (frees lhs = []) in
       let name = (fst o dest_var) (if lo_flag then rhs else lhs) in
-      let val_ref =
+      let val_ref = 
 	try assoc name !ineqs
-	with Failure _ ->
-	  let val_ref = ref (x_var_real, x_var_real) in
+	with Failure _ -> 
+	  let val_ref = ref (x_var_real, x_var_real) in 
 	    ineqs := ((name, val_ref) :: !ineqs); val_ref in
 	val_ref := if lo_flag then (lhs, snd !val_ref) else (fst !val_ref, rhs) in
-    let _ = map (fun tm ->
+    let _ = map (fun tm -> 
 		   (try decode_ineq tm with Failure _ ->
 		      failwith ("Bad variable bound inequality: "^string_of_term tm))) conds in
     let names, bounds0 = unzip !ineqs in
     let lo, hi = unzip (map (fun r -> !r) bounds0) in
     let test_bounds bounds bound_name =
-      let _ = map2 (fun tm name -> if frees tm <> [] then
+      let _ = map2 (fun tm name -> if frees tm <> [] then 
 		      failwith (bound_name^" bound is not defined for "^name) else ())
 	bounds names in () in
     let _ = test_bounds hi "Upper"; test_bounds lo "Lower" in
@@ -514,7 +520,7 @@ let normalize_result norm_flag v1 imp_th1 domain_sub_th pass_thm =
   let th3 = MP imp_th1 th2 in
   let dom_th = (UNDISCH_ALL o SPEC v1 o REWRITE_RULE[SUBSET]) domain_sub_th in
   let th4 = (DISCH_ALL o MY_PROVE_HYP dom_th) th3 in
-  let th5 = REWRITE_RULE[IN_INTERVAL; dimindex_array.(n);
+  let th5 = REWRITE_RULE[IN_INTERVAL; dimindex_array.(n); 
 			 gen_in_interval n; comp_thms] th4 in
     if norm_flag then GEN_ALL th5 else th4;;
 
@@ -569,7 +575,7 @@ let verify_ineq0 params0 norm_flag pp ineq_tm var_names (lo_tm, hi_tm) rewrite_t
       let _ = !info_print_level < 1 || (Certificate.report_stats stats; true) in
 
       let c1 = Certificate.transform_result xx_float zz_float certificate in
-      let start, finish, result =
+      let start, finish, result = 
 	if !params.adaptive_precision then
 	  let _ = !info_print_level < 1 || (report0 "Informal verification... "; true) in
 	  let c1p = Informal_verifier.m_verify_list pp 1 pp [ti] c1 xx2 zz2 in
@@ -593,7 +599,7 @@ let verify_ineq0 params0 norm_flag pp ineq_tm var_names (lo_tm, hi_tm) rewrite_t
 	
 
 (*
-(* A simple verification function which accepts
+(* A simple verification function which accepts 
    a list of rewrite theorems which are applied to the inequality
    before verification *)
 let verify_ineq_and_rewrite rewrite_thms params pp ineq_tm =
@@ -656,7 +662,7 @@ let verify_disj_ineq0 params0 norm_flag pp ineq_tm var_names (lo_tm, hi_tm) rewr
       let _ = params0.convex_flag = false || (report "WARNING: covex_flag should be false"; true) in
       let _ = params0.allow_derivatives = false || (report "WARNING: allow_derivatives should be false"; true) in
 
-      let params = ref {params0 with
+      let params = ref {params0 with 
 			  mono_pass_flag = false;
 			  convex_flag = false;
 			  allow_derivatives = false} in
@@ -703,7 +709,7 @@ let verify_disj_ineq0 params0 norm_flag pp ineq_tm var_names (lo_tm, hi_tm) rewr
 
 
 
-(* A simple verification function which accepts
+(* A simple verification function which accepts 
    a list of rewrite theorems which are applied to the inequality
    before verification *)
 let verify_ineq_and_rewrite rewrite_thms params pp ineq_tm =
@@ -720,7 +726,7 @@ end;;
 let h0 = new_definition `h0 = #1.26` and
     lmfun = new_definition`lmfun h = if (h<=h0) then (h0 - h)/(h0 - &1) else &0` and
     hplus = new_definition `hplus = #1.3254` and
-    marchal_quartic = new_definition `marchal_quartic h =
+    marchal_quartic = new_definition `marchal_quartic h = 
   (sqrt(&2)-h)*(h- hplus )*(&9*(h pow 2) - &17*h + &3)/
     ((sqrt(&2) - &1)* &5 *(hplus - &1))`;;
 
@@ -734,7 +740,7 @@ let lmfun_cond_ge = (UNDISCH_ALL o prove)(`h0 <= x ==> lmfun x = &0`,
 					    REAL_ARITH_TAC);;
 
 let eq_tm = `marchal_quartic x - lmfun x`;;
-let eq_th1, eq_th2 =
+let eq_th1, eq_th2 = 
   let ths = [marchal_quartic; h0; hplus] in
     REWRITE_CONV (lmfun_cond_le :: ths) eq_tm,
   REWRITE_CONV (REAL_SUB_RZERO :: lmfun_cond_ge :: ths) eq_tm;;
