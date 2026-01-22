@@ -65,7 +65,7 @@ let list_of_option = function None -> [] | Some x -> [x] ;;
 let try_list f x = try f x with Failure _ -> [] ;;
 
 let fail_if_unchanged f x =
-  try f x with Unchanged -> failwith "Unchanged" in
+  try f x with Unchanged -> failwith "Unchanged";;
 
 (* A few constants. *)
 let A_Tm = `A:bool` and B_Tm = `B:bool` and C_Tm = `C:bool` and D_Tm = `D:bool`

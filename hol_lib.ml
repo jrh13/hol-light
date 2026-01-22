@@ -10,8 +10,10 @@
 (*              (c) Copyright, Juneyoung Lee 2024                            *)
 (* ========================================================================= *)
 
+(*
 include Bignum;;
 open Hol_loader;;
+*)
 
 (* ------------------------------------------------------------------------- *)
 (* Bind these to names that are independent of OCaml versions before they    *)
@@ -22,15 +24,16 @@ open Hol_loader;;
 (* Pervasives.abs_float -> Stdlib.abs_float / Float.abs                      *)
 (* ------------------------------------------------------------------------- *)
 
-let float_sqrt = sqrt;;
-let float_fabs = abs_float;;
+let float_sqrt = Double.sqrt;;
+let float_fabs = Double.abs;;
 
 (* ------------------------------------------------------------------------- *)
 (* Various tweaks to OCaml and general library functions.                    *)
 (* ------------------------------------------------------------------------- *)
 
 loads "system.ml";;      (* Set up proper parsing                            *)
-loads "candle_nums.ml";; (* Load bignums                                     *)
+loads "candle_nums.ml";; (* Load "num"                                       *)
+loads "bignum_num.ml";;  (* Load bignums                                     *)
 loads "lib.ml";;         (* Various useful general library functions         *)
 
 (* ------------------------------------------------------------------------- *)
@@ -86,9 +89,7 @@ loads "impconv.ml";;    (* More powerful implicational rewriting etc.        *)
 (* ------------------------------------------------------------------------- *)
 
 loads "pair.ml";;       (* Theory of pairs                                   *)
-(*
 loads "compute.ml";;    (* General call-by-value reduction tool for terms    *)
-*)
 loads "nums.ml";;       (* Axiom of Infinity, definition of natural numbers  *)
 loads "recursion.ml";;  (* Tools for primitive recursion on inductive types  *)
 loads "arith.ml";;      (* Natural number arithmetic                         *)
@@ -118,5 +119,5 @@ let check_axioms () =
   let basic_axioms = [INFINITY_AX; SELECT_AX; ETA_AX] in
   let l = filter (fun th -> not (mem th basic_axioms)) (axioms()) in
   if l <> [] then
-    let msg = "[" ^ (String.concat ", " (map string_of_thm l)) ^ "]" in
+    let msg = "[" ^ (String.concatWith ", " (map string_of_thm l)) ^ "]" in
     failwith ("check_axioms: " ^ msg);;

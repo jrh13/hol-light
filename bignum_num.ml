@@ -2,10 +2,13 @@
 (* Load in the bignum library.                                               *)
 (* ------------------------------------------------------------------------- *)
 
+(*
 include Num;;
+*)
 
 let num = Num.num_of_int;;
 
+(*
 module NumExt = struct
   let numdom (r:num):num * num =
     let r' = Ratio.normalize_ratio (ratio_of_num r) in
@@ -17,3 +20,5 @@ module NumExt = struct
 end;;
 
 include NumExt;;
+*)
+let numdom r = (Num.numerator r, Num.denominator r);;

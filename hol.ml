@@ -23,7 +23,7 @@ let temp_path = ref "/tmp";;
 (* Load the load/need functions.                                             *)
 (* ------------------------------------------------------------------------- *)
 
-loads "hol_loader.ml"
+loads "hol_loader.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Load the core files.                                                      *)

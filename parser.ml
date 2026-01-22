@@ -389,7 +389,7 @@ let parse_preterm =
               let r0 = hd ropt in
               let n_l = num_of_string l0
               and n_r = num_of_string r0 in
-              let n_d = power_num (num 10) (num (String.length r0)) in
+              let n_d = power_num (num 10) (num (String.size r0)) in
               let n_n = n_l */ n_d +/ n_r in
               string_of_num n_n,string_of_num n_d in
      Combp(Combp(Varp("DECIMAL",dpty),Varp(l,dpty)),Varp(r,dpty))

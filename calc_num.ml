@@ -1478,7 +1478,7 @@ let NUM_RED_CONV =
 let NUM_REDUCE_CONV = DEPTH_CONV NUM_RED_CONV;;
 
 let num_compute_add_convs =
-  let convlist = map (fun pat,the_conv ->
+  let convlist = map (fun (pat,the_conv) ->
     let c,args = strip_comb pat in (c,length args,the_conv))
     num_red_conv_list in
   fun (compset:Compute.compset) ->

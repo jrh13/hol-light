@@ -749,7 +749,7 @@ let LENGTH_CONV:conv =
      LENGTH(CONS (h:A) t) + n = LENGTH t + SUC n`,
     REWRITE_TAC[LENGTH; ADD_CLAUSES]) in
   let pths = CONJUNCTS pthc
-  and avars = sort (<) (frees(concl pthc)) in
+  and avars = sort Term.(<) (frees(concl pthc)) in
   fun tm ->
     match tm with
       Comb(Const("LENGTH",_),ltm) when is_list ltm ->
@@ -777,7 +777,7 @@ let EL_CONV:conv =
       (n = SUC m ==> EL n (CONS h t) = EL m t)`,
     SIMP_TAC[EL; HD; TL]) in
   let pths = map UNDISCH_ALL (CONJUNCTS pthc)
-  and avars = sort (<) (frees(concl pthc)) in
+  and avars = sort Term.(<) (frees(concl pthc)) in
   fun tm ->
     match tm with
       Comb(Comb(Const("EL",_),ntm),ltm) when is_list ltm ->
@@ -807,7 +807,7 @@ let REVERSE_CONV:conv =
      APPEND (REVERSE (CONS h t)) l = APPEND (REVERSE t) (CONS h l)`,
     SIMP_TAC[APPEND; APPEND_NIL; REVERSE; GSYM APPEND_ASSOC]) in
   let pths = map UNDISCH_ALL (CONJUNCTS pthc)
-  and avars = sort (<) (frees(concl pthc)) in
+  and avars = sort Term.(<) (frees(concl pthc)) in
   fun tm ->
     match tm with
       Comb(Const("REVERSE",_),ltm) ->
@@ -836,7 +836,7 @@ let LIST_OF_SEQ_CONV:conv =
           APPEND (list_of_seq f m) (CONS (f m) l))`,
     SIMP_TAC[APPEND; APPEND_NIL; list_of_seq; GSYM APPEND_ASSOC]) in
   let pths = map UNDISCH_ALL (CONJUNCTS pthc)
-  and avars = sort (<) (frees(concl pthc)) in
+  and avars = sort Term.(<) (frees(concl pthc)) in
   fun tm ->
     match tm with
       Comb(Comb(Const("list_of_seq",_),ftm),ntm) ->

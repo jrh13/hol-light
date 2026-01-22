@@ -763,7 +763,7 @@ let ANTS_TAC =
 
 (* A parameter to prettyprinter's max boxes for printing hypotheses.         *)
 (* Set to None if the formatter's default max boxes value is to be used.     *)
-let print_goal_hyp_max_boxes = ref None;;
+let print_goal_hyp_max_boxes = ref (None:int option);;
 
 let (pp_print_goal:formatter->goal->unit),
     (pp_print_colored_goal:formatter->goal->unit) =
@@ -829,11 +829,24 @@ let (pp_print_goalstack:formatter->goalstack->unit),
       print_goalstate color_flag fmt p' gs in
   fn false, fn true;;
 
+(* ------------------------------------------------------------------------- *)
+(* Install printers for goal and goalstack.                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let pp_goal, pp_goalstack =
+  let use_color = true in
+  if use_color then
+    Pretty_printer.token o Pretty.print_to_string pp_print_colored_goal,
+    Pretty_printer.token o Pretty.print_to_string pp_print_colored_goalstack
+  else
+    Pretty_printer.token o Pretty.print_to_string pp_print_goal,
+    Pretty_printer.token o Pretty.print_to_string pp_print_goalstack;;
+
 let print_goal = Pretty.print_stdout pp_print_goal;;
 let print_goalstack = Pretty.print_stdout pp_print_goalstack;;
 let PRINT_GOAL_TAC: tactic = fun gl -> print_goal gl; ALL_TAC gl;;
 let PRINT_COLORED_GOAL_TAC: tactic =
-    fun gl -> pp_print_colored_goal Format.std_formatter gl; ALL_TAC gl;;
+    fun gl -> Pretty.print_stdout pp_print_colored_goal gl; ALL_TAC gl;;
 let REMARK_TAC (s:string): tactic = fun gl -> remark s; ALL_TAC gl;;
 
 (* ------------------------------------------------------------------------- *)
@@ -946,9 +959,12 @@ let er tac =
     e_result
   end else begin
     (if !verbose then print_goalstack !current_goalstack);
-    remark (Printf.sprintf "\n(Rotating %d subgoal%s...)\n\n"
-        n_subgoals_to_rotate
-        (if n_subgoals_to_rotate = 1 then "" else "s"));
+    remark (String.concat [
+                "\n(Rotating ";
+                Int.toString n_subgoals_to_rotate;
+                "subgoal";
+                (if n_subgoals_to_rotate = 1 then "" else "s");
+                "...)\n\n"]);
     let new_g = r n_subgoals_to_rotate in
     (* pop the latest subgoal so that one b() can fully roll back the state *)
     let cur_gs = !current_goalstack in

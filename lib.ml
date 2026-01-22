@@ -260,7 +260,7 @@ let find_index p =
   ind 0;;
 
 let index x l =
-  match find_index ((=) 0 o compare x) l with
+  match find_index ((=) x) l with
   | Some n -> n
   | None -> failwith "index";;
 
@@ -473,10 +473,10 @@ let time f x =
       report("CPU time (user): "^(string_of_int(finish_time - start_time)));
       result
   with e ->
-      let finish_time = Double.fromString "0.0" (* Sys.time() *) in
+      let finish_time = (* Sys.time() *) 0 in
       (* let msg = Printexc.to_string e in *)
       report("Failed after (user) CPU time of "^
-             (string_of_float(finish_time -. start_time))^": "(* ^msg *));
+             (string_of_int(finish_time - start_time))^": "(* ^msg *));
       raise e;;
 
 (* ------------------------------------------------------------------------- *)
@@ -759,10 +759,22 @@ let strings_of_file filename =
   Text_io.b_closeIn fd; data;;
 
 let string_of_file filename =
-  let fd = open_in_bin filename in
-  let data = really_input_string fd (in_channel_length fd) in
-  (close_in fd; data);;
+  let fd = try Text_io.openIn filename
+           with Text_io.Bad_file_name ->
+             failwith("string_of_file: can't open "^filename) in
+  let data = Text_io.inputAll fd in
+  Text_io.closeIn fd; data;;
 
 let file_of_string filename s =
   let fd = Text_io.openOut filename in
   Text_io.output fd s; Text_io.closeOut fd;;
+
+(* TODO Painful use of Word64s which are always boxed; prime candidate for
+   writing in Pancake that's embedded, once that's possible. At that point,
+   it should probably move to CakeML as well. *)
+(* Adapted from http://www.cse.yorku.ca/~oz/hash.html (djb2) *)
+let string_hash s =
+  let times_33 w = (Word64.(+) (Word64.(<<) w 5) w) in
+  let step char hash =
+    Word64.xorb (times_33 hash) (Word64.fromInt (Char.ord char)) in
+  Word64.toInt (List.foldl step (Word64.fromInt 5381) (String.explode s));;

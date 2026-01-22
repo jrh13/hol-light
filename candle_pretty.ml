@@ -11,6 +11,10 @@
      the line unless there is no more space on the current line.
 
    (I think the blocks are slightly broken at the moment.)
+
+   Additionally, we keep track of the "logical" size of a string. This is useful
+   when one wants to print ANSI escape codes (for example for color) which
+   should have size 0.
  *)
 
 module App_list = struct
@@ -69,7 +73,7 @@ module Pretty_core = struct
 
   type token =
       | Block of block_type * token list * int * int
-      | String of string
+      | String of string * int  (* (content, length) *)
       | Break of int * int
       | Newline
   ;;
@@ -79,7 +83,7 @@ module Pretty_core = struct
     | t :: es ->
         match t with
         | Block (_, _, _, len) -> len + breakdist after es
-        | String s -> String.size s + breakdist after es
+        | String (_, len) -> len + breakdist after es
         | Break _ | Newline -> 0
   ;;
 
@@ -103,8 +107,8 @@ module Pretty_core = struct
             match tok with
             | Block (typ, bes, indent, len) ->
                 printing typ (!space - indent) (breakdist after es) bes
-            | String s ->
-                space := !space - String.size s;
+            | String (s, len) ->
+                space := !space - len;
                 App_list.list [s]
             | Break (len, offset) -> (* Depends on the block type: *)
                 begin
@@ -126,7 +130,7 @@ module Pretty_core = struct
     printing Compacting margin 0 [tok]
   ;;
 
-  let string s = String s
+  let string s len = String (s, len)
   ;;
 
   let break l i = Break (l, i)
@@ -142,7 +146,7 @@ module Pretty_core = struct
     let length =
       function
       | Block (_, _, _, len) -> len
-      | String s -> String.size s
+      | String (_, len) -> len
       | Break (len, _) -> len
       | Newline -> 0 in
     let sum = List.foldl (fun t s -> s + length t) 0 in
@@ -217,7 +221,10 @@ module Pretty_imp = struct
         tq
   ;;
 
-  let print_string st str = st_insert st (Pretty_core.string str)
+  let print_as st l str = st_insert st (Pretty_core.string str l)
+  ;;
+
+  let print_string st str = print_as st (String.size str) str
   ;;
 
   let print_break st l i = st_insert st (Pretty_core.break l i)
@@ -317,6 +324,7 @@ let set_margin n =
 
 type formatter = Pretty_imp.state;;
 
+let pp_print_as = Pretty_imp.print_as;;
 let pp_print_string = Pretty_imp.print_string;;
 let pp_print_break = Pretty_imp.print_break;;
 let pp_print_space fmt () = Pretty_imp.print_space fmt;;
@@ -327,6 +335,11 @@ let pp_open_hbox fmt () = Pretty_imp.open_hblock fmt;;
 let pp_open_vbox = Pretty_imp.open_vblock;;
 let pp_open_hvbox = Pretty_imp.open_hvblock;;
 let pp_close_box fmt () = Pretty_imp.close_block fmt;;
+
+let pp_get_max_boxes (fmt:formatter) () =
+  remark "TODO: stub called: pp_get_max_boxes"; -1;;
+let pp_set_max_boxes (fmt:formatter) (i:int) =
+  remark "TODO: stub called: pp_set_max_boxes";;
 
 let print_to_string = Pretty.print_to_string;;
 
@@ -344,4 +357,3 @@ let open_hbox () = Pretty.print_stdout pp_open_hbox ();;
 let open_vbox = Pretty.print_stdout pp_open_vbox;;
 let open_hvbox = Pretty.print_stdout pp_open_hvbox;;
 let close_box () = Pretty.print_stdout pp_close_box ();;
-

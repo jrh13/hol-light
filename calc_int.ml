@@ -394,7 +394,7 @@ let REAL_INT_RED_CONV =
 let REAL_INT_REDUCE_CONV = DEPTH_CONV REAL_INT_RED_CONV;;
 
 let real_int_compute_add_convs =
-  let convlist = map (fun pat,the_conv ->
+  let convlist = map (fun (pat,the_conv) ->
     let c,args = strip_comb pat in (c,length args,the_conv))
     real_int_red_conv_list in
   fun (compset:Compute.compset) ->

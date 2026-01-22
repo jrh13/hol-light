@@ -1826,7 +1826,7 @@ let INT_RED_CONV =
 let INT_REDUCE_CONV = DEPTH_CONV INT_RED_CONV;;
 
 let int_compute_add_convs =
-  let convlist = map (fun pat,the_conv ->
+  let convlist = map (fun (pat,the_conv) ->
     let c,args = strip_comb pat in (c,length args,the_conv))
     int_red_conv_list in
   fun (compset:Compute.compset) ->
@@ -2137,7 +2137,7 @@ let ARITH_RULE =
       let th1 = init_conv tm in
       let tm1 = rand(concl th1) in
       let avs,bod = strip_forall tm1 in
-      let nim = setify(find_terms is_numimage bod) in
+      let nim = setify Term.(<=) (find_terms is_numimage bod) in
       let gvs = map (genvar o type_of) nim in
       let pths = map (fun v -> SPEC (rand v) INT_POS) nim in
       let ibod = itlist (curry mk_imp o concl) pths bod in

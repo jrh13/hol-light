@@ -283,7 +283,7 @@ let new_specification =
       failwith "new_specification: Assumptions not allowed in theorem" else
     if not (frees c = []) then
       failwith ("new_specification: Free variables in predicate: " ^
-        (String.concat ", " (map (fun (Var (name,_)) -> name) (frees c)))) else
+        (String.concatWith ", " (map (fun (Var (name,_)) -> name) (frees c)))) else
     let avs = fst(strip_exists c) in
     if length names = 0 || length names > length avs then
       failwith "new_specification: Unsuitable number of constant names" else

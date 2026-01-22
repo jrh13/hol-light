@@ -407,7 +407,7 @@ let type_of_pretype,term_of_preterm,retypecheck =
     | Utv(v) -> (mk_vartype(v), false)
     | Ptycon(con,args) ->
       let args',translated = unzip (map type_of_pretype_base args) in
-      let translated = List.fold_left (||) false translated in
+      let translated = List.foldl (fun x y -> if x then x else y) false translated in
       (mk_type(con,args'), translated) in
 
   let type_of_pretype (ty:pretype): hol_type =
@@ -426,27 +426,27 @@ let type_of_pretype,term_of_preterm,retypecheck =
           let v = mk_var(s,ty) in
           let _ =
             if translated && not (exists (fun s' -> s = s')
-                             !stvs_translated_terms)
-            then stvs_translated_terms := s::!stvs_translated_terms
+                             (!stvs_translated_terms))
+            then stvs_translated_terms := s::(!stvs_translated_terms)
             else () in v
       | Constp(s,pty) ->
           let ty, translated = type_of_pretype_base pty in
           let c = mk_mconst(s,ty) in
           let _ =
             if translated && not (exists (fun s' -> s = s')
-                             !stvs_translated_terms)
-            then stvs_translated_terms := s::!stvs_translated_terms
+                             (!stvs_translated_terms))
+            then stvs_translated_terms := s::(!stvs_translated_terms)
             else () in c
       | Combp(l,r) -> mk_comb(term_of_preterm l,term_of_preterm r)
       | Absp(v,bod) -> mk_gabs(term_of_preterm v,term_of_preterm bod)
       | Typing(ptm,pty) -> term_of_preterm ptm in
     let report_type_invention () =
-      if !stvs_translated_terms <> [] then
-        if !type_invention_error
+      if (!stvs_translated_terms) <> [] then
+        if (!type_invention_error)
         then failwith
             ("typechecking error (cannot infer type of variables): " ^
-             String.concat ", " !stvs_translated_terms)
-        else warn !type_invention_warning "inventing type variables" in
+             String.concatWith ", " (!stvs_translated_terms))
+        else warn (!type_invention_warning) "inventing type variables" in
     fun ptm -> stvs_translated_terms := [];
                let tm = term_of_preterm ptm in
                report_type_invention (); tm in

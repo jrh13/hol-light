@@ -345,4 +345,4 @@ let CACHE_CONV =
 (* A printer.                                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let PRINT_TERM_CONV t = Format.printf "%a\n" pp_print_qterm t; ALL_CONV t;;
+let PRINT_TERM_CONV t = print_qterm t; Text_io.print "\n"; ALL_CONV t;;

@@ -679,3 +679,18 @@ let print_thm = Pretty.print_stdout pp_print_thm;;
 let string_of_type = print_to_string pp_print_type;;
 let string_of_term = print_to_string pp_print_term;;
 let string_of_thm = print_to_string pp_print_thm;;
+
+(* ------------------------------------------------------------------------- *)
+(* Install printers for term, type and thm.                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let pp_term, pp_type, pp_thm =
+  let use_color = true in
+  if use_color then
+    Pretty_printer.token o Pretty.print_to_string pp_print_colored_qterm,
+    Pretty_printer.token o Pretty.print_to_string pp_print_colored_qtype,
+    Pretty_printer.token o Pretty.print_to_string pp_print_colored_thm
+  else
+    Pretty_printer.token o Pretty.print_to_string pp_print_qterm,
+    Pretty_printer.token o Pretty.print_to_string pp_print_qtype,
+    Pretty_printer.token o Pretty.print_to_string pp_print_thm;;
