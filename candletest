@@ -1,0 +1,16 @@
+#!/bin/bash
+#######################################################################
+# Load in a bunch of examples to test Candle is working properly
+# See candletest.mk on details on how to set it up.
+#
+# Try examining the output using something like
+#
+# grep -E '###|ERROR|EXCEPTION|TIMEOUT|failure|Parsing failed|error in|not.found' /tmp/candle-test/candletest.log
+#
+# to see progress and whether anything has gone wrong.
+#
+#######################################################################
+
+set -e
+
+make SHELL=bash -f candletest.mk all

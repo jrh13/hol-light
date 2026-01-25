@@ -933,7 +933,7 @@ let POW_EQ = prove(
 (* Basic differentiation theorems --- none yet.                              *)
 (* ------------------------------------------------------------------------- *)
 
-let diff_net = ref empty_net;;
+let diff_net = ref (empty_net: (term -> thm) net);;
 
 let add_to_diff_net th =
   let t = lhand(rator(rand(concl th))) in

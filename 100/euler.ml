@@ -2,7 +2,7 @@
 (* Euler's partition theorem and other elementary partition theorems.        *)
 (* ========================================================================= *)
 
-loadt "Library/binary.ml";;
+needs "Library/binary.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Some lemmas.                                                              *)

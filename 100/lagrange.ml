@@ -3,7 +3,7 @@
 (* NB: "Library/grouptheory.ml" has a more serious development of groups.    *)
 (* ========================================================================= *)
 
-loadt "Library/prime.ml";;
+needs "Library/prime.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition of what a group is.                                            *)

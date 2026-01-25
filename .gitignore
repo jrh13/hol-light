@@ -26,7 +26,9 @@ hol_lib_inlined.ml
 unit_tests_inlined.ml
 unit_tests.byte
 unit_tests.native
+
 cake-x64-64.tar.gz
 cake-x64-64
 cake
 config_enc_str.txt
+checkpoint
