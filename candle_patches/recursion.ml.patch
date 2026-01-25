@@ -1,8 +1,0 @@
-33,34c33,36
-<     let urfns = map (fun v -> assocd v (setify (zip axfns (map fst lpats))) v)
-<                     exvs in
----
->     let (<=) x y = Pair.compare Term.compare Term.compare x y <> Greater in
->     let urfns =
->      map (fun v -> assocd v (setify (<=) (zip axfns (map fst lpats))) v)
->          exvs in

@@ -1,6 +1,0 @@
-201a202
->     Interrupt.poll ();
-250c251
-<     Comb(Comb(op',l),r) when Pervasives.compare op' op = 0 ->
----
->     Comb(Comb(op',l),r) when op' = op ->

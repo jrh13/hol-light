@@ -1,4 +1,0 @@
-477c477
-<     let OBTAINL_THEN : string list -> thm_tactical =
----
->     let (OBTAINL_THEN : string list -> thm_tactical) =

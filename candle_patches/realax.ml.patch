@@ -1,4 +1,0 @@
-44c44
-<   "*",`(*):num->num->num`; "<",`(<):num->num->bool`;
----
->   "*",`( *):num->num->num`; "<",`(<):num->num->bool`;
