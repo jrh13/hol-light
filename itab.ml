@@ -13,11 +13,44 @@ needs "tactics.ml";;
 (* Accept a theorem modulo unification.                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let UNIFY_ACCEPT_TAC mvs th (asl,w) =
-  let insts = term_unify mvs (concl th) w in
-  ([],insts),[],
-  let th' = INSTANTIATE insts th in
-  fun i [] -> INSTANTIATE i th';;
+let UNIFY_ACCEPT_TAC (mvs:term list) (th:thm):tactic =
+  fun (asl,w) ->
+    let insts = term_unify mvs (concl th) w in
+    ([],insts),[],
+    let th' = INSTANTIATE insts th in
+    fun i [] -> INSTANTIATE i th';;
+
+(* REFL version of UNIFY_ACCEPT_TAC.
+   The conclusion ust be `expr = x` where x is a meta variable.
+   It can be `expr = f x y z` where f is a meta variable as well.
+*)
+let UNIFY_REFL_TAC: tactic =
+  fun (asl,w:goal) ->
+    let w_lhs,w_rhs = dest_eq w in
+    if is_var w_rhs then
+      if vfree_in w_rhs w_lhs then
+        failwith ("UNIFY_REFL_TAC: failed: `" ^ (string_of_term w) ^ "`")
+      else
+        UNIFY_ACCEPT_TAC [w_rhs] (REFL w_lhs) (asl,w)
+    else
+      let constr,rargs = strip_comb w_rhs in
+      if not (is_var constr) then failwith "UNIFY_REFL_TAC: not variable" else
+      if vfree_in constr w_lhs then
+        failwith ("UNIFY_REFL_TAC: failed: `" ^ (string_of_term w) ^ "`")
+      else
+        (* replace non-variable arguments of the RHS function with temporary
+           variables. *)
+        let rargs_vars = map
+          (fun v -> if is_var v then v else
+            let _ = Printf.printf
+              "UNIFY_REFL_TAC: warning: this isn't var: %s\n"
+              (string_of_term v) in genvar (type_of v)) rargs in
+        let f = list_mk_abs (rargs_vars,w_lhs) in
+        let the_goal = mk_eq (w_lhs, list_mk_comb (f,rargs)) in
+        let th = prove(the_goal,
+          CONV_TAC (RAND_CONV (DEPTH_CONV BETA_CONV)) THEN
+          REFL_TAC) in
+        UNIFY_ACCEPT_TAC [constr] th (asl,w);;
 
 (* ------------------------------------------------------------------------- *)
 (* The actual prover, as a tactic.                                           *)
