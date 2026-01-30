@@ -1,0 +1,57 @@
+\DOC UNIFY_REFL_TAC
+
+\TYPE {UNIFY_REFL_TAC : tactic}
+
+\SYNOPSIS
+Unify term(s) and metavariable(s) in the equality of the goal.
+
+\DESCRIBE
+Given a goal {_ ?- x = y} where {y} is a metavariable, the tactic
+{UNIFY_REFL_TAC} attempts to unify {y} with {x}.
+If {y} is function application {f a b c} and {f} is a metavariable,
+{UNIFY_REFL_TAC} attemps to unify {f} with {\a b c. x} (the number of arguments
+can vary).
+
+\FAILURE
+Fails if no unification will work.
+
+\EXAMPLE
+{
+  # g `?x. 1 = x`;;
+  ...
+
+  # e META_EXISTS_TAC;;
+	val it : goalstack = 1 subgoal (1 total)
+																					
+	`1 = x`
+
+	# e UNIFY_REFL_TAC;;
+
+	val it : goalstack = No subgoals
+}
+\noindent If the RHS is function application:
+{
+	# g `?f. y + z = f y z`;;
+	...
+
+	# e (META_EXISTS_TAC THEN UNIFY_REFL_TAC);;
+	val it : goalstack = No subgoals
+}
+\noindent The arguments to {f} can be constants, but {UNIFY_REFL_TAC} will
+print a warning.
+{
+	# g `?f. y + 1 = f y 0`;;
+	...
+
+	# e (META_EXISTS_TAC THEN UNIFY_REFL_TAC);;
+	UNIFY_REFL_TAC: warning: this isn't var: 0
+	val it : goalstack = No subgoals
+}
+
+\USES
+Terminating proof search when using metavariables.
+
+\SEEALSO
+UNIFY_ACCEPT_TAC
+
+\ENDDOC
