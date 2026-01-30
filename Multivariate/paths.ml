@@ -25687,8 +25687,11 @@ let COVERING_SPACE_LIFT_HOMOTOPY = prove
     (ANTS_TAC THENL [ASM SET_TAC[]; SIMP_TAC[IN_INTER]]);
     ALL_TAC] THEN
   MP_TAC(ISPECL
-   [`interval[vec 0:real^1,vec 1]`; `IMAGE (kk:real^1->real^1->bool) tk`]
+   [`euclidean_metric:(real^1)metric`;
+    `interval[vec 0:real^1,vec 1]`; `IMAGE (kk:real^1->real^1->bool) tk`]
    LEBESGUE_COVERING_LEMMA) THEN
+  REWRITE_TAC[MDIAMETER_EUCLIDEAN; MTOPOLOGY_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[COMPACT_IN_EUCLIDEAN; GSYM OPEN_IN] THEN
   REWRITE_TAC[COMPACT_INTERVAL; FORALL_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
   MATCH_MP_TAC(TAUT
    `q /\ (p ==> ~q) /\ (q ==> (r ==> s) ==> t)

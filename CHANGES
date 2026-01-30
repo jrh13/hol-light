@@ -8,6 +8,78 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 29th Jan 2026       Multivariate/metric.ml, Multivariate/topology.ml, Multivariate/paths.ml
+
+Added a proof of Urysohn's metrization theorem and also a definition of set
+diameter for a general metric space, "mdiameter", with basic properties
+mirroring as appropriate those in the Euclidean special case "diameter".
+New definition:
+
+        mdiameter
+
+and theorems:
+
+        EMBEDDING_INTO_METRIZABLE_IMP_METRIZABLE
+        LEBESGUE_COVERING_LEMMA
+        LEBESGUE_COVERING_LEMMA_GEN
+        MBOUNDED_AND_MDIAMETER_LE
+        MBOUNDED_IMP_IN_MSPACE
+        MDIAMETER_BOUNDED
+        MDIAMETER_BOUNDED_BOUND
+        MDIAMETER_CLOSURE
+        MDIAMETER_COMPACT_ATTAINED
+        MDIAMETER_EMPTY
+        MDIAMETER_EQ_0
+        MDIAMETER_EUCLIDEAN
+        MDIAMETER_LE
+        MDIAMETER_POS_LE
+        MDIAMETER_SING
+        MDIAMETER_SUBSET
+        MDIAMETER_SUBSET_MCBALL
+        MDIAMETER_SUBSET_MCBALL_NONEMPTY
+        MDIAMETER_UNION_LE
+        METRIZABLE_PRODUCT_EUCLIDEANREAL_NUM
+        REGULAR_SECOND_COUNTABLE_HAUSDORFF_IMP_NORMAL_SPACE
+        SEPARATING_FUNCTIONS_INJECTIVE
+        URYSOHN_METRIZATION
+        URYSOHN_METRIZATION_EQ
+
+The two theorems LEBESGUE_COVERING_LEMMA / LEBESGUE_COVERING_LEMMA_GEN
+simply replace and generalize the original Euclidean theorems of that name.
+The sole current application now uses the more general versions.
+
+This update has the distinction of being almost entirely written by AI,
+mainly Claude Opus 4.5 via AWS Bedrock. It completed the following
+requests entirely autonomously:
+
+ * Generalize the existing "diameter" theorems as appropriate
+
+ * Autoformalize Urysohn Metrization starting from Munkres's book
+
+This was inspired by, and in the latter case largely reproduces, work
+by Josef Urban reported in https://arxiv.org/abs/2601.03298, with
+the HOL Light setup due to June Lee.
+
+Thu  8th Jan 2026       hol_4.14.sh, holtest.mk, holtest_parallel, TacticTrace/passim
+
+Adopted a patch from June Lee with many improvements focused on TacticTrace:
+
+    - Fixes TacticTrace to support OCaml 5.4
+    - Add an example to TacticTrace. This can be checked with `make test`
+      inside TacticTrace dir, as well as
+      make -f holtest.mk /tmp/hol-light-test/TacticTrace/make-test.ready`.
+    - For easier compilation and inlining of HOL Light proofs, add the
+      following options to hol_4.14.sh:
+      * hol.sh compile <args to ocamlopt>
+      * hol.sh link <args to ocamlopt>
+      * hol.sh inline-load <args to inline_load.ml>
+      Updates to hol_4.sh is not necessary because OCaml 4.14 is the minimal
+      version that supports proof compilation.
+    - Also add `hol.sh -use-module` which prints 1 if HOLLIGHT_USE_MODULE was
+      set when built (0 otherwise)
+    - Slighly simplify TacticTrace by removing the usage of
+      TACLOGGER_DIR env variable.
+
 Mon  8th Dec 2025       Library/words.ml, Examples/bitblast.ml
 
 Fixed a bug in bit-blasting where the conversion from arithmetical to word
