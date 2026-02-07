@@ -56,13 +56,9 @@ end
 
 module Int = struct
 
-let toString = string_of_int;;
-
 let compare = Order.toCompare (compare : int -> int -> int);;
 
 let maxInt = Some max_int;;
-
-let div x y = x / y;;
 
 end
 
@@ -184,7 +180,7 @@ let rec funpow n f x = match n with
 let exp m =
       let rec f x y z = match y with
           0 -> z
-        | _ -> f (m (x,x)) (Int.div y 2) (if y mod 2 = 0 then z else m (z,x))
+        | _ -> f (m (x,x)) (y / 2) (if y mod 2 = 0 then z else m (z,x))
     in
       f
     ;;
@@ -1679,7 +1675,7 @@ let fromList compareKey l =
 (* Pretty-printing.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let toString m = "<" ^ (if null m then "" else Int.toString (size m)) ^ ">";;
+let toString m = "<" ^ (if null m then "" else string_of_int (size m)) ^ ">";;
 
 end
 
@@ -1965,7 +1961,7 @@ let fromList cmp elts = addList (empty cmp) elts;;
 (* ------------------------------------------------------------------------- *)
 
 let toString set =
-    "{" ^ (if null set then "" else Int.toString (size set)) ^ "}";;
+    "{" ^ (if null set then "" else string_of_int (size set)) ^ "}";;
 
 (* ------------------------------------------------------------------------- *)
 (* Iterators over sets                                                       *)
@@ -2195,7 +2191,7 @@ let rec toList h =
       ;;
 
 let toString h =
-    "Heap[" ^ (if null h then "" else Int.toString (size h)) ^ "]";;
+    "Heap[" ^ (if null h then "" else string_of_int (size h)) ^ "]";;
 
 end
 
@@ -2226,7 +2222,7 @@ let equal n1 n2 = n1 = n2;;
 (* ------------------------------------------------------------------------- *)
 
 let prefix  = "_";;
-let numName i = mkPrefix prefix (Int.toString i);;
+let numName i = mkPrefix prefix (string_of_int i);;
 let newName () = numName (newInt ());;
 let newNames n = List.map numName (newInts n);;
 
@@ -2240,7 +2236,7 @@ let variantNum avoid n =
       else
         let n = stripSuffix isDigitOrPrime n in
         let rec variant i =
-          let n_i = n ^ Int.toString i
+          let n_i = n ^ string_of_int i
           in if avoid n_i then variant (i + 1) else n_i
         in variant 0
 ;;
@@ -4493,10 +4489,10 @@ let yVar = Term.Var yVarName;;
 let zVarName = Name.fromString "z";;
 let zVar = Term.Var zVarName;;
 
-let xIVarName i = Name.fromString ("x" ^ Int.toString i);;
+let xIVarName i = Name.fromString ("x" ^ string_of_int i);;
 let xIVar i = Term.Var (xIVarName i);;
 
-let yIVarName i = Name.fromString ("y" ^ Int.toString i);;
+let yIVarName i = Name.fromString ("y" ^ string_of_int i);;
 let yIVar i = Term.Var (yIVarName i);;
 
 (* ------------------------------------------------------------------------- *)
@@ -5257,7 +5253,7 @@ let multInt =
   and iexp' x y acc =
       if y = 1 then Some acc
       else
-          let y = Int.div y 2
+          let y = y / 2
         in
           match multInt x x with
             Some x -> iexp x y acc
@@ -5479,7 +5475,7 @@ let projectionName i =
       in let _ = i <= projectionMax ||
               raise (Bug "Model.projectionName: greater than projectionMax")
     in
-      Name.fromString ("project" ^ Int.toString i)
+      Name.fromString ("project" ^ string_of_int i)
     ;;
 
 let projectionFn i _ elts = Some (Mlist.nth (elts, i - 1));;
@@ -5516,7 +5512,7 @@ let numeralName i =
       in let _ = i <= numeralMax ||
               raise (Bug "Model.numeralName: greater than numeralMax")
 
-      in let s = if i < 0 then "negative" ^ Int.toString (-i) else Int.toString i
+      in let s = if i < 0 then "negative" ^ string_of_int (-i) else string_of_int i
     in
       Name.fromString s
     ;;
@@ -5556,7 +5552,7 @@ and sucName = Name.fromString "suc";;
   let divFn {size = n} x y =
         let y = if y = 0 then n else y
       in
-        Some (Int.div x y)
+        Some (x / y)
       ;;
 
   let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
@@ -5639,7 +5635,7 @@ and sucName = Name.fromString "suc";;
 
   let addFn sz x y = Some (cutN sz (x + y));;
 
-  let divFn _ x y = if y = 0 then None else Some (Int.div x y);;
+  let divFn _ x y = if y = 0 then None else Some (x / y);;
 
   let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
 
@@ -5741,7 +5737,7 @@ and universeName = Name.fromString "universe";;
   let eltN {size = n} =
         let rec f acc = function
             0 -> acc
-          | x -> f (acc + 1) (Int.div x 2)
+          | x -> f (acc + 1) (x / 2)
       in
         f (-1) n
       ;;
@@ -6568,7 +6564,7 @@ let filter pred =
        | Net (p, k, Some (_,n)) -> Net (p, k, netSize (filt n))
     with Error _ -> raise (Bug "Term_net.filter: should never fail");;
 
-let toString net = "Term_net[" ^ Int.toString (size net) ^ "]";;
+let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
 
 (* ------------------------------------------------------------------------- *)
 (* Specialized fold operations to support matching and unification.          *)
@@ -6815,7 +6811,7 @@ let fromList parm l = Mlist.foldl (fun (atm_a,n) -> insert n atm_a) (newNet parm
 
 let filter = Term_net.filter;;
 
-let toString net = "Atom_net[" ^ Int.toString (size net) ^ "]";;
+let toString net = "Atom_net[" ^ string_of_int (size net) ^ "]";;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -6880,7 +6876,7 @@ let filter pred {positive=positive;negative=negative} =
     {positive = Atom_net.filter pred positive;
      negative = Atom_net.filter pred negative};;
 
-let toString net = "Literal_net[" ^ Int.toString (size net) ^ "]";;
+let toString net = "Literal_net[" ^ string_of_int (size net) ^ "]";;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -7052,7 +7048,7 @@ let filter pred ({empty=empty;unitn=unitn;nonunit=nonunit}) =
       {empty = empty; unitn = unitn; nonunit = nonunit}
     ;;
 
-let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
+let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -8061,7 +8057,7 @@ let empty = Units (Literal_net.newNet {fifo = false});;
 
 let size (Units net) = Literal_net.size net;;
 
-let toString units = "U{" ^ Int.toString (size units) ^ "}";;
+let toString units = "U{" ^ string_of_int (size units) ^ "}";;
 
 (* ------------------------------------------------------------------------- *)
 (* Add units into the store.                                                 *)
@@ -9399,7 +9395,7 @@ let default : parameters =
 
 let size (Waiting {clauses=clauses}) = Heap.size clauses;;
 
-let toString w = "Waiting{" ^ Int.toString (size w) ^ "}";;
+let toString w = "Waiting{" ^ string_of_int (size w) ^ "}";;
 
 (*let toString (Waiting {clauses}) = "\n" ^
   String.concat "\n" (List.map (fun (w, (d, c)) -> Clause.toString c) (Heap.toList clauses));;*)
