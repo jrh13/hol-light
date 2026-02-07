@@ -159,20 +159,6 @@ let isSome = function
 
 let can f x = isSome (total f x);;
 
-(* ------------------------------------------------------------------------- *)
-(* Combinators.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let cComb f x y = f y x;;
-
-let iComb x = x;;
-
-let kComb x y = x;;
-
-let sComb f g x = f x (g x);;
-
-let wComb f x = f x x;;
-
 let rec funpow n f x = match n with
       0 -> x
     | _ -> funpow (n - 1) f (f x);;
@@ -387,8 +373,6 @@ open Order
 exception Bug = Useful.Bug;;
 
 exception Error = Useful.Error;;
-
-let kComb = Useful.kComb;;
 
 (* ------------------------------------------------------------------------- *)
 (* Converting a comparison function to an equality function.                 *)
@@ -1648,7 +1632,7 @@ let differenceDomain = fun m1 -> fun m2 ->
 let symmetricDifferenceDomain m1 m2 =
     unionDomain (differenceDomain m1 m2) (differenceDomain m2 m1);;
 
-let equalDomain m1 m2 = equal (kComb (kComb true)) m1 m2;;
+let equalDomain m1 m2 = equal (K (K true)) m1 m2;;
 
 let subsetDomain (Map (compareKey,tree1)) (Map (_,tree2)) =
     treeSubsetDomain compareKey tree1 tree2;;
@@ -4331,7 +4315,7 @@ let inferenceToThm = function
       in
         if pol then Resolve (atm,th1,th2) else Resolve (atm,th2,th1)
     | (Thm.Refl,[]) ->
-      (match Literal.Set.findl (kComb true) cl with
+      (match Literal.Set.findl (K true) cl with
          Some lit -> Refl (Literal.destRefl lit)
        | None -> raise (Bug "malformed Refl inference"))
     | (Thm.Equality,[]) -> let (x,y,z) = (reconstructEquality cl) in Equality (x,y,z)
@@ -5327,9 +5311,9 @@ type fixed =
       {functions : fixedFunction Name_arity.Map.map;
        relations : fixedRelation Name_arity.Map.map};;
 
-let uselessFixedFunction : fixedFunction = kComb (kComb None);;
+let uselessFixedFunction : fixedFunction = K (K None);;
 
-let uselessFixedRelation : fixedRelation = kComb (kComb None);;
+let uselessFixedRelation : fixedRelation = K (K None);;
 
 let emptyFunctions : fixedFunction Name_arity.Map.map = Name_arity.Map.newMap ();;
 
@@ -7183,10 +7167,10 @@ let strictlySubsumes = fun pred -> fun subsume -> fun cl ->
     end;;
 *)
 
-let isSubsumed subs cl = Option.is_some (subsumes (kComb true) subs cl);;
+let isSubsumed subs cl = Option.is_some (subsumes (K true) subs cl);;
 
 let isStrictlySubsumed subs cl =
-    Option.is_some (strictlySubsumes (kComb true) subs cl);;
+    Option.is_some (strictlySubsumes (K true) subs cl);;
 
 (* ------------------------------------------------------------------------- *)
 (* Single clause versions.                                                   *)
@@ -7196,7 +7180,7 @@ let clauseSubsumes cl' cl =
       let lits' = sortClause cl'
       and lits = clauseSym (Literal.Set.toList cl)
     in
-      match genClauseSubsumes (kComb true) cl' lits' lits () with
+      match genClauseSubsumes (K true) cl' lits' lits () with
         Some (_,sub,()) -> Some sub
       | None -> None
     ;;
@@ -7239,7 +7223,7 @@ type kbo =
 
 (* Default weight = uniform *)
 
-let uniformWeight : Term.function_t -> int = kComb 1;;
+let uniformWeight : Term.function_t -> int = K 1;;
 
 (* Default precedence = by arity *)
 
@@ -8026,7 +8010,7 @@ let reduce rw = fst (reduce' rw);;
       rewriteRule rw order
     ;;
 
-  let order : reductionOrder = kComb (Some Greater);;
+  let order : reductionOrder = K (Some Greater);;
   let rewrite = orderedRewrite order;;
 
 
@@ -8233,7 +8217,7 @@ let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
 
   let isLargerLiteral ({ordering=ordering;orderLiterals=orderLiterals} : parameters) lits =
       match orderLiterals with
-        No_literal_order -> kComb true
+        No_literal_order -> K true
       | Unsigned_literal_order ->
           let addLit ((_,atm),acc) = atomToTerms atm @ acc
 
@@ -8241,8 +8225,8 @@ let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
         in
           fun (_,atm') -> notStrictlyLess ordering (atomToTerms atm', tms)
       | Positive_literal_order ->
-        match Literal.Set.findl (kComb true) lits with
-          None -> kComb true
+        match Literal.Set.findl (K true) lits with
+          None -> K true
         | Some (pol,_) ->
             let addLit ((p,atm),acc) =
                 if p = pol then atomToTerms atm @ acc else acc
@@ -9425,7 +9409,7 @@ let mkModelClause cl =
 let mkModelClauses = List.map mkModelClause;;
 
 let perturbModel vM cls =
-    if Mlist.null cls then kComb ()
+    if Mlist.null cls then K ()
     else
         let vN = {Model.size = Model.msize vM}
 
