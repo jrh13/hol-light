@@ -159,10 +159,6 @@ let isSome = function
 
 let can f x = isSome (total f x);;
 
-let rec funpow n f x = match n with
-      0 -> x
-    | _ -> funpow (n - 1) f (f x);;
-
 let exp m =
       let rec f x y z = match y with
           0 -> z
