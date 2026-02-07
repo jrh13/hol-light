@@ -28,7 +28,6 @@ module Metis_prover = struct
 
 module Portable = struct
 
-let randomInt x = Random.int x;;
 let randomWord () = Random.bits ();;
 
 let critical x = x;;
@@ -403,8 +402,6 @@ exception Bug = Useful.Bug;;
 exception Error = Useful.Error;;
 
 let kComb = Useful.kComb;;
-
-let randomInt = Portable.randomInt;;
 
 let randomWord = Portable.randomWord;;
 
@@ -1365,7 +1362,7 @@ let random m =
       let n = size m
     in
       if n = 0 then raise (Bug "Map.random: empty")
-      else nth m (randomInt n)
+      else nth m (Random.int n)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -1442,7 +1439,7 @@ let deleteRandom m =
       let n = size m
     in
       if n = 0 then raise (Bug "Map.deleteRandom: empty")
-      else deleteNth m (randomInt n)
+      else deleteNth m (Random.int n)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -5914,7 +5911,7 @@ let getValuation v' v =
     | None -> raise (Error "Model.getValuation: incomplete valuation");;
 
 let randomValuation {size = n} vs =
-      let f (v,v') = insertValuation v' (v, Portable.randomInt n)
+      let f (v,v') = insertValuation v' (v, Random.int n)
     in
       Name.Set.foldl f emptyValuation vs
     ;;
@@ -5967,7 +5964,7 @@ let newTable n arity =
     | Some space -> Array_table (Array.make space cUNKNOWN);;
 
 
-  let randomResult r = Portable.randomInt r;;
+  let randomResult r = Random.int r;;
   let lookupTable n vR table elts =
       match table with
         Forgetful_table -> randomResult vR
@@ -6357,7 +6354,7 @@ let perturb vM pert =
 
   let pickPerturb vM perts =
       if Mlist.null perts then ()
-      else perturb vM (Mlist.nth (perts, Portable.randomInt (length perts)));;
+      else perturb vM (Mlist.nth (perts, Random.int (length perts)));;
 
   let perturbTerm vM vV (tm,target) =
       pickPerturb vM (pertTerm vM target (fst (modelTerm vM vV tm)) []);;
