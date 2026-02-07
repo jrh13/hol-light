@@ -28,8 +28,6 @@ module Metis_prover = struct
 
 module Portable = struct
 
-let pointerEqual (p1, p2) = p1 == p2;;
-
 let randomInt x = Random.int x;;
 let randomWord () = Random.bits ();;
 
@@ -419,8 +417,6 @@ open Order
 exception Bug = Useful.Bug;;
 
 exception Error = Useful.Error;;
-
-let pointerEqual = Portable.pointerEqual;;
 
 let kComb = Useful.kComb;;
 
@@ -954,7 +950,7 @@ let rec treeUnion compareKey f f2 tree1 tree2 =
       | Tree node2 -> nodeUnion compareKey f f2 node1 node2
 
 and nodeUnion compareKey f f2 node1 node2 =
-    if pointerEqual (node1,node2) then nodeMapPartial f2 node1
+    if node1 == node2 then nodeMapPartial f2 node1
     else
         let {priority=priority;left=left;key=key;value=value;right=right} = node2
 
@@ -1017,7 +1013,7 @@ let rec treeUnionDomain compareKey tree1 tree2 =
       match tree2 with
         Empty -> tree1
       | Tree node2 ->
-        if pointerEqual (node1,node2) then tree2
+        if node1 == node2 then tree2
         else nodeUnionDomain compareKey node1 node2
 
 and nodeUnionDomain compareKey node1 node2 =
@@ -1044,7 +1040,7 @@ let rec treeIntersectDomain compareKey tree1 tree2 =
       match tree2 with
         Empty -> Empty
       | Tree node2 ->
-        if pointerEqual (node1,node2) then tree2
+        if node1 == node2 then tree2
         else nodeIntersectDomain compareKey node1 node2
 
 and nodeIntersectDomain compareKey node1 node2 =
@@ -1072,7 +1068,7 @@ let rec treeDifferenceDomain compareKey t1 t2 =
       | Tree n2 -> nodeDifferenceDomain compareKey n1 n2
 
 and nodeDifferenceDomain compareKey n1 n2 =
-    if pointerEqual (n1,n2) then Empty
+    if n1 == n2 then Empty
     else
         let {priority=priority;left=left;key=key;value=value;right=right} = n1
 
@@ -1098,7 +1094,7 @@ let rec treeSubsetDomain compareKey tree1 tree2 =
       | Tree node2 -> nodeSubsetDomain compareKey node1 node2
 
 and nodeSubsetDomain compareKey node1 node2 =
-    pointerEqual (node1,node2) ||
+    node1 == node2 ||
       let {size=size;left=left;key=key;right=right} = node1
     in
       size <= nodeSize node2 &&
@@ -1601,7 +1597,7 @@ let count pred =
 (* ------------------------------------------------------------------------- *)
 
 let compare compareValue (m1,m2) =
-    if pointerEqual (m1,m2) then Equal
+    if m1 == m2 then Equal
     else
       match Int.compare (size m1, size m2) with
         Less -> Less
@@ -1615,7 +1611,7 @@ let compare compareValue (m1,m2) =
       | Greater -> Greater;;
 
 let equal equalValue m1 m2 =
-    pointerEqual (m1,m2) ||
+    m1 == m2 ||
     (size m1 = size m2 &&
        let Map (compareKey,_) = m1
 
@@ -2475,11 +2471,9 @@ let compare (tm1,tm2) =
   let rec cmp = function
       ([], []) -> Equal
     | (tm1 :: tms1, tm2 :: tms2) ->
-      let tm1_tm2 = (tm1,tm2)
-      in
-        if Portable.pointerEqual tm1_tm2 then cmp (tms1, tms2)
+        if tm1 == tm2 then cmp (tms1, tms2)
         else
-          (match tm1_tm2 with
+          (match (tm1,tm2) with
             (Var v1, Var v2) ->
             (match Name.compare (v1,v2) with
                Less -> Less
@@ -2538,7 +2532,7 @@ let rec replace tm = function
         let arg = List.nth tms h in
         let arg' = replace arg (t,res)
         in
-          if Portable.pointerEqual (arg',arg) then tm
+          if arg' == arg then tm
           else Fn (letc, updateNth (h,arg') tms)
 ;;
 
@@ -2764,12 +2758,12 @@ let subst sub =
   let rec tmSub = function
         (Term.Var v as tm) ->
           (match peek sub v with
-             Some tm' -> if Portable.pointerEqual (tm,tm') then tm else tm'
+             Some tm' -> if tm == tm' then tm else tm'
            | None -> tm)
       | (Term.Fn (f,args) as tm) ->
           let args' = Sharing.map tmSub args
           in
-            if Portable.pointerEqual (args,args') then tm
+            if args == args' then tm
             else Term.Fn (f,args')
     in
       fun tm -> if null sub then tm else tmSub tm
@@ -2907,8 +2901,8 @@ let matchTerms sub tm1 tm2 =
 let unify sub tm1 tm2 =
   let rec solve sub = function
       [] -> sub
-    | (((tm1,tm2) as tm1_tm2) :: rest) ->
-      if Portable.pointerEqual tm1_tm2 then solve sub rest
+    | ((tm1,tm2) :: rest) ->
+      if tm1 == tm2 then solve sub rest
       else solve' sub (subst sub tm1, subst sub tm2, rest)
 
   and solve' sub = function
@@ -3029,7 +3023,7 @@ let replace ((rel,tms) as atm) = function
       let tm = Mlist.nth (tms,h)
       in let tm' = Term.replace tm (t,res)
       in
-        if Portable.pointerEqual (tm,tm') then atm
+        if tm == tm' then atm
         else (rel, updateNth (h,tm') tms)
       ;;
 
@@ -3061,7 +3055,7 @@ let freeVars =
 let subst sub ((p,tms) as atm) : atom =
     let tms' = Sharing.map (Substitute.subst sub) tms
     in
-      if Portable.pointerEqual (tms',tms) then atm else (p,tms')
+      if tms' == tms then atm else (p,tms')
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -3440,8 +3434,8 @@ in
 let compare fm1_fm2 =
   let rec cmp = function
       [] -> Equal
-    | (f1_f2 :: fs) ->
-      if Portable.pointerEqual f1_f2 then cmp fs
+    | (((f1, f2) as f1_f2) :: fs) ->
+      if f1 == f2 then cmp fs
       else
         match f1_f2 with
           (True,True) -> cmp fs
@@ -3549,11 +3543,11 @@ let generalize fm = listMkForall (Name.Set.toList (freeVars fm), fm);;
       | Atom (p,tms) ->
           let tms' = Sharing.map (Substitute.subst sub) tms
         in
-          if Portable.pointerEqual (tms,tms') then fm else Atom (p,tms')
+          if tms == tms' then fm else Atom (p,tms')
       | Not p ->
           let p' = substFm sub p
         in
-          if Portable.pointerEqual (p,p') then fm else Not p'
+          if p == p' then fm else Not p'
       | And (p,q) -> substConn sub fm (fun (x,y) -> And (x,y)) p q
       | Or (p,q) -> substConn sub fm (fun (x,y) -> Or (x,y)) p q
       | Imp (p,q) -> substConn sub fm (fun (x,y) -> Imp (x,y)) p q
@@ -3565,8 +3559,7 @@ let generalize fm = listMkForall (Name.Set.toList (freeVars fm), fm);;
         let p' = substFm sub p
         and q' = substFm sub q
       in
-        if Portable.pointerEqual (p,p') &&
-           Portable.pointerEqual (q,q')
+        if p == p' && q == q'
         then fm
         else conn (p',q')
 
@@ -3590,7 +3583,7 @@ let generalize fm = listMkForall (Name.Set.toList (freeVars fm), fm);;
 
         in let p' = substCheck sub p
       in
-        if Name.equal v v' && Portable.pointerEqual (p,p') then fm
+        if Name.equal v v' && p == p' then fm
         else quant (v',p');;
 
   let subst = substCheck;;
@@ -3802,7 +3795,7 @@ let subterms lit = Atom.subterms (atom lit);;
 let replace ((pol,atm) as lit) path_tm =
       let atm' = Atom.replace atm path_tm
     in
-      if Portable.pointerEqual (atm,atm') then lit else (pol,atm')
+      if atm == atm' then lit else (pol,atm')
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -3820,7 +3813,7 @@ let freeVars lit = Atom.freeVars (atom lit);;
 let subst sub ((pol,atm) as lit) : literal =
       let atm' = Atom.subst sub atm
     in
-      if Portable.pointerEqual (atm',atm) then lit else (pol,atm')
+      if atm' == atm then lit else (pol,atm')
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -3958,7 +3951,7 @@ struct
   let subst sub lits =
         let substLit (lit,(eq,lits')) =
               let lit' = subst sub lit
-              in let eq = eq && Portable.pointerEqual (lit,lit')
+              in let eq = eq && lit == lit'
             in
               (eq, add lits' lit')
 
@@ -4146,7 +4139,7 @@ let assume lit =
 let subst sub (Thm (cl,inf) as th) =
       let cl' = Literal.Set.subst sub cl
     in
-      if Portable.pointerEqual (cl,cl') then th
+      if cl == cl' then th
       else
         match inf with
           (Subst,_) -> Thm (cl',inf)
@@ -5123,7 +5116,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
         match result with
           None -> Apart
         | Some sub' ->
-          if Portable.pointerEqual (sub,sub') then Joined else Joinable sub'
+          if sub == sub' then Joined else Joinable sub'
       ;;
 
   let updateApart sub =
@@ -6422,8 +6415,8 @@ type qterm =
 
   let rec cmp = function
       [] -> Equal
-    | (q1_q2 :: qs) ->
-      if Portable.pointerEqual q1_q2 then cmp qs
+    | (((q1, q2) as q1_q2) :: qs) ->
+      if q1 == q2 then cmp qs
       else
         match q1_q2 with
           (Var,Var) -> Equal
