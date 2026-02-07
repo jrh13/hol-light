@@ -28,8 +28,6 @@ module Metis_prover = struct
 
 module Portable = struct
 
-let randomWord () = Random.bits ();;
-
 let critical x = x;;
 
 end
@@ -403,8 +401,6 @@ exception Error = Useful.Error;;
 
 let kComb = Useful.kComb;;
 
-let randomWord = Portable.randomWord;;
-
 (* ------------------------------------------------------------------------- *)
 (* Converting a comparison function to an equality function.                 *)
 (* ------------------------------------------------------------------------- *)
@@ -417,7 +413,7 @@ let equalKey compareKey key1 key2 = compareKey (key1,key2) = Equal;;
 
 type priority = Word.word;;
 
-let randomPriority = randomWord;;
+let randomPriority = Random.bits;;
 
 let comparePriority = Word.compare;;
 
