@@ -106,13 +106,6 @@ let fromInt x = x;;
 
 end
 
-module Math = struct
-
-let ln = log;;
-let pow (x,y) = x ** y;;
-
-end
-
 module Mlist = struct
 
 let foldl f a l = List.fold_left  (fun acc x -> f (x, acc)) a l;;
@@ -9466,7 +9459,7 @@ let checkModels parms models (fv,cl) =
             in let n = maxChecks
             in let (vT,vF) = Model.check Model.interpretClause n model fv cl
           in
-            Math.pow (1.0 +. Real.fromInt vT /. Real.fromInt (vT + vF), weight) *. z
+            (1.0 +. Real.fromInt vT /. Real.fromInt (vT + vF) ** weight) *. z
     in
       Mlist.foldl check 1.0 (zip parms models)
     ;;
@@ -9499,9 +9492,9 @@ let perturbModels parms models cls =
 *)
         let {symbolsWeight=symbolsWeight;variablesWeight=variablesWeight;literalsWeight=literalsWeight;modelsP=modelsP} = parm
         in let lits = Clause.literals cl
-        in let symbolsW = Math.pow (clauseSymbols lits, symbolsWeight)
-        in let variablesW = Math.pow (clauseVariables lits, variablesWeight)
-        in let literalsW = Math.pow (clauseLiterals lits, literalsWeight)
+        in let symbolsW = clauseSymbols lits ** symbolsWeight
+        in let variablesW = clauseVariables lits ** variablesWeight
+        in let literalsW = clauseLiterals lits ** literalsWeight
         in let modelsW = checkModels modelsP mods mcl
 (*MetisTrace4
         let () = trace ("Waiting.clauseWeight: dist = " ^
@@ -9541,7 +9534,7 @@ let add' waiting dist mcls cls =
               raise Bug "Waiting.add': different lengths"
 *)
 
-      in let dist = dist +. Math.ln (Real.fromInt (length cls))
+      in let dist = dist +. log (Real.fromInt (length cls))
 
       in let addCl ((mcl,cl),acc) =
             let weight = clauseWeight parameters models dist mcl cl
