@@ -173,8 +173,6 @@ let exp m =
 
 let pair x y = (x,y);;
 
-let swap (x,y) = (y,x);;
-
 let curry f x y = f (x,y);;
 
 let uncurry f (x,y) = f x y;;
