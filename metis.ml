@@ -35,22 +35,6 @@ let critical x = x;;
 
 end
 
-module Option = struct
-
-let getOpt = function
-    (Some s, _) -> s
-  | (None, x) -> x;;
-
-let isSome = function
-    Some _ -> true
-  | None -> false;;
-
-let mapPartial f = function
-    None -> None
-  | Some x -> f x;;
-
-end
-
 module Order = struct
 
 type order = Less | Equal | Greater;;
@@ -1051,7 +1035,7 @@ and nodeIntersectDomain compareKey node1 node2 =
       in let left = treeIntersectDomain compareKey l left
       and right = treeIntersectDomain compareKey r right
     in
-      if Option.isSome kvo then mkTree priority left key value right
+      if Option.is_some kvo then mkTree priority left key value right
       else treeAppend left right
     ;;
 
@@ -1077,7 +1061,7 @@ and nodeDifferenceDomain compareKey n1 n2 =
         in let left = treeDifferenceDomain compareKey left l
         and right = treeDifferenceDomain compareKey right r
       in
-        if Option.isSome kvo then treeAppend left right
+        if Option.is_some kvo then treeAppend left right
         else mkTree priority left key value right
       ;;
 
@@ -1100,7 +1084,7 @@ and nodeSubsetDomain compareKey node1 node2 =
       size <= nodeSize node2 &&
         let (l,kvo,r) = nodePartition compareKey key node2
       in
-        Option.isSome kvo &&
+        Option.is_some kvo &&
         treeSubsetDomain compareKey left l &&
         treeSubsetDomain compareKey right r
     ;;
@@ -1366,7 +1350,7 @@ let peekKey (Map (compareKey,tree)) key = treePeekKey compareKey key tree;;
 
 let peek (Map (compareKey,tree)) key = treePeek compareKey key tree;;
 
-let inDomain key m = Option.isSome (peek m key);;
+let inDomain key m = Option.is_some (peek m key);;
 
 let get m key =
     match peek m key with
@@ -1578,7 +1562,7 @@ let firstl f m = firstIterator f (mkIterator m);;
 
 let firstr f m = firstIterator f (mkRevIterator m);;
 
-let exists p m = Option.isSome (findl p m);;
+let exists p m = Option.is_some (findl p m);;
 
 let all p =
       let np x = not (p x)
@@ -6105,7 +6089,7 @@ let peekFixedFunction vM (n,elts) =
       | Some fixFn -> fixFn elts
     ;;
 
-let isFixedFunction vM n_elts = Option.isSome (peekFixedFunction vM n_elts);;
+let isFixedFunction vM n_elts = Option.is_some (peekFixedFunction vM n_elts);;
 
 let peekFixedRelation vM (n,elts) =
       let {fixedRelations = fixRels} = vM
@@ -6115,7 +6099,7 @@ let peekFixedRelation vM (n,elts) =
       | Some fixRel -> fixRel elts
     ;;
 
-let isFixedRelation vM n_elts = Option.isSome (peekFixedRelation vM n_elts);;
+let isFixedRelation vM n_elts = Option.is_some (peekFixedRelation vM n_elts);;
 
 (* A default model *)
 
@@ -6586,11 +6570,11 @@ let filter pred =
              None -> None
            | Some n -> Some (Single (qtm,n)))
         | (Multiple (vs,fs)) ->
-            let vs = Option.mapPartial filt vs
+            let vs = Option.bind vs filt
 
             in let fs = Name_arity.Map.mapPartial (fun (_,n) -> filt n) fs
           in
-            if not (Option.isSome vs) && Name_arity.Map.null fs then None
+            if not (Option.is_some vs) && Name_arity.Map.null fs then None
             else Some (Multiple (vs,fs))
     in try
       function
@@ -7217,10 +7201,10 @@ let strictlySubsumes = fun pred -> fun subsume -> fun cl ->
     end;;
 *)
 
-let isSubsumed subs cl = Option.isSome (subsumes (kComb true) subs cl);;
+let isSubsumed subs cl = Option.is_some (subsumes (kComb true) subs cl);;
 
 let isStrictlySubsumed subs cl =
-    Option.isSome (strictlySubsumes (kComb true) subs cl);;
+    Option.is_some (strictlySubsumes (kComb true) subs cl);;
 
 (* ------------------------------------------------------------------------- *)
 (* Single clause versions.                                                   *)
@@ -7320,7 +7304,7 @@ let weightTerm weight =
       let rec wt m c = function
           [] -> Weight (m,c)
         | (Term.Var v :: tms) ->
-            let n = Option.getOpt (Name.Map.peek m v, 0)
+            let n = Option.value (Name.Map.peek m v) ~default:0
           in
             wt (Name.Map.insert m (v, n + 1)) (c + 1) tms
         | (Term.Fn (f,a) :: tms) ->
@@ -7674,7 +7658,7 @@ let rewrIdConv' order known redexes id tm =
             in let (l,r) = redexResidue lr eqn
             in let sub = Substitute.normalize (Substitute.matchTerms Substitute.empty l tm)
             in let tm' = Substitute.subst sub r
-            in let _ = Option.isSome ort ||
+            in let _ = Option.is_some ort ||
                     order (tm,tm') = Some Greater ||
                     raise (Error "order")
             in let (_,th) = orientedEquation lr eqn
