@@ -128,13 +128,6 @@ module Useful = struct
 open Order
 
 (* ------------------------------------------------------------------------- *)
-(* OCaml lists (MF).                                                         *)
-(* ------------------------------------------------------------------------- *)
-
-let length = List.length;;
-let app = List.iter;;
-
-(* ------------------------------------------------------------------------- *)
 (* Characters (MF).                                                          *)
 (* ------------------------------------------------------------------------- *)
 
@@ -9409,7 +9402,7 @@ let perturbModel vM cls =
               if Model.interpretClause vM vV cl then ()
               else Model.perturbClause vM vV cl
 
-        in let perturbClauses () = app perturbClause cls
+        in let perturbClauses () = List.iter perturbClause cls
       in
         fun n -> funpow n perturbClauses ()
       ;;
@@ -9440,7 +9433,7 @@ let perturbModels parms models cls =
           in
             perturbModel model cls perturbations
     in
-      app perturb (zip parms models)
+      List.iter perturb (zip parms models)
     ;;
 
 (* ------------------------------------------------------------------------- *)
