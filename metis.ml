@@ -135,20 +135,11 @@ let isDigit c = '0' <= c && c <= '9'
 (* Exceptions.                                                               *)
 (* ------------------------------------------------------------------------- *)
 
-exception Error of string;;
-
 exception Bug of string;;
 
 exception Subscript;;
 
-let total f x = try Some (f x) with Error _ -> None;;
-
-let isSome = function
-    (Some _) -> true
-  | None -> false
-;;
-
-let can f x = isSome (total f x);;
+let total f x = try Some (f x) with Failure _ -> None;;
 
 let exp m =
       let rec f x y z = match y with
@@ -227,7 +218,7 @@ let zipWith f =
     let rec z l = function
           ([], []) -> l
         | (x :: xs, y :: ys) -> z (f x y :: l) (xs, ys)
-        | _ -> raise (Error "zipWith: lists different lengths")
+        | _ -> failwith "zipWith: lists different lengths"
     in
       fun xs -> fun ys -> List.rev (z [] (xs, ys))
     ;;
@@ -353,8 +344,6 @@ open Order
 
 exception Bug = Useful.Bug;;
 
-exception Error = Useful.Error;;
-
 (* ------------------------------------------------------------------------- *)
 (* Converting a comparison function to an equality function.                 *)
 (* ------------------------------------------------------------------------- *)
@@ -468,7 +457,7 @@ in
       in
         tree
       end
-      handle Error err -> raise (Bug err);;
+      handle Failure err -> raise (Bug err);;
 end;;
 *)
 
@@ -1301,7 +1290,7 @@ let inDomain key m = Option.is_some (peek m key);;
 
 let get m key =
     match peek m key with
-      None -> raise (Error "Map.get: element not found")
+      None -> failwith "Map.get: element not found"
     | Some value -> value;;
 
 let pick (Map (_,tree)) = treePick tree;;
@@ -1955,8 +1944,6 @@ end
 
 module Mmap = struct
 
-exception Error = Useful.Error;;
-
 module type Ordered =
 sig
   type t
@@ -1973,7 +1960,7 @@ struct
   let null = Ma.is_empty;;
   let singleton (k, x) = Ma.singleton k x;;
   let size = Ma.cardinal;;
-  let get m k = try Ma.find k m with Not_found -> raise (Error "Mmap.get: element not found");;
+  let get m k = try Ma.find k m with Not_found -> failwith "Mmap.get: element not found";;
   let peek m k = try Some (Ma.find k m) with Not_found -> None;;
   let insert m (k, v) = Ma.add k v m;;
   let toList = Ma.bindings;;
@@ -2319,7 +2306,7 @@ type term =
 
 let destVar = function
     (Var v) -> v
-  | (Fn _) -> raise (Error "destVar");;
+  | (Fn _) -> failwith "destVar";;
 
 let isVar = can destVar;;
 
@@ -2331,7 +2318,7 @@ let equalVar v = function
 
 let destFn = function
     (Fn f) -> f
-  | (Var _) -> raise (Error "destFn");;
+  | (Var _) -> failwith "destFn";;
 
 let isFn = can destFn;;
 
@@ -2364,7 +2351,7 @@ let mkConst c = (Fn (c, []));;
 
 let destConst = function
     (Fn (c, [])) -> c
-  | _ -> raise (Error "destConst");;
+  | _ -> failwith "destConst";;
 
 let isConst = can destConst;;
 
@@ -2374,8 +2361,8 @@ let mkBinop f (a,b) = Fn (f,[a;b]);;
 
 let destBinop f = function
   (Fn (x,[a;b])) ->
-    if Name.equal x f then (a,b) else raise (Error "Term.destBinop: wrong binop")
-  | _ -> raise (Error "Term.destBinop: not a binop");;
+    if Name.equal x f then (a,b) else failwith "Term.destBinop: wrong binop"
+  | _ -> failwith "Term.destBinop: not a binop";;
 
 let isBinop f = can (destBinop f);;
 
@@ -2434,9 +2421,9 @@ type path = int list;;
 
 let rec subterm' = function
     (tm, []) -> tm
-  | (Var _, _ :: _) -> raise (Error "Term.subterm: Var")
+  | (Var _, _ :: _) -> failwith "Term.subterm: Var"
   | (Fn (_,tms), h :: t) ->
-    if h >= List.length tms then raise (Error "Term.replace: Fn")
+    if h >= List.length tms then failwith "Term.replace: Fn"
     else subterm' (List.nth tms h, t);;
 let subterm s t = subterm' (s, t);;
 
@@ -2456,9 +2443,9 @@ let rec replace tm = function
     ([],res) -> if equal res tm then tm else res
   | (h :: t, res) ->
     match tm with
-      Var _ -> raise (Error "Term.replace: Var")
+      Var _ -> failwith "Term.replace: Var"
     | Fn (letc,tms) ->
-      if h >= List.length tms then raise (Error "Term.replace: Fn")
+      if h >= List.length tms then failwith "Term.replace: Fn"
       else
         let arg = List.nth tms h in
         let arg' = replace arg (t,res)
@@ -2524,11 +2511,11 @@ let hasTypeFunction = (hasTypeFunctionName,2);;
 
 let destFnHasType ((f,a) : functionName * term list) =
     if not (Name.equal f hasTypeFunctionName) then
-      raise (Error "Term.destFnHasType")
+      failwith "Term.destFnHasType"
     else
       match a with
         [tm;ty] -> (tm,ty)
-      | _ -> raise (Error "Term.destFnHasType");;
+      | _ -> failwith "Term.destFnHasType";;
 
 let isFnHasType = can destFnHasType;;
 
@@ -2590,17 +2577,17 @@ let mkFnApp (fTm,aTm) = (appName, [fTm;aTm]);;
 let mkApp f_a = Fn (mkFnApp f_a);;
 
 let destFnApp ((f,a) : Name.name * term list) =
-    if not (Name.equal f appName) then raise (Error "Term.destFnApp")
+    if not (Name.equal f appName) then failwith "Term.destFnApp"
     else
       match a with
         [fTm;aTm] -> (fTm,aTm)
-      | _ -> raise (Error "Term.destFnApp");;
+      | _ -> failwith "Term.destFnApp";;
 
 let isFnApp = can destFnApp;;
 
 let destApp tm =
     match tm with
-      Var _ -> raise (Error "Term.destApp")
+      Var _ -> failwith "Term.destApp"
     | Fn letc -> destFnApp letc;;
 
 let isApp = can destApp;;
@@ -2737,7 +2724,7 @@ let compose (Subst m1 as sub1) sub2 =
 let union (Subst m1 as s1) (Subst m2 as s2) =
   let compatible ((_,tm1),(_,tm2)) =
       if Term.equal tm1 tm2 then Some tm1
-      else raise (Error "Substitute.union: incompatible")
+      else failwith "Substitute.union: incompatible"
   in
       if Name.Map.null m1 then s2
       else if Name.Map.null m2 then s1
@@ -2751,9 +2738,9 @@ let union (Subst m1 as s1) (Subst m2 as s2) =
 let invert (Subst m) =
   let inv = function
       (v, Term.Var w, s) ->
-      if Name.Map.inDomain w s then raise (Error "Substitute.invert: non-injective")
+      if Name.Map.inDomain w s then failwith "Substitute.invert: non-injective"
       else Name.Map.insert s (w, Term.Var v)
-    | (_, Term.Fn _, _) -> raise (Error "Substitute.invert: non-variable")
+    | (_, Term.Fn _, _) -> failwith "Substitute.invert: non-variable"
   in Subst (Name.Map.foldl inv (Name.Map.newMap ()) m)
 ;;
 
@@ -2814,14 +2801,14 @@ let matchTerms sub tm1 tm2 =
               None -> insert sub (v,tm)
             | Some tm' ->
               if Term.equal tm tm' then sub
-              else raise (Error "Substitute.match: incompatible matches")
+              else failwith "Substitute.match: incompatible matches"
       in
         matchList sub rest
     | ((Term.Fn (f1,args1), Term.Fn (f2,args2)) :: rest) ->
       if Name.equal f1 f2 && length args1 = length args2 then
         matchList sub (zip args1 args2 @ rest)
-      else raise (Error "Substitute.match: different structure")
-    | _ -> raise (Error "Substitute.match: functions can't match vars")
+      else failwith "Substitute.match: different structure"
+    | _ -> failwith "Substitute.match: functions can't match vars"
   in matchList sub [(tm1,tm2)]
 ;;
 
@@ -2839,7 +2826,7 @@ let unify sub tm1 tm2 =
   and solve' sub = function
       ((Term.Var v), tm, rest) ->
       if Term.equalVar v tm then solve sub rest
-      else if Term.freeIn v tm then raise (Error "Substitute.unify: occurs check")
+      else if Term.freeIn v tm then failwith "Substitute.unify: occurs check"
       else
         (match peek sub v with
            None -> solve (compose sub (singleton (v,tm))) rest
@@ -2849,7 +2836,7 @@ let unify sub tm1 tm2 =
       if Name.equal f1 f2 && length args1 = length args2 then
         solve sub (zip args1 args2 @ rest)
       else
-        raise (Error "Substitute.unify: different structure")
+        failwith "Substitute.unify: different structure"
 
   in solve sub [(tm1,tm2)];;
 
@@ -2904,8 +2891,8 @@ let mkBinop p (a,b) : atom = (p,[a;b]);;
 
 let destBinop p = function
     (x,[a;b]) ->
-    if Name.equal x p then (a,b) else raise (Error "Atom.destBinop: wrong binop")
-  | _ -> raise (Error "Atom.destBinop: not a binop");;
+    if Name.equal x p then (a,b) else failwith "Atom.destBinop: wrong binop"
+  | _ -> failwith "Atom.destBinop: not a binop";;
 
 let isBinop p = can (destBinop p);;
 
@@ -2936,7 +2923,7 @@ let subterm =
   let subterm' = function
     (_, []) -> raise (Bug "Atom.subterm: empty path")
   | ((_,tms), h :: t) ->
-    if h >= length tms then raise (Error "Atom.subterm: bad path")
+    if h >= length tms then failwith "Atom.subterm: bad path"
     else Term.subterm (Mlist.nth (tms,h)) t
   in fun x y -> subterm' (x, y)
 
@@ -2949,7 +2936,7 @@ let subterms ((_,tms) : atom) =
 let replace ((rel,tms) as atm) = function
     ([],_) -> raise (Bug "Atom.replace: empty path")
   | (h :: t, res) ->
-    if h >= length tms then raise (Error "Atom.replace: bad path")
+    if h >= length tms then failwith "Atom.replace: bad path"
     else
       let tm = Mlist.nth (tms,h)
       in let tm' = Term.replace tm (t,res)
@@ -2996,7 +2983,7 @@ let subst sub ((p,tms) as atm) : atom =
 let matchAtoms sub (p1,tms1) (p2,tms2) =
   let matchArg ((tm1,tm2),sub) = Substitute.matchTerms sub tm1 tm2 in
         let _ = (Name.equal p1 p2 && length tms1 = length tms2) ||
-                raise (Error "Atom.match")
+                failwith "Atom.match"
       in
         Mlist.foldl matchArg sub (zip tms1 tms2)
       ;;
@@ -3008,7 +2995,7 @@ let matchAtoms sub (p1,tms1) (p2,tms2) =
 let unify sub (p1,tms1) (p2,tms2) =
   let unifyArg ((tm1,tm2),sub) = Substitute.unify sub tm1 tm2 in
         let _ = (Name.equal p1 p2 && length tms1 = length tms2) ||
-                raise (Error "Atom.unify")
+                failwith "Atom.unify"
       in
         Mlist.foldl unifyArg sub (zip tms1 tms2)
       ;;
@@ -3033,7 +3020,7 @@ let mkRefl tm = mkEq (tm,tm);;
 
 let destRefl atm =
     let (l,r) = destEq atm
-    in let _ = Term.equal l r || raise (Error "Atom.destRefl")
+    in let _ = Term.equal l r || failwith "Atom.destRefl"
     in
       l
     ;;
@@ -3042,7 +3029,7 @@ let isRefl x = can destRefl x;;
 
 let sym atm =
     let (l,r) = destEq atm
-    in let _ = not (Term.equal l r) || raise (Error "Atom.sym: refl")
+    in let _ = not (Term.equal l r) || failwith "Atom.sym: refl"
     in
       mkEq (r,l)
     ;;
@@ -3116,7 +3103,7 @@ let mkBoolean = function
 let destBoolean =
     function True -> true
   | False -> false
-  | _ -> raise (Error "destBoolean");;
+  | _ -> failwith "destBoolean";;
 
 let isBoolean = can destBoolean;;
 
@@ -3201,7 +3188,7 @@ let relationNames fm =
 
 let destAtom = function
     (Atom atm) -> atm
-  | _ -> raise (Error "Formula.destAtom");;
+  | _ -> failwith "Formula.destAtom";;
 
 let isAtom = can destAtom;;
 
@@ -3209,7 +3196,7 @@ let isAtom = can destAtom;;
 
 let destNeg = function
     (Not p) -> p
-  | _ -> raise (Error "Formula.destNeg");;
+  | _ -> failwith "Formula.destNeg";;
 
 let isNeg = can destNeg;;
 
@@ -3300,7 +3287,7 @@ let flattenEquiv =
 
 let destForall = function
     (Forall (v,f)) -> (v,f)
-  | _ -> raise (Error "destForall");;
+  | _ -> failwith "destForall";;
 
 let isForall = can destForall;;
 
@@ -3321,7 +3308,7 @@ let stripForall =
 
 let destExists = function
     (Exists (v,f)) -> (v,f)
-  | _ -> raise (Error "destExists");;
+  | _ -> failwith "destExists";;
 
 let isExists = can destExists;;
 
@@ -3533,7 +3520,7 @@ let mkNeq a_b = Not (mkEq a_b);;
 
 let destNeq = function
     (Not fm) -> destEq fm
-  | _ -> raise (Error "Formula.destNeq");;
+  | _ -> failwith "Formula.destNeq";;
 
 let isNeq = can destNeq;;
 
@@ -3699,7 +3686,7 @@ let toFormula = function
 let fromFormula = function
     (Formula.Atom atm) -> (true,atm)
   | (Formula.Not (Formula.Atom atm)) -> (false,atm)
-  | _ -> raise (Error "Literal.fromFormula");;
+  | _ -> failwith "Literal.fromFormula";;
 
 (* ------------------------------------------------------------------------- *)
 (* The size of a literal in symbols.                                         *)
@@ -3752,7 +3739,7 @@ let subst sub ((pol,atm) as lit) : literal =
 (* ------------------------------------------------------------------------- *)
 
 let matchLiterals sub ((pol1,atm1) : literal) (pol2,atm2) =
-      let _ = pol1 = pol2 || raise (Error "Literal.match")
+      let _ = pol1 = pol2 || failwith "Literal.match"
     in
       Atom.matchAtoms sub atm1 atm2
     ;;
@@ -3762,7 +3749,7 @@ let matchLiterals sub ((pol1,atm1) : literal) (pol2,atm2) =
 (* ------------------------------------------------------------------------- *)
 
 let unify sub ((pol1,atm1) : literal) (pol2,atm2) =
-      let _ = pol1 = pol2 || raise (Error "Literal.unify")
+      let _ = pol1 = pol2 || failwith "Literal.unify"
     in
       Atom.unify sub atm1 atm2
     ;;
@@ -3775,7 +3762,7 @@ let mkEq l_r : literal = (true, Atom.mkEq l_r);;
 
 let destEq = function
     ((true,atm) : literal) -> Atom.destEq atm
-  | (false,_) -> raise (Error "Literal.destEq");;
+  | (false,_) -> failwith "Literal.destEq";;
 
 let isEq = can destEq;;
 
@@ -3783,7 +3770,7 @@ let mkNeq l_r : literal = (false, Atom.mkEq l_r);;
 
 let destNeq = function
     ((false,atm) : literal) -> Atom.destEq atm
-  | (true,_) -> raise (Error "Literal.destNeq");;
+  | (true,_) -> failwith "Literal.destNeq";;
 
 let isNeq = can destNeq;;
 
@@ -3791,14 +3778,14 @@ let mkRefl tm = (true, Atom.mkRefl tm);;
 
 let destRefl = function
     (true,atm) -> Atom.destRefl atm
-  | (false,_) -> raise (Error "Literal.destRefl");;
+  | (false,_) -> failwith "Literal.destRefl";;
 
 let isRefl = can destRefl;;
 
 let mkIrrefl tm = (false, Atom.mkRefl tm);;
 
 let destIrrefl = function
-    (true,_) -> raise (Error "Literal.destIrrefl")
+    (true,_) -> failwith "Literal.destIrrefl"
   | (false,atm) -> Atom.destRefl atm;;
 
 let isIrrefl = can destIrrefl;;
@@ -3969,7 +3956,7 @@ let isContradiction th = Literal.Set.null (clause th);;
 
 let destUnit (Thm (cl,_)) =
     if Literal.Set.size cl = 1 then Literal.Set.pick cl
-    else raise (Error "Thm.destUnit");;
+    else failwith "Thm.destUnit";;
 
 let isUnit = can destUnit;;
 
@@ -4096,10 +4083,10 @@ let resolve lit (Thm (cl1,_) as th1) (Thm (cl2,_) as th2) =
 (*MetisDebug
 let resolve = fun lit -> fun pos -> fun neg ->
     resolve lit pos neg
-    handle Error err ->
-      raise Error ("Thm.resolve:\nlit = " ^ Literal.toString lit ^
-                   "\npos = " ^ toString pos ^
-                   "\nneg = " ^ toString neg ^ "\n" ^ err);;
+    handle Failure err ->
+      raise Failure ("Thm.resolve:\nlit = " ^ Literal.toString lit ^
+                     "\npos = " ^ toString pos ^
+                     "\nneg = " ^ toString neg ^ "\n" ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -4199,7 +4186,7 @@ let inferenceToThm = function
         Substitute.normalize (recon [(Literal.Set.toList cl, Substitute.empty)])
       ;;
 (*MetisDebug
-      handle Error err ->
+      handle Failure err ->
         raise (Bug ("Proof.recontructSubst: shouldn't fail:\n" ^ err));;
 *)
 
@@ -4218,7 +4205,7 @@ let inferenceToThm = function
            else raise (Bug "can't reconstruct Resolve rule")
          );;
 (*MetisDebug
-      handle Error err ->
+      handle Failure err ->
         raise (Bug ("Proof.recontructResolvant: shouldn't fail:\n" ^ err));;
 *)
 
@@ -4277,7 +4264,7 @@ let inferenceToThm = function
         | None -> raise (Bug "can't reconstruct Equality rule")
       ;;
 (*MetisDebug
-      handle Error err ->
+      handle Failure err ->
         raise (Bug ("Proof.recontructEquality: shouldn't fail:\n" ^ err));;
 *)
 
@@ -4339,7 +4326,7 @@ let inferenceToThm = function
       in
         inf
 (*MetisDebug
-      handle Error err ->
+      handle Failure err ->
         raise (Bug ("Proof.thmToInference: shouldn't fail:\n" ^ err));;
 *)
 ;;
@@ -4562,22 +4549,22 @@ let transEqn (((x,y), th1) as eqn1) (((_,z), th2) as eqn2) =
 (*MetisDebug
 let transEqn = fun eqn1 -> fun eqn2 ->
     transEqn eqn1 eqn2
-    handle Error err ->
-      raise Error ("Rule.transEqn:\neqn1 = " ^ equationToString eqn1 ^
+    handle Failure err ->
+      raise Failure ("Rule.transEqn:\neqn1 = " ^ equationToString eqn1 ^
                    "\neqn2 = " ^ equationToString eqn2 ^ "\n" ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
 (* A conversion takes a term t and either:                                   *)
 (* 1. Returns a term u together with a theorem (stronger than) t = u \/ C.   *)
-(* 2. Raises an Error exception.                                             *)
+(* 2. Raises an Failure exception.                                             *)
 (* ------------------------------------------------------------------------- *)
 
 type conv = Term.term -> Term.term * Thm.thm;;
 
 let allConv tm = (tm, Thm.refl tm);;
 
-let noConv : conv = fun _ -> raise (Error "noConv");;
+let noConv : conv = fun _ -> failwith "noConv";;
 
 (*MetisDebug
 let traceConv s conv tm =
@@ -4588,9 +4575,9 @@ let traceConv s conv tm =
     in
       res
     end
-    handle Error err ->
-      (trace (s ^ ": " ^ Term.toString tm ^ " --> Error: " ^ err ^ "\n");;
-       raise (Error (s ^ ": " ^ err)));;
+    handle Failure err ->
+      (trace (s ^ ": " ^ Term.toString tm ^ " --> Failure: " ^ err ^ "\n");;
+       raise (Failure (s ^ ": " ^ err)));;
 *)
 
 let thenConvTrans tm (tm',th1) (tm'',th2) =
@@ -4608,14 +4595,14 @@ let thenConv conv1 conv2 tm =
       thenConvTrans tm res1 res2
     ;;
 
-let orelseConv (conv1 : conv) conv2 tm = try conv1 tm with Error _ -> conv2 tm;;
+let orelseConv (conv1 : conv) conv2 tm = try conv1 tm with Failure _ -> conv2 tm;;
 
 let tryConv conv = orelseConv conv allConv;;
 
 let changedConv conv tm =
       let (tm',_) as res = conv tm
     in
-      if tm = tm' then raise (Error "changedConv") else res
+      if tm = tm' then failwith "changedConv" else res
     ;;
 
 let rec repeatConv conv tm = tryConv (thenConv conv (repeatConv conv)) tm;;
@@ -4623,7 +4610,7 @@ let rec repeatConv conv tm = tryConv (thenConv conv (repeatConv conv)) tm;;
 let flip f = fun x y -> f y x;;
 
 let rec firstConv tm = function
-    [] -> raise (Error "firstConv")
+    [] -> failwith "firstConv"
   | [conv] -> conv tm
   | (conv :: convs) -> orelseConv conv (flip firstConv convs) tm;;
 let firstConv convs tm = firstConv tm convs;;
@@ -4654,8 +4641,8 @@ let rewrConv (((x,y), eqTh) as eqn) path tm =
 (*MetisDebug
 let rewrConv = fun eqn as ((x,y),eqTh) -> fun path -> fun tm ->
     rewrConv eqn path tm
-    handle Error err ->
-      raise Error ("Rule.rewrConv:\nx = " ^ Term.toString x ^
+    handle Failure err ->
+      raise Failure ("Rule.rewrConv:\nx = " ^ Term.toString x ^
                    "\ny = " ^ Term.toString y ^
                    "\neqTh = " ^ Thm.toString eqTh ^
                    "\npath = " ^ Term.pathToString path ^
@@ -4697,20 +4684,20 @@ let repeatTopDownConv conv =
 (*MetisDebug
 let repeatTopDownConv = fun conv -> fun tm ->
     repeatTopDownConv conv tm
-    handle Error err -> raise (Error ("repeatTopDownConv: " ^ err));;
+    handle Failure err -> failwith ("repeatTopDownConv: " ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
 (* A literule (bad pun) takes a literal L and either:                        *)
 (* 1. Returns a literal L' with a theorem (stronger than) ~L \/ L' \/ C.     *)
-(* 2. Raises an Error exception.                                             *)
+(* 2. Raises an Failure exception.                                           *)
 (* ------------------------------------------------------------------------- *)
 
 type literule = Literal.literal -> Literal.literal * Thm.thm;;
 
 let allLiterule lit = (lit, Thm.assume lit);;
 
-let noLiterule : literule = fun _ -> raise (Error "noLiterule");;
+let noLiterule : literule = fun _ -> failwith "noLiterule";;
 
 let thenLiterule literule1 literule2 lit =
       let (lit',th1) as res1 = literule1 lit
@@ -4727,21 +4714,21 @@ let thenLiterule literule1 literule2 lit =
     ;;
 
 let orelseLiterule (literule1 : literule) literule2 lit =
-    try literule1 lit with Error _ -> literule2 lit;;
+    try literule1 lit with Failure _ -> literule2 lit;;
 
 let tryLiterule literule = orelseLiterule literule allLiterule;;
 
 let changedLiterule literule lit =
       let (lit',_) as res = literule lit
     in
-      if lit = lit' then raise (Error "changedLiterule") else res
+      if lit = lit' then failwith "changedLiterule" else res
     ;;
 
 let rec repeatLiterule literule lit =
     tryLiterule (thenLiterule literule (repeatLiterule literule)) lit;;
 
 let rec firstLiterule lit = function
-    [] -> raise (Error "firstLiterule")
+    [] -> failwith "firstLiterule"
   | [literule] -> literule lit
   | (literule :: literules) ->
     orelseLiterule literule (flip firstLiterule literules) lit;;
@@ -4770,10 +4757,10 @@ let rewrLiterule (((x,y),eqTh) as eqn) path lit =
 (*MetisDebug
 let rewrLiterule = fun eqn -> fun path -> fun lit ->
     rewrLiterule eqn path lit
-    handle Error err ->
-      raise Error ("Rule.rewrLiterule:\neqn = " ^ equationToString eqn ^
-                   "\npath = " ^ Term.pathToString path ^
-                   "\nlit = " ^ Literal.toString lit ^ "\n" ^ err);;
+    handle Failure err ->
+      raise Failure ("Rule.rewrLiterule:\neqn = " ^ equationToString eqn ^
+                     "\npath = " ^ Term.pathToString path ^
+                     "\nlit = " ^ Literal.toString lit ^ "\n" ^ err);;
 *)
 
 let pathLiterule conv path lit =
@@ -4790,7 +4777,7 @@ let allArgumentsLiterule conv lit =
       (List.map (argumentLiterule conv) (interval 0 (Literal.arity lit))) lit;;
 
 (* ------------------------------------------------------------------------- *)
-(* A rule takes one theorem and either deduces another or raises an Error    *)
+(* A rule takes one theorem and either deduces another or raises an Failure  *)
 (* exception.                                                                *)
 (* ------------------------------------------------------------------------- *)
 
@@ -4798,11 +4785,11 @@ type rule = Thm.thm -> Thm.thm;;
 
 let allRule : rule = fun th -> th;;
 
-let noRule : rule = fun _ -> raise (Error "noRule");;
+let noRule : rule = fun _ -> failwith "noRule";;
 
 let thenRule (rule1 : rule) (rule2 : rule) th = rule1 (rule2 th);;
 
-let orelseRule (rule1 : rule) rule2 th = try rule1 th with Error _ -> rule2 th;;
+let orelseRule (rule1 : rule) rule2 th = try rule1 th with Failure _ -> rule2 th;;
 
 let tryRule rule = orelseRule rule allRule;;
 
@@ -4810,13 +4797,13 @@ let changedRule rule th =
       let th' = rule th
     in
       if not (Literal.Set.equal (Thm.clause th) (Thm.clause th')) then th'
-      else raise (Error "changedRule")
+      else failwith "changedRule"
     ;;
 
 let rec repeatRule rule lit = tryRule (thenRule rule (repeatRule rule)) lit;;
 
 let rec firstRule th = function
-    [] -> raise (Error "firstRule")
+    [] -> failwith "firstRule"
   | [rule] -> rule th
   | (rule :: rules) -> orelseRule rule (flip firstRule rules) th;;
 let firstRule rules th = firstRule th rules;;
@@ -4838,9 +4825,9 @@ let literalRule literule lit th =
 (*MetisDebug
 let literalRule = fun literule -> fun lit -> fun th ->
     literalRule literule lit th
-    handle Error err ->
-      raise Error ("Rule.literalRule:\nlit = " ^ Literal.toString lit ^
-                   "\nth = " ^ Thm.toString th ^ "\n" ^ err);;
+    handle Failure err ->
+      raise Failure ("Rule.literalRule:\nlit = " ^ Literal.toString lit ^
+                     "\nth = " ^ Thm.toString th ^ "\n" ^ err);;
 *)
 
 let rewrRule eqTh lit path = literalRule (rewrLiterule eqTh path) lit;;
@@ -4979,9 +4966,9 @@ let rec expandAbbrevs th =
   let expand lit =
         let (x,y) = Literal.destNeq lit
         in let _ = Term.isTypedVar x || Term.isTypedVar y ||
-                raise (Error "Rule.expandAbbrevs: no vars")
+                failwith "Rule.expandAbbrevs: no vars"
         in let _ = not (Term.equal x y) ||
-                raise (Error "Rule.expandAbbrevs: equal vars")
+                failwith "Rule.expandAbbrevs: equal vars"
       in
         Substitute.unify Substitute.empty x y
 in
@@ -5853,7 +5840,7 @@ let zeroValuation = constantValuation zeroElement;;
 let getValuation v' v =
     match peekValuation v' v with
       Some i -> i
-    | None -> raise (Error "Model.getValuation: incomplete valuation");;
+    | None -> failwith "Model.getValuation: incomplete valuation";;
 
 let randomValuation {size = n} vs =
       let f (v,v') = insertValuation v' (v, Random.int n)
@@ -6404,7 +6391,7 @@ let rec termToQterm = function
       (Var, x) -> x
     | (x, Var) -> x
     | (Fn (f,a), Fn (g,b)) ->
-        let _ = Name_arity.equal f g || raise (Error "Term_net.qv")
+        let _ = Name_arity.equal f g || failwith "Term_net.qv"
       in
         Fn (f, zipWith qv a b)
       ;;
@@ -6419,7 +6406,7 @@ let rec termToQterm = function
         qu (Name.Map.insert qsub (v,qtm)) rest
     | ((Fn ((f,n),a), Term.Fn (g,b)) :: rest) ->
       if Name.equal f g && n = length b then qu qsub (zip a b @ rest)
-      else raise (Error "Term_net.qu");;
+      else failwith "Term_net.qu";;
 
   let unifyQtermQterm qtm qtm' = total (qv qtm) qtm';;
 
@@ -6496,7 +6483,7 @@ let singles qtms a = Mlist.foldr (fun (x, y) -> Single (x, y)) a qtms;;
 
   let insert (Net (p,k,n)) (tm,a) =
       try Net (p, k + 1, ins (k,a) (termToQterm tm) (pre n))
-      with Error _ -> raise (Bug "Term_net.insert: should never fail");;
+      with Failure _ -> raise (Bug "Term_net.insert: should never fail");;
 
 
 let fromList parm l = Mlist.foldl (fun (tm_a,n) -> insert n tm_a) (newNet parm) l;;
@@ -6522,7 +6509,7 @@ let filter pred =
       function
          Net (_,_,None) as net -> net
        | Net (p, k, Some (_,n)) -> Net (p, k, netSize (filt n))
-    with Error _ -> raise (Bug "Term_net.filter: should never fail");;
+    with Failure _ -> raise (Bug "Term_net.filter: should never fail");;
 
 let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
 
@@ -6662,7 +6649,7 @@ let foldEqualTerms pat inc acc =
       (Net (_,_,None), _) -> []
     | (Net (p, _, Some (_,n)), tm) ->
       try finally p (mat [] [(n,[tm])])
-      with Error _ -> raise (Bug "Term_net.match: should never fail");;
+      with Failure _ -> raise (Bug "Term_net.match: should never fail");;
 
 
   let unseenInc qsub v tms (qtm,net,rest) =
@@ -6694,7 +6681,7 @@ let foldEqualTerms pat inc acc =
       (Net (_,_,None)) -> []
     | (Net (parm, _, Some (_,net))) ->
       try finally parm (mat [] [(Name.Map.newMap (), net, [tm])])
-      with Error _ -> raise (Bug "Term_net.matched: should never fail");;
+      with Failure _ -> raise (Bug "Term_net.matched: should never fail");;
 
 
   let inc qsub v tms (qtm,net,rest) =
@@ -6726,7 +6713,7 @@ let foldEqualTerms pat inc acc =
       (Net (_,_,None)) -> []
     | (Net (parm, _, Some (_,net))) ->
       try finally parm (mat [] [(Name.Map.newMap (), net, [tm])])
-      with Error _ -> raise (Bug "Term_net.unify: should never fail");;
+      with Failure _ -> raise (Bug "Term_net.unify: should never fail");;
 
 end
 
@@ -7529,7 +7516,7 @@ let thmReducible order known id th =
 (* ------------------------------------------------------------------------- *)
 
 let orderToOrient = function
-    (Some Equal) -> raise (Error "Rewrite.orient: reflexive")
+    (Some Equal) -> failwith "Rewrite.orient: reflexive"
   | (Some Greater) -> Some Left_to_right
   | (Some Less) -> Some Right_to_left
   | None -> None;;
@@ -7594,21 +7581,21 @@ let orientedEquation dir eqn = match dir with
 
 let rewrIdConv' order known redexes id tm =
       let rewr (id',lr) =
-            let _ = id <> id' || raise (Error "same theorem")
+            let _ = id <> id' || failwith "same theorem"
             in let (eqn,ort) = Intmap.get known id'
-            in let _ = wellOriented ort lr || raise (Error "orientation")
+            in let _ = wellOriented ort lr || failwith "orientation"
             in let (l,r) = redexResidue lr eqn
             in let sub = Substitute.normalize (Substitute.matchTerms Substitute.empty l tm)
             in let tm' = Substitute.subst sub r
             in let _ = Option.is_some ort ||
                     order (tm,tm') = Some Greater ||
-                    raise (Error "order")
+                    failwith "order"
             in let (_,th) = orientedEquation lr eqn
           in
             (tm', Thm.subst sub th)
     in
       match first (total rewr) (matchingRedexes redexes tm) with
-        None -> raise (Error "Rewrite.rewrIdConv: no matching rewrites")
+        None -> failwith "Rewrite.rewrIdConv: no matching rewrites"
       | Some res -> res
     ;;
 
@@ -7620,18 +7607,18 @@ let mkNeqConv order lit =
       let (l,r) = Literal.destNeq lit
     in
       match order (l,r) with
-        None -> raise (Error "incomparable")
+        None -> failwith "incomparable"
       | Some Less ->
           let th = Rule.symmetryRule l r
         in
           fun tm ->
-             if Term.equal tm r then (l,th) else raise (Error "mkNeqConv: RL")
-      | Some Equal -> raise (Error "irreflexive")
+             if Term.equal tm r then (l,th) else failwith "mkNeqConv: RL"
+      | Some Equal -> failwith "irreflexive"
       | Some Greater ->
           let th = Thm.assume lit
         in
           fun tm ->
-             if Term.equal tm l then (r,th) else raise (Error "mkNeqConv: LR")
+             if Term.equal tm l then (r,th) else failwith "mkNeqConv: LR"
     ;;
 
 type neqConvs = Neq_convs of Rule.conv Literal.Map.map;;
@@ -7689,7 +7676,7 @@ let rewriteIdEqn' order known redexes id ((l_r,th) as eqn) =
          else if not (Thm.negateMember lit litTh) then litTh
          else Thm.resolve lit th litTh);;
 (*MetisDebug
-    handle Error err -> raise (Error ("Rewrite.rewriteIdEqn':\n" ^ err));;
+    handle Failure err -> failwith ("Rewrite.rewriteIdEqn':\n" ^ err);;
 *)
 
 let rewriteIdLiteralsRule' order known redexes id lits th =
@@ -7746,7 +7733,7 @@ let rewriteIdRule' = fun order -> fun known -> fun redexes -> fun id -> fun th -
     in
       result
     end
-    handle Error err -> raise (Error ("Rewrite.rewriteIdRule:\n" ^ err));;
+    handle Failure err -> failwith ("Rewrite.rewriteIdRule:\n" ^ err);;
 *)
 
 let rewrIdConv (Rewrite {known=known;redexes=redexes}) order =
@@ -7805,7 +7792,7 @@ let findReducibles order known subterms id =
                 let tm' = Substitute.subst (Substitute.normalize sub) r
               in
                 if order (tm,tm') = Some Greater then ()
-                else raise (Error "order")
+                else failwith "order"
 
       in let addRed lr ((id',left,path),todo) =
           if id <> id' && not (Intset.member id' todo) &&
@@ -7970,7 +7957,7 @@ let reduce' = fun rw ->
     in
       result
     end
-    handle Error err -> raise (Bug ("Rewrite.reduce': shouldn't fail\n" ^ err));;
+    handle Failure err -> raise (Bug ("Rewrite.reduce': shouldn't fail\n" ^ err));;
 *)
 
 let reduce rw = fst (reduce' rw);;
@@ -8309,7 +8296,7 @@ let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
     in
       result;;
 (*MetisDebug
-    handle Error err -> raise (Error ("Clause.rewrite:\n" ^ err));;
+    handle Failure err -> failwith "Clause.rewrite:\n" ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -8356,12 +8343,12 @@ let resolve (cl1,lit1) (cl2,lit2) =
 (*MetisTrace5
               (trace "Clause.resolve: th1 violates ordering\n";; false) ||
 *)
-              raise (Error "resolve: clause1: ordering constraints")
+              failwith "resolve: clause1: ordering constraints"
       in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 ||
 (*MetisTrace5
               (trace "Clause.resolve: th2 violates ordering\n";; false) ||
 *)
-              raise (Error "resolve: clause2: ordering constraints")
+              failwith "resolve: clause2: ordering constraints"
       in let th = Thm.resolve lit1 th1 th2
 (*MetisTrace5
       let () = Print.trace Thm.pp "Clause.resolve: th" th
@@ -8394,9 +8381,9 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       and th2 = Thm.subst sub th2
 
       in let _ = isLargerLiteral parameters (Thm.clause th1) lit1 ||
-              raise (Error "Clause.paramodulate: with clause: ordering")
+              failwith "Clause.paramodulate: with clause: ordering"
       in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 ||
-              raise (Error "Clause.paramodulate: into clause: ordering")
+              failwith "Clause.paramodulate: into clause: ordering"
 
       in let eqn = (Literal.destEq lit1, th1)
       in let (l_r,_) as eqn =
@@ -8407,7 +8394,7 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       let () = Print.trace Rule.ppEquation "Clause.paramodulate: eqn" eqn
 *)
       in let _ = isLargerTerm parameters l_r ||
-              raise (Error "Clause.paramodulate: equation: ordering constraints")
+              failwith "Clause.paramodulate: equation: ordering constraints"
       in let th = Rule.rewrRule eqn lit2 path2 th2
 (*MetisTrace5
       let () = Print.trace Thm.pp "Clause.paramodulate: th" th
@@ -8415,11 +8402,11 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
     in
       Clause {parameters = parameters; id = newId (); thm = th}
 (*MetisTrace5
-    handle Error err ->
+    handle Failure err ->
       let
         let () = trace ("Clause.paramodulate: failed: " ^ err ^ "\n")
       in
-        raise Error err
+        raise Failure err
       end;;
 *)
 
@@ -9158,7 +9145,7 @@ let deduce active cl =
         in
           (delete active ids, cls)
 (*MetisDebug
-        handle Error err ->
+        handle Failure err ->
           raise (Bug ("Active.extract_rewritables: shouldn't fail\n" ^ err));;
 *)
 ;;
