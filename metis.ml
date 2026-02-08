@@ -7782,7 +7782,8 @@ let rewriteIdLiteralsRule' order known redexes id lits th =
           in
             if Literal.equal lit lit' then acc
             else
-                let th = Thm.resolve lit th litTh
+                let th = if Thm.member lit th then Thm.resolve lit th litTh
+                         else th
               in
                 match neqConvsAdd order neq lit' with
                   Some neq -> (true,neq,lits,th)
@@ -8834,10 +8835,29 @@ let toString active = "Active{" ^ string_of_int (size active) ^ "}";;
 let simplify simp units rewr subs =
       let {subsumes = s; reduce = r; rewrites = w} = simp
 
-      in let rewrite cl =
+      in let rec rewrite cl =
             let cl' = Clause.rewrite rewr cl
           in
-            if Clause.equalThms cl cl' then Some cl else Clause.simplify cl'
+            if Clause.equalThms cl cl' then Some cl
+            else
+              match Clause.simplify cl' with
+                None -> None
+              | Some cl'' ->
+                (*                                                         *)
+                (* Post-rewrite simplification can enable more rewrites:   *)
+                (*                                                         *)
+                (*  ~(X = f(X)) \/ ~(g(Y) = f(X)) \/ ~(c = f(X))           *)
+                (* ---------------------------------------------- rewrite  *)
+                (*  ~(X = f(X)) \/ ~(g(Y) = X) \/ ~(c = X)                 *)
+                (* ---------------------------------------------- simplify *)
+                (*  ~(g(Y) = f(g(Y))) \/ ~(c = g(Y))                       *)
+                (* ---------------------------------------------- rewrite  *)
+                (*  ~(c = f(c)) \/ ~(c = g(Y))                             *)
+                (*                                                         *)
+                (* This was first observed in a bug discovered by Martin   *)
+                (* Desharnais and Jasmin Blanchett                         *)
+                (*                                                         *)
+                if Clause.equalThms cl' cl'' then Some cl' else rewrite cl''
     in
       fun cl ->
          match Clause.simplify cl with
