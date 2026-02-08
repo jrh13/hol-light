@@ -58,8 +58,6 @@ module Int = struct
 
 let compare = Order.toCompare (compare : int -> int -> int);;
 
-let maxInt = Some max_int;;
-
 end
 
 module Real = struct
@@ -5201,14 +5199,9 @@ let maxSpace = 1000;;
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-let multInt =
-    match Int.maxInt with
-      None -> (fun x -> fun y -> Some (x * y))
-    | Some m ->
-        let m = Real.floor (float_sqrt (Real.fromInt m))
-      in
-        fun x -> fun y -> if x <= m && y <= m then Some (x * y) else None
-      ;;
+let multInt x y =
+  let m = Real.floor (float_sqrt (Real.fromInt max_int)) in
+  if x <= m && y <= m then Some (x * y) else None;;
 
   let rec iexp x y acc =
       if y mod 2 = 0 then iexp' x y acc
