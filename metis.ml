@@ -137,8 +137,6 @@ let isDigit c = '0' <= c && c <= '9'
 
 exception Bug of string;;
 
-exception Subscript;;
-
 let total f x = try Some (f x) with Failure _ -> None;;
 
 let exp m =
@@ -234,7 +232,7 @@ let enumerate l = fst (maps (fun x m -> ((m, x), m + 1)) l 0);;
 let revDivide l =
   let rec revDiv acc = function
       (l, 0) -> (acc,l)
-    | ([], _) -> raise Subscript
+    | ([], _) -> invalid_arg "Metis_prover.Useful.revDivide"
     | (h :: t, n) -> revDiv (h :: acc) (t, n - 1)
   in fun n -> revDiv [] (l, n);;
 
@@ -243,13 +241,17 @@ let divide l n = let (a,b) = revDivide l n in (List.rev a, b);;
 let updateNth (n,x) l =
     let (a,b) = revDivide l n
     in
-      match b with [] -> raise Subscript | (_ :: t) -> List.rev_append a (x :: t)
+      match b with
+        [] -> invalid_arg "Metis_prover.Useful.updateNth"
+      | (_ :: t) -> List.rev_append a (x :: t)
 ;;
 
 let deleteNth n l =
     let (a,b) = revDivide l n
     in
-      match b with [] -> raise Subscript | (_ :: t) -> List.rev_append a t
+      match b with
+        [] -> invalid_arg "Metis_prover.Useful.deleteNth"
+      | (_ :: t) -> List.rev_append a t
 ;;
 
 (* ------------------------------------------------------------------------- *)
