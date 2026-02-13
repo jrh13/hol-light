@@ -148,26 +148,6 @@ let exp m =
     ;;
 
 (* ------------------------------------------------------------------------- *)
-(* Pairs.                                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let pair x y = (x,y);;
-
-(* ------------------------------------------------------------------------- *)
-(* State transformers.                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-let return : 'a -> 's -> 'a * 's = pair;;
-
-let bind f (g : 'a -> 's -> 'b * 's) x = uncurry g (f x);;
-
-(*fun mmap f (m : 's -> 'a * 's) = bind m (unit o f);
-
-fun mjoin (f : 's -> ('s -> 'a * 's) * 's) = bind f I;
-
-fun mwhile c b = let fun f a = if c a then bind (b a) f else unit a in f end;*)
-
-(* ------------------------------------------------------------------------- *)
 (* Comparisons.                                                              *)
 (* ------------------------------------------------------------------------- *)
 
@@ -207,12 +187,7 @@ let rec first f = function
     [] -> None
   | (x :: xs) -> (match f x with None -> first f xs | s -> s);;
 
-let rec maps (f : 'a -> 's -> 'b * 's) = function
-    [] -> return []
-  | (x :: xs) ->
-    bind (f x) (fun y -> bind (maps f xs) (fun ys -> return (y :: ys)));;
-
-let enumerate l = fst (maps (fun x m -> ((m, x), m + 1)) l 0);;
+let enumerate l = mapi (fun x y -> (x, y)) l
 
 let revDivide l =
   let rec revDiv acc = function

@@ -80,6 +80,12 @@ let rec map2 f l1 l2 =
   | (h1::t1),(h2::t2) -> let h = f h1 h2 in h::(map2 f t1 t2)
   | _ -> failwith "map2: length mismatch";;
 
+let mapi f xs =
+  let rec aux i f = function
+      [] -> []
+    | h::tl -> (f i h)::(aux (i + 1) f tl)
+  in aux 0 f xs
+
 (* ------------------------------------------------------------------------- *)
 (* Attempting function or predicate applications.                            *)
 (* ------------------------------------------------------------------------- *)
