@@ -111,7 +111,6 @@ let null = function
 let tabulate (n,f) =
   let rec go i = if i == n then [] else f i :: go (i+1)
   in  go 0
-let revAppend (l1, l2) = List.rev_append l1 l2;;
 let find p l = try Some (List.find p l) with Not_found -> None;;
 let all = List.for_all;;
 
@@ -6210,7 +6209,7 @@ let perturb vM pert =
             (_, [], [], acc) -> acc
           | (ys, (tm :: tms), (x :: xs), acc) ->
               let pred y =
-                  y <> x && onTarget (Mlist.revAppend (ys, y :: xs))
+                  y <> x && onTarget (List.rev_append ys (y :: xs))
 
               in let target = filterElements pred
 
@@ -6824,7 +6823,7 @@ let findRest pred =
       let rec f ys = function
           [] -> None
         | (x :: xs) ->
-          if pred x then Some (x, Mlist.revAppend (ys,xs)) else f (x :: ys) xs
+          if pred x then Some (x, List.rev_append ys xs) else f (x :: ys) xs
     in
       f []
     ;;
