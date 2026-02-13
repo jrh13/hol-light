@@ -212,21 +212,6 @@ let rec maps (f : 'a -> 's -> 'b * 's) = function
   | (x :: xs) ->
     bind (f x) (fun y -> bind (maps f xs) (fun ys -> return (y :: ys)));;
 
-let zipWith f =
-    let rec z l = function
-          ([], []) -> l
-        | (x :: xs, y :: ys) -> z (f x y :: l) (xs, ys)
-        | _ -> failwith "zipWith: lists different lengths"
-    in
-      fun xs -> fun ys -> List.rev (z [] (xs, ys))
-    ;;
-
-let zip xs ys = zipWith pair xs ys;;
-
-let unzip ab =
-  let inc ((x,y),(xs,ys)) = (x :: xs, y :: ys)
-  in Mlist.foldl inc ([],[]) (List.rev ab);;
-
 let enumerate l = fst (maps (fun x m -> ((m, x), m + 1)) l 0);;
 
 let revDivide l =
@@ -6395,7 +6380,7 @@ let rec termToQterm = function
     | (Fn (f,a), Fn (g,b)) ->
         let _ = Name_arity.equal f g || failwith "Term_net.qv"
       in
-        Fn (f, zipWith qv a b)
+        Fn (f, map2 qv a b)
       ;;
 
   let rec qu qsub = function
