@@ -104,7 +104,6 @@ module Mlist = struct
 
 let foldl f a l = List.fold_left  (fun acc x -> f (x, acc)) a l;;
 let foldr f a l = List.fold_right (fun x acc -> f (x, acc)) l a;;
-let nth (l, i) = List.nth l i;;
 let null = function
     [] -> true
   | _  -> false
@@ -2878,7 +2877,7 @@ let subterm =
     (_, []) -> raise (Bug "Atom.subterm: empty path")
   | ((_,tms), h :: t) ->
     if h >= length tms then failwith "Atom.subterm: bad path"
-    else Term.subterm (Mlist.nth (tms,h)) t
+    else Term.subterm (List.nth tms h) t
   in fun x y -> subterm' (x, y)
 
 let subterms ((_,tms) : atom) =
@@ -2892,7 +2891,7 @@ let replace ((rel,tms) as atm) = function
   | (h :: t, res) ->
     if h >= length tms then failwith "Atom.replace: bad path"
     else
-      let tm = Mlist.nth (tms,h)
+      let tm = List.nth tms h
       in let tm' = Term.replace tm (t,res)
       in
         if tm == tm' then atm
@@ -5379,7 +5378,7 @@ let projectionName i =
       Name.fromString ("project" ^ string_of_int i)
     ;;
 
-let projectionFn i _ elts = Some (Mlist.nth (elts, i - 1));;
+let projectionFn i _ elts = Some (List.nth elts (i - 1));;
 
 let arityProjectionFixed arity =
       let mkProj i = ((projectionName i, arity), projectionFn i)
@@ -6240,7 +6239,7 @@ let perturb vM pert =
 
   let pickPerturb vM perts =
       if Mlist.null perts then ()
-      else perturb vM (Mlist.nth (perts, Random.int (length perts)));;
+      else perturb vM (List.nth perts (Random.int (length perts)));;
 
   let perturbTerm vM vV (tm,target) =
       pickPerturb vM (pertTerm vM target (fst (modelTerm vM vV tm)) []);;
