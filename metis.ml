@@ -240,12 +240,6 @@ let deleteNth n l =
 ;;
 
 (* ------------------------------------------------------------------------- *)
-(* Sets implemented with lists.                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let mem x l = List.mem x l;;
-
-(* ------------------------------------------------------------------------- *)
 (* Strings.                                                                  *)
 (* ------------------------------------------------------------------------- *)
 
@@ -6210,7 +6204,7 @@ let perturb vM pert =
       (match tm with
         Model_var -> acc
       | Model_fn (func,tms,xs) ->
-          let onTarget ys = mem (interpretFunction vM (func,ys)) target
+          let onTarget ys = List.mem (interpretFunction vM (func,ys)) target
 
           in let func_xs = (func,xs)
 
@@ -10108,11 +10102,11 @@ open Metis_prover
 let metis_name = string_of_int
 
 let rec metis_of_term env consts tm =
-  if is_var tm && not (mem tm consts) then
+  if is_var tm && not (List.mem tm consts) then
     (Term.Var(metis_name (Meson.fol_of_var tm)))
   else (
     let f,args = strip_comb tm in
-    if mem f env then failwith "metis_of_term: higher order" else
+    if List.mem f env then failwith "metis_of_term: higher order" else
     let ff = Meson.fol_of_const f in
     Term.Fn (metis_name ff, map (metis_of_term env consts) args))
 
@@ -10123,7 +10117,7 @@ let metis_of_atom env consts tm =
       Atom.mkEq (l', r')
   with Failure _ ->
       let f,args = strip_comb tm in
-      if mem f env then failwith "metis_of_atom: higher order" else
+      if List.mem f env then failwith "metis_of_atom: higher order" else
       let ff = Meson.fol_of_const f in
       (metis_name ff, map (metis_of_term env consts) args)
 
@@ -10270,7 +10264,7 @@ let SIMPLE_METIS_REFUTE ths =
     Format.printf "Metis end.\n%!";
   end;
   let allhyps = List.concat (List.map hyp ths) in
-  assert (forall (fun h -> mem h allhyps) (hyp proof));
+  assert (forall (fun h -> List.mem h allhyps) (hyp proof));
   assert (concl proof = `F`);
   proof
 
