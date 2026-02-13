@@ -69,7 +69,6 @@ type real = float;;
 let compare = toCompare (compare : float -> float -> int);;
 
 let fromInt = float_of_int;;
-let floor x = int_of_float (floor x);;
 
 end
 
@@ -5140,7 +5139,7 @@ let maxSpace = 1000;;
 (* ------------------------------------------------------------------------- *)
 
 let multInt x y =
-  let m = Real.floor (float_sqrt (Real.fromInt max_int)) in
+  let m = int_of_float (floor (float_sqrt (Real.fromInt max_int))) in
   if x <= m && y <= m then Some (x * y) else None;;
 
   let rec iexp x y acc =
