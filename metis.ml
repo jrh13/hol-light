@@ -112,7 +112,6 @@ let tabulate (n,f) =
   let rec go i = if i == n then [] else f i :: go (i+1)
   in  go 0
 let find p l = try Some (List.find p l) with Not_found -> None;;
-let all = List.for_all;;
 
 end
 
@@ -8130,7 +8129,7 @@ let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
   let notStrictlyLess ordering (xs,ys) =
         let less x = List.exists (fun y -> strictlyLess ordering (x,y)) ys
       in
-        not (Mlist.all less xs)
+        not (List.for_all less xs)
       ;;
 
   let isLargerLiteral ({ordering=ordering;orderLiterals=orderLiterals} : parameters) lits =
