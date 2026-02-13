@@ -68,8 +68,6 @@ type real = float;;
 
 let compare = toCompare (compare : float -> float -> int);;
 
-let fromInt = float_of_int;;
-
 end
 
 (* ------------------------------------------------------------------------- *)
@@ -5139,7 +5137,7 @@ let maxSpace = 1000;;
 (* ------------------------------------------------------------------------- *)
 
 let multInt x y =
-  let m = int_of_float (floor (float_sqrt (Real.fromInt max_int))) in
+  let m = int_of_float (floor (float_sqrt (float_of_int max_int))) in
   if x <= m && y <= m then Some (x * y) else None;;
 
   let rec iexp x y acc =
@@ -9354,7 +9352,7 @@ let checkModels parms models (fv,cl) =
             in let n = maxChecks
             in let (vT,vF) = Model.check Model.interpretClause n model fv cl
           in
-            (1.0 +. Real.fromInt vT /. Real.fromInt (vT + vF) ** weight) *. z
+            (1.0 +. float_of_int vT /. float_of_int (vT + vF) ** weight) *. z
     in
       Mlist.foldl check 1.0 (zip parms models)
     ;;
@@ -9372,14 +9370,14 @@ let perturbModels parms models cls =
 (* Clause weights.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-  let clauseSymbols cl = Real.fromInt (Literal.Set.typedSymbols cl);;
+  let clauseSymbols cl = float_of_int (Literal.Set.typedSymbols cl);;
 
   let clauseVariables cl =
-      Real.fromInt (Name.Set.size (Literal.Set.freeVars cl) + 1);;
+      float_of_int (Name.Set.size (Literal.Set.freeVars cl) + 1);;
 
-  let clauseLiterals cl = Real.fromInt (Literal.Set.size cl);;
+  let clauseLiterals cl = float_of_int (Literal.Set.size cl);;
 
-  let clausePriority cl = 1e-12 *. Real.fromInt (Clause.id cl);;
+  let clausePriority cl = 1e-12 *. float_of_int (Clause.id cl);;
 
   let clauseWeight (parm : parameters) mods dist mcl cl =
 (*MetisTrace3
@@ -9429,7 +9427,7 @@ let add' waiting dist mcls cls =
               raise Bug "Waiting.add': different lengths"
 *)
 
-      in let dist = dist +. log (Real.fromInt (length cls))
+      in let dist = dist +. log (float_of_int (length cls))
 
       in let addCl ((mcl,cl),acc) =
             let weight = clauseWeight parameters models dist mcl cl
