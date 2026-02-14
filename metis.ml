@@ -1913,11 +1913,6 @@ include Mset.Make (Ordered);;
 end
 
 
-module Sharing = struct
-
-let map = List.map;;
-end
-
 (* ========================================================================= *)
 (* A HEAP DATATYPE FOR ML                                                    *)
 (* ========================================================================= *)
@@ -2503,7 +2498,7 @@ let subst sub =
              Some tm' -> if tm == tm' then tm else tm'
            | None -> tm)
       | (Term.Fn (f,args) as tm) ->
-          let args' = Sharing.map tmSub args
+          let args' = List.map tmSub args
           in
             if args == args' then tm
             else Term.Fn (f,args')
@@ -2790,7 +2785,7 @@ let freeVars =
 (* ------------------------------------------------------------------------- *)
 
 let subst sub ((p,tms) as atm) : atom =
-    let tms' = Sharing.map (Substitute.subst sub) tms
+    let tms' = List.map (Substitute.subst sub) tms
     in
       if tms' == tms then atm else (p,tms')
     ;;
@@ -3269,7 +3264,7 @@ let generalize fm = listMkForall (Name.Set.toList (freeVars fm), fm);;
         True -> fm
       | False -> fm
       | Atom (p,tms) ->
-          let tms' = Sharing.map (Substitute.subst sub) tms
+          let tms' = List.map (Substitute.subst sub) tms
         in
           if tms == tms' then fm else Atom (p,tms')
       | Not p ->
