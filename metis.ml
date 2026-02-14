@@ -32,41 +32,17 @@ let critical x = x;;
 
 end
 
-module Order = struct
-
-type order = Less | Equal | Greater;;
-
-let orderOfInt = function
-   -1 -> Less
-  | 0 -> Equal
-  | 1 -> Greater
-  | _ -> failwith "orderOfInt"
-;;
-
-let intOfOrder = function
-    Less -> -1
-  | Equal -> 0
-  | Greater -> 1
-;;
-
-let toCompare f = fun (x, y) -> orderOfInt (f x y);;
-let fromCompare f = fun x y -> intOfOrder (f (x, y));;
-
-end
-
 module Int = struct
 
-let compare = Order.toCompare (compare : int -> int -> int);;
+let compare = (compare : int -> int -> int);;
 
 end
 
 module Real = struct
 
-open Order
-
 type real = float;;
 
-let compare = toCompare (compare : float -> float -> int);;
+let compare = (compare : float -> float -> int);;
 
 end
 
@@ -76,10 +52,8 @@ end
 
 module Word = struct
 
-open Order
-
 type word = int;;
-let compare = toCompare (compare: word -> word -> int);;
+let compare = (compare: word -> word -> int);;
 
 let shiftLeft (x, y) = x lsl y;;
 let shiftRight (x, y) = x lsr y;;
@@ -117,8 +91,6 @@ end
 
 module Useful = struct
 
-open Order
-
 (* ------------------------------------------------------------------------- *)
 (* Characters (MF).                                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -145,33 +117,21 @@ let exp m =
 (* Comparisons.                                                              *)
 (* ------------------------------------------------------------------------- *)
 
-let revCompare cmp x_y =
-    match cmp x_y with Less -> Greater | Equal -> Equal | Greater -> Less;;
+let revCompare cmp x y = cmp y x;;
 
-let prodCompare xCmp yCmp ((x1,y1),(x2,y2)) =
-    match xCmp (x1,x2) with
-      Less -> Less
-    | Equal -> yCmp (y1,y2)
-    | Greater -> Greater;;
+let prodCompare xCmp yCmp (x1,y1) (x2,y2) =
+    let c = xCmp x1 x2 in if c <> 0 then c else yCmp y1 y2;;
 
 let lexCompare cmp =
-      let rec lex = function
-          ([],[]) -> Equal
-        | ([], _ :: _) -> Less
-        | (_ :: _, []) -> Greater
+      let rec lex xs ys = match (xs, ys) with
+          ([],[]) -> 0
+        | ([], _ :: _) -> -1
+        | (_ :: _, []) -> 1
         | (x :: xs, y :: ys) ->
-          (match cmp (x,y) with
-            Less -> Less
-          | Equal -> lex (xs,ys)
-          | Greater -> Greater)
-    in
-      lex
-    ;;
+            let c = cmp x y in if c <> 0 then c else lex xs ys
+    in lex;;
 
-let boolCompare = function
-    (false,true) -> Less
-  | (true,false) -> Greater
-  | _ -> Equal;;
+let boolCompare = (compare : bool -> bool -> int);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lists.                                                                    *)
@@ -225,15 +185,15 @@ let stripSuffix pred s =
 (* Sorting and searching.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let sort cmp = List.sort (fromCompare cmp);;
+let sort cmp = List.sort cmp;;
 
 let sortMap f cmp = function
     [] -> []
   | ([_] as l) -> l
   | xs ->
-      let ncmp ((m,_),(n,_)) = cmp (m,n)
+      let ncmp (m,_) (n,_) = cmp m n
       in let nxs = List.map (fun x -> (f x, x)) xs
-      in let nys = List.sort (fromCompare ncmp) nxs
+      in let nys = List.sort ncmp nxs
     in
       List.map snd nys
     ;;
@@ -286,8 +246,6 @@ end
 
 module Pmap = struct
 
-open Order
-
 (* ------------------------------------------------------------------------- *)
 (* Importing useful functionality.                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -298,7 +256,7 @@ exception Bug = Useful.Bug;;
 (* Converting a comparison function to an equality function.                 *)
 (* ------------------------------------------------------------------------- *)
 
-let equalKey compareKey key1 key2 = compareKey (key1,key2) = Equal;;
+let equalKey compareKey key1 key2 = compareKey key1 key2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Priorities.                                                               *)
@@ -330,7 +288,7 @@ let lowerPriorityNode node1 node2 =
       let {priority = p1} = node1
       and {priority = p2} = node2
     in
-      comparePriority (p1,p2) = Less
+      comparePriority p1 p2 < 0
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -363,10 +321,10 @@ local
               match x with
                 None -> ()
               | Some k ->
-                match compareKey (k,key) with
-                  Less -> ()
-                | Equal -> raise Bug "duplicate keys"
-                | Greater -> raise Bug "unsorted"
+                let c = compareKey k key in
+                if c < 0 then ()
+                else if c = 0 then raise Bug "duplicate keys"
+                else raise Bug "unsorted"
 
           let x = Some key
         in
@@ -546,10 +504,10 @@ let rec treePeek compareKey pkey tree =
 and nodePeek compareKey pkey node =
       let {left;key;value;right} = node
     in
-      match compareKey (pkey,key) with
-        Less -> treePeek compareKey pkey left
-      | Equal -> Some value
-      | Greater -> treePeek compareKey pkey right
+      let c = compareKey pkey key in
+      if c < 0 then treePeek compareKey pkey left
+      else if c = 0 then Some value
+      else treePeek compareKey pkey right
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -566,10 +524,10 @@ let rec treePeekPath compareKey pkey path tree =
 and nodePeekPath compareKey pkey path node =
       let {left;key;right} = node
     in
-      match compareKey (pkey,key) with
-        Less -> treePeekPath compareKey pkey ((true,node) :: path) left
-      | Equal -> (path, Some node)
-      | Greater -> treePeekPath compareKey pkey ((false,node) :: path) right
+      let c = compareKey pkey key in
+      if c < 0 then treePeekPath compareKey pkey ((true,node) :: path) left
+      else if c = 0 then (path, Some node)
+      else treePeekPath compareKey pkey ((false,node) :: path) right
     ;;
 
 (* A path splits a tree into left/right components *)
@@ -652,10 +610,10 @@ let rec treePeekKey compareKey pkey tree =
 and nodePeekKey compareKey pkey node =
       let {left;key;value;right} = node
     in
-      match compareKey (pkey,key) with
-        Less -> treePeekKey compareKey pkey left
-      | Equal -> Some (key,value)
-      | Greater -> treePeekKey compareKey pkey right
+      let c = compareKey pkey key in
+      if c < 0 then treePeekKey compareKey pkey left
+      else if c = 0 then Some (key,value)
+      else treePeekKey compareKey pkey right
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -699,8 +657,8 @@ let rec treeDelete compareKey dkey tree =
 and nodeDelete compareKey dkey node =
       let {size;priority;left;key;value;right} = node
     in
-      match compareKey (dkey,key) with
-        Less ->
+      let c = compareKey dkey key in
+      if c < 0 then
           let size = size - 1
           and left = treeDelete compareKey dkey left
 
@@ -713,8 +671,8 @@ and nodeDelete compareKey dkey node =
                  right = right}
         in
           Tree node
-      | Equal -> treeAppend left right
-      | Greater ->
+      else if c = 0 then treeAppend left right
+      else
           let size = size - 1
           and right = treeDelete compareKey dkey right
 
@@ -1143,25 +1101,23 @@ let rec firstIterator f io =
 
 let rec compareIterator compareKey compareValue io1 io2 =
     match (io1,io2) with
-      (None,None) -> Equal
-    | (None, Some _) -> Less
-    | (Some _, None) -> Greater
+      (None,None) -> 0
+    | (None, Some _) -> -1
+    | (Some _, None) -> 1
     | (Some i1, Some i2) ->
         let (k1,v1) = readIterator i1
         and (k2,v2) = readIterator i2
       in
-        match compareKey (k1,k2) with
-          Less -> Less
-        | Equal ->
-          (match compareValue (v1,v2) with
-             Less -> Less
-           | Equal ->
+        let c = compareKey k1 k2 in
+        if c <> 0 then c
+        else
+          let c = compareValue v1 v2 in
+          if c <> 0 then c
+          else
                let io1 = advanceIterator i1
                and io2 = advanceIterator i2
              in
                compareIterator compareKey compareValue io1 io2
-           | Greater -> Greater)
-        | Greater -> Greater
       ;;
 
 let rec equalIterator equalKey equalValue io1 io2 =
@@ -1186,7 +1142,7 @@ let rec equalIterator equalKey equalValue io1 io2 =
 (* ------------------------------------------------------------------------- *)
 
 type ('key,'value) map =
-    Map of ('key * 'key -> order) * ('key,'value) tree;;
+    Map of ('key -> 'key -> int) * ('key,'value) tree;;
 
 (* ------------------------------------------------------------------------- *)
 (* Map debugging functions.                                                  *)
@@ -1466,19 +1422,19 @@ let count pred =
 (* Comparing.                                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let compare compareValue (m1,m2) =
-    if m1 == m2 then Equal
+let compare compareValue m1 m2 =
+    if m1 == m2 then 0
     else
-      match Int.compare (size m1, size m2) with
-        Less -> Less
-      | Equal ->
+      let c = Int.compare (size m1) (size m2) in
+      if c <> 0 then c
+      else
           let Map (compareKey,_) = m1
 
           in let io1 = mkIterator m1
           and io2 = mkIterator m2
         in
           compareIterator compareKey compareValue io1 io2
-      | Greater -> Greater;;
+    ;;
 
 let equal equalValue m1 m2 =
     m1 == m2 ||
@@ -1592,8 +1548,6 @@ end
 (* ========================================================================= *)
 
 module Pset = struct
-
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type of finite sets.                                                    *)
@@ -1834,11 +1788,11 @@ let count p =
 (* Comparing.                                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let compareValue ((),()) = Equal;;
+let compareValue () () = 0;;
 
 let equalValue () () = true;;
 
-let compare (Set m1, Set m2) = Pmap.compare compareValue (m1,m2);;
+let compare (Set m1) (Set m2) = Pmap.compare compareValue m1 m2;;
 
 let equal (Set m1) (Set m2) = Pmap.equal equalValue m1 m2;;
 
@@ -1936,8 +1890,6 @@ end
 
 module Intmap = struct
 
-open Order
-
 module Ordered = struct type t = int let compare = compare end
 
 include Mmap.Make (Ordered);;
@@ -1945,8 +1897,6 @@ include Mmap.Make (Ordered);;
 end
 
 module Stringmap = struct
-
-open Order
 
 module Ordered = struct type t = string let compare = compare end
 
@@ -1967,7 +1917,7 @@ struct
   module Se = Set.Make (Ord)
 
   type set = Se.t;;
-  let compare = Order.toCompare Se.compare;;
+  let compare = Se.compare;;
 
   let add s x = Se.add x s;;
   let foldr f a s = Se.fold (fun x acc -> f (x,acc)) s a;;
@@ -2010,8 +1960,6 @@ end
 
 module Intset = struct
 
-open Order
-
 module Ordered = struct type t = int let compare = compare end
 
 include Mset.Make (Ordered);;
@@ -2032,13 +1980,11 @@ module Heap = struct
 
 (* Leftist heaps as in Purely Functional Data Structures, by Chris Okasaki *)
 
-open Order
-
 exception Empty;;
 
 type 'a node = Em | Tr of int * 'a * 'a node * 'a node;;
 
-type 'a heap = Heap of ('a * 'a -> order) * int * 'a node;;
+type 'a heap = Heap of ('a -> 'a -> int) * int * 'a node;;
 
 let rank = function
     Em -> 0
@@ -2052,9 +1998,8 @@ let merge cmp =
           (h,Em) -> h
         | (Em,h) -> h
         | (Tr (_,x,a1,b1) as h1, (Tr (_,y,a2,b2) as h2)) ->
-          match cmp (x,y) with
-            Greater -> makeT (y, a2, mrg (h1,b2))
-          | _ -> makeT (x, a1, mrg (b1,h2))
+          if cmp x y > 0 then makeT (y, a2, mrg (h1,b2))
+          else makeT (x, a1, mrg (b1,h2))
     in
       mrg
     ;;
@@ -2115,7 +2060,7 @@ type name = string;;
 (* A total ordering.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-let compare = Order.toCompare (compare : name -> name -> int);;
+let compare = (compare : name -> name -> int);;
 
 let equal n1 n2 = n1 = n2;;
 
@@ -2152,7 +2097,7 @@ let toString s : string = s;;
 let fromString s : name = s;;
 
 module Ordered =
-struct type t = name let compare = Order.fromCompare compare end
+struct type t = name let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 module Set = Mset.Make (Ordered);;
@@ -2166,7 +2111,6 @@ end
 module Name_arity = struct
 
 open Useful;;
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type of name/arity pairs.                                               *)
@@ -2193,17 +2137,15 @@ and ternary = nary 3;;
 (* A total ordering.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-let compare ((n1,i1),(n2,i2)) =
-    match Name.compare (n1,n2) with
-      Less -> Less
-    | Equal -> Int.compare (i1,i2)
-    | Greater -> Greater;;
+let compare (n1,i1) (n2,i2) =
+    let c = Name.compare n1 n2 in
+    if c <> 0 then c else Int.compare i1 i2;;
 
 let equal (n1,i1) (n2,i2) = i1 = i2 && Name.equal n1 n2;;
 
 
 module Ordered =
-struct type t = nameArity let compare = fromCompare compare end
+struct type t = nameArity let compare = compare end
 
 module Map = struct
   include Mmap.Make (Ordered)
@@ -2230,7 +2172,6 @@ end
 module Term = struct
 
 open Useful
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic terms.                                        *)
@@ -2335,33 +2276,28 @@ let symbols tm =
 (* A total comparison function for terms.                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let compare (tm1,tm2) =
+let compare tm1 tm2 =
   let rec cmp = function
-      ([], []) -> Equal
+      ([], []) -> 0
     | (tm1 :: tms1, tm2 :: tms2) ->
         if tm1 == tm2 then cmp (tms1, tms2)
         else
           (match (tm1,tm2) with
             (Var v1, Var v2) ->
-            (match Name.compare (v1,v2) with
-               Less -> Less
-             | Equal -> cmp (tms1, tms2)
-             | Greater -> Greater)
-          | (Var _, Fn _) -> Less
-          | (Fn _, Var _) -> Greater
+              let c = Name.compare v1 v2 in
+              if c <> 0 then c else cmp (tms1, tms2)
+          | (Var _, Fn _) -> -1
+          | (Fn _, Var _) -> 1
           | (Fn (f1,a1), Fn (f2,a2)) ->
-            (match Name.compare (f1,f2) with
-               Less -> Less
-             | Equal ->
-               (match Int.compare (List.length a1, List.length a2) with
-                  Less -> Less
-                | Equal -> cmp (a1 @ tms1, a2 @ tms2)
-                | Greater -> Greater)
-             | Greater -> Greater))
+              let c = Name.compare f1 f2 in
+              if c <> 0 then c
+              else
+                let c = Int.compare (List.length a1) (List.length a2) in
+                if c <> 0 then c else cmp (a1 @ tms1, a2 @ tms2))
     | _ -> raise (Bug "Term.compare")
   in cmp ([tm1], [tm2]);;
 
-let equal tm1 tm2 = compare (tm1,tm2) = Equal;;
+let equal tm1 tm2 = compare tm1 tm2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Subterms.                                                                 *)
@@ -2561,7 +2497,7 @@ let rec toString = function
   | Fn (n, l) -> n ^ "(" ^ String.concat ", " (List.map toString l) ^ ")";;
 
 module Ordered =
-struct type t = term let compare = fromCompare compare end
+struct type t = term let compare = compare end
 
 module Map = Map.Make (Ordered);;
 
@@ -2799,7 +2735,6 @@ end
 module Atom = struct
 
 open Useful
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type for storing first order logic atoms.                               *)
@@ -2857,13 +2792,11 @@ let symbols atm =
 (* A total comparison function for atoms.                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let compare ((p1,tms1),(p2,tms2)) =
-    match Name.compare (p1,p2) with
-      Less -> Less
-    | Equal -> lexCompare Term.compare (tms1,tms2)
-    | Greater -> Greater;;
+let compare (p1,tms1) (p2,tms2) =
+    let c = Name.compare p1 p2 in
+    if c <> 0 then c else lexCompare Term.compare tms1 tms2;;
 
-let equal atm1 atm2 = compare (atm1,atm2) = Equal;;
+let equal atm1 atm2 = compare atm1 atm2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Subterms.                                                                 *)
@@ -3006,7 +2939,7 @@ let nonVarTypedSubterms (_,tms) =
 
 
 module Ordered =
-struct type t = atom let compare = fromCompare compare end
+struct type t = atom let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 
@@ -3022,7 +2955,6 @@ end
 module Formula = struct
 
 open Useful
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic formulas.                                     *)
@@ -3299,57 +3231,51 @@ in
 (* A total comparison function for formulas.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let compare fm1_fm2 =
+let compare fm1 fm2 =
   let rec cmp = function
-      [] -> Equal
+      [] -> 0
     | (((f1, f2) as f1_f2) :: fs) ->
       if f1 == f2 then cmp fs
       else
         match f1_f2 with
           (True,True) -> cmp fs
-        | (True,_) -> Less
-        | (_,True) -> Greater
+        | (True,_) -> -1
+        | (_,True) -> 1
         | (False,False) -> cmp fs
-        | (False,_) -> Less
-        | (_,False) -> Greater
+        | (False,_) -> -1
+        | (_,False) -> 1
         | (Atom atm1, Atom atm2) ->
-          (match Atom.compare (atm1,atm2) with
-             Less -> Less
-           | Equal -> cmp fs
-           | Greater -> Greater)
-        | (Atom _, _) -> Less
-        | (_, Atom _) -> Greater
+            let c = Atom.compare atm1 atm2 in
+            if c <> 0 then c else cmp fs
+        | (Atom _, _) -> -1
+        | (_, Atom _) -> 1
         | (Not p1, Not p2) -> cmp ((p1,p2) :: fs)
-        | (Not _, _) -> Less
-        | (_, Not _) -> Greater
+        | (Not _, _) -> -1
+        | (_, Not _) -> 1
         | (And (p1,q1), And (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (And _, _) -> Less
-        | (_, And _) -> Greater
+        | (And _, _) -> -1
+        | (_, And _) -> 1
         | (Or (p1,q1), Or (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (Or _, _) -> Less
-        | (_, Or _) -> Greater
+        | (Or _, _) -> -1
+        | (_, Or _) -> 1
         | (Imp (p1,q1), Imp (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (Imp _, _) -> Less
-        | (_, Imp _) -> Greater
+        | (Imp _, _) -> -1
+        | (_, Imp _) -> 1
         | (Iff (p1,q1), Iff (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (Iff _, _) -> Less
-        | (_, Iff _) -> Greater
+        | (Iff _, _) -> -1
+        | (_, Iff _) -> 1
         | (Forall (v1,p1), Forall (v2,p2)) ->
-          (match Name.compare (v1,v2) with
-             Less -> Less
-           | Equal -> cmp ((p1,p2) :: fs)
-           | Greater -> Greater)
-        | (Forall _, Exists _) -> Less
-        | (Exists _, Forall _) -> Greater
+            let c = Name.compare v1 v2 in
+            if c <> 0 then c else cmp ((p1,p2) :: fs)
+        | (Forall _, Exists _) -> -1
+        | (Exists _, Forall _) -> 1
         | (Exists (v1,p1), Exists (v2,p2)) ->
-          (match Name.compare (v1,v2) with
-             Less -> Less
-           | Equal -> cmp ((p1,p2) :: fs)
-           | Greater -> Greater)
+            let c = Name.compare v1 v2 in
+            if c <> 0 then c else cmp ((p1,p2) :: fs)
 in
-  cmp [fm1_fm2];;
+  cmp [(fm1,fm2)];;
 
-let equal fm1 fm2 = compare (fm1,fm2) = Equal;;
+let equal fm1 fm2 = compare fm1 fm2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Free variables.                                                           *)
@@ -3566,7 +3492,7 @@ let splitGoal = fun fm =>
 *)
 
 module Ordered =
-struct type t = formula let compare = fromCompare compare end
+struct type t = formula let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 
@@ -3582,7 +3508,6 @@ end
 module Literal = struct
 
 open Useful;;
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type for storing first order logic literals.                            *)
@@ -3762,7 +3687,7 @@ let toString literal = Formula.toString (toFormula literal);;
 
 
 module Ordered =
-struct type t = literal let compare = fromCompare compare end
+struct type t = literal let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 
@@ -3840,7 +3765,7 @@ struct
 end
 
 module Set_ordered =
-struct type t = Set.set let compare = fromCompare Set.compare end
+struct type t = Set.set let compare = Set.compare end
 
 module Set_map = Mmap.Make (Set_ordered);;
 
@@ -3856,7 +3781,6 @@ end
 module Thm = struct
 
 open Useful;;
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* An abstract type of first order logic theorems.                           *)
@@ -3926,7 +3850,7 @@ let negateMember lit (Thm (cl,_)) = Literal.Set.negateMember lit cl;;
 (* A total order.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let compare (th1,th2) = Literal.Set.compare (clause th1, clause th2);;
+let compare th1 th2 = Literal.Set.compare (clause th1) (clause th2);;
 
 let equal th1 th2 = Literal.Set.equal (clause th1) (clause th2);;
 
@@ -6259,7 +6183,6 @@ end
 module Term_net = struct
 
 open Useful;;
-open Order;;
 
 (* ------------------------------------------------------------------------- *)
 (* Anonymous variables.                                                      *)
@@ -6277,30 +6200,28 @@ type qterm =
   | Fn of Name_arity.nameArity * qterm list;;
 
   let rec cmp = function
-      [] -> Equal
+      [] -> 0
     | (((q1, q2) as q1_q2) :: qs) ->
       if q1 == q2 then cmp qs
       else
         match q1_q2 with
-          (Var,Var) -> Equal
-        | (Var, Fn _) -> Less
-        | (Fn _, Var) -> Greater
+          (Var,Var) -> 0
+        | (Var, Fn _) -> -1
+        | (Fn _, Var) -> 1
         | (Fn (f1, f1'), Fn (f2, f2')) -> fnCmp (f1,f1') (f2,f2') qs
 
   and fnCmp (n1,q1) (n2,q2) qs =
-    match Name_arity.compare (n1,n2) with
-      Less -> Less
-    | Equal -> cmp (zip q1 q2 @ qs)
-    | Greater -> Greater;;
+    let c = Name_arity.compare n1 n2 in
+    if c <> 0 then c else cmp (zip q1 q2 @ qs);;
 
-  let compareQterm q1_q2 = cmp [q1_q2];;
+  let compareQterm q1 q2 = cmp [(q1,q2)];;
 
-  let compareFnQterm (f1,f2) = fnCmp f1 f2 [];;
+  let compareFnQterm f1 f2 = fnCmp f1 f2 [];;
 
 
-let equalQterm q1 q2 = compareQterm (q1,q2) = Equal;;
+let equalQterm q1 q2 = compareQterm q1 q2 = 0;;
 
-let equalFnQterm f1 f2 = compareFnQterm (f1,f2) = Equal;;
+let equalFnQterm f1 f2 = compareFnQterm f1 f2 = 0;;
 
 let rec termToQterm = function
     (Term.Var _) -> Var
@@ -6569,7 +6490,7 @@ let foldEqualTerms pat inc acc =
 (* Filter afterwards to get the precise set of satisfying values.            *)
 (* ------------------------------------------------------------------------- *)
 
-  let idwise ((m,_),(n,_)) = Int.compare (m,n);;
+  let idwise (m,_) (n,_) = Int.compare m n;;
 
   let fifoize ({fifo} : parameters) l = if fifo then sort idwise l else l;;
 
@@ -6808,7 +6729,7 @@ end
 module Subsume = struct
 
 open Useful;;
-open Order;;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
@@ -6852,11 +6773,9 @@ type clauseLength = int;;
 
   type idSet = (clauseId * clauseLength) Pset.set;;
 
-  let idCompare ((id1,len1),(id2,len2)) =
-      match Int.compare (len1,len2) with
-        Less -> Less
-      | Equal -> Int.compare (id1,id2)
-      | Greater -> Greater;;
+  let idCompare (id1,len1) (id2,len2) =
+      let c = Int.compare len1 len2 in
+      if c <> 0 then c else Int.compare id1 id2;;
 
   let idSetEmpty : idSet = Pset.empty idCompare;;
 
@@ -7112,7 +7031,7 @@ end
 module Knuth_bendix_order = struct
 
 open Useful;;
-open Order;;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
@@ -7132,7 +7051,7 @@ let firstNotEqualTerm f l =
 
 type kbo =
      {weight : Term.function_t -> int;
-      precedence : Term.function_t * Term.function_t -> order};;
+      precedence : Term.function_t -> Term.function_t -> int};;
 
 (* Default weight = uniform *)
 
@@ -7140,12 +7059,10 @@ let uniformWeight : Term.function_t -> int = K 1;;
 
 (* Default precedence = by arity *)
 
-let arityPrecedence : Term.function_t * Term.function_t -> order =
-    fun ((f1,n1),(f2,n2)) ->
-       match Int.compare (n1,n2) with
-         Less -> Less
-       | Equal -> Name.compare (f1,f2)
-       | Greater -> Greater;;
+let arityPrecedence : Term.function_t -> Term.function_t -> int =
+    fun (f1,n1) (f2,n2) ->
+       let c = Int.compare n1 n2 in
+       if c <> 0 then c else Name.compare f1 f2;;
 
 (* The default order *)
 
@@ -7247,10 +7164,10 @@ let compare {weight;precedence} =
 
       and precedenceLess x y = match (x,y) with
           (Term.Fn (f1,a1), Term.Fn (f2,a2)) ->
-          (match precedence ((f1, length a1), (f2, length a2)) with
-             Less -> true
-           | Equal -> firstNotEqualTerm weightLess (zip a1 a2)
-           | Greater -> false)
+          let c = precedence (f1, length a1) (f2, length a2) in
+          if c < 0 then true
+          else if c = 0 then firstNotEqualTerm weightLess (zip a1 a2)
+          else false
         | _ -> false
 
       in let weightDiffGreater w tm1 tm2 = weightDiffLess (weightNeg w) tm2 tm1
@@ -7259,33 +7176,33 @@ let compare {weight;precedence} =
             let w = weightDifference tm1 tm2
           in
             if weightIsZero w then precedenceCmp tm1 tm2
-            else if weightDiffLess w tm1 tm2 then Some Less
-            else if weightDiffGreater w tm1 tm2 then Some Greater
+            else if weightDiffLess w tm1 tm2 then Some (-1)
+            else if weightDiffGreater w tm1 tm2 then Some 1
             else None
 
       and precedenceCmp x y = match (x,y) with
           (Term.Fn (f1,a1), Term.Fn (f2,a2)) ->
-          (match precedence ((f1, length a1), (f2, length a2)) with
-             Less -> Some Less
-           | Equal -> firstNotEqualTerm weightCmp (zip a1 a2)
-           | Greater -> Some Greater)
+          let c = precedence (f1, length a1) (f2, length a2) in
+          if c < 0 then Some (-1)
+          else if c = 0 then firstNotEqualTerm weightCmp (zip a1 a2)
+          else Some 1
         | _ -> raise (Bug "kboOrder.precendenceCmp")
     in
-      fun (tm1,tm2) ->
-         if Term.equal tm1 tm2 then Some Equal else weightCmp tm1 tm2
+      fun tm1 tm2 ->
+         if Term.equal tm1 tm2 then Some 0 else weightCmp tm1 tm2
     ;;
 
 (*MetisTrace7
-let compare = fun kbo -> fun (tm1,tm2) ->
+let compare = fun kbo -> fun tm1 tm2 ->
     let
       let () = Print.trace Term.pp "Knuth_bendix_order.compare: tm1" tm1
       let () = Print.trace Term.pp "Knuth_bendix_order.compare: tm2" tm2
-      let result = compare kbo (tm1,tm2)
+      let result = compare kbo tm1 tm2
       let () =
           match result with
             None -> trace "Knuth_bendix_order.compare: result = Incomparable\n"
           | Some x ->
-            Print.trace Print.ppOrder "Knuth_bendix_order.compare: result" x
+            Print.trace Print.ppInt "Knuth_bendix_order.compare: result" x
     in
       result
     end;;
@@ -7301,7 +7218,7 @@ end
 module Rewrite = struct
 
 open Useful;;
-open Order;;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Orientations of equations.                                                *)
@@ -7325,7 +7242,7 @@ let toStringOrientOption orto =
 (* A type of rewrite systems.                                                *)
 (* ------------------------------------------------------------------------- *)
 
-type reductionOrder = Term.term * Term.term -> order option;;
+type reductionOrder = Term.term -> Term.term -> int option;;
 
 type equationId = int;;
 
@@ -7437,7 +7354,7 @@ let termReducible order known id =
           match total (Substitute.matchTerms Substitute.empty l) tm with
             None -> false
           | Some sub ->
-            order (tm, Substitute.subst (Substitute.normalize sub) r) = Some Greater
+            order tm (Substitute.subst (Substitute.normalize sub) r) = Some 1
 
       in let knownRed tm (eqnId,(eqn,ort)) =
           eqnId <> id &&
@@ -7466,9 +7383,9 @@ let thmReducible order known id th =
 (* ------------------------------------------------------------------------- *)
 
 let orderToOrient = function
-    (Some Equal) -> failwith "Rewrite.orient: reflexive"
-  | (Some Greater) -> Some Left_to_right
-  | (Some Less) -> Some Right_to_left
+    Some 0 -> failwith "Rewrite.orient: reflexive"
+  | Some c when c > 0 -> Some Left_to_right
+  | Some _ -> Some Right_to_left
   | None -> None;;
 
   let ins redexes redex id ort = Term_net.insert redexes (redex,(id,ort));;
@@ -7485,7 +7402,7 @@ let add (Rewrite {known} as rw) (id,eqn) =
     else
         let Rewrite {order;redexes;subterms;waiting} = rw
 
-        in let ort = orderToOrient (order (fst eqn))
+        in let ort = let (l,r) = fst eqn in orderToOrient (order l r)
 
         in let known = Intmap.insert known (id,(eqn,ort))
 
@@ -7511,7 +7428,7 @@ let add (Rewrite {known} as rw) (id,eqn) =
 (* Rewriting (the order must be a refinement of the rewrite order).          *)
 (* ------------------------------------------------------------------------- *)
 
-  let reorder ((i,_),(j,_)) = Int.compare (j,i);;
+  let reorder (i,_) (j,_) = Int.compare j i;;
   let matchingRedexes redexes tm = sort reorder (Term_net.matchNet redexes tm);;
 
 
@@ -7538,7 +7455,7 @@ let rewrIdConv' order known redexes id tm =
             in let sub = Substitute.normalize (Substitute.matchTerms Substitute.empty l tm)
             in let tm' = Substitute.subst sub r
             in let _ = Option.is_some ort ||
-                    order (tm,tm') = Some Greater ||
+                    order tm tm' = Some 1 ||
                     failwith "order"
             in let (_,th) = orientedEquation lr eqn
           in
@@ -7556,15 +7473,15 @@ let rewriteIdConv' order known redexes id =
 let mkNeqConv order lit =
       let (l,r) = Literal.destNeq lit
     in
-      match order (l,r) with
+      match order l r with
         None -> failwith "incomparable"
-      | Some Less ->
+      | Some c when c < 0 ->
           let th = Rule.symmetryRule l r
         in
           fun tm ->
              if Term.equal tm r then (l,th) else failwith "mkNeqConv: RL"
-      | Some Equal -> failwith "irreflexive"
-      | Some Greater ->
+      | Some 0 -> failwith "irreflexive"
+      | Some _ ->
           let th = Thm.assume lit
         in
           fun tm ->
@@ -7741,7 +7658,7 @@ let findReducibles order known subterms id =
             else
                 let tm' = Substitute.subst (Substitute.normalize sub) r
               in
-                if order (tm,tm') = Some Greater then ()
+                if order tm tm' = Some 1 then ()
                 else failwith "order"
 
       in let addRed lr ((id',left,path),todo) =
@@ -7771,7 +7688,7 @@ let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
       in let changed =
           if not newx && identical then changed else Intset.add changed id
       in let ort =
-          if same_redexes then Some ort0 else total orderToOrient (order eq)
+          if same_redexes then Some ort0 else let (l,r) = eq in total orderToOrient (order l r)
     in
       match ort with
         None ->
@@ -7923,7 +7840,7 @@ let reduce rw = fst (reduce' rw);;
       rewriteRule rw order
     ;;
 
-  let order : reductionOrder = K (Some Greater);;
+  let order : reductionOrder = fun _ _ -> Some 1;;
   let rewrite = orderedRewrite order;;
 
 
@@ -8030,7 +7947,7 @@ end
 module Clause = struct
 
 open Useful;;
-open Order;;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
@@ -8109,13 +8026,13 @@ let isContradiction (Clause {thm}) = Thm.isContradiction thm;;
 (* The term ordering is used to cut down inferences.                         *)
 (* ------------------------------------------------------------------------- *)
 
-let strictlyLess ordering x_y =
-    match Knuth_bendix_order.compare ordering x_y with
-      Some Less -> true
+let strictlyLess ordering x y =
+    match Knuth_bendix_order.compare ordering x y with
+      Some c when c < 0 -> true
     | _ -> false;;
 
-let isLargerTerm ({ordering;orderTerms} : parameters) l_r =
-    not orderTerms || not (strictlyLess ordering l_r);;
+let isLargerTerm ({ordering;orderTerms} : parameters) (l,r) =
+    not orderTerms || not (strictlyLess ordering l r);;
 
   let atomToTerms atm =
       match total Atom.destEq atm with
@@ -8123,7 +8040,7 @@ let isLargerTerm ({ordering;orderTerms} : parameters) l_r =
       | Some (l,r) -> [l;r];;
 
   let notStrictlyLess ordering (xs,ys) =
-        let less x = List.exists (fun y -> strictlyLess ordering (x,y)) ys
+        let less x = List.exists (fun y -> strictlyLess ordering x y) ys
       in
         not (List.for_all less xs)
       ;;
@@ -8378,7 +8295,7 @@ end
 module Active = struct
 
 open Useful;;
-open Order;;
+
 open Ax_cj
 
 (* ------------------------------------------------------------------------- *)
@@ -8969,7 +8886,7 @@ let deduce active cl =
                     ord ||
                       let tm' = Substitute.subst (Substitute.normalize sub) r
                     in
-                      order (tm,tm') = Some Greater
+                      order tm tm' = Some 1
 
               in let addRed ((cl,tm),acc) =
 (*MetisTrace5
@@ -9458,7 +9375,7 @@ let add waiting (dist,cls) =
         waiting
       ;;
 
-  let cmp ((w1,_),(w2,_)) = Real.compare (w1,w2);;
+  let cmp (w1,_) (w2,_) = Real.compare w1 w2;;
 
   let empty parameters axioms conjecture =
         let {modelsP = modelParameters} = parameters
