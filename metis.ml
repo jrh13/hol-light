@@ -32,20 +32,6 @@ let critical x = x;;
 
 end
 
-module Int = struct
-
-let compare = (compare : int -> int -> int);;
-
-end
-
-module Real = struct
-
-type real = float;;
-
-let compare = (compare : float -> float -> int);;
-
-end
-
 (* ------------------------------------------------------------------------- *)
 (* Emulating SML Word type (which is unsigned) and other operations.         *)
 (* ------------------------------------------------------------------------- *)
@@ -9159,13 +9145,12 @@ module Waiting = struct
 
 open Useful;;
 open Ax_cj
-open Real
 
 (* ------------------------------------------------------------------------- *)
 (* A type of waiting sets of clauses.                                        *)
 (* ------------------------------------------------------------------------- *)
 
-type weight = real;;
+type weight = float;;
 
 type modelParameters =
      {model : Model.parameters;
@@ -9180,7 +9165,7 @@ type parameters =
       literalsWeight : weight;
       modelsP : modelParameters list};;
 
-type distance = real;;
+type distance = float;;
 
 type waiting_t =
       {parameters : parameters;
@@ -9308,21 +9293,21 @@ let perturbModels parms models cls =
         in let modelsW = checkModels modelsP mods mcl
 (*MetisTrace4
         let () = trace ("Waiting.clauseWeight: dist = " ^
-                        Real.toString dist ^ "\n")
+                        Float.to_string dist ^ "\n")
         let () = trace ("Waiting.clauseWeight: symbolsW = " ^
-                        Real.toString symbolsW ^ "\n")
+                        Float.to_string symbolsW ^ "\n")
         let () = trace ("Waiting.clauseWeight: variablesW = " ^
-                        Real.toString variablesW ^ "\n")
+                        Float.to_string variablesW ^ "\n")
         let () = trace ("Waiting.clauseWeight: literalsW = " ^
-                        Real.toString literalsW ^ "\n")
+                        Float.to_string literalsW ^ "\n")
         let () = trace ("Waiting.clauseWeight: modelsW = " ^
-                        Real.toString modelsW ^ "\n")
+                        Float.to_string modelsW ^ "\n")
 *)
         in let weight = dist *. symbolsW *. variablesW *. literalsW *. modelsW
         in let weight = weight +. clausePriority cl
 (*MetisTrace3
         let () = trace ("Waiting.clauseWeight: weight = " ^
-                        Real.toString weight ^ "\n")
+                        Float.to_string weight ^ "\n")
 *)
       in
         weight
@@ -9375,7 +9360,7 @@ let add waiting (dist,cls) =
         waiting
       ;;
 
-  let cmp (w1,_) (w2,_) = Real.compare w1 w2;;
+  let cmp (w1,_) (w2,_) = Float.compare w1 w2;;
 
   let empty parameters axioms conjecture =
         let {modelsP = modelParameters} = parameters
