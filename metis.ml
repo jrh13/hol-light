@@ -117,8 +117,6 @@ let lexCompare cmp =
             let c = cmp x y in if c <> 0 then c else lex xs ys
     in lex;;
 
-let boolCompare = (compare : bool -> bool -> int);;
-
 (* ------------------------------------------------------------------------- *)
 (* Lists.                                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -3559,7 +3557,7 @@ let symbols ((_,atm) : literal) = Atom.symbols atm;;
 (* A total comparison function for literals.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let compare = prodCompare boolCompare Atom.compare;;
+let compare = prodCompare Bool.compare Atom.compare;;
 
 let equal (p1,atm1) (p2,atm2) = p1 = p2 && Atom.equal atm1 atm2;;
 
