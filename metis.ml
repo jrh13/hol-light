@@ -69,6 +69,33 @@ let tabulate (n,f) =
   let rec go i = if i == n then [] else f i :: go (i+1)
   in  go 0
 let find p l = try Some (List.find p l) with Not_found -> None;;
+let rec first f = function
+    [] -> None
+  | (x :: xs) -> (match f x with None -> first f xs | s -> s);;
+let enumerate l = mapi (fun x y -> (x, y)) l
+let revDivide l =
+  let rec revDiv acc = function
+      (l, 0) -> (acc,l)
+    | ([], _) -> invalid_arg "Metis_prover.Mlist.revDivide"
+    | (h :: t, n) -> revDiv (h :: acc) (t, n - 1)
+  in fun n -> revDiv [] (l, n);;
+let updateNth (n,x) l =
+    let (a,b) = revDivide l n
+    in
+      match b with
+        [] -> invalid_arg "Metis_prover.Mlist.updateNth"
+      | (_ :: t) -> List.rev_append a (x :: t)
+;;
+let sortMap f cmp = function
+    [] -> []
+  | ([_] as l) -> l
+  | xs ->
+      let ncmp (m,_) (n,_) = cmp m n
+      in let nxs = List.map (fun x -> (f x, x)) xs
+      in let nys = List.sort ncmp nxs
+    in
+      List.map snd nys
+    ;;
 
 end
 
@@ -119,31 +146,6 @@ let lexCompare cmp =
     in lex;;
 
 (* ------------------------------------------------------------------------- *)
-(* Lists.                                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let rec first f = function
-    [] -> None
-  | (x :: xs) -> (match f x with None -> first f xs | s -> s);;
-
-let enumerate l = mapi (fun x y -> (x, y)) l
-
-let revDivide l =
-  let rec revDiv acc = function
-      (l, 0) -> (acc,l)
-    | ([], _) -> invalid_arg "Metis_prover.Useful.revDivide"
-    | (h :: t, n) -> revDiv (h :: acc) (t, n - 1)
-  in fun n -> revDiv [] (l, n);;
-
-let updateNth (n,x) l =
-    let (a,b) = revDivide l n
-    in
-      match b with
-        [] -> invalid_arg "Metis_prover.Useful.updateNth"
-      | (_ :: t) -> List.rev_append a (x :: t)
-;;
-
-(* ------------------------------------------------------------------------- *)
 (* Strings.                                                                  *)
 (* ------------------------------------------------------------------------- *)
 
@@ -155,21 +157,6 @@ let stripSuffix pred s =
     if pred (s.[pos]) then strip (pos - 1)
     else String.sub s 0 (pos + 1)
   in strip (String.length s - 1);;
-
-(* ------------------------------------------------------------------------- *)
-(* Sorting and searching.                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let sortMap f cmp = function
-    [] -> []
-  | ([_] as l) -> l
-  | xs ->
-      let ncmp (m,_) (n,_) = cmp m n
-      in let nxs = List.map (fun x -> (f x, x)) xs
-      in let nys = List.sort ncmp nxs
-    in
-      List.map snd nys
-    ;;
 
 (* ------------------------------------------------------------------------- *)
 (* Integers.                                                                 *)
@@ -2282,7 +2269,7 @@ let subterms tm =
         and acc = (List.rev path, tm) :: acc
         in match tm with
           Var _ -> subtms (rest, acc)
-        | Fn (_,args) -> subtms ((List.map f (Useful.enumerate args) @ rest), acc)
+        | Fn (_,args) -> subtms ((List.map f (Mlist.enumerate args) @ rest), acc)
   in subtms ([([],tm)], []);;
 
 
@@ -2298,7 +2285,7 @@ let rec replace tm = function
         let arg' = replace arg (t,res)
         in
           if arg' == arg then tm
-          else Fn (letc, Useful.updateNth (h,arg') tms)
+          else Fn (letc, Mlist.updateNth (h,arg') tms)
 ;;
 
 let find pred =
@@ -2310,7 +2297,7 @@ let find pred =
             match tm with
               Var _ -> search rest
             | Fn (_,a) ->
-              let subtms = List.map (fun (i,t) -> (i :: path, t)) (Useful.enumerate a)
+              let subtms = List.map (fun (i,t) -> (i :: path, t)) (Mlist.enumerate a)
               in search (subtms @ rest)
     in
       fun tm -> search [([],tm)];;
@@ -2408,7 +2395,7 @@ let nonVarTypedSubterms tm =
             let f (n,arg) = (n :: path, arg) in
             let (_,args) = letc in
             let acc = (List.rev path, tm) :: acc in
-            let rest = List.map f (Useful.enumerate args) @ rest
+            let rest = List.map f (Mlist.enumerate args) @ rest
           in
             subtms (rest, acc)))
   in subtms ([([],tm)], []);;
@@ -2770,7 +2757,7 @@ let subterm =
 let subterms ((_,tms) : atom) =
     let f ((n,tm),l) = List.map (fun (p,s) -> (n :: p, s)) (Term.subterms tm) @ l
     in
-      Mlist.foldl f [] (Useful.enumerate tms)
+      Mlist.foldl f [] (Mlist.enumerate tms)
     ;;
 
 let replace ((rel,tms) as atm) = function
@@ -2782,7 +2769,7 @@ let replace ((rel,tms) as atm) = function
       in let tm' = Term.replace tm (t,res)
       in
         if tm == tm' then atm
-        else (rel, Useful.updateNth (h,tm') tms)
+        else (rel, Mlist.updateNth (h,tm') tms)
       ;;
 
 let find pred =
@@ -2791,7 +2778,7 @@ let find pred =
             Some path -> Some (i :: path)
           | None -> None
     in
-      fun (_,tms) -> Useful.first f (Useful.enumerate tms)
+      fun (_,tms) -> Mlist.first f (Mlist.enumerate tms)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -2891,7 +2878,7 @@ let nonVarTypedSubterms (_,tms) =
           in
             Mlist.foldl addTm acc (Term.nonVarTypedSubterms arg)
     in
-      Mlist.foldl addArg [] (Useful.enumerate tms)
+      Mlist.foldl addArg [] (Mlist.enumerate tms)
     ;;
 
 
@@ -4040,7 +4027,7 @@ let inferenceToThm = function
         let rec sync s t path (f,a) (f',a') =
             if not (Name.equal f f' && length a = length a') then None
             else
-                let itms = Useful.enumerate (zip a a')
+                let itms = Mlist.enumerate (zip a a')
               in
                 (match List.filter (fun x -> not (uncurry Term.equal (snd x))) itms with
                   [(i,(tm,tm'))] ->
@@ -4082,7 +4069,7 @@ let inferenceToThm = function
                    "Proof.reconstructEquality: candidates" candidates
 *)
       in
-        match Useful.first recon candidates with
+        match Mlist.first recon candidates with
           Some info -> info
         | None -> raise (Useful.Bug "can't reconstruct Equality rule")
       ;;
@@ -4687,7 +4674,7 @@ let functionCongruence (f,n) =
       in let reflTh = Thm.refl (Term.Fn (f,xs))
       in let reflLit = Thm.destUnit reflTh
     in
-      fst (Mlist.foldl cong (reflTh,reflLit) (Useful.enumerate ys))
+      fst (Mlist.foldl cong (reflTh,reflLit) (Mlist.enumerate ys))
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -4711,7 +4698,7 @@ let relationCongruence (r,n) =
       in let assumeLit = (false,(r,xs))
       in let assumeTh = Thm.assume assumeLit
     in
-      fst (Mlist.foldl cong (assumeTh,assumeLit) (Useful.enumerate ys))
+      fst (Mlist.foldl cong (assumeTh,assumeLit) (Mlist.enumerate ys))
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -6333,7 +6320,7 @@ let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
 
   let rec norm = function
       (0 :: ks, ((_,n) as f) :: fs, qtms) ->
-        let (a,qtms) = Useful.revDivide qtms n
+        let (a,qtms) = Mlist.revDivide qtms n
       in
         addQterm (Fn (f,a)) (ks,fs,qtms)
     | stack -> stack
@@ -6690,7 +6677,7 @@ let findRest pred =
 let sortClause cl =
       let lits = Literal.Set.toList cl
     in
-      Useful.sortMap Literal.typedSymbols (Useful.revCompare Int.compare) lits
+      Mlist.sortMap Literal.typedSymbols (Useful.revCompare Int.compare) lits
     ;;
 
 let incompatible lit =
@@ -6814,7 +6801,7 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
 
   let genClauseSubsumes pred cl' lits' cl a =
         let rec mkSubsl acc sub = function
-            [] -> Some (sub, Useful.sortMap length Int.compare acc)
+            [] -> Some (sub, Mlist.sortMap length Int.compare acc)
           | (lit' :: lits') ->
             match Mlist.foldl (matchLit lit') [] cl with
               [] -> None
@@ -6856,9 +6843,9 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
                     in
                       if pred x then Some x else None
             in
-              Useful.first subUnit (Literal_net.matchNet unitn lit)
+              Mlist.first subUnit (Literal_net.matchNet unitn lit)
       in
-        Useful.first subLit
+        Mlist.first subLit
       ;;
 
   let nonunitSubsumes pred nonunit max cl =
@@ -7391,7 +7378,7 @@ let rewrIdConv' order known redexes id tm =
           in
             (tm', Thm.subst sub th)
     in
-      match Useful.first (Useful.total rewr) (matchingRedexes redexes tm) with
+      match Mlist.first (Useful.total rewr) (matchingRedexes redexes tm) with
         None -> failwith "Rewrite.rewrIdConv: no matching rewrites"
       | Some res -> res
     ;;
@@ -7765,7 +7752,7 @@ let reduce rw = fst (reduce' rw);;
 
   let addEqn (id_eqn,rw) = add rw id_eqn;;
   let orderedRewrite order ths =
-      let rw = Mlist.foldl addEqn (newRewrite order) (Useful.enumerate ths)
+      let rw = Mlist.foldl addEqn (newRewrite order) (Mlist.enumerate ths)
     in
       rewriteRule rw order
     ;;
@@ -7829,7 +7816,7 @@ let matchUnits (Units net) lit =
             None -> None
           | Some sub -> Some (uTh,sub)
     in
-      Useful.first check (Literal_net.matchNet net lit)
+      Mlist.first check (Literal_net.matchNet net lit)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -8965,7 +8952,7 @@ let deduce active cl =
             | 1 -> if Thm.isUnitEq (Clause.thm cl) then 0 else 1
             | n -> n
       in
-        Useful.sortMap utility Int.compare
+        Mlist.sortMap utility Int.compare
       ;;
 
   let rec post_factor (cl, ((active,subsume,acc) as active_subsume_acc)) =
