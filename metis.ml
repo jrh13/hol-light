@@ -28,6 +28,7 @@ module Metis_prover = struct
 
 module Portable = struct
 
+(* Marking critical sections of code. *)
 let critical x = x;;
 
 end
