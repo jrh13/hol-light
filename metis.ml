@@ -23,17 +23,6 @@ let metisverb = ref false;;
 module Metis_prover = struct
 
 (* ------------------------------------------------------------------------- *)
-(* Convenient utility modules.                                               *)
-(* ------------------------------------------------------------------------- *)
-
-module Portable = struct
-
-(* Marking critical sections of code. *)
-let critical x = x;;
-
-end
-
-(* ------------------------------------------------------------------------- *)
 (* Emulating SML Word type (which is unsigned) and other operations.         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -104,6 +93,9 @@ end
 (* ========================================================================= *)
 
 module Useful = struct
+
+(* Marking critical sections of code. *)
+let critical x = x;;
 
 (* ------------------------------------------------------------------------- *)
 (* Characters (MF).                                                          *)
@@ -7875,7 +7867,7 @@ let newId =
           in
             n
     in
-      fun () -> Portable.critical newI ()
+      fun () -> Useful.critical newI ()
     ;;
 
 (* ------------------------------------------------------------------------- *)
