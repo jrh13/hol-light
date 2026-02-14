@@ -135,22 +135,12 @@ let revDivide l =
     | (h :: t, n) -> revDiv (h :: acc) (t, n - 1)
   in fun n -> revDiv [] (l, n);;
 
-let divide l n = let (a,b) = revDivide l n in (List.rev a, b);;
-
 let updateNth (n,x) l =
     let (a,b) = revDivide l n
     in
       match b with
         [] -> invalid_arg "Metis_prover.Useful.updateNth"
       | (_ :: t) -> List.rev_append a (x :: t)
-;;
-
-let deleteNth n l =
-    let (a,b) = revDivide l n
-    in
-      match b with
-        [] -> invalid_arg "Metis_prover.Useful.deleteNth"
-      | (_ :: t) -> List.rev_append a t
 ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -169,8 +159,6 @@ let stripSuffix pred s =
 (* ------------------------------------------------------------------------- *)
 (* Sorting and searching.                                                    *)
 (* ------------------------------------------------------------------------- *)
-
-let sort cmp = List.sort cmp;;
 
 let sortMap f cmp = function
     [] -> []
@@ -232,12 +220,6 @@ end
 module Pmap = struct
 
 (* ------------------------------------------------------------------------- *)
-(* Importing useful functionality.                                           *)
-(* ------------------------------------------------------------------------- *)
-
-exception Bug = Useful.Bug;;
-
-(* ------------------------------------------------------------------------- *)
 (* Converting a comparison function to an equality function.                 *)
 (* ------------------------------------------------------------------------- *)
 
@@ -290,7 +272,7 @@ local
           let l = checkSizes left
           and r = checkSizes right
 
-          let () = if l + 1 + r = size then () else raise Bug "wrong size"
+          let () = if l + 1 + r = size then () else raise Useful.Bug "wrong size"
         in
           size
         end;;
@@ -308,8 +290,8 @@ local
               | Some k ->
                 let c = compareKey k key in
                 if c < 0 then ()
-                else if c = 0 then raise Bug "duplicate keys"
-                else raise Bug "unsorted"
+                else if c = 0 then raise Useful.Bug "duplicate keys"
+                else raise Useful.Bug "unsorted"
 
           let x = Some key
         in
@@ -328,14 +310,14 @@ local
                 None -> ()
               | Some lnode ->
                 if not (lowerPriorityNode node lnode) then ()
-                else raise Bug "left child has greater priority"
+                else raise Useful.Bug "left child has greater priority"
 
           let () =
               match checkPriorities compareKey right with
                 None -> ()
               | Some rnode ->
                 if not (lowerPriorityNode node rnode) then ()
-                else raise Bug "right child has greater priority"
+                else raise Useful.Bug "right child has greater priority"
         in
           Some node
         end;;
@@ -350,7 +332,7 @@ in
       in
         tree
       end
-      handle Failure err -> raise (Bug err);;
+      handle Failure err -> raise (Useful.Bug err);;
 end;;
 *)
 
@@ -636,7 +618,7 @@ let treeInsert compareKey key_value tree =
 
 let rec treeDelete compareKey dkey tree =
     match tree with
-      Empty -> raise (Bug "Map.delete: element not found")
+      Empty -> raise (Useful.Bug "Map.delete: element not found")
     | Tree node -> nodeDelete compareKey dkey node
 
 and nodeDelete compareKey dkey node =
@@ -930,7 +912,7 @@ let rec nodePick node =
 
 let treePick tree =
     match tree with
-      Empty -> raise (Bug "Map.treePick")
+      Empty -> raise (Useful.Bug "Map.treePick")
     | Tree node -> nodePick node;;
 
 (* ------------------------------------------------------------------------- *)
@@ -945,7 +927,7 @@ let rec nodeDeletePick node =
 
 let treeDeletePick tree =
     match tree with
-      Empty -> raise (Bug "Map.treeDeletePick")
+      Empty -> raise (Useful.Bug "Map.treeDeletePick")
     | Tree node -> nodeDeletePick node;;
 
 (* ------------------------------------------------------------------------- *)
@@ -954,7 +936,7 @@ let treeDeletePick tree =
 
 let rec treeNth n tree =
     match tree with
-      Empty -> raise (Bug "Map.treeNth")
+      Empty -> raise (Useful.Bug "Map.treeNth")
     | Tree node -> nodeNth n node
 
 and nodeNth n node =
@@ -973,7 +955,7 @@ and nodeNth n node =
 
 let rec treeDeleteNth n tree =
     match tree with
-      Empty -> raise (Bug "Map.treeDeleteNth")
+      Empty -> raise (Useful.Bug "Map.treeDeleteNth")
     | Tree node -> nodeDeleteNth n node
 
 and nodeDeleteNth n node =
@@ -1142,7 +1124,7 @@ let checkInvariants s m =
     in
       m
     end
-    handle Bug bug -> raise (Bug (s ^ "\n" ^ "Map.checkInvariants: " ^ bug));;
+    handle Useful.Bug bug -> raise (Useful.Bug (s ^ "\n" ^ "Map.checkInvariants: " ^ bug));;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -1191,7 +1173,7 @@ let nth (Map (_,tree)) n = treeNth n tree;;
 let random m =
       let n = size m
     in
-      if n = 0 then raise (Bug "Map.random: empty")
+      if n = 0 then raise (Useful.Bug "Map.random: empty")
       else nth m (Random.int n)
     ;;
 
@@ -1268,7 +1250,7 @@ let deleteNth = fun m -> fun n ->
 let deleteRandom m =
       let n = size m
     in
-      if n = 0 then raise (Bug "Map.deleteRandom: empty")
+      if n = 0 then raise (Useful.Bug "Map.deleteRandom: empty")
       else deleteNth m (Random.int n)
     ;;
 
@@ -1453,7 +1435,7 @@ let unionDomain = fun m1 -> fun m2 ->
   let uncurriedUnionDomain (m,acc) = unionDomain acc m;;
   let unionListDomain ms =
       match ms with
-        [] -> raise (Bug "Map.unionListDomain: no sets")
+        [] -> raise (Useful.Bug "Map.unionListDomain: no sets")
       | m :: ms -> Mlist.foldl uncurriedUnionDomain m ms;;
 
 let intersectDomain (Map (compareKey,tree1)) (Map (_,tree2)) =
@@ -1473,7 +1455,7 @@ let intersectDomain = fun m1 -> fun m2 ->
   let uncurriedIntersectDomain (m,acc) = intersectDomain acc m;;
   let intersectListDomain ms =
       match ms with
-        [] -> raise (Bug "Map.intersectListDomain: no sets")
+        [] -> raise (Useful.Bug "Map.intersectListDomain: no sets")
       | m :: ms -> Mlist.foldl uncurriedIntersectDomain m ms;;
 
 let differenceDomain (Map (compareKey,tree1)) (Map (_,tree2)) =
@@ -2033,8 +2015,6 @@ end
 
 module Name = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* A type of names.                                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -2054,19 +2034,19 @@ let equal n1 n2 = n1 = n2;;
 (* ------------------------------------------------------------------------- *)
 
 let prefix  = "_";;
-let numName i = mkPrefix prefix (string_of_int i);;
-let newName () = numName (newInt ());;
-let newNames n = List.map numName (newInts n);;
+let numName i = Useful.mkPrefix prefix (string_of_int i);;
+let newName () = numName (Useful.newInt ());;
+let newNames n = List.map numName (Useful.newInts n);;
 
 let variantPrime avoid =
     let rec variant n = if avoid n then variant (n ^ "'") else n
     in variant;;
 
 let variantNum avoid n =
-  let isDigitOrPrime c = c = '\'' || isDigit c
+  let isDigitOrPrime c = c = '\'' || Useful.isDigit c
   in if not (avoid n) then n
       else
-        let n = stripSuffix isDigitOrPrime n in
+        let n = Useful.stripSuffix isDigitOrPrime n in
         let rec variant i =
           let n_i = n ^ string_of_int i
           in if avoid n_i then variant (i + 1) else n_i
@@ -2094,8 +2074,6 @@ end
 (* ========================================================================= *)
 
 module Name_arity = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of name/arity pairs.                                               *)
@@ -2155,8 +2133,6 @@ end
 (* ========================================================================= *)
 
 module Term = struct
-
-open Useful
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic terms.                                        *)
@@ -2279,7 +2255,7 @@ let compare tm1 tm2 =
               else
                 let c = Int.compare (List.length a1) (List.length a2) in
                 if c <> 0 then c else cmp (a1 @ tms1, a2 @ tms2))
-    | _ -> raise (Bug "Term.compare")
+    | _ -> raise (Useful.Bug "Term.compare")
   in cmp ([tm1], [tm2]);;
 
 let equal tm1 tm2 = compare tm1 tm2 = 0;;
@@ -2306,7 +2282,7 @@ let subterms tm =
         and acc = (List.rev path, tm) :: acc
         in match tm with
           Var _ -> subtms (rest, acc)
-        | Fn (_,args) -> subtms ((List.map f (enumerate args) @ rest), acc)
+        | Fn (_,args) -> subtms ((List.map f (Useful.enumerate args) @ rest), acc)
   in subtms ([([],tm)], []);;
 
 
@@ -2322,7 +2298,7 @@ let rec replace tm = function
         let arg' = replace arg (t,res)
         in
           if arg' == arg then tm
-          else Fn (letc, updateNth (h,arg') tms)
+          else Fn (letc, Useful.updateNth (h,arg') tms)
 ;;
 
 let find pred =
@@ -2334,7 +2310,7 @@ let find pred =
             match tm with
               Var _ -> search rest
             | Fn (_,a) ->
-              let subtms = List.map (fun (i,t) -> (i :: path, t)) (enumerate a)
+              let subtms = List.map (fun (i,t) -> (i :: path, t)) (Useful.enumerate a)
               in search (subtms @ rest)
     in
       fun tm -> search [([],tm)];;
@@ -2394,7 +2370,7 @@ let isTypedVar tm =
     match tm with
       Var _ -> true
     | Fn letc ->
-      match total destFnHasType letc with
+      match Useful.total destFnHasType letc with
         Some (Var _, _) -> true
       | _ -> false;;
 
@@ -2405,7 +2381,7 @@ let typedSymbols tm =
       match tm with
         Var _ -> sz (n + 1) tms
       | Fn letc ->
-        match total destFnHasType letc with
+        match Useful.total destFnHasType letc with
           Some (tm,_) -> sz n (tm :: tms)
         | None ->
           let (_,a) = letc
@@ -2419,7 +2395,7 @@ let nonVarTypedSubterms tm =
       (match tm with
         Var _ -> subtms (rest, acc)
       | Fn letc ->
-        (match total destFnHasType letc with
+        (match Useful.total destFnHasType letc with
           Some (t,_) ->
           (match t with
              Var _ -> subtms (rest, acc)
@@ -2432,7 +2408,7 @@ let nonVarTypedSubterms tm =
             let f (n,arg) = (n :: path, arg) in
             let (_,args) = letc in
             let acc = (List.rev path, tm) :: acc in
-            let rest = List.map f (enumerate args) @ rest
+            let rest = List.map f (Useful.enumerate args) @ rest
           in
             subtms (rest, acc)))
   in subtms ([([],tm)], []);;
@@ -2467,7 +2443,7 @@ let listMkApp (f,l) = List.fold_left (fun acc x -> mkApp (x, acc)) f l;;
 
 let stripApp tm =
   let rec strip tms tm =
-      match total destApp tm with
+      match Useful.total destApp tm with
         Some (f,a) -> strip (a :: tms) f
       | None -> (tm,tms)
   in strip [] tm;;
@@ -2495,8 +2471,6 @@ end
 (* ========================================================================= *)
 
 module Substitute = struct
-
-open Useful
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic substitutions.                                *)
@@ -2719,8 +2693,6 @@ end
 
 module Atom = struct
 
-open Useful
-
 (* ------------------------------------------------------------------------- *)
 (* A type for storing first order logic atoms.                               *)
 (* ------------------------------------------------------------------------- *)
@@ -2779,7 +2751,7 @@ let symbols atm =
 
 let compare (p1,tms1) (p2,tms2) =
     let c = Name.compare p1 p2 in
-    if c <> 0 then c else lexCompare Term.compare tms1 tms2;;
+    if c <> 0 then c else Useful.lexCompare Term.compare tms1 tms2;;
 
 let equal atm1 atm2 = compare atm1 atm2 = 0;;
 
@@ -2789,7 +2761,7 @@ let equal atm1 atm2 = compare atm1 atm2 = 0;;
 
 let subterm =
   let subterm' = function
-    (_, []) -> raise (Bug "Atom.subterm: empty path")
+    (_, []) -> raise (Useful.Bug "Atom.subterm: empty path")
   | ((_,tms), h :: t) ->
     if h >= length tms then failwith "Atom.subterm: bad path"
     else Term.subterm (List.nth tms h) t
@@ -2798,11 +2770,11 @@ let subterm =
 let subterms ((_,tms) : atom) =
     let f ((n,tm),l) = List.map (fun (p,s) -> (n :: p, s)) (Term.subterms tm) @ l
     in
-      Mlist.foldl f [] (enumerate tms)
+      Mlist.foldl f [] (Useful.enumerate tms)
     ;;
 
 let replace ((rel,tms) as atm) = function
-    ([],_) -> raise (Bug "Atom.replace: empty path")
+    ([],_) -> raise (Useful.Bug "Atom.replace: empty path")
   | (h :: t, res) ->
     if h >= length tms then failwith "Atom.replace: bad path"
     else
@@ -2810,7 +2782,7 @@ let replace ((rel,tms) as atm) = function
       in let tm' = Term.replace tm (t,res)
       in
         if tm == tm' then atm
-        else (rel, updateNth (h,tm') tms)
+        else (rel, Useful.updateNth (h,tm') tms)
       ;;
 
 let find pred =
@@ -2819,7 +2791,7 @@ let find pred =
             Some path -> Some (i :: path)
           | None -> None
     in
-      fun (_,tms) -> first f (enumerate tms)
+      fun (_,tms) -> Useful.first f (Useful.enumerate tms)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -2919,7 +2891,7 @@ let nonVarTypedSubterms (_,tms) =
           in
             Mlist.foldl addTm acc (Term.nonVarTypedSubterms arg)
     in
-      Mlist.foldl addArg [] (enumerate tms)
+      Mlist.foldl addArg [] (Useful.enumerate tms)
     ;;
 
 
@@ -2938,8 +2910,6 @@ end
 (* ========================================================================= *)
 
 module Formula = struct
-
-open Useful
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic formulas.                                     *)
@@ -3492,8 +3462,6 @@ end
 
 module Literal = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* A type for storing first order logic literals.                            *)
 (* ------------------------------------------------------------------------- *)
@@ -3558,7 +3526,7 @@ let symbols ((_,atm) : literal) = Atom.symbols atm;;
 (* A total comparison function for literals.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let compare = prodCompare Bool.compare Atom.compare;;
+let compare = Useful.prodCompare Bool.compare Atom.compare;;
 
 let equal (p1,atm1) (p2,atm2) = p1 = p2 && Atom.equal atm1 atm2;;
 
@@ -3764,8 +3732,6 @@ end
 (* ========================================================================= *)
 
 module Thm = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* An abstract type of first order logic theorems.                           *)
@@ -3986,8 +3952,6 @@ end
 
 module Proof = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic proofs.                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -4030,13 +3994,13 @@ let inferenceToThm = function
               let () = Print.trace Literal.Set.pp "reconstructSubst: cl" cl
               let () = Print.trace Literal.Set.pp "reconstructSubst: cl'" cl'
 *)
-              raise (Bug "can't reconstruct Subst rule")
+              raise (Useful.Bug "can't reconstruct Subst rule")
           | (([],sub) :: others) ->
             if Literal.Set.equal (Literal.Set.subst sub cl) cl' then sub
             else recon others
           | ((lit :: lits, sub) :: others) ->
               let checkLit (lit',acc) =
-                  match total (Literal.matchLiterals sub lit) lit' with
+                  match Useful.total (Literal.matchLiterals sub lit) lit' with
                     None -> acc
                   | Some sub -> (lits,sub) :: acc
             in
@@ -4046,7 +4010,7 @@ let inferenceToThm = function
       ;;
 (*MetisDebug
       handle Failure err ->
-        raise (Bug ("Proof.recontructSubst: shouldn't fail:\n" ^ err));;
+        raise (Useful.Bug ("Proof.recontructSubst: shouldn't fail:\n" ^ err));;
 *)
 
   let reconstructResolvant cl1 cl2 cl =
@@ -4061,11 +4025,11 @@ let inferenceToThm = function
            in let lits = Literal.Set.intersectList [cl1;cl1';cl2;cl2']
          in
            if not (Literal.Set.null lits) then Literal.Set.pick lits
-           else raise (Bug "can't reconstruct Resolve rule")
+           else raise (Useful.Bug "can't reconstruct Resolve rule")
          );;
 (*MetisDebug
       handle Failure err ->
-        raise (Bug ("Proof.recontructResolvant: shouldn't fail:\n" ^ err));;
+        raise (Useful.Bug ("Proof.recontructResolvant: shouldn't fail:\n" ^ err));;
 *)
 
   let reconstructEquality cl =
@@ -4076,7 +4040,7 @@ let inferenceToThm = function
         let rec sync s t path (f,a) (f',a') =
             if not (Name.equal f f' && length a = length a') then None
             else
-                let itms = enumerate (zip a a')
+                let itms = Useful.enumerate (zip a a')
               in
                 (match List.filter (fun x -> not (uncurry Term.equal (snd x))) itms with
                   [(i,(tm,tm'))] ->
@@ -4109,7 +4073,7 @@ let inferenceToThm = function
               ([l1],[l2;l3]) -> [(l1,l2,l3);(l1,l3,l2)]
             | ([l1;l2],[l3]) -> [(l1,l2,l3);(l1,l3,l2);(l2,l1,l3);(l2,l3,l1)]
             | ([l1],[l2]) -> [(l1,l1,l2);(l1,l2,l1)]
-            | _ -> raise (Bug "reconstructEquality: malformed")
+            | _ -> raise (Useful.Bug "reconstructEquality: malformed")
 
 (*MetisTrace3
         let ppCands =
@@ -4118,13 +4082,13 @@ let inferenceToThm = function
                    "Proof.reconstructEquality: candidates" candidates
 *)
       in
-        match first recon candidates with
+        match Useful.first recon candidates with
           Some info -> info
-        | None -> raise (Bug "can't reconstruct Equality rule")
+        | None -> raise (Useful.Bug "can't reconstruct Equality rule")
       ;;
 (*MetisDebug
       handle Failure err ->
-        raise (Bug ("Proof.recontructEquality: shouldn't fail:\n" ^ err));;
+        raise (Useful.Bug ("Proof.recontructEquality: shouldn't fail:\n" ^ err));;
 *)
 
   let reconstruct cl = function
@@ -4132,7 +4096,7 @@ let inferenceToThm = function
     | (Thm.Assume,[]) ->
       (match Literal.Set.findl Literal.positive cl with
          Some (_,atm) -> Assume atm
-       | None -> raise (Bug "malformed Assume inference"))
+       | None -> raise (Useful.Bug "malformed Assume inference"))
     | (Thm.Subst,[th]) ->
       Subst (reconstructSubst (Thm.clause th) cl, th)
     | (Thm.Resolve,[th1;th2]) ->
@@ -4144,9 +4108,9 @@ let inferenceToThm = function
     | (Thm.Refl,[]) ->
       (match Literal.Set.findl (K true) cl with
          Some lit -> Refl (Literal.destRefl lit)
-       | None -> raise (Bug "malformed Refl inference"))
+       | None -> raise (Useful.Bug "malformed Refl inference"))
     | (Thm.Equality,[]) -> let (x,y,z) = (reconstructEquality cl) in Equality (x,y,z)
-    | _ -> raise (Bug "malformed inference");;
+    | _ -> raise (Useful.Bug "malformed inference");;
 
   let thmToInference th =
 (*MetisTrace3
@@ -4175,7 +4139,7 @@ let inferenceToThm = function
               if Literal.Set.equal (Thm.clause th') cl then ()
               else
                 raise
-                  Bug
+                  Useful.Bug
                     ("Proof.thmToInference: bad inference reconstruction:" ^
                      "\n  th = " ^ Thm.toString th ^
                      "\n  inf = " ^ inferenceToString inf ^
@@ -4186,7 +4150,7 @@ let inferenceToThm = function
         inf
 (*MetisDebug
       handle Failure err ->
-        raise (Bug ("Proof.thmToInference: shouldn't fail:\n" ^ err));;
+        raise (Useful.Bug ("Proof.thmToInference: shouldn't fail:\n" ^ err));;
 *)
 ;;
 
@@ -4284,8 +4248,6 @@ end
 (* ========================================================================= *)
 
 module Rule = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* Variable names.                                                           *)
@@ -4520,7 +4482,7 @@ let subtermConv conv i = pathConv conv [i];;
 let subtermsConv conv = function
     (Term.Var _ as tm) -> allConv tm
   | (Term.Fn (_,a) as tm) ->
-    everyConv (List.map (subtermConv conv) (interval 0 (length a))) tm;;
+    everyConv (List.map (subtermConv conv) (Useful.interval 0 (length a))) tm;;
 
 (* ------------------------------------------------------------------------- *)
 (* Applying a conversion to every subterm, with some traversal strategy.     *)
@@ -4633,7 +4595,7 @@ let argumentLiterule conv i = pathLiterule conv [i];;
 
 let allArgumentsLiterule conv lit =
     everyLiterule
-      (List.map (argumentLiterule conv) (interval 0 (Literal.arity lit))) lit;;
+      (List.map (argumentLiterule conv) (Useful.interval 0 (Literal.arity lit))) lit;;
 
 (* ------------------------------------------------------------------------- *)
 (* A rule takes one theorem and either deduces another or raises an Failure  *)
@@ -4725,7 +4687,7 @@ let functionCongruence (f,n) =
       in let reflTh = Thm.refl (Term.Fn (f,xs))
       in let reflLit = Thm.destUnit reflTh
     in
-      fst (Mlist.foldl cong (reflTh,reflLit) (enumerate ys))
+      fst (Mlist.foldl cong (reflTh,reflLit) (Useful.enumerate ys))
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -4749,7 +4711,7 @@ let relationCongruence (r,n) =
       in let assumeLit = (false,(r,xs))
       in let assumeTh = Thm.assume assumeLit
     in
-      fst (Mlist.foldl cong (assumeTh,assumeLit) (enumerate ys))
+      fst (Mlist.foldl cong (assumeTh,assumeLit) (Useful.enumerate ys))
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -4787,7 +4749,7 @@ let removeIrrefl th =
   let irrefl = function
       ((true,_),th) -> th
     | ((false,atm) as lit, th) ->
-      match total Atom.destRefl atm with
+      match Useful.total Atom.destRefl atm with
         Some x -> Thm.resolve lit th (Thm.refl x)
       | None -> th
 in
@@ -4803,7 +4765,7 @@ in
 
 let removeSym th =
   let rem ((pol,atm) as lit, (eqs,th)) =
-      match total Atom.sym atm with
+      match Useful.total Atom.sym atm with
         None -> (eqs, th)
       | Some atm' ->
         if Literal.Set.member lit eqs then
@@ -4831,7 +4793,7 @@ let rec expandAbbrevs th =
       in
         Substitute.unify Substitute.empty x y
 in
-      match Literal.Set.firstl (total expand) (Thm.clause th) with
+      match Literal.Set.firstl (Useful.total expand) (Thm.clause th) with
         None -> removeIrrefl th
       | Some sub -> expandAbbrevs (Thm.subst sub th);;
 
@@ -4887,8 +4849,8 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
   let joinEdge sub edge =
         let result =
             match edge with
-              Factor_edge (atm,atm') -> total (Atom.unify sub atm) atm'
-            | Refl_edge (tm,tm') -> total (Substitute.unify sub tm) tm'
+              Factor_edge (atm,atm') -> Useful.total (Atom.unify sub atm) atm'
+            | Refl_edge (tm,tm') -> Useful.total (Substitute.unify sub tm) tm'
       in
         match result with
           None -> Apart
@@ -4914,7 +4876,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
           let edge = Factor_edge (atm,atm')
         in
           match joinEdge Substitute.empty edge with
-            Joined -> raise (Bug "addFactorEdge: joined")
+            Joined -> raise (Useful.Bug "addFactorEdge: joined")
           | Joinable sub -> (sub,edge) :: acc
           | Apart -> acc
         ;;
@@ -4925,7 +4887,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
         let edge = let (x,y) = (Atom.destEq atm) in Refl_edge (x,y)
       in
         match joinEdge Substitute.empty edge with
-          Joined -> raise (Bug "addRefl: joined")
+          Joined -> raise (Useful.Bug "addRefl: joined")
         | Joinable _ -> edge :: acc
         | Apart -> acc
       ;;
@@ -4937,7 +4899,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
         let edge = let (x,y) = (Atom.destEq atm) in Refl_edge (x,y)
       in
         match joinEdge Substitute.empty edge with
-          Joined -> raise (Bug "addRefl: joined")
+          Joined -> raise (Useful.Bug "addRefl: joined")
         | Joinable sub -> (sub,edge) :: acc
         | Apart -> acc
       ;;
@@ -4952,7 +4914,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
     | ((sub,edge) :: sub_edges) ->
 (*MetisDebug
         let () = if not (Substitute.null sub) then ()
-                 else raise Bug "Rule.factor.init_edges: empty subst"
+                 else raise Useful.Bug "Rule.factor.init_edges: empty subst"
 *)
         let (acc,apart) =
             match updateApart sub apart with
@@ -4968,7 +4930,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
         let sub_edges = Mlist.foldl (addFactorEdge lit) sub_edges lits
 
         in let (apart,sub_edges) =
-            match total Literal.sym lit with
+            match Useful.total Literal.sym lit with
               None -> (apart,sub_edges)
             | Some lit' ->
                 let apart = addReflEdge lit apart
@@ -5033,8 +4995,6 @@ end
 
 module Model = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* Constants.                                                                *)
 (* ------------------------------------------------------------------------- *)
@@ -5070,10 +5030,10 @@ let multInt x y =
       if y <= 1 then
         if y = 0 then Some 1
         else if y = 1 then Some x
-        else raise (Bug "expInt: negative exponent")
+        else raise (Useful.Bug "expInt: negative exponent")
       else if x <= 1 then
         if 0 <= x then Some x
-        else raise (Bug "expInt: negative exponand")
+        else raise (Useful.Bug "expInt: negative exponand")
       else iexp x y 1;;
 
 let boolToInt = function
@@ -5083,9 +5043,9 @@ let boolToInt = function
 let intToBool = function
     1 -> true
   | 0 -> false
-  | _ -> raise (Bug "Model.intToBool");;
+  | _ -> raise (Useful.Bug "Model.intToBool");;
 
-let minMaxInterval i j = interval i (1 + j - i);;
+let minMaxInterval i j = Useful.interval i (1 + j - i);;
 
 (* ------------------------------------------------------------------------- *)
 (* Model size.                                                               *)
@@ -5144,17 +5104,17 @@ let emptyRelations : fixedRelation Name_arity.Map.map = Name_arity.Map.newMap ()
 let fixed0 f sz elts =
     match elts with
       [] -> f sz
-    | _ -> raise (Bug "Model.fixed0: wrong arity");;
+    | _ -> raise (Useful.Bug "Model.fixed0: wrong arity");;
 
 let fixed1 f sz elts =
     match elts with
       [x] -> f sz x
-    | _ -> raise (Bug "Model.fixed1: wrong arity");;
+    | _ -> raise (Useful.Bug "Model.fixed1: wrong arity");;
 
 let fixed2 f sz elts =
     match elts with
       [x;y] -> f sz x y
-    | _ -> raise (Bug "Model.fixed2: wrong arity");;
+    | _ -> raise (Useful.Bug "Model.fixed2: wrong arity");;
 
 let emptyFixed =
       let fns = emptyFunctions
@@ -5204,7 +5164,7 @@ let insertRelationFixed fix name_arity_rel =
          relations = rels}
     ;;
 
-  let union _ = raise (Bug "Model.unionFixed: nameArity clash");;
+  let union _ = raise (Useful.Bug "Model.unionFixed: nameArity clash");;
   let unionFixed fix1 fix2 =
         let {functions = fns1; relations = rels1} = fix1
         and {functions = fns2; relations = rels2} = fix2
@@ -5226,12 +5186,12 @@ let unionListFixed =
   let hasTypeFn _ elts =
       match elts with
         [x;_] -> Some x
-      | _ -> raise (Bug "Model.hasTypeFn: wrong arity");;
+      | _ -> raise (Useful.Bug "Model.hasTypeFn: wrong arity");;
 
   let eqRel _ elts =
       match elts with
         [x;y] -> Some (x = y)
-      | _ -> raise (Bug "Model.eqRel: wrong arity");;
+      | _ -> raise (Useful.Bug "Model.eqRel: wrong arity");;
 
   let basicFixed =
         let fns = Name_arity.Map.singleton (Term.hasTypeFunction,hasTypeFn)
@@ -5276,10 +5236,10 @@ let projectionList = minMaxInterval projectionMin projectionMax;;
 
 let projectionName i =
       let _ = projectionMin <= i ||
-              raise (Bug "Model.projectionName: less than projectionMin")
+              raise (Useful.Bug "Model.projectionName: less than projectionMin")
 
       in let _ = i <= projectionMax ||
-              raise (Bug "Model.projectionName: greater than projectionMax")
+              raise (Useful.Bug "Model.projectionName: greater than projectionMax")
     in
       Name.fromString ("project" ^ string_of_int i)
     ;;
@@ -5313,10 +5273,10 @@ let numeralList = minMaxInterval numeralMin numeralMax;;
 
 let numeralName i =
       let _ = numeralMin <= i ||
-              raise (Bug "Model.numeralName: less than numeralMin")
+              raise (Useful.Bug "Model.numeralName: less than numeralMin")
 
       in let _ = i <= numeralMax ||
-              raise (Bug "Model.numeralName: greater than numeralMax")
+              raise (Useful.Bug "Model.numeralName: greater than numeralMax")
 
       in let s = if i < 0 then "negative" ^ string_of_int (-i) else string_of_int i
     in
@@ -5361,7 +5321,7 @@ and sucName = Name.fromString "suc";;
         Some (x / y)
       ;;
 
-  let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
+  let expFn sz x y = Some (Useful.exp (multN sz) x y (oneN sz));;
 
   let modFn {size = n} x y =
         let y = if y = 0 then n else y
@@ -5381,7 +5341,7 @@ and sucName = Name.fromString "suc";;
 
   (* Relations *)
 
-  let dividesRel _ x y = Some (divides x y);;
+  let dividesRel _ x y = Some (Useful.divides x y);;
 
   let evenRel _ x = Some (x mod 2 = 0);;
 
@@ -5443,7 +5403,7 @@ and sucName = Name.fromString "suc";;
 
   let divFn _ x y = if y = 0 then None else Some (x / y);;
 
-  let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
+  let expFn sz x y = Some (Useful.exp (multN sz) x y (oneN sz));;
 
   let modFn {size = n} x y =
       if y = 0 || x = n - 1 then None else Some (x mod y);;
@@ -5467,7 +5427,7 @@ and sucName = Name.fromString "suc";;
       if x = 1 || y = 0 then Some true
       else if x = 0 then Some false
       else if y = n - 1 then None
-      else Some (divides x y);;
+      else Some (Useful.divides x y);;
 
   let evenRel {size = n} x =
       if x = n - 1 then None else Some (x mod 2 = 0);;
@@ -6120,7 +6080,7 @@ let perturb vM pert =
               in let acc = pertTerm vM target tm acc
             in
               pert ((x :: ys), tms, xs, acc)
-          | (_, _, _, _) -> raise (Bug "Model.pertTerms.pert")
+          | (_, _, _, _) -> raise (Useful.Bug "Model.pertTerms.pert")
       in
         fun x y z -> pert ([],x,y,z)
       ;;
@@ -6166,8 +6126,6 @@ end
 (* ========================================================================= *)
 
 module Term_net = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* Anonymous variables.                                                      *)
@@ -6264,9 +6222,9 @@ let rec termToQterm = function
       if Name.equal f g && n = length b then qu qsub (zip a b @ rest)
       else failwith "Term_net.qu";;
 
-  let unifyQtermQterm qtm qtm' = total (qv qtm) qtm';;
+  let unifyQtermQterm qtm qtm' = Useful.total (qv qtm) qtm';;
 
-  let unifyQtermTerm qsub qtm tm = total (qu qsub) [(qtm,tm)];;
+  let unifyQtermTerm qsub qtm tm = Useful.total (qu qsub) [(qtm,tm)];;
 
   let rec qtermToTerm = function
       Var -> anonymousVar
@@ -6329,7 +6287,7 @@ let singles qtms a = Mlist.foldr (fun (x, y) -> Single (x, y)) a qtms;;
         let n = Name_arity.Map.peek fs f
       in
         Multiple (vs, Name_arity.Map.insert fs (f, oadd a (l @ qtms) n))
-    | _ -> raise (Bug "Term_net.insert: Match")
+    | _ -> raise (Useful.Bug "Term_net.insert: Match")
 
   and oadd a qtms = function
       None -> singles qtms a
@@ -6339,7 +6297,7 @@ let singles qtms a = Mlist.foldr (fun (x, y) -> Single (x, y)) a qtms;;
 
   let insert (Net (p,k,n)) (tm,a) =
       try Net (p, k + 1, ins (k,a) (termToQterm tm) (pre n))
-      with Failure _ -> raise (Bug "Term_net.insert: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.insert: should never fail");;
 
 
 let fromList parm l = Mlist.foldl (fun (tm_a,n) -> insert n tm_a) (newNet parm) l;;
@@ -6365,7 +6323,7 @@ let filter pred =
       function
          Net (_,_,None) as net -> net
        | Net (p, k, Some (_,n)) -> Net (p, k, netSize (filt n))
-    with Failure _ -> raise (Bug "Term_net.filter: should never fail");;
+    with Failure _ -> raise (Useful.Bug "Term_net.filter: should never fail");;
 
 let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
 
@@ -6375,7 +6333,7 @@ let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
 
   let rec norm = function
       (0 :: ks, ((_,n) as f) :: fs, qtms) ->
-        let (a,qtms) = revDivide qtms n
+        let (a,qtms) = Useful.revDivide qtms n
       in
         addQterm (Fn (f,a)) (ks,fs,qtms)
     | stack -> stack
@@ -6395,7 +6353,7 @@ let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
 
   let stackValue = function
       ([],[],[qtm]) -> qtm
-    | _ -> raise (Bug "Term_net.stackValue");;
+    | _ -> raise (Useful.Bug "Term_net.stackValue");;
 
 
   let rec fold inc acc = function
@@ -6416,7 +6374,7 @@ let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
             (k + n, stackAddFn f stack, net) :: x
       in
         fold inc acc (Name_arity.Map.foldr getFns rest fns)
-    | _ -> raise (Bug "Term_net.foldTerms.fold");;
+    | _ -> raise (Useful.Bug "Term_net.foldTerms.fold");;
 
   let foldTerms inc acc net = fold inc acc [(1,stackEmpty,net)];;
 
@@ -6432,7 +6390,7 @@ let foldEqualTerms pat inc acc =
           (match Name_arity.Map.peek fns f with
              None -> acc
            | Some net -> fold (a @ pats, net))
-        | _ -> raise (Bug "Term_net.foldEqualTerms.fold")
+        | _ -> raise (Useful.Bug "Term_net.foldEqualTerms.fold")
     in
       fun net -> fold ([pat],net)
     ;;
@@ -6463,7 +6421,7 @@ let foldEqualTerms pat inc acc =
             | Some net -> (a @ pats, stackAddFn f stack, net) :: rest
       in
         fold inc acc rest
-    | _ -> raise (Bug "Term_net.foldUnifiableTerms.fold");;
+    | _ -> raise (Useful.Bug "Term_net.foldUnifiableTerms.fold");;
 
   let foldUnifiableTerms pat inc acc net =
       fold inc acc [([pat],stackEmpty,net)];;
@@ -6477,7 +6435,7 @@ let foldEqualTerms pat inc acc =
 
   let idwise (m,_) (n,_) = Int.compare m n;;
 
-  let fifoize ({fifo} : parameters) l = if fifo then sort idwise l else l;;
+  let fifoize ({fifo} : parameters) l = if fifo then List.sort idwise l else l;;
 
   let finally parm l = List.map snd (fifoize parm l);;
 
@@ -6499,13 +6457,13 @@ let foldEqualTerms pat inc acc =
               | Some n -> (n, l @ tms) :: rest
       in
         mat acc rest
-    | _ -> raise (Bug "Term_net.match: Match");;
+    | _ -> raise (Useful.Bug "Term_net.match: Match");;
 
   let matchNet x y = match (x,y) with
       (Net (_,_,None), _) -> []
     | (Net (p, _, Some (_,n)), tm) ->
       try finally p (mat [] [(n,[tm])])
-      with Failure _ -> raise (Bug "Term_net.match: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.match: should never fail");;
 
 
   let unseenInc qsub v tms (qtm,net,rest) =
@@ -6531,13 +6489,13 @@ let foldEqualTerms pat inc acc =
             | Some net -> (qsub, net, a @ tms) :: rest
       in
         mat acc rest
-    | _ -> raise (Bug "Term_net.matched.mat");;
+    | _ -> raise (Useful.Bug "Term_net.matched.mat");;
 
   let matched x tm = match x with
       (Net (_,_,None)) -> []
     | (Net (parm, _, Some (_,net))) ->
       try finally parm (mat [] [(Name.Map.newMap (), net, [tm])])
-      with Failure _ -> raise (Bug "Term_net.matched: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.matched: should never fail");;
 
 
   let inc qsub v tms (qtm,net,rest) =
@@ -6563,13 +6521,13 @@ let foldEqualTerms pat inc acc =
             | Some net -> (qsub, net, a @ tms) :: rest
       in
         mat acc rest
-    | _ -> raise (Bug "Term_net.unify.mat");;
+    | _ -> raise (Useful.Bug "Term_net.unify.mat");;
 
   let unify x tm = match x with
       (Net (_,_,None)) -> []
     | (Net (parm, _, Some (_,net))) ->
       try finally parm (mat [] [(Name.Map.newMap (), net, [tm])])
-      with Failure _ -> raise (Bug "Term_net.unify: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.unify: should never fail");;
 
 end
 
@@ -6580,8 +6538,6 @@ end
 
 module Atom_net = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -6589,7 +6545,7 @@ open Useful;;
 let atomToTerm atom = Term.Fn atom;;
 
 let termToAtom = function
-    (Term.Var _) -> raise (Bug "Atom_net.termToAtom")
+    (Term.Var _) -> raise (Useful.Bug "Atom_net.termToAtom")
   | (Term.Fn atom) -> atom;;
 
 (* ------------------------------------------------------------------------- *)
@@ -6639,8 +6595,6 @@ end
 (* ========================================================================= *)
 
 module Literal_net = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of literal sets that can be efficiently matched and unified.       *)
@@ -6713,9 +6667,6 @@ end
 
 module Subsume = struct
 
-open Useful;;
-
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -6730,7 +6681,7 @@ let findRest pred =
     ;;
 
   let addSym (lit,acc) =
-      match total Literal.sym lit with
+      match Useful.total Literal.sym lit with
         None -> acc
       | Some lit -> lit :: acc
   let clauseSym lits = Mlist.foldl addSym lits lits;;
@@ -6739,7 +6690,7 @@ let findRest pred =
 let sortClause cl =
       let lits = Literal.Set.toList cl
     in
-      sortMap Literal.typedSymbols (revCompare Int.compare) lits
+      Useful.sortMap Literal.typedSymbols (Useful.revCompare Int.compare) lits
     ;;
 
 let incompatible lit =
@@ -6857,18 +6808,18 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
 (* ------------------------------------------------------------------------- *)
 
   let matchLit lit' (lit,acc) =
-      match total (Literal.matchLiterals Substitute.empty lit') lit with
+      match Useful.total (Literal.matchLiterals Substitute.empty lit') lit with
         Some sub -> sub :: acc
       | None -> acc;;
 
   let genClauseSubsumes pred cl' lits' cl a =
         let rec mkSubsl acc sub = function
-            [] -> Some (sub, sortMap length Int.compare acc)
+            [] -> Some (sub, Useful.sortMap length Int.compare acc)
           | (lit' :: lits') ->
             match Mlist.foldl (matchLit lit') [] cl with
               [] -> None
             | [sub'] ->
-              (match total (Substitute.union sub) sub' with
+              (match Useful.total (Substitute.union sub) sub' with
                  None -> None
                | Some sub -> mkSubsl acc sub lits')
             | subs -> mkSubsl (subs :: acc) sub lits'
@@ -6883,7 +6834,7 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
           | ((sub, (sub' :: subs) :: subsl) :: others) ->
               let others = (sub, subs :: subsl) :: others
             in
-              match total (Substitute.union sub) sub' with
+              match Useful.total (Substitute.union sub) sub' with
                 None -> search others
               | Some sub -> search ((sub,subsl) :: others)
       in
@@ -6898,16 +6849,16 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
   let unitSubsumes pred unitn =
         let subLit lit =
               let subUnit (lit',cl',a) =
-                  match total (Literal.matchLiterals Substitute.empty lit') lit with
+                  match Useful.total (Literal.matchLiterals Substitute.empty lit') lit with
                     None -> None
                   | Some sub ->
                       let x = (cl',sub,a)
                     in
                       if pred x then Some x else None
             in
-              first subUnit (Literal_net.matchNet unitn lit)
+              Useful.first subUnit (Literal_net.matchNet unitn lit)
       in
-        first subLit
+        Useful.first subLit
       ;;
 
   let nonunitSubsumes pred nonunit max cl =
@@ -7015,9 +6966,6 @@ end
 
 module Knuth_bendix_order = struct
 
-open Useful;;
-
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -7027,7 +6975,7 @@ let notEqualTerm (x,y) = not (Term.equal x y);;
 let firstNotEqualTerm f l =
     match Mlist.find notEqualTerm l with
       Some (x,y) -> f x y
-    | None -> raise (Bug "firstNotEqualTerm");;
+    | None -> raise (Useful.Bug "firstNotEqualTerm");;
 
 (* ------------------------------------------------------------------------- *)
 (* The weight of all constants must be at least 1, and there must be at most *)
@@ -7171,7 +7119,7 @@ let compare {weight;precedence} =
           if c < 0 then Some (-1)
           else if c = 0 then firstNotEqualTerm weightCmp (zip a1 a2)
           else Some 1
-        | _ -> raise (Bug "kboOrder.precendenceCmp")
+        | _ -> raise (Useful.Bug "kboOrder.precendenceCmp")
     in
       fun tm1 tm2 ->
          if Term.equal tm1 tm2 then Some 0 else weightCmp tm1 tm2
@@ -7201,9 +7149,6 @@ end
 (* ========================================================================= *)
 
 module Rewrite = struct
-
-open Useful;;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Orientations of equations.                                                *)
@@ -7336,7 +7281,7 @@ end;;
 
 let termReducible order known id =
       let eqnRed ((l,r),_) tm =
-          match total (Substitute.matchTerms Substitute.empty l) tm with
+          match Useful.total (Substitute.matchTerms Substitute.empty l) tm with
             None -> false
           | Some sub ->
             order tm (Substitute.subst (Substitute.normalize sub) r) = Some 1
@@ -7414,7 +7359,7 @@ let add (Rewrite {known} as rw) (id,eqn) =
 (* ------------------------------------------------------------------------- *)
 
   let reorder (i,_) (j,_) = Int.compare j i;;
-  let matchingRedexes redexes tm = sort reorder (Term_net.matchNet redexes tm);;
+  let matchingRedexes redexes tm = List.sort reorder (Term_net.matchNet redexes tm);;
 
 
 let wellOriented x y = match (x,y) with
@@ -7446,7 +7391,7 @@ let rewrIdConv' order known redexes id tm =
           in
             (tm', Thm.subst sub th)
     in
-      match first (total rewr) (matchingRedexes redexes tm) with
+      match Useful.first (Useful.total rewr) (matchingRedexes redexes tm) with
         None -> failwith "Rewrite.rewrIdConv: no matching rewrites"
       | Some res -> res
     ;;
@@ -7480,7 +7425,7 @@ let neqConvsEmpty = Neq_convs (Literal.Map.newMap ());;
 let neqConvsNull (Neq_convs m) = Literal.Map.null m;;
 
 let neqConvsAdd order (Neq_convs m) lit =
-    match total (mkNeqConv order) lit with
+    match Useful.total (mkNeqConv order) lit with
       None -> None
     | Some conv -> Some (Neq_convs (Literal.Map.insert m (lit,conv)));;
 
@@ -7581,7 +7526,7 @@ let rewriteIdRule' = fun order -> fun known -> fun redexes -> fun id -> fun th -
       let () = Print.trace Thm.pp "Rewrite.rewriteIdRule': result" result
 *)
       let _ = not (thmReducible order known id result) ||
-              raise Bug "rewriteIdRule: should be normalized"
+              raise Useful.Bug "rewriteIdRule: should be normalized"
     in
       result
     end
@@ -7673,7 +7618,7 @@ let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
       in let changed =
           if not newx && identical then changed else Intset.add changed id
       in let ort =
-          if same_redexes then Some ort0 else let (l,r) = eq in total orderToOrient (order l r)
+          if same_redexes then Some ort0 else let (l,r) = eq in Useful.total orderToOrient (order l r)
     in
       match ort with
         None ->
@@ -7805,11 +7750,11 @@ let reduce' = fun rw ->
       let ths = List.map (fun (id,((_,th),_)) -> (id,th)) (Intmap.toList known')
       let _ =
           not (List.exists (uncurry (thmReducible order known')) ths) ||
-          raise Bug "Rewrite.reduce': not fully reduced"
+          raise Useful.Bug "Rewrite.reduce': not fully reduced"
     in
       result
     end
-    handle Failure err -> raise (Bug ("Rewrite.reduce': shouldn't fail\n" ^ err));;
+    handle Failure err -> raise (Useful.Bug ("Rewrite.reduce': shouldn't fail\n" ^ err));;
 *)
 
 let reduce rw = fst (reduce' rw);;
@@ -7820,7 +7765,7 @@ let reduce rw = fst (reduce' rw);;
 
   let addEqn (id_eqn,rw) = add rw id_eqn;;
   let orderedRewrite order ths =
-      let rw = Mlist.foldl addEqn (newRewrite order) (enumerate ths)
+      let rw = Mlist.foldl addEqn (newRewrite order) (Useful.enumerate ths)
     in
       rewriteRule rw order
     ;;
@@ -7836,8 +7781,6 @@ end
 (* ========================================================================= *)
 
 module Units = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of unit store.                                                     *)
@@ -7865,7 +7808,7 @@ let toString units = "U{" ^ string_of_int (size units) ^ "}";;
 let add (Units net) ((lit,th) as uTh) =
       let net = Literal_net.insert net (lit,uTh)
     in
-      match total Literal.sym lit with
+      match Useful.total Literal.sym lit with
         None -> Units net
       | Some ((pol,_) as lit') ->
           let th' = (if pol then Rule.symEq else Rule.symNeq) lit th
@@ -7882,11 +7825,11 @@ let addList = Mlist.foldl (fun (th,u) -> add u th);;
 
 let matchUnits (Units net) lit =
       let check ((lit',_) as uTh) =
-          match total (Literal.matchLiterals Substitute.empty lit') lit with
+          match Useful.total (Literal.matchLiterals Substitute.empty lit') lit with
             None -> None
           | Some sub -> Some (uTh,sub)
     in
-      first check (Literal_net.matchNet net lit)
+      Useful.first check (Literal_net.matchNet net lit)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -7895,7 +7838,7 @@ let matchUnits (Units net) lit =
 
 let reduce units =
       let red1 (lit,news_th) =
-          match total Literal.destIrrefl lit with
+          match Useful.total Literal.destIrrefl lit with
             Some tm ->
               let (news,th) = news_th
               in let th = Thm.resolve lit th (Thm.refl tm)
@@ -7930,9 +7873,6 @@ end
 (* ========================================================================= *)
 
 module Clause = struct
-
-open Useful;;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
@@ -8020,7 +7960,7 @@ let isLargerTerm ({ordering;orderTerms} : parameters) (l,r) =
     not orderTerms || not (strictlyLess ordering l r);;
 
   let atomToTerms atm =
-      match total Atom.destEq atm with
+      match Useful.total Atom.destEq atm with
         None -> [Term.Fn atm]
       | Some (l,r) -> [l;r];;
 
@@ -8079,7 +8019,7 @@ let largestEquations (Clause {parameters} as cl) =
           if isLargerTerm parameters l_r then (lit,ort,l) :: acc else acc
 
       in let addLit (lit,acc) =
-          match total Literal.destEq lit with
+          match Useful.total Literal.destEq lit with
             None -> acc
           | Some (l,r) ->
               let acc = addEq lit Rewrite.Right_to_left (r,l) acc
@@ -8279,8 +8219,6 @@ end
 
 module Active = struct
 
-open Useful;;
-
 open Ax_cj
 
 (* ------------------------------------------------------------------------- *)
@@ -8295,7 +8233,7 @@ local
             let
               let {id, thm = th, ...} = Clause.dest cl
             in
-              match total Thm.destUnitEq th with
+              match Useful.total Thm.destUnitEq th with
                 Some l_r -> Rewrite.add rw (id,(l_r,th))
               | None -> rw
             end
@@ -8322,7 +8260,7 @@ local
         let allClause2 cl_lit cl =
             let
               let allLiteral2 lit =
-                  match total (Clause.resolve cl_lit) (cl,lit) with
+                  match Useful.total (Clause.resolve cl_lit) (cl,lit) with
                     None -> true
                   | Some cl -> allFactors red [cl]
             in
@@ -8365,7 +8303,7 @@ local
                     let para = Clause.paramodulate cl_lit_ort_tm
 
                     let allSubterms (path,tm) =
-                        match total para (cl,lit,path,tm) with
+                        match Useful.total para (cl,lit,path,tm) with
                           None -> true
                         | Some cl -> allFactors red [cl]
                   in
@@ -8398,7 +8336,7 @@ local
                   let
                     let allCl2 x = List.all (allClause2 x) cls
                   in
-                    match total Literal.destEq lit with
+                    match Useful.total Literal.destEq lit with
                       None -> true
                     | Some (l,r) ->
                       allCl2 (cl,lit,Rewrite.Left_to_right,l) &&
@@ -8476,7 +8414,7 @@ end;;
 
 let checkSaturated ordering subs cls =
     if isSaturated ordering subs cls then ()
-    else raise (Bug "Active.checkSaturated");;
+    else raise (Useful.Bug "Active.checkSaturated");;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -8659,7 +8597,7 @@ let simplify = fun simp -> fun units -> fun rewr -> fun subs -> fun cl ->
                 let () = f ()
               in
                 raise
-                  Bug
+                  Useful.Bug
                     ("Active.simplify: clause should have been simplified "^e)
               end
     in
@@ -8680,7 +8618,7 @@ let simplifyActive simp active =
 let addUnit units cl =
       let th = Clause.thm cl
     in
-      match total Thm.destUnit th with
+      match Useful.total Thm.destUnit th with
         Some lit -> Units.add units (lit,th)
       | None -> units
     ;;
@@ -8688,7 +8626,7 @@ let addUnit units cl =
 let addRewrite rewrite cl =
       let th = Clause.thm cl
     in
-      match total Thm.destUnitEq th with
+      match Useful.total Thm.destUnitEq th with
         Some l_r -> Rewrite.add rewrite (Clause.id cl, (l_r,th))
       | None -> rewrite
     ;;
@@ -8766,7 +8704,7 @@ let deduceResolution literals cl ((_,atm) as lit, acc) =
           print_endline ("lit1 = " ^ Literal.toString lit1);
           print_endline ("cl = " ^ Clause.toString cl);
           print_endline ("lit = " ^ Literal.toString lit);*)
-          match total (Clause.resolve cl_lit) (cl,lit) with
+          match Useful.total (Clause.resolve cl_lit) (cl,lit) with
             Some cl' -> cl' :: acc
           | None -> acc
 (*MetisTrace4
@@ -8780,7 +8718,7 @@ let deduceResolution literals cl ((_,atm) as lit, acc) =
 
 let deduceParamodulationWith subterms cl ((lit,ort,tm),acc) =
       let para (cl_lit_path_tm,acc) =
-          match total (Clause.paramodulate (cl,lit,ort,tm)) cl_lit_path_tm with
+          match Useful.total (Clause.paramodulate (cl,lit,ort,tm)) cl_lit_path_tm with
             Some cl' -> cl' :: acc
           | None -> acc
     in
@@ -8789,7 +8727,7 @@ let deduceParamodulationWith subterms cl ((lit,ort,tm),acc) =
 
 let deduceParamodulationInto equations cl ((lit,path,tm),acc) =
       let para (cl_lit_ort_tm,acc) =
-          match total (Clause.paramodulate cl_lit_ort_tm) (cl,lit,path,tm) with
+          match Useful.total (Clause.paramodulate cl_lit_ort_tm) (cl,lit,path,tm) with
             Some cl' -> cl' :: acc
           | None -> acc
     in
@@ -8865,7 +8803,7 @@ let deduce active cl =
 
         in let addReduce ((l,r,ord),acc) =
               let isValidRewr tm =
-                  match total (Substitute.matchTerms Substitute.empty l) tm with
+                  match Useful.total (Substitute.matchTerms Substitute.empty l) tm with
                     None -> false
                   | Some sub ->
                     ord ||
@@ -8934,7 +8872,7 @@ let deduce active cl =
                 let () = Print.trace ppIds
                            "Active.rewritables: rewrite_ids" rewrite_ids
               in
-                raise Bug "Active.rewritables: ~(rewrite_ids SUBSET clause_ids)"
+                raise Useful.Bug "Active.rewritables: ~(rewrite_ids SUBSET clause_ids)"
               end
       in
         if choose_clause_rewritables active ids then clause_ids else rewrite_ids
@@ -8998,7 +8936,7 @@ let deduce active cl =
           (delete active ids, cls)
 (*MetisDebug
         handle Failure err ->
-          raise (Bug ("Active.extract_rewritables: shouldn't fail\n" ^ err));;
+          raise (Useful.Bug ("Active.extract_rewritables: shouldn't fail\n" ^ err));;
 *)
 ;;
 
@@ -9027,7 +8965,7 @@ let deduce active cl =
             | 1 -> if Thm.isUnitEq (Clause.thm cl) then 0 else 1
             | n -> n
       in
-        sortMap utility Int.compare
+        Useful.sortMap utility Int.compare
       ;;
 
   let rec post_factor (cl, ((active,subsume,acc) as active_subsume_acc)) =
@@ -9142,7 +9080,6 @@ end
 
 module Waiting = struct
 
-open Useful;;
 open Ax_cj
 
 (* ------------------------------------------------------------------------- *)
@@ -9322,10 +9259,10 @@ let add' waiting dist mcls cls =
 
 (*MetisDebug
       let _ = not (Mlist.null cls) ||
-              raise Bug "Waiting.add': null"
+              raise Useful.Bug "Waiting.add': null"
 
       let _ = length mcls = length cls ||
-              raise Bug "Waiting.add': different lengths"
+              raise Useful.Bug "Waiting.add': different lengths"
 *)
 
       in let dist = dist +. log (float_of_int (length cls))
@@ -9412,8 +9349,6 @@ end
 (* ========================================================================= *)
 
 module Resolution = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of resolution proof procedures.                                    *)
