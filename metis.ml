@@ -40,7 +40,7 @@ end
 module Word = struct
 
 type word = int;;
-let compare = (compare: word -> word -> int);;
+let compare x y = Int.compare x y;;
 
 let shiftLeft (x, y) = x lsl y;;
 let shiftRight (x, y) = x lsr y;;
