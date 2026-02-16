@@ -1,6 +1,6 @@
 \DOC UNIFY_ACCEPT_TAC
 
-\TYPE {UNIFY_ACCEPT_TAC : term list -> thm -> 'a * term -> ('b list * instantiation) * 'c list * (instantiation -> 'd list -> thm)}
+\TYPE {UNIFY_ACCEPT_TAC : term list -> thm_tactic}
 
 \SYNOPSIS
 Unify free variables in theorem and metavariables in goal to accept theorem.
@@ -75,6 +75,6 @@ in the remaining goal, which we can solve easily:
 Terminating proof search when using metavariables. Used in {ITAUT_TAC}
 
 \SEEALSO
-ACCEPT_TAC, ITAUT, ITAUT_TAC, MATCH_ACCEPT_TAC.
+ACCEPT_TAC, ITAUT, ITAUT_TAC, MATCH_ACCEPT_TAC, UNIFY_REFL_TAC.
 
 \ENDDOC
