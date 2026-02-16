@@ -110,6 +110,7 @@ EXTENDED_EXAMPLES:=\
 	Multivariate/homology \
 	Multivariate/lpspaces \
 	Multivariate/msum \
+	Multivariate/paracompact \
 	Multivariate/specialtopologies \
 	Multivariate/tarski \
 	RichterHilbertAxiomGeometry/Topology \

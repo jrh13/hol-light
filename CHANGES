@@ -8,6 +8,24 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 15th Feb 2026       Multivariate/metric.ml, Multivariate/topology.ml, Multivariate/paracompact.ml [new file]
+
+Added a definition of paracompactness to the core general topology theory in
+Multivariate/metric.ml, with a large number of typical results about it
+including Stone's theorem that a metrizable space is paracompact and the
+existence of subordinate partitions of unity. Some results that seemed more
+specialized or obscure (e.g. Nagata-Smirnov metrization and Michael's
+characterization of paracompactness) are placed in a separate file
+Multivariate/paracompact.ml that is not part of the main Multivariate load
+sequence. The vast majority of the proofs, including all those in the
+Multivariate/paracompact.ml file,  were automatically written by Claude Code
+(two separate instances with a mix of Opus 4.5 and 4.6).
+
+Sun 15th Feb 2026       itab.ml, unit_tests.ml
+
+Added a new UNIFY_REFL_TAC tactic from June Lee, which unifies metavariables
+in an equational goal ?- t = X where X is a metavariable by assigning X to t.
+
 Thu 29th Jan 2026       Multivariate/metric.ml, Multivariate/topology.ml, Multivariate/paths.ml
 
 Added a proof of Urysohn's metrization theorem and also a definition of set
