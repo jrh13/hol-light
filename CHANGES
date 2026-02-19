@@ -8,6 +8,43 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 19th Feb 2026       Library/ringtheory.ml, Library/rabin_test.ml [new file]
+
+Added a proof of Rabin's test for irreducibility of polynomials over
+finite fields. The development, both statements and proofs, was
+entirely written by Claude Code (Opus 4.6, running on AWS Bedrock). A
+few lemmas have been slightly tweaked manually and placed in the ring
+theory file, since they seem more broadly applicable:
+
+        POLY_DEG_1_IMP_IRREDUCIBLE
+        POLY_DEG_EQ_0_UNIT
+        POLY_DEG_UNIT
+        RING_DIVIDES_SUB_POW
+        RING_PRODUCT_CONST
+        RING_PRODUCT_LMUL
+        RING_SUB_TELESCOPE
+
+These are the theorems in the main Library/rabin_test.ml file
+culminating in RABIN_IRREDUCIBILITY_TEST:
+
+        FIELD_NONZERO_PRODUCT_PERMUTE
+        FIELD_ROOTS_BOUND
+        FINITE_FIELD_ELEMENT_POW
+        FINITE_FIELD_POW_ITERATE
+        ING_DIVIDES_POW_ITERATE
+        IRREDUCIBLE_DIVIDES_DEGREE
+        IRREDUCIBLE_DIVIDES_DEGREE_BOUND
+        IRREDUCIBLE_DIVIDES_XQ_MINUS_X
+        IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN
+        IRRED_DIVIDES_POLY_EVAL_MINUS
+        POLY_NONUNIT_DEGREE_GE_1
+        QUOTIENT_POLY_RING_FINITE_CARD
+        RABIN_IRREDUCIBILITY_NECESSARY
+        RABIN_IRREDUCIBILITY_SUFFICIENT
+        RABIN_IRREDUCIBILITY_TEST
+        RING_DIVIDES_REDUCE
+        RING_ENDOMORPHISM_FROBENIUS_ITERATE
+
 Sun 15th Feb 2026       Multivariate/metric.ml, Multivariate/topology.ml, Multivariate/paracompact.ml [new file]
 
 Added a definition of paracompactness to the core general topology theory in

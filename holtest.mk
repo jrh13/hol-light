@@ -57,6 +57,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/prover9 \
 	Examples/pseudoprime \
 	Library/q \
+	Library/rabin_test \
 	Examples/rectypes \
 	Library/ringtheory \
 	Examples/safetyliveness \
