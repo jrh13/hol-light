@@ -8,6 +8,62 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 19th Feb 2026       Multivariate/metric.ml
+
+Added some basic definitions and theorems about the Cantor space. The
+basic definition is as the product space (:num->bool), and this is
+then shown to be homeomorphic to its realization as the usual Cantor
+"excluded thirds" subset of [0,1]. New definitions:
+
+        cantor_map
+        cantor_set
+        cantor_space
+        cantor_term
+        tendsto_real_def
+
+and theorems:
+
+        CANTOR_MAP_CLOSED_IMAGE
+        CANTOR_MAP_CLOSED_IN_INTERVAL
+        CANTOR_MAP_CONTINUOUS
+        CANTOR_MAP_EMBEDDING
+        CANTOR_MAP_GE_PARTIAL_SUM
+        CANTOR_MAP_IMAGE_SUBSET_INTERVAL
+        CANTOR_MAP_INJECTIVE
+        CANTOR_MAP_LE_ONE
+        CANTOR_MAP_PARTIAL_SUM_BOUND
+        CANTOR_MAP_POS
+        CANTOR_MAP_RANGE
+        CANTOR_MAP_STRICT_LT
+        CANTOR_MAP_SUMMABLE
+        CANTOR_MAP_SUMS
+        CANTOR_PARTIAL_SUM_DIFF_AT_K
+        CANTOR_PARTIAL_SUM_MONO
+        CANTOR_SET_SUBSET_INTERVAL
+        CANTOR_SPACE_HOMEOMORPHIC_CANTOR_SET
+        CANTOR_TERM_BOUND
+        CANTOR_TERM_CONTINUOUS
+        CANTOR_TERM_POS
+        CLOSED_IN_CANTOR_SET
+        CLOSED_IN_CANTOR_SET_INTERVAL
+        COMPACT_SPACE_CANTOR_SPACE
+        HAUSDORFF_SPACE_CANTOR_SPACE
+        METRIZABLE_SPACE_CANTOR_SPACE
+        NONEMPTY_TOPSPACE_CANTOR_SPACE
+        PERFECT_CANTOR_SPACE
+        PERFECT_CANTOR_SPACE_EQ
+        SUM_TWOTHIRDS
+        TENDSTO_REAL_EPS_DELTA
+        TOPSPACE_CANTOR_SPACE
+        TWOTHIRDS_SUMS
+        ZERO_DIMENSIONAL_CANTOR_SPACE
+
+The new definition "tendsto_real_def" is just a more basic definition of
+the usual notion of the sum of a real series, so that it can be used in
+the general topology theories without the artificially circuitous
+derivation via real^N. The former definition "tendsto_real" is now a
+derived theorem rather than a definition, but is equivalent.
+
 Thu 19th Feb 2026       Multivariate/metric.ml, Multivariate/topology.ml, Multivariate/paths.ml
 
 Added general metric space versions of well-chainedness, connectedness
@@ -67,7 +123,7 @@ FCCOVERABLE (FCCOVERABLE_IMP_LOCALLY_CONNECTED through
 COMPACT_LOCALLY_CONNECTED_EQ_FCCCOVERABLE) are rederived from the
 general metric space versions via a set of bridge lemmas connecting
 submetric euclidean_metric to the Euclidean topology. The well-chained
-theorems (CONNECTED_IMP_WELLCHAINED through 
+theorems (CONNECTED_IMP_WELLCHAINED through
 CONNECTED_COMPONENT_EQ_WELLCHAINED) are similarly rederived. All theorem
 statements are preserved.
 

@@ -21047,6 +21047,181 @@ let CONTINUOUS_MAP_CASES_LT = prove
   ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Some elementary results on real limits, proved here for convenience.      *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("--->",(12,"right"));;
+
+let tendsto_real_def = new_definition
+  `(f ---> l) (net:A net) <=> limit euclideanreal f l net`;;
+
+let reallim = new_definition
+ `reallim net (f:A->real) = @l. (f ---> l) net`;;
+
+(* Epsilon-delta characterization (named to avoid clash with TENDSTO_REAL
+   in realanalysis.ml, which is the lift/drop bridge theorem) *)
+let TENDSTO_REAL_EPS_DELTA = prove
+ (`!(f:A->real) l net.
+     (f ---> l) net <=>
+     !e. &0 < e ==> eventually (\x. abs(f x - l) < e) net`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[tendsto_real_def; GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              LIMIT_METRIC; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  REWRITE_TAC[REAL_ARITH `abs(y - x) = abs(x - y)`]);;
+
+let REALLIM_CONST = prove
+ (`!net:A net a. ((\x. a) ---> a) net`,
+  REWRITE_TAC[tendsto_real_def; LIMIT_REAL_CONST]);;
+
+let REALLIM_SUB = prove
+ (`!net (f:A->real) g l m.
+     (f ---> l) net /\ (g ---> m) net
+     ==> ((\x. f x - g x) ---> l - m) net`,
+  REWRITE_TAC[tendsto_real_def; LIMIT_REAL_SUB]);;
+
+let REALLIM_UBOUND = prove
+ (`!net (f:A->real) l b.
+     (f ---> l) net /\ ~trivial_limit net /\
+     eventually (\x. f x <= b) net
+     ==> l <= b`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[tendsto_real_def] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`net:A net`; `euclideanreal`; `{x:real | x <= b}`; `f:A->real`; `l:real`]
+   LIMIT_IN_CLOSED_IN) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; GSYM REAL_CLOSED_IN; REAL_CLOSED_HALFSPACE_LE]);;
+
+let REALLIM_LBOUND = prove
+ (`!net (f:A->real) l b.
+     (f ---> l) net /\ ~trivial_limit net /\
+     eventually (\x. b <= f x) net
+     ==> b <= l`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[tendsto_real_def] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`net:A net`; `euclideanreal`; `{x:real | x >= b}`; `f:A->real`; `l:real`]
+   LIMIT_IN_CLOSED_IN) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; GSYM REAL_CLOSED_IN;
+                  REAL_CLOSED_HALFSPACE_GE; real_ge]);;
+
+let REALLIM_LE = prove
+ (`!net (f:A->real) g l m.
+     (f ---> l) net /\ (g ---> m) net /\ ~trivial_limit net /\
+     eventually (\x. f x <= g x) net
+     ==> l <= m`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MATCH_MP_TAC(REAL_ARITH `&0 <= m - l ==> l <= m`) THEN
+  MATCH_MP_TAC(ISPEC `net:A net` REALLIM_LBOUND) THEN
+  EXISTS_TAC `\x:A. (g:A->real) x - f x` THEN
+  ASM_SIMP_TAC[REALLIM_SUB] THEN FIRST_X_ASSUM
+    (MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] EVENTUALLY_MONO)) THEN
+  DISCH_THEN MATCH_MP_TAC THEN REAL_ARITH_TAC);;
+
+let REALLIM_SEQUENTIALLY = prove
+ (`!(f:num->real) l.
+     (f ---> l) sequentially <=>
+     !e. &0 < e ==> ?N. !n. N <= n ==> abs(f n - l) < e`,
+  REWRITE_TAC[TENDSTO_REAL_EPS_DELTA; EVENTUALLY_SEQUENTIALLY]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Similar elementary results for infinite series of reals.                  *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("real_sums",(12,"right"));;
+
+let real_sums = new_definition
+ `(f real_sums l) s <=>
+    ((\n. sum (s INTER (0..n)) f) ---> l) sequentially`;;
+
+let real_infsum = new_definition
+ `real_infsum s f = @l. (f real_sums l) s`;;
+
+let real_summable = new_definition
+ `real_summable s f <=> ?l. (f real_sums l) s`;;
+
+let REAL_SUMS_SUMMABLE = prove
+ (`!f l s. (f real_sums l) s ==> real_summable s f`,
+  REWRITE_TAC[real_summable] THEN MESON_TAC[]);;
+
+let REAL_SUMS_INFSUM = prove
+ (`!f s. (f real_sums (real_infsum s f)) s <=> real_summable s f`,
+  REWRITE_TAC[real_infsum; real_summable] THEN MESON_TAC[]);;
+
+let REAL_SERIES_FROM = prove
+ (`!f l k. (f real_sums l) (from k) <=>
+           ((\n. sum(k..n) f) ---> l) sequentially`,
+  REWRITE_TAC[real_sums; FROM_INTER_NUMSEG]);;
+
+(* Cauchy criterion for real summation *)
+let REAL_SUMMABLE_CAUCHY = prove
+ (`!f s.
+        real_summable s f <=>
+        !e. &0 < e
+            ==> ?N. !m n. m >= N ==> abs(sum(s INTER (m..n)) f) < e`,
+  let lemma = prove
+   (`!f k m n.
+          m <= n
+          ==> sum(k INTER (0..n)) f - sum(k INTER (0..m)) f =
+              sum(k INTER (m+1..n)) f`,
+    SIMP_TAC[LE_EXISTS; LEFT_IMP_EXISTS_THM; NUMSEG_ADD_SPLIT; LE_0] THEN
+    SIMP_TAC[SUM_UNION; FINITE_INTER; FINITE_NUMSEG; DISJOINT_NUMSEG;
+             UNION_OVER_INTER; ARITH_RULE `n < n + 1`; SET_RULE
+     `DISJOINT (u:num->bool) v ==> DISJOINT (s INTER u) (s INTER v)`] THEN
+    REAL_ARITH_TAC) in
+  REWRITE_TAC[GE] THEN REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[MESON[ARITH_RULE `N:num <= m ==> N <= m + 1`;
+              ARITH_RULE `N + 1 <= m ==> N <= m - 1 /\ (m - 1) + 1 = m`]
+   `(?N. !m n:num. N <= m ==> P m n) <=> ?N. !m n. N <= m ==> P(m + 1) n`] THEN
+  MP_TAC(REWRITE_RULE[MCOMPLETE_ALT] MCOMPLETE_REAL_EUCLIDEAN_METRIC) THEN
+  REWRITE_TAC[real_summable; MTOPOLOGY_REAL_EUCLIDEAN_METRIC; real_sums] THEN
+  REWRITE_TAC[tendsto_real_def; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[GSYM th]) THEN
+  REWRITE_TAC[cauchy_in; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  ONCE_REWRITE_TAC[MESON[LE_CASES; REAL_ABS_SUB]
+   `(!x y:num. P x /\ P y ==> abs(f y - f x):real < e) <=>
+    (!x y. x <= y ==> P x /\ P y ==> abs(f y - f x) < e)`] THEN
+  SIMP_TAC[lemma; MESON[NUMSEG_EMPTY; INTER_EMPTY; SUM_CLAUSES; REAL_ABS_0]
+   `!e. &0 < e ==> (P ==> abs(sum (s INTER (m..n)) f) < e <=>
+                    P ==> n < m \/ abs(sum (s INTER (m..n)) f) < e)`] THEN
+  REWRITE_TAC[GE; NOT_LT; IMP_IMP; TAUT `a ==> b \/ c <=> a /\ ~b ==> c`] THEN
+  REWRITE_TAC[ARITH_RULE
+   `(n <= m /\ N <= n /\ N <= m) /\ n + 1 <= m <=> N <= n /\ n + 1 <= m`]);;
+
+(* Comparison test *)
+let REAL_SUMMABLE_COMPARISON = prove
+ (`!f g s. real_summable s g /\
+           (?N. !n. n >= N /\ n IN s ==> abs(f n) <= g n)
+           ==> real_summable s f`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_SUMMABLE_CAUCHY] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_TAC `N1:num`)) THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_TAC `N2:num`) THEN EXISTS_TAC `N1 + N2:num` THEN
+  MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN DISCH_TAC THEN
+  MATCH_MP_TAC REAL_LET_TRANS THEN
+  EXISTS_TAC `abs(sum(s INTER (m..n)) g)` THEN CONJ_TAC THENL
+  [MATCH_MP_TAC(REAL_ARITH `abs x <= a ==> abs x <= abs a`) THEN
+   MATCH_MP_TAC SUM_ABS_LE THEN
+   REWRITE_TAC[FINITE_INTER_NUMSEG; IN_INTER; IN_NUMSEG] THEN
+   X_GEN_TAC `k:num` THEN STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+   ASM_REWRITE_TAC[GE] THEN ASM_ARITH_TAC;
+   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC]);;
+
+(* Bound on sum by comparison *)
+let REAL_SERIES_LE = prove
+ (`!f g s y z.
+     (f real_sums y) s /\ (g real_sums z) s /\
+     (!i. i IN s ==> f i <= g i)
+     ==> y <= z`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(ISPEC `sequentially` REALLIM_LE) THEN
+  MAP_EVERY EXISTS_TAC
+   [`\n. sum(s INTER (0..n)) (f:num->real)`;
+    `\n. sum(s INTER (0..n)) (g:num->real)`] THEN
+  ASM_REWRITE_TAC[GSYM real_sums; TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_LE THEN
+  REWRITE_TAC[FINITE_INTER_NUMSEG; IN_INTER] THEN ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Paths and path-connectedness.                                             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -32632,7 +32807,6 @@ let WELLCHAINED_INTERS = prove
         ASM_MESON_TAC[LT_IMP_LE; ARITH_RULE `i < n ==> SUC i <= n`];
         ASM_REAL_ARITH_TAC]]]);;
 
-
 (* ------------------------------------------------------------------------- *)
 (* Uniformly locally connected and Property S for metric spaces              *)
 (* ------------------------------------------------------------------------- *)
@@ -32674,7 +32848,6 @@ let fccoverable_in = new_definition
                     ==> connected_in (mtopology m) t /\
                         mbounded m t /\
                         mdiameter m t <= e)`;;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Main theorems                                                             *)
@@ -33239,7 +33412,6 @@ let COMPACT_IN_LOCALLY_CONNECTED_EQ_FCCOVERABLE_SPACE = prove
       ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
       STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
       ASM_MESON_TAC[COMPACT_IN_IMP_MBOUNDED]]]);;
-
 
 (* ------------------------------------------------------------------------- *)
 (* "Capped" equivalent bounded metrics and general product metrics.          *)
@@ -40557,6 +40729,372 @@ let ZERO_DIMENSIONAL_IMP_REGULAR_SPACE = prove
  (`!top:A topology. top dimension_le &0 ==> regular_space top`,
   MESON_TAC[COMPLETELY_REGULAR_IMP_REGULAR_SPACE;
             ZERO_DIMENSIONAL_IMP_COMPLETELY_REGULAR_SPACE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The Cantor space {0,1}^N and its embedding in the reals as the Cantor set *)
+(* via the ternary Cantor map: a |-> sum_{k=0}^inf 2*a(k) / 3^{k+1}          *)
+(* ------------------------------------------------------------------------- *)
+
+let cantor_space = new_definition
+ `cantor_space = product_topology (:num) (\n:num. discrete_topology (:bool))`;;
+
+let cantor_term = new_definition
+ `cantor_term (a:num->bool) k = (if a k then &2 else &0) / &3 pow (k + 1)`;;
+
+let cantor_map = new_definition
+ `cantor_map (a:num->bool) = real_infsum (from 0) (cantor_term a)`;;
+
+let cantor_set = new_definition
+ `cantor_set = IMAGE cantor_map (:num->bool)`;;
+
+let TOPSPACE_CANTOR_SPACE = prove
+ (`topspace cantor_space = (:num->bool)`,
+  REWRITE_TAC[cantor_space; TOPSPACE_PRODUCT_TOPOLOGY;
+              TOPSPACE_DISCRETE_TOPOLOGY; o_DEF] THEN
+  REWRITE_TAC[cartesian_product; IN_UNIV; EXTENSIONAL_UNIV] THEN
+  SET_TAC[]);;
+
+let COMPACT_SPACE_CANTOR_SPACE = prove
+ (`compact_space cantor_space`,
+  SIMP_TAC[cantor_space; COMPACT_SPACE_PRODUCT_TOPOLOGY;
+           COMPACT_SPACE_DISCRETE_TOPOLOGY; FINITE_BOOL]);;
+
+let HAUSDORFF_SPACE_CANTOR_SPACE = prove
+ (`hausdorff_space cantor_space`,
+  SIMP_TAC[cantor_space; HAUSDORFF_SPACE_PRODUCT_TOPOLOGY;
+           HAUSDORFF_SPACE_DISCRETE_TOPOLOGY]);;
+
+let METRIZABLE_SPACE_CANTOR_SPACE = prove
+ (`metrizable_space cantor_space`,
+  SIMP_TAC[cantor_space; METRIZABLE_SPACE_PRODUCT_TOPOLOGY;
+           COUNTABLE_SUBSET_NUM; METRIZABLE_SPACE_DISCRETE_TOPOLOGY]);;
+
+let ZERO_DIMENSIONAL_CANTOR_SPACE = prove
+ (`cantor_space dimension_le &0`,
+  REWRITE_TAC[DIMENSION_LE_0_NEIGHBOURHOOD_BASE_OF_CLOPEN] THEN
+  SIMP_TAC[OPEN_NEIGHBOURHOOD_BASE_OF;
+    MESON[] `!(top:A topology) (s:A->bool).
+      closed_in top s /\ open_in top s ==> open_in top s`] THEN
+  REWRITE_TAC[cantor_space] THEN
+  MAP_EVERY X_GEN_TAC [`w:(num->bool)->bool`; `x:num->bool`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_PRODUCT_TOPOLOGY_ALT]) THEN
+  DISCH_THEN(MP_TAC o SPEC `x:num->bool`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:num->(bool->bool)` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `cartesian_product (:num) (u:num->bool->bool)` THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [REWRITE_TAC[CLOSED_IN_CARTESIAN_PRODUCT] THEN DISJ2_TAC THEN GEN_TAC THEN
+    REWRITE_TAC[IN_UNIV; CLOSED_IN_DISCRETE_TOPOLOGY] THEN SET_TAC[];
+    REWRITE_TAC[OPEN_IN_CARTESIAN_PRODUCT_GEN] THEN DISJ2_TAC THEN
+    ASM_REWRITE_TAC[TOPSPACE_DISCRETE_TOPOLOGY]]);;
+
+let NONEMPTY_TOPSPACE_CANTOR_SPACE = prove
+ (`~(topspace cantor_space = {})`,
+  REWRITE_TAC[TOPSPACE_CANTOR_SPACE; UNIV_NOT_EMPTY]);;
+
+(* The Cantor space has no isolated points (is "perfect") *)
+
+let PERFECT_CANTOR_SPACE = prove
+ (`!x:num->bool. x IN topspace cantor_space
+                 ==> x IN cantor_space derived_set_of (topspace cantor_space)`,
+  REWRITE_TAC[TOPSPACE_CANTOR_SPACE; IN_UNIV] THEN X_GEN_TAC `x:num->bool` THEN
+  REWRITE_TAC[IN_DERIVED_SET_OF; TOPSPACE_CANTOR_SPACE; IN_UNIV] THEN
+  X_GEN_TAC `t:(num->bool)->bool` THEN STRIP_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[cantor_space]) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:num->bool` o
+    GEN_REWRITE_RULE I [OPEN_IN_PRODUCT_TOPOLOGY_ALT]) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:num->(bool->bool)` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(X_CHOOSE_TAC `N:num` o
+    GEN_REWRITE_RULE I [FINITE_SUBSET_NUMSEG]) THEN
+  SUBGOAL_THEN `(u:num->bool->bool) (SUC N) = (:bool)` ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[SUBSET; IN_ELIM_THM; IN_UNIV;
+      IN_NUMSEG; TOPSPACE_DISCRETE_TOPOLOGY]) THEN
+    MESON_TAC[ARITH_RULE `~(SUC N <= N)`]; ALL_TAC] THEN
+  EXISTS_TAC `\n:num. if n = SUC N then ~(x n) else (x:num->bool) n` THEN
+  CONJ_TAC THENL
+   [DISCH_THEN(MP_TAC o C AP_THM `SUC N`) THEN REWRITE_TAC[] THEN MESON_TAC[];
+    FIRST_X_ASSUM(MATCH_MP_TAC o REWRITE_RULE[SUBSET]) THEN
+    UNDISCH_TAC `x IN cartesian_product (:num) (u:num->bool->bool)` THEN
+    REWRITE_TAC[cartesian_product; IN_ELIM_THM; IN_UNIV; EXTENSIONAL_UNIV] THEN
+    DISCH_TAC THEN GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC[IN_UNIV]]);;
+
+let PERFECT_CANTOR_SPACE_EQ = prove
+ (`cantor_space derived_set_of (topspace cantor_space) =
+   topspace cantor_space`,
+  MATCH_MP_TAC SUBSET_ANTISYM THEN
+  REWRITE_TAC[DERIVED_SET_OF_SUBSET_TOPSPACE; SUBSET; PERFECT_CANTOR_SPACE]);;
+
+(* Each term is non-negative *)
+
+let CANTOR_TERM_POS = prove
+ (`!a:num->bool k. &0 <= cantor_term a k`,
+  REWRITE_TAC[cantor_term] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC REAL_LE_DIV THEN CONJ_TAC THENL
+   [COND_CASES_TAC; MATCH_MP_TAC REAL_POW_LE] THEN REAL_ARITH_TAC);;
+
+(* Each term bounded by corresponding geometric term *)
+
+let CANTOR_TERM_BOUND = prove
+ (`!a:num->bool k. cantor_term a k <= &2 / &3 pow (k + 1)`,
+  REWRITE_TAC[cantor_term] THEN REPEAT GEN_TAC THEN
+  SIMP_TAC[REAL_LE_DIV2_EQ; REAL_POW_LT; REAL_ARITH `&0 < &3`] THEN
+  COND_CASES_TAC THEN REAL_ARITH_TAC);;
+
+(* Monotonicity of partial sums: more terms of non-negative series *)
+
+let CANTOR_PARTIAL_SUM_MONO = prove
+ (`!a:num->bool m n. m <= n
+     ==> sum(0..m) (cantor_term a) <= sum(0..n) (cantor_term a)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+  REWRITE_TAC[FINITE_NUMSEG; IN_DIFF; CANTOR_TERM_POS;
+              SUBSET; IN_NUMSEG] THEN ASM_ARITH_TAC);;
+
+(* Partial sum formula for the geometric series sum_{k=0}^n 2/3^{k+1} *)
+
+let SUM_TWOTHIRDS = prove
+ (`!n. sum(0..n) (\k. &2 / &3 pow (k + 1)) = &1 - (&1 / &3) pow (n + 1)`,
+  INDUCT_TAC THENL
+   [REWRITE_TAC[SUM_SING_NUMSEG] THEN CONV_TAC NUM_REDUCE_CONV THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV;
+    REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN
+    ASM_REWRITE_TAC[ADD1; GSYM ADD_ASSOC] THEN CONV_TAC NUM_REDUCE_CONV THEN
+    REWRITE_TAC[ARITH_RULE `n + 2 = SUC(n + 1)`;
+                real_pow; REAL_POW_DIV; REAL_POW_ONE] THEN
+    SUBGOAL_THEN `~(&3 pow (n + 1) = &0)` MP_TAC THENL
+     [REWRITE_TAC[REAL_POW_EQ_0] THEN REAL_ARITH_TAC; CONV_TAC REAL_FIELD]]);;
+
+(* The geometric dominating series sums to 1 *)
+
+let TWOTHIRDS_SUMS = prove
+ (`((\k. &2 / &3 pow (k + 1)) real_sums &1) (from 0)`,
+  REWRITE_TAC[REAL_SERIES_FROM; SUM_TWOTHIRDS; REALLIM_SEQUENTIALLY] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  MP_TAC(SPECL [`&1 / &3`; `e:real`] REAL_ARCH_POW_INV) THEN ANTS_TAC THENL
+  [ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_TAC `N:num`) THEN EXISTS_TAC `N:num` THEN
+  X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  MATCH_MP_TAC(REAL_ARITH `&0 < x /\ x < e ==> abs((&1 - x) - &1) < e`) THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_POW_LT THEN CONV_TAC REAL_RAT_REDUCE_CONV;
+   MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `(&1 / &3) pow N` THEN
+   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_POW_MONO_INV THEN
+   CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_ARITH_TAC]);;
+
+(* Cantor terms are summable by comparison with the geometric series *)
+
+let CANTOR_MAP_SUMMABLE = prove
+ (`!a:num->bool. real_summable (from 0) (cantor_term a)`,
+  GEN_TAC THEN MATCH_MP_TAC REAL_SUMMABLE_COMPARISON THEN
+  EXISTS_TAC `\k. &2 / &3 pow (k + 1)` THEN CONJ_TAC THENL
+  [MESON_TAC[TWOTHIRDS_SUMS; REAL_SUMS_SUMMABLE];
+   EXISTS_TAC `0` THEN REPEAT STRIP_TAC THEN
+   MATCH_MP_TAC(REAL_ARITH `&0 <= x /\ x <= y ==> abs x <= y`) THEN
+   REWRITE_TAC[CANTOR_TERM_POS; CANTOR_TERM_BOUND]]);;
+
+(* The series converges to cantor_map *)
+
+let CANTOR_MAP_SUMS = prove
+ (`!a:num->bool. (cantor_term a real_sums cantor_map a) (from 0)`,
+  GEN_TAC THEN REWRITE_TAC[cantor_map; REAL_SUMS_INFSUM; CANTOR_MAP_SUMMABLE]);;
+
+(* Upper bound: each term <= 2/3^{k+1}, and the geometric series sums to 1 *)
+
+let CANTOR_MAP_LE_ONE = prove
+ (`!a:num->bool. cantor_map a <= &1`,
+  GEN_TAC THEN MATCH_MP_TAC REAL_SERIES_LE THEN
+  MAP_EVERY EXISTS_TAC
+  [`cantor_term (a:num->bool)`; `\k. &2 / &3 pow (k + 1)`; `from 0`] THEN
+  REWRITE_TAC[CANTOR_MAP_SUMS; TWOTHIRDS_SUMS; IN_FROM; CANTOR_TERM_BOUND]);;
+
+(* Partial sums bounded by the limit (monotone convergence) *)
+
+let CANTOR_MAP_GE_PARTIAL_SUM = prove
+ (`!a:num->bool n. sum(0..n) (cantor_term a) <= cantor_map a`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC(ISPEC `sequentially` REALLIM_LBOUND) THEN
+  EXISTS_TAC `\m. sum(0..m) (cantor_term (a:num->bool))` THEN CONJ_TAC THENL
+   [MP_TAC(SPEC `a:num->bool` CANTOR_MAP_SUMS) THEN
+    REWRITE_TAC[REAL_SERIES_FROM];
+    REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY; EVENTUALLY_SEQUENTIALLY] THEN
+    EXISTS_TAC `n:num` THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC CANTOR_PARTIAL_SUM_MONO THEN
+    ASM_REWRITE_TAC[]]);;
+
+(* Tail bound: cantor_map - partial_sum <= geometric tail *)
+
+let CANTOR_MAP_PARTIAL_SUM_BOUND = prove
+ (`!a:num->bool n. cantor_map a - sum(0..n) (cantor_term a) <=
+                   (&1 / &3) pow (n + 1)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC(REAL_ARITH `x <= y + z ==> x - y <= z`) THEN
+  MATCH_MP_TAC(ISPEC `sequentially` REALLIM_UBOUND) THEN
+  EXISTS_TAC `\m. sum(0..m) (cantor_term (a:num->bool))` THEN CONJ_TAC THENL
+   [MP_TAC(SPEC `a:num->bool` CANTOR_MAP_SUMS) THEN
+    REWRITE_TAC[REAL_SERIES_FROM]; ALL_TAC] THEN
+  REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY; EVENTUALLY_SEQUENTIALLY] THEN
+  EXISTS_TAC `n:num` THEN X_GEN_TAC `m:num` THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`cantor_term (a:num->bool)`; `0`; `n:num`; `m:num`]
+    SUM_COMBINE_R) THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  MATCH_MP_TAC(REAL_ARITH `t <= b ==> p + t <= p + b`) THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `sum(n+1..m) (\k. &2 / &3 pow (k + 1))` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_LE_NUMSEG THEN SIMP_TAC[CANTOR_TERM_BOUND];
+    MP_TAC(ISPECL [`\k. &2 / &3 pow (k + 1)`; `0`; `n:num`; `m:num`]
+      SUM_COMBINE_R) THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; REWRITE_TAC[SUM_TWOTHIRDS]] THEN
+    MP_TAC(SPEC `m + 1` (MATCH_MP REAL_POW_LE
+      (REAL_ARITH `&0 <= &1 / &3`))) THEN REAL_ARITH_TAC]);;
+
+(* Non-negativity: follows from partial sums being non-negative *)
+
+let CANTOR_MAP_POS = prove
+ (`!a:num->bool. &0 <= cantor_map a`,
+  GEN_TAC THEN
+  MP_TAC(SPECL [`a:num->bool`; `0`] CANTOR_MAP_GE_PARTIAL_SUM) THEN
+  MP_TAC(SPECL [`a:num->bool`; `0`] CANTOR_TERM_POS) THEN
+  REWRITE_TAC[SUM_SING_NUMSEG] THEN REAL_ARITH_TAC);;
+
+let CANTOR_MAP_RANGE = prove
+ (`!a:num->bool. cantor_map a IN real_interval[&0,&1]`,
+  REWRITE_TAC[IN_REAL_INTERVAL; CANTOR_MAP_POS; CANTOR_MAP_LE_ONE]);;
+
+(* Term continuity: each cantor_term a k is continuous in a *)
+
+let CANTOR_TERM_CONTINUOUS = prove
+ (`!k. continuous_map (cantor_space, euclideanreal)
+        (\a:num->bool. cantor_term a k)`,
+  GEN_TAC THEN REWRITE_TAC[cantor_term] THEN SUBGOAL_THEN
+    `(\a:num->bool. (if a k then &2 else &0) / &3 pow (k + 1)) =
+     (\b:bool. (if b then &2 else &0) / &3 pow (k + 1)) o (\a:num->bool. a k)`
+    SUBST1_TAC THENL [REWRITE_TAC[FUN_EQ_THM; o_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `discrete_topology (:bool)` THEN CONJ_TAC THENL
+   [REWRITE_TAC[cantor_space] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_PRODUCT_PROJECTION THEN REWRITE_TAC[IN_UNIV];
+    REWRITE_TAC[CONTINUOUS_MAP_FROM_DISCRETE_TOPOLOGY;
+                TOPSPACE_EUCLIDEANREAL; SUBSET_UNIV]]);;
+
+(* Cantor map continuity: uniform limit of continuous partial sums *)
+let CANTOR_MAP_CONTINUOUS = prove
+ (`continuous_map (cantor_space, euclideanreal) cantor_map`,
+  MATCH_MP_TAC(REWRITE_RULE[MTOPOLOGY_REAL_EUCLIDEAN_METRIC]
+    (ISPECL [`sequentially`; `cantor_space`; `real_euclidean_metric`;
+             `\n (a:num->bool). sum(0..n) (cantor_term a)`; `cantor_map`]
+      CONTINUOUS_MAP_UNIFORM_LIMIT_ALT)) THEN
+  CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+  REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY; TOPSPACE_CANTOR_SPACE; SUBSET_UNIV;
+              REAL_EUCLIDEAN_METRIC; MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              EVENTUALLY_SEQUENTIALLY; IN_UNIV] THEN
+  CONJ_TAC THENL
+   [EXISTS_TAC `0` THEN REPEAT STRIP_TAC THEN REWRITE_TAC[cantor_term] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_SUM THEN
+    REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM cantor_term; CANTOR_TERM_CONTINUOUS];
+    X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    MP_TAC(SPECL [`&1 / &3`; `e:real`] REAL_ARCH_POW_INV) THEN
+    ANTS_TAC THENL
+     [ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_TAC `N:num`) THEN EXISTS_TAC `N:num` THEN
+    X_GEN_TAC `n:num` THEN DISCH_TAC THEN X_GEN_TAC `x:num->bool` THEN
+    MP_TAC(SPECL [`x:num->bool`; `n:num`] CANTOR_MAP_GE_PARTIAL_SUM) THEN
+    MP_TAC(SPECL [`x:num->bool`; `n:num`] CANTOR_MAP_PARTIAL_SUM_BOUND) THEN
+    SUBGOAL_THEN `(&1 / &3) pow (n + 1) <= (&1 / &3) pow N` MP_TAC THENL
+     [MATCH_MP_TAC REAL_POW_MONO_INV THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+      ASM_ARITH_TAC;
+      ASM_REAL_ARITH_TAC]]);;
+
+(* At the first disagreement k where a k /\ ~b k, the partial sums differ *)
+
+let CANTOR_PARTIAL_SUM_DIFF_AT_K = prove
+ (`!a b:num->bool k.
+     (!j. j < k ==> a j = b j) /\ a k /\ ~(b k)
+     ==> sum(0..k) (cantor_term a) =
+         sum(0..k) (cantor_term b) + &2 / &3 pow (k + 1)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MATCH_MP_TAC(REAL_ARITH `s - t = d ==> s = t + d`) THEN
+  REWRITE_TAC[GSYM SUM_SUB_NUMSEG] THEN
+  SUBGOAL_THEN
+    `sum(0..k) (\j:num. cantor_term (a:num->bool) j - cantor_term b j) =
+     sum(0..k) (\j. if j = k then &2 / &3 pow (k + 1) else &0)`
+    SUBST1_TAC THENL
+  [MATCH_MP_TAC SUM_EQ_NUMSEG THEN X_GEN_TAC `j:num` THEN
+   STRIP_TAC THEN REWRITE_TAC[cantor_term] THEN ASM_CASES_TAC `j:num = k` THEN
+   ASM_REWRITE_TAC[] THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `(a:num->bool) j = b j`
+     (fun th -> REWRITE_TAC[th] THEN REAL_ARITH_TAC) THEN
+   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+   REWRITE_TAC[SUM_DELTA; IN_NUMSEG; LE_0; LE_REFL]]);;
+
+(* If a and b first disagree at k with a(k) true, then cantor_map b < cantor_map a *)
+
+let CANTOR_MAP_STRICT_LT = prove
+ (`!a b:num->bool k.
+     (!j. j < k ==> a j = b j) /\ a k /\ ~(b k)
+     ==> cantor_map b < cantor_map a`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC(SPECL
+   [`a:num->bool`; `b:num->bool`; `k:num`] CANTOR_PARTIAL_SUM_DIFF_AT_K) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(SPECL [`b:num->bool`; `k:num`] CANTOR_MAP_PARTIAL_SUM_BOUND) THEN
+  MP_TAC(SPECL [`a:num->bool`; `k:num`] CANTOR_MAP_GE_PARTIAL_SUM) THEN
+  SUBGOAL_THEN `(&1 / &3) pow (k + 1) < &2 / &3 pow (k + 1)` MP_TAC THENL
+   [SIMP_TAC[REAL_POW_DIV; REAL_POW_ONE; REAL_LT_DIV2_EQ; REAL_POW_LT;
+             REAL_ARITH `&0 < &3`] THEN REAL_ARITH_TAC;
+    ASM_REAL_ARITH_TAC]);;
+
+(* Injectivity of cantor_map *)
+
+let CANTOR_MAP_INJECTIVE = prove
+ (`!a b:num->bool. cantor_map a = cantor_map b <=> a = b`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [ALL_TAC; MESON_TAC[]] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[FUN_EQ_THM; NOT_FORALL_THM] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [num_WOP]) THEN
+  REWRITE_TAC[NOT_CLAUSES] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:num` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC(REAL_ARITH `a < b \/ b < a ==> ~(a = b)`) THEN
+  ASM_MESON_TAC[CANTOR_MAP_STRICT_LT]);;
+
+let CANTOR_MAP_EMBEDDING = prove
+ (`embedding_map (cantor_space,euclideanreal) cantor_map`,
+  MATCH_MP_TAC CONTINUOUS_IMP_EMBEDDING_MAP THEN
+  REWRITE_TAC[COMPACT_SPACE_CANTOR_SPACE; HAUSDORFF_SPACE_EUCLIDEANREAL;
+              CANTOR_MAP_CONTINUOUS; TOPSPACE_CANTOR_SPACE; IN_UNIV] THEN
+  MESON_TAC[CANTOR_MAP_INJECTIVE]);;
+
+let CANTOR_MAP_CLOSED_IMAGE = prove
+ (`closed_in euclideanreal (IMAGE cantor_map (:num->bool))`,
+  MESON_TAC[COMPACT_IN_IMP_CLOSED_IN; IMAGE_COMPACT_IN;
+    HAUSDORFF_SPACE_EUCLIDEANREAL; CANTOR_MAP_CONTINUOUS;
+    COMPACT_SPACE_CANTOR_SPACE; compact_space; TOPSPACE_CANTOR_SPACE]);;
+
+let CANTOR_MAP_IMAGE_SUBSET_INTERVAL = prove
+ (`IMAGE cantor_map (:num->bool) SUBSET real_interval [&0,&1]`,
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV; CANTOR_MAP_RANGE]);;
+
+let CANTOR_MAP_CLOSED_IN_INTERVAL = prove
+ (`closed_in (subtopology euclideanreal (real_interval [&0,&1]))
+             (IMAGE cantor_map (:num->bool))`,
+  MATCH_MP_TAC CLOSED_IN_SUBSET_TOPSPACE THEN
+  REWRITE_TAC[CANTOR_MAP_CLOSED_IMAGE; CANTOR_MAP_IMAGE_SUBSET_INTERVAL]);;
+
+let CANTOR_SET_SUBSET_INTERVAL = prove
+ (`cantor_set SUBSET real_interval [&0,&1]`,
+  REWRITE_TAC[cantor_set; CANTOR_MAP_IMAGE_SUBSET_INTERVAL]);;
+
+let CLOSED_IN_CANTOR_SET = prove
+ (`closed_in euclideanreal cantor_set`,
+  REWRITE_TAC[cantor_set; CANTOR_MAP_CLOSED_IMAGE]);;
+
+let CLOSED_IN_CANTOR_SET_INTERVAL = prove
+ (`closed_in (subtopology euclideanreal (real_interval [&0,&1])) cantor_set`,
+  REWRITE_TAC[cantor_set; CANTOR_MAP_CLOSED_IN_INTERVAL]);;
+
+let CANTOR_SPACE_HOMEOMORPHIC_CANTOR_SET = prove
+ (`cantor_space homeomorphic_space
+   subtopology euclideanreal cantor_set`,
+  MATCH_MP_TAC HOMEOMORPHIC_MAP_IMP_HOMEOMORPHIC_SPACE THEN
+  EXISTS_TAC `cantor_map` THEN MP_TAC CANTOR_MAP_EMBEDDING THEN
+  REWRITE_TAC[embedding_map; TOPSPACE_CANTOR_SPACE; cantor_set]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Theorems from Kuratowski's "Remark on an Invariance Theorem", Fundamenta  *)
