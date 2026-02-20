@@ -8,6 +8,86 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 19th Feb 2026       Multivariate/metric.ml, Multivariate/topology.ml, Multivariate/paths.ml
+
+Added general metric space versions of well-chainedness, connectedness
+of chains, and the two uniform variants of local connectedness (ULC =
+uniformly locally connected and FCCOVERABLE = fine connected coverable,
+a.k.a. Whyburn's "Property S"), together with key results connecting
+them to local connectedness and compactness. The Euclidean special cases
+in paths.ml and topology.ml are then derived from the general versions.
+New definitions:
+
+        fccoverable_in
+        fccoverable_space
+        ulc_space
+
+and new theorems:
+
+        COMPACT_IN_LOCALLY_CONNECTED_EQ_FCCOVERABLE_SPACE
+        COMPACT_IN_LOCALLY_CONNECTED_IMP_FCCOVERABLE_SPACE
+        COMPACT_IN_LOCALLY_CONNECTED_IMP_ULC_SPACE
+        COMPACT_IN_LOCALLY_CONNECTED_IMP_ULC_SPACE_ALT
+        CONNECTED_COMPONENT_OF_EQ_WELLCHAINED
+        CONNECTED_COMPONENT_OF_IMP_WELLCHAINED
+        CONNECTED_EQ_WELLCHAINED_IN
+        CONNECTED_IN_CHAIN
+        CONNECTED_IN_CHAIN_GEN
+        CONNECTED_IN_IFF_CONNECTED_COMPONENT_OF
+        CONNECTED_IN_IMP_WELLCHAINED
+        CONNECTED_IN_NEST
+        CONNECTED_IN_NEST_GEN
+        CONNECTED_IN_UNIONS_STRONG
+        EPSILON_ABSORBING_IMP_CLOPEN
+        FCCOVERABLE_IN_IMP_FCCOVERABLE_SPACE_SUBMETRIC
+        FCCOVERABLE_IN_IMP_LOCALLY_CONNECTED_SPACE
+        FCCOVERABLE_SPACE_EQ_FCCOVERABLE_IN_MSPACE
+        FCCOVERABLE_SPACE_IMP_LOCALLY_CONNECTED_SPACE
+        FCCOVERABLE_SPACE_INTERMEDIATE_CLOSURE
+        IN_CLOSURE_OF_IMP_SUBSET_MCBALL
+        MBALL_INTER_DSEPARATED_SINGLETON
+        MDIAMETER_SUBSET_MBALL
+        MDIAMETER_SUBMETRIC
+        MDIST_TRIANGLE_LT
+        NESTED_COMPACT_APPROX
+        TOTALLY_BOUNDED_IMP_DISCRETE_FINITE
+        TOTALLY_BOUNDED_ULC_SPACE_IMP_FCCOVERABLE_SPACE
+        ULC_SPACE_IMP_LOCALLY_CONNECTED_SPACE
+        WELLCHAINED_ELEMENTS
+        WELLCHAINED_INTERS
+        WELLCHAINED_SETS
+
+In Multivariate/topology.ml, the theorems CONNECTED_CHAIN,
+CONNECTED_CHAIN_GEN, CONNECTED_NEST and CONNECTED_NEST_GEN are
+rederived from their general topological counterparts. All theorem
+statements are preserved.
+
+In Multivariate/paths.ml, the Euclidean-specific theorems about ULC and
+FCCOVERABLE (FCCOVERABLE_IMP_LOCALLY_CONNECTED through
+COMPACT_LOCALLY_CONNECTED_EQ_FCCCOVERABLE) are rederived from the
+general metric space versions via a set of bridge lemmas connecting
+submetric euclidean_metric to the Euclidean topology. The well-chained
+theorems (CONNECTED_IMP_WELLCHAINED through 
+CONNECTED_COMPONENT_EQ_WELLCHAINED) are similarly rederived. All theorem
+statements are preserved.
+
+Incompatible changes: In paths.ml, three Euclidean-specific theorems
+have been renamed with a _EUCLIDEAN suffix to avoid clashing with the
+new general versions in metric.ml that take the same names:
+
+        WELLCHAINED_ELEMENTS  -> WELLCHAINED_ELEMENTS_EUCLIDEAN
+        WELLCHAINED_SETS      -> WELLCHAINED_SETS_EUCLIDEAN
+        WELLCHAINED_INTERS    -> WELLCHAINED_INTERS_EUCLIDEAN
+
+These were not used outside their original block so the renaming
+should not affect other files. Several new Euclidean bridge lemmas are
+introduced in paths.ml (SUBMETRIC_EUCLIDEAN_METRIC,
+MTOPOLOGY_SUBMETRIC_EUCLIDEAN, MBOUNDED_SUBMETRIC_EUCLIDEAN,
+MDIAMETER_SUBMETRIC_EUCLIDEAN, and others) to support the derivations.
+
+The statements and proofs were almost entirely written by Claude Code
+(Opus 4.6).
+
 Thu 19th Feb 2026       Library/ringtheory.ml, Library/rabin_test.ml [new file]
 
 Added a proof of Rabin's test for irreducibility of polynomials over
