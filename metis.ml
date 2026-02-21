@@ -23,93 +23,13 @@ let metisverb = ref false;;
 module Metis_prover = struct
 
 (* ------------------------------------------------------------------------- *)
-(* Convenient utility modules.                                               *)
-(* ------------------------------------------------------------------------- *)
-
-module Portable = struct
-
-let pointerEqual (p1, p2) = p1 == p2;;
-
-let randomInt x = Random.int x;;
-let randomWord () = Random.bits ();;
-
-let critical x = x;;
-
-end
-
-module Option = struct
-
-let getOpt = function
-    (Some s, _) -> s
-  | (None, x) -> x;;
-
-let isSome = function
-    Some _ -> true
-  | None -> false;;
-
-let mapPartial f = function
-    None -> None
-  | Some x -> f x;;
-
-end
-
-module Order = struct
-
-type order = Less | Equal | Greater;;
-
-let orderOfInt = function
-   -1 -> Less
-  | 0 -> Equal
-  | 1 -> Greater
-  | _ -> failwith "orderOfInt"
-;;
-
-let intOfOrder = function
-    Less -> -1
-  | Equal -> 0
-  | Greater -> 1
-;;
-
-let toCompare f = fun (x, y) -> orderOfInt (f x y);;
-let fromCompare f = fun x y -> intOfOrder (f (x, y));;
-
-end
-
-module Int = struct
-
-let toString = string_of_int;;
-
-let compare = Order.toCompare (compare : int -> int -> int);;
-
-let maxInt = Some max_int;;
-
-let div x y = x / y;;
-
-end
-
-module Real = struct
-
-open Order
-
-type real = float;;
-
-let compare = toCompare (compare : float -> float -> int);;
-
-let fromInt = float_of_int;;
-let floor x = int_of_float (floor x);;
-
-end
-
-(* ------------------------------------------------------------------------- *)
 (* Emulating SML Word type (which is unsigned) and other operations.         *)
 (* ------------------------------------------------------------------------- *)
 
 module Word = struct
 
-open Order
-
 type word = int;;
-let compare = toCompare (compare: word -> word -> int);;
+let compare x y = Int.compare x y;;
 
 let shiftLeft (x, y) = x lsl y;;
 let shiftRight (x, y) = x lsr y;;
@@ -127,27 +47,44 @@ let fromInt x = x;;
 
 end
 
-module Math = struct
-
-let ln = log;;
-let pow (x,y) = x ** y;;
-
-end
-
 module Mlist = struct
 
 let foldl f a l = List.fold_left  (fun acc x -> f (x, acc)) a l;;
 let foldr f a l = List.fold_right (fun x acc -> f (x, acc)) l a;;
-let nth (l, i) = List.nth l i;;
 let null = function
     [] -> true
   | _  -> false
 let tabulate (n,f) =
   let rec go i = if i == n then [] else f i :: go (i+1)
   in  go 0
-let revAppend (l1, l2) = List.rev_append l1 l2;;
 let find p l = try Some (List.find p l) with Not_found -> None;;
-let all = List.for_all;;
+let rec first f = function
+    [] -> None
+  | (x :: xs) -> (match f x with None -> first f xs | s -> s);;
+let enumerate l = mapi (fun x y -> (x, y)) l
+let revDivide l =
+  let rec revDiv acc = function
+      (l, 0) -> (acc,l)
+    | ([], _) -> invalid_arg "Metis_prover.Mlist.revDivide"
+    | (h :: t, n) -> revDiv (h :: acc) (t, n - 1)
+  in fun n -> revDiv [] (l, n);;
+let updateNth (n,x) l =
+    let (a,b) = revDivide l n
+    in
+      match b with
+        [] -> invalid_arg "Metis_prover.Mlist.updateNth"
+      | (_ :: t) -> List.rev_append a (x :: t)
+;;
+let sortMap f cmp = function
+    [] -> []
+  | ([_] as l) -> l
+  | xs ->
+      let ncmp (m,_) (n,_) = cmp m n
+      in let nxs = List.map (fun x -> (f x, x)) xs
+      in let nys = List.sort ncmp nxs
+    in
+      List.map snd nys
+    ;;
 
 end
 
@@ -157,14 +94,8 @@ end
 
 module Useful = struct
 
-open Order
-
-(* ------------------------------------------------------------------------- *)
-(* OCaml lists (MF).                                                         *)
-(* ------------------------------------------------------------------------- *)
-
-let length = List.length;;
-let app = List.iter;;
+(* Marking critical sections of code. *)
+let critical x = x;;
 
 (* ------------------------------------------------------------------------- *)
 (* Characters (MF).                                                          *)
@@ -176,161 +107,35 @@ let isDigit c = '0' <= c && c <= '9'
 (* Exceptions.                                                               *)
 (* ------------------------------------------------------------------------- *)
 
-exception Error of string;;
-
 exception Bug of string;;
 
-exception Subscript;;
-
-let total f x = try Some (f x) with Error _ -> None;;
-
-let isSome = function
-    (Some _) -> true
-  | None -> false
-;;
-
-let can f x = isSome (total f x);;
-
-(* ------------------------------------------------------------------------- *)
-(* Combinators.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let cComb f x y = f y x;;
-
-let iComb x = x;;
-
-let kComb x y = x;;
-
-let sComb f g x = f x (g x);;
-
-let wComb f x = f x x;;
-
-let rec funpow n f x = match n with
-      0 -> x
-    | _ -> funpow (n - 1) f (f x);;
+let total f x = try Some (f x) with Failure _ -> None;;
 
 let exp m =
       let rec f x y z = match y with
           0 -> z
-        | _ -> f (m (x,x)) (Int.div y 2) (if y mod 2 = 0 then z else m (z,x))
+        | _ -> f (m (x,x)) (y / 2) (if y mod 2 = 0 then z else m (z,x))
     in
       f
     ;;
 
 (* ------------------------------------------------------------------------- *)
-(* Pairs.                                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let pair x y = (x,y);;
-
-let swap (x,y) = (y,x);;
-
-let curry f x y = f (x,y);;
-
-let uncurry f (x,y) = f x y;;
-
-(* ------------------------------------------------------------------------- *)
-(* State transformers.                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-let return : 'a -> 's -> 'a * 's = pair;;
-
-let bind f (g : 'a -> 's -> 'b * 's) x = uncurry g (f x);;
-
-(*fun mmap f (m : 's -> 'a * 's) = bind m (unit o f);
-
-fun mjoin (f : 's -> ('s -> 'a * 's) * 's) = bind f I;
-
-fun mwhile c b = let fun f a = if c a then bind (b a) f else unit a in f end;*)
-
-(* ------------------------------------------------------------------------- *)
 (* Comparisons.                                                              *)
 (* ------------------------------------------------------------------------- *)
 
-let revCompare cmp x_y =
-    match cmp x_y with Less -> Greater | Equal -> Equal | Greater -> Less;;
+let revCompare cmp x y = cmp y x;;
 
-let prodCompare xCmp yCmp ((x1,y1),(x2,y2)) =
-    match xCmp (x1,x2) with
-      Less -> Less
-    | Equal -> yCmp (y1,y2)
-    | Greater -> Greater;;
+let prodCompare xCmp yCmp (x1,y1) (x2,y2) =
+    let c = xCmp x1 x2 in if c <> 0 then c else yCmp y1 y2;;
 
 let lexCompare cmp =
-      let rec lex = function
-          ([],[]) -> Equal
-        | ([], _ :: _) -> Less
-        | (_ :: _, []) -> Greater
+      let rec lex xs ys = match (xs, ys) with
+          ([],[]) -> 0
+        | ([], _ :: _) -> -1
+        | (_ :: _, []) -> 1
         | (x :: xs, y :: ys) ->
-          (match cmp (x,y) with
-            Less -> Less
-          | Equal -> lex (xs,ys)
-          | Greater -> Greater)
-    in
-      lex
-    ;;
-
-let boolCompare = function
-    (false,true) -> Less
-  | (true,false) -> Greater
-  | _ -> Equal;;
-
-(* ------------------------------------------------------------------------- *)
-(* Lists.                                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let rec first f = function
-    [] -> None
-  | (x :: xs) -> (match f x with None -> first f xs | s -> s);;
-
-let rec maps (f : 'a -> 's -> 'b * 's) = function
-    [] -> return []
-  | (x :: xs) ->
-    bind (f x) (fun y -> bind (maps f xs) (fun ys -> return (y :: ys)));;
-
-let zipWith f =
-    let rec z l = function
-          ([], []) -> l
-        | (x :: xs, y :: ys) -> z (f x y :: l) (xs, ys)
-        | _ -> raise (Error "zipWith: lists different lengths")
-    in
-      fun xs -> fun ys -> List.rev (z [] (xs, ys))
-    ;;
-
-let zip xs ys = zipWith pair xs ys;;
-
-let unzip ab =
-  let inc ((x,y),(xs,ys)) = (x :: xs, y :: ys)
-  in Mlist.foldl inc ([],[]) (List.rev ab);;
-
-let enumerate l = fst (maps (fun x m -> ((m, x), m + 1)) l 0);;
-
-let revDivide l =
-  let rec revDiv acc = function
-      (l, 0) -> (acc,l)
-    | ([], _) -> raise Subscript
-    | (h :: t, n) -> revDiv (h :: acc) (t, n - 1)
-  in fun n -> revDiv [] (l, n);;
-
-let divide l n = let (a,b) = revDivide l n in (List.rev a, b);;
-
-let updateNth (n,x) l =
-    let (a,b) = revDivide l n
-    in
-      match b with [] -> raise Subscript | (_ :: t) -> List.rev_append a (x :: t)
-;;
-
-let deleteNth n l =
-    let (a,b) = revDivide l n
-    in
-      match b with [] -> raise Subscript | (_ :: t) -> List.rev_append a t
-;;
-
-(* ------------------------------------------------------------------------- *)
-(* Sets implemented with lists.                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let mem x l = List.mem x l;;
+            let c = cmp x y in if c <> 0 then c else lex xs ys
+    in lex;;
 
 (* ------------------------------------------------------------------------- *)
 (* Strings.                                                                  *)
@@ -344,23 +149,6 @@ let stripSuffix pred s =
     if pred (s.[pos]) then strip (pos - 1)
     else String.sub s 0 (pos + 1)
   in strip (String.length s - 1);;
-
-(* ------------------------------------------------------------------------- *)
-(* Sorting and searching.                                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let sort cmp = List.sort (fromCompare cmp);;
-
-let sortMap f cmp = function
-    [] -> []
-  | ([_] as l) -> l
-  | xs ->
-      let ncmp ((m,_),(n,_)) = cmp (m,n)
-      in let nxs = List.map (fun x -> (f x, x)) xs
-      in let nys = List.sort (fromCompare ncmp) nxs
-    in
-      List.map snd nys
-    ;;
 
 (* ------------------------------------------------------------------------- *)
 (* Integers.                                                                 *)
@@ -410,29 +198,11 @@ end
 
 module Pmap = struct
 
-open Order
-
-(* ------------------------------------------------------------------------- *)
-(* Importing useful functionality.                                           *)
-(* ------------------------------------------------------------------------- *)
-
-exception Bug = Useful.Bug;;
-
-exception Error = Useful.Error;;
-
-let pointerEqual = Portable.pointerEqual;;
-
-let kComb = Useful.kComb;;
-
-let randomInt = Portable.randomInt;;
-
-let randomWord = Portable.randomWord;;
-
 (* ------------------------------------------------------------------------- *)
 (* Converting a comparison function to an equality function.                 *)
 (* ------------------------------------------------------------------------- *)
 
-let equalKey compareKey key1 key2 = compareKey (key1,key2) = Equal;;
+let equalKey compareKey key1 key2 = compareKey key1 key2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Priorities.                                                               *)
@@ -440,7 +210,7 @@ let equalKey compareKey key1 key2 = compareKey (key1,key2) = Equal;;
 
 type priority = Word.word;;
 
-let randomPriority = randomWord;;
+let randomPriority = Random.bits;;
 
 let comparePriority = Word.compare;;
 
@@ -464,7 +234,7 @@ let lowerPriorityNode node1 node2 =
       let {priority = p1} = node1
       and {priority = p2} = node2
     in
-      comparePriority (p1,p2) = Less
+      comparePriority p1 p2 < 0
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -481,7 +251,7 @@ local
           let l = checkSizes left
           and r = checkSizes right
 
-          let () = if l + 1 + r = size then () else raise Bug "wrong size"
+          let () = if l + 1 + r = size then () else raise Useful.Bug "wrong size"
         in
           size
         end;;
@@ -497,10 +267,10 @@ local
               match x with
                 None -> ()
               | Some k ->
-                match compareKey (k,key) with
-                  Less -> ()
-                | Equal -> raise Bug "duplicate keys"
-                | Greater -> raise Bug "unsorted"
+                let c = compareKey k key in
+                if c < 0 then ()
+                else if c = 0 then raise Useful.Bug "duplicate keys"
+                else raise Useful.Bug "unsorted"
 
           let x = Some key
         in
@@ -519,14 +289,14 @@ local
                 None -> ()
               | Some lnode ->
                 if not (lowerPriorityNode node lnode) then ()
-                else raise Bug "left child has greater priority"
+                else raise Useful.Bug "left child has greater priority"
 
           let () =
               match checkPriorities compareKey right with
                 None -> ()
               | Some rnode ->
                 if not (lowerPriorityNode node rnode) then ()
-                else raise Bug "right child has greater priority"
+                else raise Useful.Bug "right child has greater priority"
         in
           Some node
         end;;
@@ -541,7 +311,7 @@ in
       in
         tree
       end
-      handle Error err -> raise (Bug err);;
+      handle Failure err -> raise (Useful.Bug err);;
 end;;
 *)
 
@@ -585,7 +355,7 @@ let rec treeLeftSpine acc tree =
     | Tree node -> nodeLeftSpine acc node
 
 and nodeLeftSpine acc node =
-      let {left=left} = node
+      let {left} = node
     in
       treeLeftSpine (node :: acc) left
     ;;
@@ -596,7 +366,7 @@ let rec treeRightSpine acc tree =
     | Tree node -> nodeRightSpine acc node
 
 and nodeRightSpine acc node =
-      let {right=right} = node
+      let {right} = node
     in
       treeRightSpine (node :: acc) right
     ;;
@@ -643,13 +413,13 @@ let rec treeAppend tree1 tree2 =
         Empty -> tree1
       | Tree node2 ->
         if lowerPriorityNode node1 node2 then
-            let {priority=priority;left=left;key=key;value=value;right=right} = node2
+            let {priority;left;key;value;right} = node2
 
             in let left = treeAppend tree1 left
           in
             mkTree priority left key value right
         else
-            let {priority=priority;left=left;key=key;value=value;right=right} = node1
+            let {priority;left;key;value;right} = node1
 
             in let right = treeAppend right tree2
           in
@@ -678,12 +448,12 @@ let rec treePeek compareKey pkey tree =
     | Tree node -> nodePeek compareKey pkey node
 
 and nodePeek compareKey pkey node =
-      let {left=left;key=key;value=value;right=right} = node
+      let {left;key;value;right} = node
     in
-      match compareKey (pkey,key) with
-        Less -> treePeek compareKey pkey left
-      | Equal -> Some value
-      | Greater -> treePeek compareKey pkey right
+      let c = compareKey pkey key in
+      if c < 0 then treePeek compareKey pkey left
+      else if c = 0 then Some value
+      else treePeek compareKey pkey right
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -698,18 +468,18 @@ let rec treePeekPath compareKey pkey path tree =
     | Tree node -> nodePeekPath compareKey pkey path node
 
 and nodePeekPath compareKey pkey path node =
-      let {left=left;key=key;right=right} = node
+      let {left;key;right} = node
     in
-      match compareKey (pkey,key) with
-        Less -> treePeekPath compareKey pkey ((true,node) :: path) left
-      | Equal -> (path, Some node)
-      | Greater -> treePeekPath compareKey pkey ((false,node) :: path) right
+      let c = compareKey pkey key in
+      if c < 0 then treePeekPath compareKey pkey ((true,node) :: path) left
+      else if c = 0 then (path, Some node)
+      else treePeekPath compareKey pkey ((false,node) :: path) right
     ;;
 
 (* A path splits a tree into left/right components *)
 
 let addSidePath ((wentLeft,node),(leftTree,rightTree)) =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node
+      let {priority;left;key;value;right} = node
     in
       if wentLeft then (leftTree, mkTree priority rightTree key value right)
       else (mkTree priority left key value leftTree, rightTree)
@@ -722,7 +492,7 @@ let mkSidesPath path = addSidesPath (Empty,Empty) path;;
 (* Updating the subtree at a path *)
 
   let updateTree ((wentLeft,node),tree) =
-        let {priority=priority;left=left;key=key;value=value;right=right} = node
+        let {priority;left;key;value;right} = node
       in
         if wentLeft then mkTree priority tree key value right
         else mkTree priority left key value tree;;
@@ -767,7 +537,7 @@ let nodePartition compareKey pkey node =
         in
           (left,None,right)
       | Some node ->
-          let {left=left;key=key;value=value;right=right} = node
+          let {left;key;value;right} = node
 
           in let (left,right) = addSidesPath (left,right) path
         in
@@ -784,12 +554,12 @@ let rec treePeekKey compareKey pkey tree =
     | Tree node -> nodePeekKey compareKey pkey node
 
 and nodePeekKey compareKey pkey node =
-      let {left=left;key=key;value=value;right=right} = node
+      let {left;key;value;right} = node
     in
-      match compareKey (pkey,key) with
-        Less -> treePeekKey compareKey pkey left
-      | Equal -> Some (key,value)
-      | Greater -> treePeekKey compareKey pkey right
+      let c = compareKey pkey key in
+      if c < 0 then treePeekKey compareKey pkey left
+      else if c = 0 then Some (key,value)
+      else treePeekKey compareKey pkey right
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -807,7 +577,7 @@ let treeInsert compareKey key_value tree =
         in
           insertNodePath node path
       | Some node ->
-          let {size=size;priority=priority;left=left;right=right} = node
+          let {size;priority;left;right} = node
 
           in let node =
                 {size = size;
@@ -827,14 +597,14 @@ let treeInsert compareKey key_value tree =
 
 let rec treeDelete compareKey dkey tree =
     match tree with
-      Empty -> raise (Bug "Map.delete: element not found")
+      Empty -> raise (Useful.Bug "Map.delete: element not found")
     | Tree node -> nodeDelete compareKey dkey node
 
 and nodeDelete compareKey dkey node =
-      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
+      let {size;priority;left;key;value;right} = node
     in
-      match compareKey (dkey,key) with
-        Less ->
+      let c = compareKey dkey key in
+      if c < 0 then
           let size = size - 1
           and left = treeDelete compareKey dkey left
 
@@ -847,8 +617,8 @@ and nodeDelete compareKey dkey node =
                  right = right}
         in
           Tree node
-      | Equal -> treeAppend left right
-      | Greater ->
+      else if c = 0 then treeAppend left right
+      else
           let size = size - 1
           and right = treeDelete compareKey dkey right
 
@@ -873,7 +643,7 @@ let rec treeMapPartial f tree =
       Empty -> Empty
     | Tree node -> nodeMapPartial f node
 
-and nodeMapPartial f ({priority=priority;left=left;key=key;value=value;right=right}) =
+and nodeMapPartial f ({priority;left;key;value;right}) =
       let left = treeMapPartial f left
       and vo = f (key,value)
       and right = treeMapPartial f right
@@ -893,7 +663,7 @@ let rec treeMap f tree =
     | Tree node -> Tree (nodeMap f node)
 
 and nodeMap f node =
-      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
+      let {size;priority;left;key;value;right} = node
 
       in let left = treeMap f left
       and value = f (key,value)
@@ -921,7 +691,7 @@ let rec treeMerge compareKey f1 f2 fb tree1 tree2 =
       | Tree node2 -> nodeMerge compareKey f1 f2 fb node1 node2
 
 and nodeMerge compareKey f1 f2 fb node1 node2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node2
+      let {priority;left;key;value;right} = node2
 
       in let (l,kvo,r) = nodePartition compareKey key node1
 
@@ -954,9 +724,9 @@ let rec treeUnion compareKey f f2 tree1 tree2 =
       | Tree node2 -> nodeUnion compareKey f f2 node1 node2
 
 and nodeUnion compareKey f f2 node1 node2 =
-    if pointerEqual (node1,node2) then nodeMapPartial f2 node1
+    if node1 == node2 then nodeMapPartial f2 node1
     else
-        let {priority=priority;left=left;key=key;value=value;right=right} = node2
+        let {priority;left;key;value;right} = node2
 
         in let (l,kvo,r) = nodePartition compareKey key node1
 
@@ -989,7 +759,7 @@ let rec treeIntersect compareKey f t1 t2 =
       | Tree n2 -> nodeIntersect compareKey f n1 n2
 
 and nodeIntersect compareKey f n1 n2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = n2
+      let {priority;left;key;value;right} = n2
 
       in let (l,kvo,r) = nodePartition compareKey key n1
 
@@ -1017,11 +787,11 @@ let rec treeUnionDomain compareKey tree1 tree2 =
       match tree2 with
         Empty -> tree1
       | Tree node2 ->
-        if pointerEqual (node1,node2) then tree2
+        if node1 == node2 then tree2
         else nodeUnionDomain compareKey node1 node2
 
 and nodeUnionDomain compareKey node1 node2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node2
+      let {priority;left;key;value;right} = node2
 
       in let (l,_,r) = nodePartition compareKey key node1
 
@@ -1044,18 +814,18 @@ let rec treeIntersectDomain compareKey tree1 tree2 =
       match tree2 with
         Empty -> Empty
       | Tree node2 ->
-        if pointerEqual (node1,node2) then tree2
+        if node1 == node2 then tree2
         else nodeIntersectDomain compareKey node1 node2
 
 and nodeIntersectDomain compareKey node1 node2 =
-      let {priority=priority;left=left;key=key;value=value;right=right} = node2
+      let {priority;left;key;value;right} = node2
 
       in let (l,kvo,r) = nodePartition compareKey key node1
 
       in let left = treeIntersectDomain compareKey l left
       and right = treeIntersectDomain compareKey r right
     in
-      if Option.isSome kvo then mkTree priority left key value right
+      if Option.is_some kvo then mkTree priority left key value right
       else treeAppend left right
     ;;
 
@@ -1072,16 +842,16 @@ let rec treeDifferenceDomain compareKey t1 t2 =
       | Tree n2 -> nodeDifferenceDomain compareKey n1 n2
 
 and nodeDifferenceDomain compareKey n1 n2 =
-    if pointerEqual (n1,n2) then Empty
+    if n1 == n2 then Empty
     else
-        let {priority=priority;left=left;key=key;value=value;right=right} = n1
+        let {priority;left;key;value;right} = n1
 
         in let (l,kvo,r) = nodePartition compareKey key n2
 
         in let left = treeDifferenceDomain compareKey left l
         and right = treeDifferenceDomain compareKey right r
       in
-        if Option.isSome kvo then treeAppend left right
+        if Option.is_some kvo then treeAppend left right
         else mkTree priority left key value right
       ;;
 
@@ -1098,13 +868,13 @@ let rec treeSubsetDomain compareKey tree1 tree2 =
       | Tree node2 -> nodeSubsetDomain compareKey node1 node2
 
 and nodeSubsetDomain compareKey node1 node2 =
-    pointerEqual (node1,node2) ||
-      let {size=size;left=left;key=key;right=right} = node1
+    node1 == node2 ||
+      let {size;left;key;right} = node1
     in
       size <= nodeSize node2 &&
         let (l,kvo,r) = nodePartition compareKey key node2
       in
-        Option.isSome kvo &&
+        Option.is_some kvo &&
         treeSubsetDomain compareKey left l &&
         treeSubsetDomain compareKey right r
     ;;
@@ -1114,14 +884,14 @@ and nodeSubsetDomain compareKey node1 node2 =
 (* ------------------------------------------------------------------------- *)
 
 let rec nodePick node =
-      let {key=key;value=value} = node
+      let {key;value} = node
     in
       (key,value)
     ;;
 
 let treePick tree =
     match tree with
-      Empty -> raise (Bug "Map.treePick")
+      Empty -> raise (Useful.Bug "Map.treePick")
     | Tree node -> nodePick node;;
 
 (* ------------------------------------------------------------------------- *)
@@ -1129,14 +899,14 @@ let treePick tree =
 (* ------------------------------------------------------------------------- *)
 
 let rec nodeDeletePick node =
-      let {left=left;key=key;value=value;right=right} = node
+      let {left;key;value;right} = node
     in
       ((key,value), treeAppend left right)
     ;;
 
 let treeDeletePick tree =
     match tree with
-      Empty -> raise (Bug "Map.treeDeletePick")
+      Empty -> raise (Useful.Bug "Map.treeDeletePick")
     | Tree node -> nodeDeletePick node;;
 
 (* ------------------------------------------------------------------------- *)
@@ -1145,11 +915,11 @@ let treeDeletePick tree =
 
 let rec treeNth n tree =
     match tree with
-      Empty -> raise (Bug "Map.treeNth")
+      Empty -> raise (Useful.Bug "Map.treeNth")
     | Tree node -> nodeNth n node
 
 and nodeNth n node =
-      let {left=left;key=key;value=value;right=right} = node
+      let {left;key;value;right} = node
 
       in let k = treeSize left
     in
@@ -1164,11 +934,11 @@ and nodeNth n node =
 
 let rec treeDeleteNth n tree =
     match tree with
-      Empty -> raise (Bug "Map.treeDeleteNth")
+      Empty -> raise (Useful.Bug "Map.treeDeleteNth")
     | Tree node -> nodeDeleteNth n node
 
 and nodeDeleteNth n node =
-      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
+      let {size;priority;left;key;value;right} = node
 
       in let k = treeSize left
     in
@@ -1218,13 +988,13 @@ type ('key,'value) iterator =
 let fromSpineLeftToRightIterator nodes =
     match nodes with
       [] -> None
-    | {key=key;value=value;right=right} :: nodes ->
+    | {key;value;right} :: nodes ->
       Some (Left_to_right_iterator ((key,value),right,nodes));;
 
 let fromSpineRightToLeftIterator nodes =
     match nodes with
       [] -> None
-    | {key=key;value=value;left=left} :: nodes ->
+    | {key;value;left} :: nodes ->
       Some (Right_to_left_iterator ((key,value),left,nodes));;
 
 let addLeftToRightIterator nodes tree = fromSpineLeftToRightIterator (treeLeftSpine nodes tree);;
@@ -1277,25 +1047,23 @@ let rec firstIterator f io =
 
 let rec compareIterator compareKey compareValue io1 io2 =
     match (io1,io2) with
-      (None,None) -> Equal
-    | (None, Some _) -> Less
-    | (Some _, None) -> Greater
+      (None,None) -> 0
+    | (None, Some _) -> -1
+    | (Some _, None) -> 1
     | (Some i1, Some i2) ->
         let (k1,v1) = readIterator i1
         and (k2,v2) = readIterator i2
       in
-        match compareKey (k1,k2) with
-          Less -> Less
-        | Equal ->
-          (match compareValue (v1,v2) with
-             Less -> Less
-           | Equal ->
+        let c = compareKey k1 k2 in
+        if c <> 0 then c
+        else
+          let c = compareValue v1 v2 in
+          if c <> 0 then c
+          else
                let io1 = advanceIterator i1
                and io2 = advanceIterator i2
              in
                compareIterator compareKey compareValue io1 io2
-           | Greater -> Greater)
-        | Greater -> Greater
       ;;
 
 let rec equalIterator equalKey equalValue io1 io2 =
@@ -1320,7 +1088,7 @@ let rec equalIterator equalKey equalValue io1 io2 =
 (* ------------------------------------------------------------------------- *)
 
 type ('key,'value) map =
-    Map of ('key * 'key -> order) * ('key,'value) tree;;
+    Map of ('key -> 'key -> int) * ('key,'value) tree;;
 
 (* ------------------------------------------------------------------------- *)
 (* Map debugging functions.                                                  *)
@@ -1335,7 +1103,7 @@ let checkInvariants s m =
     in
       m
     end
-    handle Bug bug -> raise (Bug (s ^ "\n" ^ "Map.checkInvariants: " ^ bug));;
+    handle Useful.Bug bug -> raise (Useful.Bug (s ^ "\n" ^ "Map.checkInvariants: " ^ bug));;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -1370,11 +1138,11 @@ let peekKey (Map (compareKey,tree)) key = treePeekKey compareKey key tree;;
 
 let peek (Map (compareKey,tree)) key = treePeek compareKey key tree;;
 
-let inDomain key m = Option.isSome (peek m key);;
+let inDomain key m = Option.is_some (peek m key);;
 
 let get m key =
     match peek m key with
-      None -> raise (Error "Map.get: element not found")
+      None -> failwith "Map.get: element not found"
     | Some value -> value;;
 
 let pick (Map (_,tree)) = treePick tree;;
@@ -1384,8 +1152,8 @@ let nth (Map (_,tree)) n = treeNth n tree;;
 let random m =
       let n = size m
     in
-      if n = 0 then raise (Bug "Map.random: empty")
-      else nth m (randomInt n)
+      if n = 0 then raise (Useful.Bug "Map.random: empty")
+      else nth m (Random.int n)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -1461,8 +1229,8 @@ let deleteNth = fun m -> fun n ->
 let deleteRandom m =
       let n = size m
     in
-      if n = 0 then raise (Bug "Map.deleteRandom: empty")
-      else deleteNth m (randomInt n)
+      if n = 0 then raise (Useful.Bug "Map.deleteRandom: empty")
+      else deleteNth m (Random.int n)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -1582,7 +1350,7 @@ let firstl f m = firstIterator f (mkIterator m);;
 
 let firstr f m = firstIterator f (mkRevIterator m);;
 
-let exists p m = Option.isSome (findl p m);;
+let exists p m = Option.is_some (findl p m);;
 
 let all p =
       let np x = not (p x)
@@ -1600,22 +1368,22 @@ let count pred =
 (* Comparing.                                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let compare compareValue (m1,m2) =
-    if pointerEqual (m1,m2) then Equal
+let compare compareValue m1 m2 =
+    if m1 == m2 then 0
     else
-      match Int.compare (size m1, size m2) with
-        Less -> Less
-      | Equal ->
+      let c = Int.compare (size m1) (size m2) in
+      if c <> 0 then c
+      else
           let Map (compareKey,_) = m1
 
           in let io1 = mkIterator m1
           and io2 = mkIterator m2
         in
           compareIterator compareKey compareValue io1 io2
-      | Greater -> Greater;;
+    ;;
 
 let equal equalValue m1 m2 =
-    pointerEqual (m1,m2) ||
+    m1 == m2 ||
     (size m1 = size m2 &&
        let Map (compareKey,_) = m1
 
@@ -1646,7 +1414,7 @@ let unionDomain = fun m1 -> fun m2 ->
   let uncurriedUnionDomain (m,acc) = unionDomain acc m;;
   let unionListDomain ms =
       match ms with
-        [] -> raise (Bug "Map.unionListDomain: no sets")
+        [] -> raise (Useful.Bug "Map.unionListDomain: no sets")
       | m :: ms -> Mlist.foldl uncurriedUnionDomain m ms;;
 
 let intersectDomain (Map (compareKey,tree1)) (Map (_,tree2)) =
@@ -1666,7 +1434,7 @@ let intersectDomain = fun m1 -> fun m2 ->
   let uncurriedIntersectDomain (m,acc) = intersectDomain acc m;;
   let intersectListDomain ms =
       match ms with
-        [] -> raise (Bug "Map.intersectListDomain: no sets")
+        [] -> raise (Useful.Bug "Map.intersectListDomain: no sets")
       | m :: ms -> Mlist.foldl uncurriedIntersectDomain m ms;;
 
 let differenceDomain (Map (compareKey,tree1)) (Map (_,tree2)) =
@@ -1686,7 +1454,7 @@ let differenceDomain = fun m1 -> fun m2 ->
 let symmetricDifferenceDomain m1 m2 =
     unionDomain (differenceDomain m1 m2) (differenceDomain m2 m1);;
 
-let equalDomain m1 m2 = equal (kComb (kComb true)) m1 m2;;
+let equalDomain m1 m2 = equal (K (K true)) m1 m2;;
 
 let subsetDomain (Map (compareKey,tree1)) (Map (_,tree2)) =
     treeSubsetDomain compareKey tree1 tree2;;
@@ -1713,7 +1481,7 @@ let fromList compareKey l =
 (* Pretty-printing.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let toString m = "<" ^ (if null m then "" else Int.toString (size m)) ^ ">";;
+let toString m = "<" ^ (if null m then "" else string_of_int (size m)) ^ ">";;
 
 end
 
@@ -1726,8 +1494,6 @@ end
 (* ========================================================================= *)
 
 module Pset = struct
-
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type of finite sets.                                                    *)
@@ -1968,11 +1734,11 @@ let count p =
 (* Comparing.                                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let compareValue ((),()) = Equal;;
+let compareValue () () = 0;;
 
 let equalValue () () = true;;
 
-let compare (Set m1, Set m2) = Pmap.compare compareValue (m1,m2);;
+let compare (Set m1) (Set m2) = Pmap.compare compareValue m1 m2;;
 
 let equal (Set m1) (Set m2) = Pmap.equal equalValue m1 m2;;
 
@@ -1999,7 +1765,7 @@ let fromList cmp elts = addList (empty cmp) elts;;
 (* ------------------------------------------------------------------------- *)
 
 let toString set =
-    "{" ^ (if null set then "" else Int.toString (size set)) ^ "}";;
+    "{" ^ (if null set then "" else string_of_int (size set)) ^ "}";;
 
 (* ------------------------------------------------------------------------- *)
 (* Iterators over sets                                                       *)
@@ -2028,8 +1794,6 @@ end
 
 module Mmap = struct
 
-exception Error = Useful.Error;;
-
 module type Ordered =
 sig
   type t
@@ -2046,7 +1810,7 @@ struct
   let null = Ma.is_empty;;
   let singleton (k, x) = Ma.singleton k x;;
   let size = Ma.cardinal;;
-  let get m k = try Ma.find k m with Not_found -> raise (Error "Mmap.get: element not found");;
+  let get m k = try Ma.find k m with Not_found -> failwith "Mmap.get: element not found";;
   let peek m k = try Some (Ma.find k m) with Not_found -> None;;
   let insert m (k, v) = Ma.add k v m;;
   let toList = Ma.bindings;;
@@ -2072,8 +1836,6 @@ end
 
 module Intmap = struct
 
-open Order
-
 module Ordered = struct type t = int let compare = compare end
 
 include Mmap.Make (Ordered);;
@@ -2081,8 +1843,6 @@ include Mmap.Make (Ordered);;
 end
 
 module Stringmap = struct
-
-open Order
 
 module Ordered = struct type t = string let compare = compare end
 
@@ -2103,7 +1863,7 @@ struct
   module Se = Set.Make (Ord)
 
   type set = Se.t;;
-  let compare = Order.toCompare Se.compare;;
+  let compare = Se.compare;;
 
   let add s x = Se.add x s;;
   let foldr f a s = Se.fold (fun x acc -> f (x,acc)) s a;;
@@ -2146,19 +1906,12 @@ end
 
 module Intset = struct
 
-open Order
-
 module Ordered = struct type t = int let compare = compare end
 
 include Mset.Make (Ordered);;
 
 end
 
-
-module Sharing = struct
-
-let map = List.map;;
-end
 
 (* ========================================================================= *)
 (* A HEAP DATATYPE FOR ML                                                    *)
@@ -2168,13 +1921,11 @@ module Heap = struct
 
 (* Leftist heaps as in Purely Functional Data Structures, by Chris Okasaki *)
 
-open Order
-
 exception Empty;;
 
 type 'a node = Em | Tr of int * 'a * 'a node * 'a node;;
 
-type 'a heap = Heap of ('a * 'a -> order) * int * 'a node;;
+type 'a heap = Heap of ('a -> 'a -> int) * int * 'a node;;
 
 let rank = function
     Em -> 0
@@ -2188,9 +1939,8 @@ let merge cmp =
           (h,Em) -> h
         | (Em,h) -> h
         | (Tr (_,x,a1,b1) as h1, (Tr (_,y,a2,b2) as h2)) ->
-          match cmp (x,y) with
-            Greater -> makeT (y, a2, mrg (h1,b2))
-          | _ -> makeT (x, a1, mrg (b1,h2))
+          if cmp x y > 0 then makeT (y, a2, mrg (h1,b2))
+          else makeT (x, a1, mrg (b1,h2))
     in
       mrg
     ;;
@@ -2229,7 +1979,7 @@ let rec toList h =
       ;;
 
 let toString h =
-    "Heap[" ^ (if null h then "" else Int.toString (size h)) ^ "]";;
+    "Heap[" ^ (if null h then "" else string_of_int (size h)) ^ "]";;
 
 end
 
@@ -2238,8 +1988,6 @@ end
 (* ========================================================================= *)
 
 module Name = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of names.                                                          *)
@@ -2251,7 +1999,7 @@ type name = string;;
 (* A total ordering.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-let compare = Order.toCompare (compare : name -> name -> int);;
+let compare = (compare : name -> name -> int);;
 
 let equal n1 n2 = n1 = n2;;
 
@@ -2260,21 +2008,21 @@ let equal n1 n2 = n1 = n2;;
 (* ------------------------------------------------------------------------- *)
 
 let prefix  = "_";;
-let numName i = mkPrefix prefix (Int.toString i);;
-let newName () = numName (newInt ());;
-let newNames n = List.map numName (newInts n);;
+let numName i = Useful.mkPrefix prefix (string_of_int i);;
+let newName () = numName (Useful.newInt ());;
+let newNames n = List.map numName (Useful.newInts n);;
 
 let variantPrime avoid =
     let rec variant n = if avoid n then variant (n ^ "'") else n
     in variant;;
 
 let variantNum avoid n =
-  let isDigitOrPrime c = c = '\'' || isDigit c
+  let isDigitOrPrime c = c = '\'' || Useful.isDigit c
   in if not (avoid n) then n
       else
-        let n = stripSuffix isDigitOrPrime n in
+        let n = Useful.stripSuffix isDigitOrPrime n in
         let rec variant i =
-          let n_i = n ^ Int.toString i
+          let n_i = n ^ string_of_int i
           in if avoid n_i then variant (i + 1) else n_i
         in variant 0
 ;;
@@ -2288,7 +2036,7 @@ let toString s : string = s;;
 let fromString s : name = s;;
 
 module Ordered =
-struct type t = name let compare = Order.fromCompare compare end
+struct type t = name let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 module Set = Mset.Make (Ordered);;
@@ -2300,9 +2048,6 @@ end
 (* ========================================================================= *)
 
 module Name_arity = struct
-
-open Useful;;
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type of name/arity pairs.                                               *)
@@ -2329,17 +2074,15 @@ and ternary = nary 3;;
 (* A total ordering.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-let compare ((n1,i1),(n2,i2)) =
-    match Name.compare (n1,n2) with
-      Less -> Less
-    | Equal -> Int.compare (i1,i2)
-    | Greater -> Greater;;
+let compare (n1,i1) (n2,i2) =
+    let c = Name.compare n1 n2 in
+    if c <> 0 then c else Int.compare i1 i2;;
 
 let equal (n1,i1) (n2,i2) = i1 = i2 && Name.equal n1 n2;;
 
 
 module Ordered =
-struct type t = nameArity let compare = fromCompare compare end
+struct type t = nameArity let compare = compare end
 
 module Map = struct
   include Mmap.Make (Ordered)
@@ -2365,9 +2108,6 @@ end
 
 module Term = struct
 
-open Useful
-open Order
-
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic terms.                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -2392,7 +2132,7 @@ type term =
 
 let destVar = function
     (Var v) -> v
-  | (Fn _) -> raise (Error "destVar");;
+  | (Fn _) -> failwith "destVar";;
 
 let isVar = can destVar;;
 
@@ -2404,7 +2144,7 @@ let equalVar v = function
 
 let destFn = function
     (Fn f) -> f
-  | (Var _) -> raise (Error "destFn");;
+  | (Var _) -> failwith "destFn";;
 
 let isFn = can destFn;;
 
@@ -2437,7 +2177,7 @@ let mkConst c = (Fn (c, []));;
 
 let destConst = function
     (Fn (c, [])) -> c
-  | _ -> raise (Error "destConst");;
+  | _ -> failwith "destConst";;
 
 let isConst = can destConst;;
 
@@ -2447,8 +2187,8 @@ let mkBinop f (a,b) = Fn (f,[a;b]);;
 
 let destBinop f = function
   (Fn (x,[a;b])) ->
-    if Name.equal x f then (a,b) else raise (Error "Term.destBinop: wrong binop")
-  | _ -> raise (Error "Term.destBinop: not a binop");;
+    if Name.equal x f then (a,b) else failwith "Term.destBinop: wrong binop"
+  | _ -> failwith "Term.destBinop: not a binop";;
 
 let isBinop f = can (destBinop f);;
 
@@ -2471,35 +2211,28 @@ let symbols tm =
 (* A total comparison function for terms.                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let compare (tm1,tm2) =
+let compare tm1 tm2 =
   let rec cmp = function
-      ([], []) -> Equal
+      ([], []) -> 0
     | (tm1 :: tms1, tm2 :: tms2) ->
-      let tm1_tm2 = (tm1,tm2)
-      in
-        if Portable.pointerEqual tm1_tm2 then cmp (tms1, tms2)
+        if tm1 == tm2 then cmp (tms1, tms2)
         else
-          (match tm1_tm2 with
+          (match (tm1,tm2) with
             (Var v1, Var v2) ->
-            (match Name.compare (v1,v2) with
-               Less -> Less
-             | Equal -> cmp (tms1, tms2)
-             | Greater -> Greater)
-          | (Var _, Fn _) -> Less
-          | (Fn _, Var _) -> Greater
+              let c = Name.compare v1 v2 in
+              if c <> 0 then c else cmp (tms1, tms2)
+          | (Var _, Fn _) -> -1
+          | (Fn _, Var _) -> 1
           | (Fn (f1,a1), Fn (f2,a2)) ->
-            (match Name.compare (f1,f2) with
-               Less -> Less
-             | Equal ->
-               (match Int.compare (List.length a1, List.length a2) with
-                  Less -> Less
-                | Equal -> cmp (a1 @ tms1, a2 @ tms2)
-                | Greater -> Greater)
-             | Greater -> Greater))
-    | _ -> raise (Bug "Term.compare")
+              let c = Name.compare f1 f2 in
+              if c <> 0 then c
+              else
+                let c = Int.compare (List.length a1) (List.length a2) in
+                if c <> 0 then c else cmp (a1 @ tms1, a2 @ tms2))
+    | _ -> raise (Useful.Bug "Term.compare")
   in cmp ([tm1], [tm2]);;
 
-let equal tm1 tm2 = compare (tm1,tm2) = Equal;;
+let equal tm1 tm2 = compare tm1 tm2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Subterms.                                                                 *)
@@ -2509,9 +2242,9 @@ type path = int list;;
 
 let rec subterm' = function
     (tm, []) -> tm
-  | (Var _, _ :: _) -> raise (Error "Term.subterm: Var")
+  | (Var _, _ :: _) -> failwith "Term.subterm: Var"
   | (Fn (_,tms), h :: t) ->
-    if h >= List.length tms then raise (Error "Term.replace: Fn")
+    if h >= List.length tms then failwith "Term.replace: Fn"
     else subterm' (List.nth tms h, t);;
 let subterm s t = subterm' (s, t);;
 
@@ -2523,7 +2256,7 @@ let subterms tm =
         and acc = (List.rev path, tm) :: acc
         in match tm with
           Var _ -> subtms (rest, acc)
-        | Fn (_,args) -> subtms ((List.map f (enumerate args) @ rest), acc)
+        | Fn (_,args) -> subtms ((List.map f (Mlist.enumerate args) @ rest), acc)
   in subtms ([([],tm)], []);;
 
 
@@ -2531,15 +2264,15 @@ let rec replace tm = function
     ([],res) -> if equal res tm then tm else res
   | (h :: t, res) ->
     match tm with
-      Var _ -> raise (Error "Term.replace: Var")
+      Var _ -> failwith "Term.replace: Var"
     | Fn (letc,tms) ->
-      if h >= List.length tms then raise (Error "Term.replace: Fn")
+      if h >= List.length tms then failwith "Term.replace: Fn"
       else
         let arg = List.nth tms h in
         let arg' = replace arg (t,res)
         in
-          if Portable.pointerEqual (arg',arg) then tm
-          else Fn (letc, updateNth (h,arg') tms)
+          if arg' == arg then tm
+          else Fn (letc, Mlist.updateNth (h,arg') tms)
 ;;
 
 let find pred =
@@ -2551,7 +2284,7 @@ let find pred =
             match tm with
               Var _ -> search rest
             | Fn (_,a) ->
-              let subtms = List.map (fun (i,t) -> (i :: path, t)) (enumerate a)
+              let subtms = List.map (fun (i,t) -> (i :: path, t)) (Mlist.enumerate a)
               in search (subtms @ rest)
     in
       fun tm -> search [([],tm)];;
@@ -2599,11 +2332,11 @@ let hasTypeFunction = (hasTypeFunctionName,2);;
 
 let destFnHasType ((f,a) : functionName * term list) =
     if not (Name.equal f hasTypeFunctionName) then
-      raise (Error "Term.destFnHasType")
+      failwith "Term.destFnHasType"
     else
       match a with
         [tm;ty] -> (tm,ty)
-      | _ -> raise (Error "Term.destFnHasType");;
+      | _ -> failwith "Term.destFnHasType";;
 
 let isFnHasType = can destFnHasType;;
 
@@ -2611,7 +2344,7 @@ let isTypedVar tm =
     match tm with
       Var _ -> true
     | Fn letc ->
-      match total destFnHasType letc with
+      match Useful.total destFnHasType letc with
         Some (Var _, _) -> true
       | _ -> false;;
 
@@ -2622,7 +2355,7 @@ let typedSymbols tm =
       match tm with
         Var _ -> sz (n + 1) tms
       | Fn letc ->
-        match total destFnHasType letc with
+        match Useful.total destFnHasType letc with
           Some (tm,_) -> sz n (tm :: tms)
         | None ->
           let (_,a) = letc
@@ -2636,7 +2369,7 @@ let nonVarTypedSubterms tm =
       (match tm with
         Var _ -> subtms (rest, acc)
       | Fn letc ->
-        (match total destFnHasType letc with
+        (match Useful.total destFnHasType letc with
           Some (t,_) ->
           (match t with
              Var _ -> subtms (rest, acc)
@@ -2649,7 +2382,7 @@ let nonVarTypedSubterms tm =
             let f (n,arg) = (n :: path, arg) in
             let (_,args) = letc in
             let acc = (List.rev path, tm) :: acc in
-            let rest = List.map f (enumerate args) @ rest
+            let rest = List.map f (Mlist.enumerate args) @ rest
           in
             subtms (rest, acc)))
   in subtms ([([],tm)], []);;
@@ -2665,17 +2398,17 @@ let mkFnApp (fTm,aTm) = (appName, [fTm;aTm]);;
 let mkApp f_a = Fn (mkFnApp f_a);;
 
 let destFnApp ((f,a) : Name.name * term list) =
-    if not (Name.equal f appName) then raise (Error "Term.destFnApp")
+    if not (Name.equal f appName) then failwith "Term.destFnApp"
     else
       match a with
         [fTm;aTm] -> (fTm,aTm)
-      | _ -> raise (Error "Term.destFnApp");;
+      | _ -> failwith "Term.destFnApp";;
 
 let isFnApp = can destFnApp;;
 
 let destApp tm =
     match tm with
-      Var _ -> raise (Error "Term.destApp")
+      Var _ -> failwith "Term.destApp"
     | Fn letc -> destFnApp letc;;
 
 let isApp = can destApp;;
@@ -2684,7 +2417,7 @@ let listMkApp (f,l) = List.fold_left (fun acc x -> mkApp (x, acc)) f l;;
 
 let stripApp tm =
   let rec strip tms tm =
-      match total destApp tm with
+      match Useful.total destApp tm with
         Some (f,a) -> strip (a :: tms) f
       | None -> (tm,tms)
   in strip [] tm;;
@@ -2699,7 +2432,7 @@ let rec toString = function
   | Fn (n, l) -> n ^ "(" ^ String.concat ", " (List.map toString l) ^ ")";;
 
 module Ordered =
-struct type t = term let compare = fromCompare compare end
+struct type t = term let compare = compare end
 
 module Map = Map.Make (Ordered);;
 
@@ -2712,8 +2445,6 @@ end
 (* ========================================================================= *)
 
 module Substitute = struct
-
-open Useful
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic substitutions.                                *)
@@ -2764,12 +2495,12 @@ let subst sub =
   let rec tmSub = function
         (Term.Var v as tm) ->
           (match peek sub v with
-             Some tm' -> if Portable.pointerEqual (tm,tm') then tm else tm'
+             Some tm' -> if tm == tm' then tm else tm'
            | None -> tm)
       | (Term.Fn (f,args) as tm) ->
-          let args' = Sharing.map tmSub args
+          let args' = List.map tmSub args
           in
-            if Portable.pointerEqual (args,args') then tm
+            if args == args' then tm
             else Term.Fn (f,args')
     in
       fun tm -> if null sub then tm else tmSub tm
@@ -2812,7 +2543,7 @@ let compose (Subst m1 as sub1) sub2 =
 let union (Subst m1 as s1) (Subst m2 as s2) =
   let compatible ((_,tm1),(_,tm2)) =
       if Term.equal tm1 tm2 then Some tm1
-      else raise (Error "Substitute.union: incompatible")
+      else failwith "Substitute.union: incompatible"
   in
       if Name.Map.null m1 then s2
       else if Name.Map.null m2 then s1
@@ -2826,9 +2557,9 @@ let union (Subst m1 as s1) (Subst m2 as s2) =
 let invert (Subst m) =
   let inv = function
       (v, Term.Var w, s) ->
-      if Name.Map.inDomain w s then raise (Error "Substitute.invert: non-injective")
+      if Name.Map.inDomain w s then failwith "Substitute.invert: non-injective"
       else Name.Map.insert s (w, Term.Var v)
-    | (_, Term.Fn _, _) -> raise (Error "Substitute.invert: non-variable")
+    | (_, Term.Fn _, _) -> failwith "Substitute.invert: non-variable"
   in Subst (Name.Map.foldl inv (Name.Map.newMap ()) m)
 ;;
 
@@ -2889,14 +2620,14 @@ let matchTerms sub tm1 tm2 =
               None -> insert sub (v,tm)
             | Some tm' ->
               if Term.equal tm tm' then sub
-              else raise (Error "Substitute.match: incompatible matches")
+              else failwith "Substitute.match: incompatible matches"
       in
         matchList sub rest
     | ((Term.Fn (f1,args1), Term.Fn (f2,args2)) :: rest) ->
       if Name.equal f1 f2 && length args1 = length args2 then
         matchList sub (zip args1 args2 @ rest)
-      else raise (Error "Substitute.match: different structure")
-    | _ -> raise (Error "Substitute.match: functions can't match vars")
+      else failwith "Substitute.match: different structure"
+    | _ -> failwith "Substitute.match: functions can't match vars"
   in matchList sub [(tm1,tm2)]
 ;;
 
@@ -2907,14 +2638,14 @@ let matchTerms sub tm1 tm2 =
 let unify sub tm1 tm2 =
   let rec solve sub = function
       [] -> sub
-    | (((tm1,tm2) as tm1_tm2) :: rest) ->
-      if Portable.pointerEqual tm1_tm2 then solve sub rest
+    | ((tm1,tm2) :: rest) ->
+      if tm1 == tm2 then solve sub rest
       else solve' sub (subst sub tm1, subst sub tm2, rest)
 
   and solve' sub = function
       ((Term.Var v), tm, rest) ->
       if Term.equalVar v tm then solve sub rest
-      else if Term.freeIn v tm then raise (Error "Substitute.unify: occurs check")
+      else if Term.freeIn v tm then failwith "Substitute.unify: occurs check"
       else
         (match peek sub v with
            None -> solve (compose sub (singleton (v,tm))) rest
@@ -2924,7 +2655,7 @@ let unify sub tm1 tm2 =
       if Name.equal f1 f2 && length args1 = length args2 then
         solve sub (zip args1 args2 @ rest)
       else
-        raise (Error "Substitute.unify: different structure")
+        failwith "Substitute.unify: different structure"
 
   in solve sub [(tm1,tm2)];;
 
@@ -2935,9 +2666,6 @@ end
 (* ========================================================================= *)
 
 module Atom = struct
-
-open Useful
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type for storing first order logic atoms.                               *)
@@ -2979,8 +2707,8 @@ let mkBinop p (a,b) : atom = (p,[a;b]);;
 
 let destBinop p = function
     (x,[a;b]) ->
-    if Name.equal x p then (a,b) else raise (Error "Atom.destBinop: wrong binop")
-  | _ -> raise (Error "Atom.destBinop: not a binop");;
+    if Name.equal x p then (a,b) else failwith "Atom.destBinop: wrong binop"
+  | _ -> failwith "Atom.destBinop: not a binop";;
 
 let isBinop p = can (destBinop p);;
 
@@ -2995,13 +2723,11 @@ let symbols atm =
 (* A total comparison function for atoms.                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let compare ((p1,tms1),(p2,tms2)) =
-    match Name.compare (p1,p2) with
-      Less -> Less
-    | Equal -> lexCompare Term.compare (tms1,tms2)
-    | Greater -> Greater;;
+let compare (p1,tms1) (p2,tms2) =
+    let c = Name.compare p1 p2 in
+    if c <> 0 then c else Useful.lexCompare Term.compare tms1 tms2;;
 
-let equal atm1 atm2 = compare (atm1,atm2) = Equal;;
+let equal atm1 atm2 = compare atm1 atm2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Subterms.                                                                 *)
@@ -3009,28 +2735,28 @@ let equal atm1 atm2 = compare (atm1,atm2) = Equal;;
 
 let subterm =
   let subterm' = function
-    (_, []) -> raise (Bug "Atom.subterm: empty path")
+    (_, []) -> raise (Useful.Bug "Atom.subterm: empty path")
   | ((_,tms), h :: t) ->
-    if h >= length tms then raise (Error "Atom.subterm: bad path")
-    else Term.subterm (Mlist.nth (tms,h)) t
+    if h >= length tms then failwith "Atom.subterm: bad path"
+    else Term.subterm (List.nth tms h) t
   in fun x y -> subterm' (x, y)
 
 let subterms ((_,tms) : atom) =
     let f ((n,tm),l) = List.map (fun (p,s) -> (n :: p, s)) (Term.subterms tm) @ l
     in
-      Mlist.foldl f [] (enumerate tms)
+      Mlist.foldl f [] (Mlist.enumerate tms)
     ;;
 
 let replace ((rel,tms) as atm) = function
-    ([],_) -> raise (Bug "Atom.replace: empty path")
+    ([],_) -> raise (Useful.Bug "Atom.replace: empty path")
   | (h :: t, res) ->
-    if h >= length tms then raise (Error "Atom.replace: bad path")
+    if h >= length tms then failwith "Atom.replace: bad path"
     else
-      let tm = Mlist.nth (tms,h)
+      let tm = List.nth tms h
       in let tm' = Term.replace tm (t,res)
       in
-        if Portable.pointerEqual (tm,tm') then atm
-        else (rel, updateNth (h,tm') tms)
+        if tm == tm' then atm
+        else (rel, Mlist.updateNth (h,tm') tms)
       ;;
 
 let find pred =
@@ -3039,7 +2765,7 @@ let find pred =
             Some path -> Some (i :: path)
           | None -> None
     in
-      fun (_,tms) -> first f (enumerate tms)
+      fun (_,tms) -> Mlist.first f (Mlist.enumerate tms)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -3059,9 +2785,9 @@ let freeVars =
 (* ------------------------------------------------------------------------- *)
 
 let subst sub ((p,tms) as atm) : atom =
-    let tms' = Sharing.map (Substitute.subst sub) tms
+    let tms' = List.map (Substitute.subst sub) tms
     in
-      if Portable.pointerEqual (tms',tms) then atm else (p,tms')
+      if tms' == tms then atm else (p,tms')
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -3071,7 +2797,7 @@ let subst sub ((p,tms) as atm) : atom =
 let matchAtoms sub (p1,tms1) (p2,tms2) =
   let matchArg ((tm1,tm2),sub) = Substitute.matchTerms sub tm1 tm2 in
         let _ = (Name.equal p1 p2 && length tms1 = length tms2) ||
-                raise (Error "Atom.match")
+                failwith "Atom.match"
       in
         Mlist.foldl matchArg sub (zip tms1 tms2)
       ;;
@@ -3083,7 +2809,7 @@ let matchAtoms sub (p1,tms1) (p2,tms2) =
 let unify sub (p1,tms1) (p2,tms2) =
   let unifyArg ((tm1,tm2),sub) = Substitute.unify sub tm1 tm2 in
         let _ = (Name.equal p1 p2 && length tms1 = length tms2) ||
-                raise (Error "Atom.unify")
+                failwith "Atom.unify"
       in
         Mlist.foldl unifyArg sub (zip tms1 tms2)
       ;;
@@ -3108,7 +2834,7 @@ let mkRefl tm = mkEq (tm,tm);;
 
 let destRefl atm =
     let (l,r) = destEq atm
-    in let _ = Term.equal l r || raise (Error "Atom.destRefl")
+    in let _ = Term.equal l r || failwith "Atom.destRefl"
     in
       l
     ;;
@@ -3117,7 +2843,7 @@ let isRefl x = can destRefl x;;
 
 let sym atm =
     let (l,r) = destEq atm
-    in let _ = not (Term.equal l r) || raise (Error "Atom.sym: refl")
+    in let _ = not (Term.equal l r) || failwith "Atom.sym: refl"
     in
       mkEq (r,l)
     ;;
@@ -3139,12 +2865,12 @@ let nonVarTypedSubterms (_,tms) =
           in
             Mlist.foldl addTm acc (Term.nonVarTypedSubterms arg)
     in
-      Mlist.foldl addArg [] (enumerate tms)
+      Mlist.foldl addArg [] (Mlist.enumerate tms)
     ;;
 
 
 module Ordered =
-struct type t = atom let compare = fromCompare compare end
+struct type t = atom let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 
@@ -3158,9 +2884,6 @@ end
 (* ========================================================================= *)
 
 module Formula = struct
-
-open Useful
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic formulas.                                     *)
@@ -3191,7 +2914,7 @@ let mkBoolean = function
 let destBoolean =
     function True -> true
   | False -> false
-  | _ -> raise (Error "destBoolean");;
+  | _ -> failwith "destBoolean";;
 
 let isBoolean = can destBoolean;;
 
@@ -3276,7 +2999,7 @@ let relationNames fm =
 
 let destAtom = function
     (Atom atm) -> atm
-  | _ -> raise (Error "Formula.destAtom");;
+  | _ -> failwith "Formula.destAtom";;
 
 let isAtom = can destAtom;;
 
@@ -3284,7 +3007,7 @@ let isAtom = can destAtom;;
 
 let destNeg = function
     (Not p) -> p
-  | _ -> raise (Error "Formula.destNeg");;
+  | _ -> failwith "Formula.destNeg";;
 
 let isNeg = can destNeg;;
 
@@ -3375,7 +3098,7 @@ let flattenEquiv =
 
 let destForall = function
     (Forall (v,f)) -> (v,f)
-  | _ -> raise (Error "destForall");;
+  | _ -> failwith "destForall";;
 
 let isForall = can destForall;;
 
@@ -3396,7 +3119,7 @@ let stripForall =
 
 let destExists = function
     (Exists (v,f)) -> (v,f)
-  | _ -> raise (Error "destExists");;
+  | _ -> failwith "destExists";;
 
 let isExists = can destExists;;
 
@@ -3437,57 +3160,51 @@ in
 (* A total comparison function for formulas.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let compare fm1_fm2 =
+let compare fm1 fm2 =
   let rec cmp = function
-      [] -> Equal
-    | (f1_f2 :: fs) ->
-      if Portable.pointerEqual f1_f2 then cmp fs
+      [] -> 0
+    | (((f1, f2) as f1_f2) :: fs) ->
+      if f1 == f2 then cmp fs
       else
         match f1_f2 with
           (True,True) -> cmp fs
-        | (True,_) -> Less
-        | (_,True) -> Greater
+        | (True,_) -> -1
+        | (_,True) -> 1
         | (False,False) -> cmp fs
-        | (False,_) -> Less
-        | (_,False) -> Greater
+        | (False,_) -> -1
+        | (_,False) -> 1
         | (Atom atm1, Atom atm2) ->
-          (match Atom.compare (atm1,atm2) with
-             Less -> Less
-           | Equal -> cmp fs
-           | Greater -> Greater)
-        | (Atom _, _) -> Less
-        | (_, Atom _) -> Greater
+            let c = Atom.compare atm1 atm2 in
+            if c <> 0 then c else cmp fs
+        | (Atom _, _) -> -1
+        | (_, Atom _) -> 1
         | (Not p1, Not p2) -> cmp ((p1,p2) :: fs)
-        | (Not _, _) -> Less
-        | (_, Not _) -> Greater
+        | (Not _, _) -> -1
+        | (_, Not _) -> 1
         | (And (p1,q1), And (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (And _, _) -> Less
-        | (_, And _) -> Greater
+        | (And _, _) -> -1
+        | (_, And _) -> 1
         | (Or (p1,q1), Or (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (Or _, _) -> Less
-        | (_, Or _) -> Greater
+        | (Or _, _) -> -1
+        | (_, Or _) -> 1
         | (Imp (p1,q1), Imp (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (Imp _, _) -> Less
-        | (_, Imp _) -> Greater
+        | (Imp _, _) -> -1
+        | (_, Imp _) -> 1
         | (Iff (p1,q1), Iff (p2,q2)) -> cmp ((p1,p2) :: (q1,q2) :: fs)
-        | (Iff _, _) -> Less
-        | (_, Iff _) -> Greater
+        | (Iff _, _) -> -1
+        | (_, Iff _) -> 1
         | (Forall (v1,p1), Forall (v2,p2)) ->
-          (match Name.compare (v1,v2) with
-             Less -> Less
-           | Equal -> cmp ((p1,p2) :: fs)
-           | Greater -> Greater)
-        | (Forall _, Exists _) -> Less
-        | (Exists _, Forall _) -> Greater
+            let c = Name.compare v1 v2 in
+            if c <> 0 then c else cmp ((p1,p2) :: fs)
+        | (Forall _, Exists _) -> -1
+        | (Exists _, Forall _) -> 1
         | (Exists (v1,p1), Exists (v2,p2)) ->
-          (match Name.compare (v1,v2) with
-             Less -> Less
-           | Equal -> cmp ((p1,p2) :: fs)
-           | Greater -> Greater)
+            let c = Name.compare v1 v2 in
+            if c <> 0 then c else cmp ((p1,p2) :: fs)
 in
-  cmp [fm1_fm2];;
+  cmp [(fm1,fm2)];;
 
-let equal fm1 fm2 = compare (fm1,fm2) = Equal;;
+let equal fm1 fm2 = compare fm1 fm2 = 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Free variables.                                                           *)
@@ -3547,13 +3264,13 @@ let generalize fm = listMkForall (Name.Set.toList (freeVars fm), fm);;
         True -> fm
       | False -> fm
       | Atom (p,tms) ->
-          let tms' = Sharing.map (Substitute.subst sub) tms
+          let tms' = List.map (Substitute.subst sub) tms
         in
-          if Portable.pointerEqual (tms,tms') then fm else Atom (p,tms')
+          if tms == tms' then fm else Atom (p,tms')
       | Not p ->
           let p' = substFm sub p
         in
-          if Portable.pointerEqual (p,p') then fm else Not p'
+          if p == p' then fm else Not p'
       | And (p,q) -> substConn sub fm (fun (x,y) -> And (x,y)) p q
       | Or (p,q) -> substConn sub fm (fun (x,y) -> Or (x,y)) p q
       | Imp (p,q) -> substConn sub fm (fun (x,y) -> Imp (x,y)) p q
@@ -3565,8 +3282,7 @@ let generalize fm = listMkForall (Name.Set.toList (freeVars fm), fm);;
         let p' = substFm sub p
         and q' = substFm sub q
       in
-        if Portable.pointerEqual (p,p') &&
-           Portable.pointerEqual (q,q')
+        if p == p' && q == q'
         then fm
         else conn (p',q')
 
@@ -3590,7 +3306,7 @@ let generalize fm = listMkForall (Name.Set.toList (freeVars fm), fm);;
 
         in let p' = substCheck sub p
       in
-        if Name.equal v v' && Portable.pointerEqual (p,p') then fm
+        if Name.equal v v' && p == p' then fm
         else quant (v',p');;
 
   let subst = substCheck;;
@@ -3609,7 +3325,7 @@ let mkNeq a_b = Not (mkEq a_b);;
 
 let destNeq = function
     (Not fm) -> destEq fm
-  | _ -> raise (Error "Formula.destNeq");;
+  | _ -> failwith "Formula.destNeq";;
 
 let isNeq = can destNeq;;
 
@@ -3705,7 +3421,7 @@ let splitGoal = fun fm =>
 *)
 
 module Ordered =
-struct type t = formula let compare = fromCompare compare end
+struct type t = formula let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 
@@ -3719,9 +3435,6 @@ end
 (* ========================================================================= *)
 
 module Literal = struct
-
-open Useful;;
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* A type for storing first order logic literals.                            *)
@@ -3775,7 +3488,7 @@ let toFormula = function
 let fromFormula = function
     (Formula.Atom atm) -> (true,atm)
   | (Formula.Not (Formula.Atom atm)) -> (false,atm)
-  | _ -> raise (Error "Literal.fromFormula");;
+  | _ -> failwith "Literal.fromFormula";;
 
 (* ------------------------------------------------------------------------- *)
 (* The size of a literal in symbols.                                         *)
@@ -3787,7 +3500,7 @@ let symbols ((_,atm) : literal) = Atom.symbols atm;;
 (* A total comparison function for literals.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let compare = prodCompare boolCompare Atom.compare;;
+let compare = Useful.prodCompare Bool.compare Atom.compare;;
 
 let equal (p1,atm1) (p2,atm2) = p1 = p2 && Atom.equal atm1 atm2;;
 
@@ -3802,7 +3515,7 @@ let subterms lit = Atom.subterms (atom lit);;
 let replace ((pol,atm) as lit) path_tm =
       let atm' = Atom.replace atm path_tm
     in
-      if Portable.pointerEqual (atm,atm') then lit else (pol,atm')
+      if atm == atm' then lit else (pol,atm')
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -3820,7 +3533,7 @@ let freeVars lit = Atom.freeVars (atom lit);;
 let subst sub ((pol,atm) as lit) : literal =
       let atm' = Atom.subst sub atm
     in
-      if Portable.pointerEqual (atm',atm) then lit else (pol,atm')
+      if atm' == atm then lit else (pol,atm')
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -3828,7 +3541,7 @@ let subst sub ((pol,atm) as lit) : literal =
 (* ------------------------------------------------------------------------- *)
 
 let matchLiterals sub ((pol1,atm1) : literal) (pol2,atm2) =
-      let _ = pol1 = pol2 || raise (Error "Literal.match")
+      let _ = pol1 = pol2 || failwith "Literal.match"
     in
       Atom.matchAtoms sub atm1 atm2
     ;;
@@ -3838,7 +3551,7 @@ let matchLiterals sub ((pol1,atm1) : literal) (pol2,atm2) =
 (* ------------------------------------------------------------------------- *)
 
 let unify sub ((pol1,atm1) : literal) (pol2,atm2) =
-      let _ = pol1 = pol2 || raise (Error "Literal.unify")
+      let _ = pol1 = pol2 || failwith "Literal.unify"
     in
       Atom.unify sub atm1 atm2
     ;;
@@ -3851,7 +3564,7 @@ let mkEq l_r : literal = (true, Atom.mkEq l_r);;
 
 let destEq = function
     ((true,atm) : literal) -> Atom.destEq atm
-  | (false,_) -> raise (Error "Literal.destEq");;
+  | (false,_) -> failwith "Literal.destEq";;
 
 let isEq = can destEq;;
 
@@ -3859,7 +3572,7 @@ let mkNeq l_r : literal = (false, Atom.mkEq l_r);;
 
 let destNeq = function
     ((false,atm) : literal) -> Atom.destEq atm
-  | (true,_) -> raise (Error "Literal.destNeq");;
+  | (true,_) -> failwith "Literal.destNeq";;
 
 let isNeq = can destNeq;;
 
@@ -3867,14 +3580,14 @@ let mkRefl tm = (true, Atom.mkRefl tm);;
 
 let destRefl = function
     (true,atm) -> Atom.destRefl atm
-  | (false,_) -> raise (Error "Literal.destRefl");;
+  | (false,_) -> failwith "Literal.destRefl";;
 
 let isRefl = can destRefl;;
 
 let mkIrrefl tm = (false, Atom.mkRefl tm);;
 
 let destIrrefl = function
-    (true,_) -> raise (Error "Literal.destIrrefl")
+    (true,_) -> failwith "Literal.destIrrefl"
   | (false,atm) -> Atom.destRefl atm;;
 
 let isIrrefl = can destIrrefl;;
@@ -3901,7 +3614,7 @@ let toString literal = Formula.toString (toFormula literal);;
 
 
 module Ordered =
-struct type t = literal let compare = fromCompare compare end
+struct type t = literal let compare = compare end
 
 module Map = Mmap.Make (Ordered);;
 
@@ -3958,7 +3671,7 @@ struct
   let subst sub lits =
         let substLit (lit,(eq,lits')) =
               let lit' = subst sub lit
-              in let eq = eq && Portable.pointerEqual (lit,lit')
+              in let eq = eq && lit == lit'
             in
               (eq, add lits' lit')
 
@@ -3979,7 +3692,7 @@ struct
 end
 
 module Set_ordered =
-struct type t = Set.set let compare = fromCompare Set.compare end
+struct type t = Set.set let compare = Set.compare end
 
 module Set_map = Mmap.Make (Set_ordered);;
 
@@ -3993,9 +3706,6 @@ end
 (* ========================================================================= *)
 
 module Thm = struct
-
-open Useful;;
-open Order
 
 (* ------------------------------------------------------------------------- *)
 (* An abstract type of first order logic theorems.                           *)
@@ -4045,7 +3755,7 @@ let isContradiction th = Literal.Set.null (clause th);;
 
 let destUnit (Thm (cl,_)) =
     if Literal.Set.size cl = 1 then Literal.Set.pick cl
-    else raise (Error "Thm.destUnit");;
+    else failwith "Thm.destUnit";;
 
 let isUnit = can destUnit;;
 
@@ -4065,7 +3775,7 @@ let negateMember lit (Thm (cl,_)) = Literal.Set.negateMember lit cl;;
 (* A total order.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let compare (th1,th2) = Literal.Set.compare (clause th1, clause th2);;
+let compare th1 th2 = Literal.Set.compare (clause th1) (clause th2);;
 
 let equal th1 th2 = Literal.Set.equal (clause th1) (clause th2);;
 
@@ -4146,7 +3856,7 @@ let assume lit =
 let subst sub (Thm (cl,inf) as th) =
       let cl' = Literal.Set.subst sub cl
     in
-      if Portable.pointerEqual (cl,cl') then th
+      if cl == cl' then th
       else
         match inf with
           (Subst,_) -> Thm (cl',inf)
@@ -4172,10 +3882,10 @@ let resolve lit (Thm (cl1,_) as th1) (Thm (cl2,_) as th2) =
 (*MetisDebug
 let resolve = fun lit -> fun pos -> fun neg ->
     resolve lit pos neg
-    handle Error err ->
-      raise Error ("Thm.resolve:\nlit = " ^ Literal.toString lit ^
-                   "\npos = " ^ toString pos ^
-                   "\nneg = " ^ toString neg ^ "\n" ^ err);;
+    handle Failure err ->
+      raise Failure ("Thm.resolve:\nlit = " ^ Literal.toString lit ^
+                     "\npos = " ^ toString pos ^
+                     "\nneg = " ^ toString neg ^ "\n" ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -4215,8 +3925,6 @@ end
 (* ========================================================================= *)
 
 module Proof = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of first order logic proofs.                                       *)
@@ -4260,13 +3968,13 @@ let inferenceToThm = function
               let () = Print.trace Literal.Set.pp "reconstructSubst: cl" cl
               let () = Print.trace Literal.Set.pp "reconstructSubst: cl'" cl'
 *)
-              raise (Bug "can't reconstruct Subst rule")
+              raise (Useful.Bug "can't reconstruct Subst rule")
           | (([],sub) :: others) ->
             if Literal.Set.equal (Literal.Set.subst sub cl) cl' then sub
             else recon others
           | ((lit :: lits, sub) :: others) ->
               let checkLit (lit',acc) =
-                  match total (Literal.matchLiterals sub lit) lit' with
+                  match Useful.total (Literal.matchLiterals sub lit) lit' with
                     None -> acc
                   | Some sub -> (lits,sub) :: acc
             in
@@ -4275,8 +3983,8 @@ let inferenceToThm = function
         Substitute.normalize (recon [(Literal.Set.toList cl, Substitute.empty)])
       ;;
 (*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.recontructSubst: shouldn't fail:\n" ^ err));;
+      handle Failure err ->
+        raise (Useful.Bug ("Proof.recontructSubst: shouldn't fail:\n" ^ err));;
 *)
 
   let reconstructResolvant cl1 cl2 cl =
@@ -4291,11 +3999,11 @@ let inferenceToThm = function
            in let lits = Literal.Set.intersectList [cl1;cl1';cl2;cl2']
          in
            if not (Literal.Set.null lits) then Literal.Set.pick lits
-           else raise (Bug "can't reconstruct Resolve rule")
+           else raise (Useful.Bug "can't reconstruct Resolve rule")
          );;
 (*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.recontructResolvant: shouldn't fail:\n" ^ err));;
+      handle Failure err ->
+        raise (Useful.Bug ("Proof.recontructResolvant: shouldn't fail:\n" ^ err));;
 *)
 
   let reconstructEquality cl =
@@ -4306,7 +4014,7 @@ let inferenceToThm = function
         let rec sync s t path (f,a) (f',a') =
             if not (Name.equal f f' && length a = length a') then None
             else
-                let itms = enumerate (zip a a')
+                let itms = Mlist.enumerate (zip a a')
               in
                 (match List.filter (fun x -> not (uncurry Term.equal (snd x))) itms with
                   [(i,(tm,tm'))] ->
@@ -4339,7 +4047,7 @@ let inferenceToThm = function
               ([l1],[l2;l3]) -> [(l1,l2,l3);(l1,l3,l2)]
             | ([l1;l2],[l3]) -> [(l1,l2,l3);(l1,l3,l2);(l2,l1,l3);(l2,l3,l1)]
             | ([l1],[l2]) -> [(l1,l1,l2);(l1,l2,l1)]
-            | _ -> raise (Bug "reconstructEquality: malformed")
+            | _ -> raise (Useful.Bug "reconstructEquality: malformed")
 
 (*MetisTrace3
         let ppCands =
@@ -4348,13 +4056,13 @@ let inferenceToThm = function
                    "Proof.reconstructEquality: candidates" candidates
 *)
       in
-        match first recon candidates with
+        match Mlist.first recon candidates with
           Some info -> info
-        | None -> raise (Bug "can't reconstruct Equality rule")
+        | None -> raise (Useful.Bug "can't reconstruct Equality rule")
       ;;
 (*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.recontructEquality: shouldn't fail:\n" ^ err));;
+      handle Failure err ->
+        raise (Useful.Bug ("Proof.recontructEquality: shouldn't fail:\n" ^ err));;
 *)
 
   let reconstruct cl = function
@@ -4362,7 +4070,7 @@ let inferenceToThm = function
     | (Thm.Assume,[]) ->
       (match Literal.Set.findl Literal.positive cl with
          Some (_,atm) -> Assume atm
-       | None -> raise (Bug "malformed Assume inference"))
+       | None -> raise (Useful.Bug "malformed Assume inference"))
     | (Thm.Subst,[th]) ->
       Subst (reconstructSubst (Thm.clause th) cl, th)
     | (Thm.Resolve,[th1;th2]) ->
@@ -4372,11 +4080,11 @@ let inferenceToThm = function
       in
         if pol then Resolve (atm,th1,th2) else Resolve (atm,th2,th1)
     | (Thm.Refl,[]) ->
-      (match Literal.Set.findl (kComb true) cl with
+      (match Literal.Set.findl (K true) cl with
          Some lit -> Refl (Literal.destRefl lit)
-       | None -> raise (Bug "malformed Refl inference"))
+       | None -> raise (Useful.Bug "malformed Refl inference"))
     | (Thm.Equality,[]) -> let (x,y,z) = (reconstructEquality cl) in Equality (x,y,z)
-    | _ -> raise (Bug "malformed inference");;
+    | _ -> raise (Useful.Bug "malformed inference");;
 
   let thmToInference th =
 (*MetisTrace3
@@ -4405,7 +4113,7 @@ let inferenceToThm = function
               if Literal.Set.equal (Thm.clause th') cl then ()
               else
                 raise
-                  Bug
+                  Useful.Bug
                     ("Proof.thmToInference: bad inference reconstruction:" ^
                      "\n  th = " ^ Thm.toString th ^
                      "\n  inf = " ^ inferenceToString inf ^
@@ -4415,8 +4123,8 @@ let inferenceToThm = function
       in
         inf
 (*MetisDebug
-      handle Error err ->
-        raise (Bug ("Proof.thmToInference: shouldn't fail:\n" ^ err));;
+      handle Failure err ->
+        raise (Useful.Bug ("Proof.thmToInference: shouldn't fail:\n" ^ err));;
 *)
 ;;
 
@@ -4515,8 +4223,6 @@ end
 
 module Rule = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* Variable names.                                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -4530,10 +4236,10 @@ let yVar = Term.Var yVarName;;
 let zVarName = Name.fromString "z";;
 let zVar = Term.Var zVarName;;
 
-let xIVarName i = Name.fromString ("x" ^ Int.toString i);;
+let xIVarName i = Name.fromString ("x" ^ string_of_int i);;
 let xIVar i = Term.Var (xIVarName i);;
 
-let yIVarName i = Name.fromString ("y" ^ Int.toString i);;
+let yIVarName i = Name.fromString ("y" ^ string_of_int i);;
 let yIVar i = Term.Var (yIVarName i);;
 
 (* ------------------------------------------------------------------------- *)
@@ -4638,22 +4344,22 @@ let transEqn (((x,y), th1) as eqn1) (((_,z), th2) as eqn2) =
 (*MetisDebug
 let transEqn = fun eqn1 -> fun eqn2 ->
     transEqn eqn1 eqn2
-    handle Error err ->
-      raise Error ("Rule.transEqn:\neqn1 = " ^ equationToString eqn1 ^
+    handle Failure err ->
+      raise Failure ("Rule.transEqn:\neqn1 = " ^ equationToString eqn1 ^
                    "\neqn2 = " ^ equationToString eqn2 ^ "\n" ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
 (* A conversion takes a term t and either:                                   *)
 (* 1. Returns a term u together with a theorem (stronger than) t = u \/ C.   *)
-(* 2. Raises an Error exception.                                             *)
+(* 2. Raises an Failure exception.                                             *)
 (* ------------------------------------------------------------------------- *)
 
 type conv = Term.term -> Term.term * Thm.thm;;
 
 let allConv tm = (tm, Thm.refl tm);;
 
-let noConv : conv = fun _ -> raise (Error "noConv");;
+let noConv : conv = fun _ -> failwith "noConv";;
 
 (*MetisDebug
 let traceConv s conv tm =
@@ -4664,9 +4370,9 @@ let traceConv s conv tm =
     in
       res
     end
-    handle Error err ->
-      (trace (s ^ ": " ^ Term.toString tm ^ " --> Error: " ^ err ^ "\n");;
-       raise (Error (s ^ ": " ^ err)));;
+    handle Failure err ->
+      (trace (s ^ ": " ^ Term.toString tm ^ " --> Failure: " ^ err ^ "\n");;
+       raise (Failure (s ^ ": " ^ err)));;
 *)
 
 let thenConvTrans tm (tm',th1) (tm'',th2) =
@@ -4684,14 +4390,14 @@ let thenConv conv1 conv2 tm =
       thenConvTrans tm res1 res2
     ;;
 
-let orelseConv (conv1 : conv) conv2 tm = try conv1 tm with Error _ -> conv2 tm;;
+let orelseConv (conv1 : conv) conv2 tm = try conv1 tm with Failure _ -> conv2 tm;;
 
 let tryConv conv = orelseConv conv allConv;;
 
 let changedConv conv tm =
       let (tm',_) as res = conv tm
     in
-      if tm = tm' then raise (Error "changedConv") else res
+      if tm = tm' then failwith "changedConv" else res
     ;;
 
 let rec repeatConv conv tm = tryConv (thenConv conv (repeatConv conv)) tm;;
@@ -4699,7 +4405,7 @@ let rec repeatConv conv tm = tryConv (thenConv conv (repeatConv conv)) tm;;
 let flip f = fun x y -> f y x;;
 
 let rec firstConv tm = function
-    [] -> raise (Error "firstConv")
+    [] -> failwith "firstConv"
   | [conv] -> conv tm
   | (conv :: convs) -> orelseConv conv (flip firstConv convs) tm;;
 let firstConv convs tm = firstConv tm convs;;
@@ -4730,8 +4436,8 @@ let rewrConv (((x,y), eqTh) as eqn) path tm =
 (*MetisDebug
 let rewrConv = fun eqn as ((x,y),eqTh) -> fun path -> fun tm ->
     rewrConv eqn path tm
-    handle Error err ->
-      raise Error ("Rule.rewrConv:\nx = " ^ Term.toString x ^
+    handle Failure err ->
+      raise Failure ("Rule.rewrConv:\nx = " ^ Term.toString x ^
                    "\ny = " ^ Term.toString y ^
                    "\neqTh = " ^ Thm.toString eqTh ^
                    "\npath = " ^ Term.pathToString path ^
@@ -4750,7 +4456,7 @@ let subtermConv conv i = pathConv conv [i];;
 let subtermsConv conv = function
     (Term.Var _ as tm) -> allConv tm
   | (Term.Fn (_,a) as tm) ->
-    everyConv (List.map (subtermConv conv) (interval 0 (length a))) tm;;
+    everyConv (List.map (subtermConv conv) (Useful.interval 0 (length a))) tm;;
 
 (* ------------------------------------------------------------------------- *)
 (* Applying a conversion to every subterm, with some traversal strategy.     *)
@@ -4773,20 +4479,20 @@ let repeatTopDownConv conv =
 (*MetisDebug
 let repeatTopDownConv = fun conv -> fun tm ->
     repeatTopDownConv conv tm
-    handle Error err -> raise (Error ("repeatTopDownConv: " ^ err));;
+    handle Failure err -> failwith ("repeatTopDownConv: " ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
 (* A literule (bad pun) takes a literal L and either:                        *)
 (* 1. Returns a literal L' with a theorem (stronger than) ~L \/ L' \/ C.     *)
-(* 2. Raises an Error exception.                                             *)
+(* 2. Raises an Failure exception.                                           *)
 (* ------------------------------------------------------------------------- *)
 
 type literule = Literal.literal -> Literal.literal * Thm.thm;;
 
 let allLiterule lit = (lit, Thm.assume lit);;
 
-let noLiterule : literule = fun _ -> raise (Error "noLiterule");;
+let noLiterule : literule = fun _ -> failwith "noLiterule";;
 
 let thenLiterule literule1 literule2 lit =
       let (lit',th1) as res1 = literule1 lit
@@ -4803,21 +4509,21 @@ let thenLiterule literule1 literule2 lit =
     ;;
 
 let orelseLiterule (literule1 : literule) literule2 lit =
-    try literule1 lit with Error _ -> literule2 lit;;
+    try literule1 lit with Failure _ -> literule2 lit;;
 
 let tryLiterule literule = orelseLiterule literule allLiterule;;
 
 let changedLiterule literule lit =
       let (lit',_) as res = literule lit
     in
-      if lit = lit' then raise (Error "changedLiterule") else res
+      if lit = lit' then failwith "changedLiterule" else res
     ;;
 
 let rec repeatLiterule literule lit =
     tryLiterule (thenLiterule literule (repeatLiterule literule)) lit;;
 
 let rec firstLiterule lit = function
-    [] -> raise (Error "firstLiterule")
+    [] -> failwith "firstLiterule"
   | [literule] -> literule lit
   | (literule :: literules) ->
     orelseLiterule literule (flip firstLiterule literules) lit;;
@@ -4846,10 +4552,10 @@ let rewrLiterule (((x,y),eqTh) as eqn) path lit =
 (*MetisDebug
 let rewrLiterule = fun eqn -> fun path -> fun lit ->
     rewrLiterule eqn path lit
-    handle Error err ->
-      raise Error ("Rule.rewrLiterule:\neqn = " ^ equationToString eqn ^
-                   "\npath = " ^ Term.pathToString path ^
-                   "\nlit = " ^ Literal.toString lit ^ "\n" ^ err);;
+    handle Failure err ->
+      raise Failure ("Rule.rewrLiterule:\neqn = " ^ equationToString eqn ^
+                     "\npath = " ^ Term.pathToString path ^
+                     "\nlit = " ^ Literal.toString lit ^ "\n" ^ err);;
 *)
 
 let pathLiterule conv path lit =
@@ -4863,10 +4569,10 @@ let argumentLiterule conv i = pathLiterule conv [i];;
 
 let allArgumentsLiterule conv lit =
     everyLiterule
-      (List.map (argumentLiterule conv) (interval 0 (Literal.arity lit))) lit;;
+      (List.map (argumentLiterule conv) (Useful.interval 0 (Literal.arity lit))) lit;;
 
 (* ------------------------------------------------------------------------- *)
-(* A rule takes one theorem and either deduces another or raises an Error    *)
+(* A rule takes one theorem and either deduces another or raises an Failure  *)
 (* exception.                                                                *)
 (* ------------------------------------------------------------------------- *)
 
@@ -4874,11 +4580,11 @@ type rule = Thm.thm -> Thm.thm;;
 
 let allRule : rule = fun th -> th;;
 
-let noRule : rule = fun _ -> raise (Error "noRule");;
+let noRule : rule = fun _ -> failwith "noRule";;
 
 let thenRule (rule1 : rule) (rule2 : rule) th = rule1 (rule2 th);;
 
-let orelseRule (rule1 : rule) rule2 th = try rule1 th with Error _ -> rule2 th;;
+let orelseRule (rule1 : rule) rule2 th = try rule1 th with Failure _ -> rule2 th;;
 
 let tryRule rule = orelseRule rule allRule;;
 
@@ -4886,13 +4592,13 @@ let changedRule rule th =
       let th' = rule th
     in
       if not (Literal.Set.equal (Thm.clause th) (Thm.clause th')) then th'
-      else raise (Error "changedRule")
+      else failwith "changedRule"
     ;;
 
 let rec repeatRule rule lit = tryRule (thenRule rule (repeatRule rule)) lit;;
 
 let rec firstRule th = function
-    [] -> raise (Error "firstRule")
+    [] -> failwith "firstRule"
   | [rule] -> rule th
   | (rule :: rules) -> orelseRule rule (flip firstRule rules) th;;
 let firstRule rules th = firstRule th rules;;
@@ -4914,9 +4620,9 @@ let literalRule literule lit th =
 (*MetisDebug
 let literalRule = fun literule -> fun lit -> fun th ->
     literalRule literule lit th
-    handle Error err ->
-      raise Error ("Rule.literalRule:\nlit = " ^ Literal.toString lit ^
-                   "\nth = " ^ Thm.toString th ^ "\n" ^ err);;
+    handle Failure err ->
+      raise Failure ("Rule.literalRule:\nlit = " ^ Literal.toString lit ^
+                     "\nth = " ^ Thm.toString th ^ "\n" ^ err);;
 *)
 
 let rewrRule eqTh lit path = literalRule (rewrLiterule eqTh path) lit;;
@@ -4955,7 +4661,7 @@ let functionCongruence (f,n) =
       in let reflTh = Thm.refl (Term.Fn (f,xs))
       in let reflLit = Thm.destUnit reflTh
     in
-      fst (Mlist.foldl cong (reflTh,reflLit) (enumerate ys))
+      fst (Mlist.foldl cong (reflTh,reflLit) (Mlist.enumerate ys))
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -4979,7 +4685,7 @@ let relationCongruence (r,n) =
       in let assumeLit = (false,(r,xs))
       in let assumeTh = Thm.assume assumeLit
     in
-      fst (Mlist.foldl cong (assumeTh,assumeLit) (enumerate ys))
+      fst (Mlist.foldl cong (assumeTh,assumeLit) (Mlist.enumerate ys))
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -5017,7 +4723,7 @@ let removeIrrefl th =
   let irrefl = function
       ((true,_),th) -> th
     | ((false,atm) as lit, th) ->
-      match total Atom.destRefl atm with
+      match Useful.total Atom.destRefl atm with
         Some x -> Thm.resolve lit th (Thm.refl x)
       | None -> th
 in
@@ -5033,7 +4739,7 @@ in
 
 let removeSym th =
   let rem ((pol,atm) as lit, (eqs,th)) =
-      match total Atom.sym atm with
+      match Useful.total Atom.sym atm with
         None -> (eqs, th)
       | Some atm' ->
         if Literal.Set.member lit eqs then
@@ -5055,13 +4761,13 @@ let rec expandAbbrevs th =
   let expand lit =
         let (x,y) = Literal.destNeq lit
         in let _ = Term.isTypedVar x || Term.isTypedVar y ||
-                raise (Error "Rule.expandAbbrevs: no vars")
+                failwith "Rule.expandAbbrevs: no vars"
         in let _ = not (Term.equal x y) ||
-                raise (Error "Rule.expandAbbrevs: equal vars")
+                failwith "Rule.expandAbbrevs: equal vars"
       in
         Substitute.unify Substitute.empty x y
 in
-      match Literal.Set.firstl (total expand) (Thm.clause th) with
+      match Literal.Set.firstl (Useful.total expand) (Thm.clause th) with
         None -> removeIrrefl th
       | Some sub -> expandAbbrevs (Thm.subst sub th);;
 
@@ -5117,13 +4823,13 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
   let joinEdge sub edge =
         let result =
             match edge with
-              Factor_edge (atm,atm') -> total (Atom.unify sub atm) atm'
-            | Refl_edge (tm,tm') -> total (Substitute.unify sub tm) tm'
+              Factor_edge (atm,atm') -> Useful.total (Atom.unify sub atm) atm'
+            | Refl_edge (tm,tm') -> Useful.total (Substitute.unify sub tm) tm'
       in
         match result with
           None -> Apart
         | Some sub' ->
-          if Portable.pointerEqual (sub,sub') then Joined else Joinable sub'
+          if sub == sub' then Joined else Joinable sub'
       ;;
 
   let updateApart sub =
@@ -5144,7 +4850,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
           let edge = Factor_edge (atm,atm')
         in
           match joinEdge Substitute.empty edge with
-            Joined -> raise (Bug "addFactorEdge: joined")
+            Joined -> raise (Useful.Bug "addFactorEdge: joined")
           | Joinable sub -> (sub,edge) :: acc
           | Apart -> acc
         ;;
@@ -5155,7 +4861,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
         let edge = let (x,y) = (Atom.destEq atm) in Refl_edge (x,y)
       in
         match joinEdge Substitute.empty edge with
-          Joined -> raise (Bug "addRefl: joined")
+          Joined -> raise (Useful.Bug "addRefl: joined")
         | Joinable _ -> edge :: acc
         | Apart -> acc
       ;;
@@ -5167,7 +4873,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
         let edge = let (x,y) = (Atom.destEq atm) in Refl_edge (x,y)
       in
         match joinEdge Substitute.empty edge with
-          Joined -> raise (Bug "addRefl: joined")
+          Joined -> raise (Useful.Bug "addRefl: joined")
         | Joinable sub -> (sub,edge) :: acc
         | Apart -> acc
       ;;
@@ -5182,7 +4888,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
     | ((sub,edge) :: sub_edges) ->
 (*MetisDebug
         let () = if not (Substitute.null sub) then ()
-                 else raise Bug "Rule.factor.init_edges: empty subst"
+                 else raise Useful.Bug "Rule.factor.init_edges: empty subst"
 *)
         let (acc,apart) =
             match updateApart sub apart with
@@ -5198,7 +4904,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
         let sub_edges = Mlist.foldl (addFactorEdge lit) sub_edges lits
 
         in let (apart,sub_edges) =
-            match total Literal.sym lit with
+            match Useful.total Literal.sym lit with
               None -> (apart,sub_edges)
             | Some lit' ->
                 let apart = addReflEdge lit apart
@@ -5263,8 +4969,6 @@ end
 
 module Model = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* Constants.                                                                *)
 (* ------------------------------------------------------------------------- *)
@@ -5275,14 +4979,9 @@ let maxSpace = 1000;;
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-let multInt =
-    match Int.maxInt with
-      None -> (fun x -> fun y -> Some (x * y))
-    | Some m ->
-        let m = Real.floor (float_sqrt (Real.fromInt m))
-      in
-        fun x -> fun y -> if x <= m && y <= m then Some (x * y) else None
-      ;;
+let multInt x y =
+  let m = int_of_float (floor (float_sqrt (float_of_int max_int))) in
+  if x <= m && y <= m then Some (x * y) else None;;
 
   let rec iexp x y acc =
       if y mod 2 = 0 then iexp' x y acc
@@ -5294,7 +4993,7 @@ let multInt =
   and iexp' x y acc =
       if y = 1 then Some acc
       else
-          let y = Int.div y 2
+          let y = y / 2
         in
           match multInt x x with
             Some x -> iexp x y acc
@@ -5305,10 +5004,10 @@ let multInt =
       if y <= 1 then
         if y = 0 then Some 1
         else if y = 1 then Some x
-        else raise (Bug "expInt: negative exponent")
+        else raise (Useful.Bug "expInt: negative exponent")
       else if x <= 1 then
         if 0 <= x then Some x
-        else raise (Bug "expInt: negative exponand")
+        else raise (Useful.Bug "expInt: negative exponand")
       else iexp x y 1;;
 
 let boolToInt = function
@@ -5318,9 +5017,9 @@ let boolToInt = function
 let intToBool = function
     1 -> true
   | 0 -> false
-  | _ -> raise (Bug "Model.intToBool");;
+  | _ -> raise (Useful.Bug "Model.intToBool");;
 
-let minMaxInterval i j = interval i (1 + j - i);;
+let minMaxInterval i j = Useful.interval i (1 + j - i);;
 
 (* ------------------------------------------------------------------------- *)
 (* Model size.                                                               *)
@@ -5368,9 +5067,9 @@ type fixed =
       {functions : fixedFunction Name_arity.Map.map;
        relations : fixedRelation Name_arity.Map.map};;
 
-let uselessFixedFunction : fixedFunction = kComb (kComb None);;
+let uselessFixedFunction : fixedFunction = K (K None);;
 
-let uselessFixedRelation : fixedRelation = kComb (kComb None);;
+let uselessFixedRelation : fixedRelation = K (K None);;
 
 let emptyFunctions : fixedFunction Name_arity.Map.map = Name_arity.Map.newMap ();;
 
@@ -5379,17 +5078,17 @@ let emptyRelations : fixedRelation Name_arity.Map.map = Name_arity.Map.newMap ()
 let fixed0 f sz elts =
     match elts with
       [] -> f sz
-    | _ -> raise (Bug "Model.fixed0: wrong arity");;
+    | _ -> raise (Useful.Bug "Model.fixed0: wrong arity");;
 
 let fixed1 f sz elts =
     match elts with
       [x] -> f sz x
-    | _ -> raise (Bug "Model.fixed1: wrong arity");;
+    | _ -> raise (Useful.Bug "Model.fixed1: wrong arity");;
 
 let fixed2 f sz elts =
     match elts with
       [x;y] -> f sz x y
-    | _ -> raise (Bug "Model.fixed2: wrong arity");;
+    | _ -> raise (Useful.Bug "Model.fixed2: wrong arity");;
 
 let emptyFixed =
       let fns = emptyFunctions
@@ -5439,7 +5138,7 @@ let insertRelationFixed fix name_arity_rel =
          relations = rels}
     ;;
 
-  let union _ = raise (Bug "Model.unionFixed: nameArity clash");;
+  let union _ = raise (Useful.Bug "Model.unionFixed: nameArity clash");;
   let unionFixed fix1 fix2 =
         let {functions = fns1; relations = rels1} = fix1
         and {functions = fns2; relations = rels2} = fix2
@@ -5461,12 +5160,12 @@ let unionListFixed =
   let hasTypeFn _ elts =
       match elts with
         [x;_] -> Some x
-      | _ -> raise (Bug "Model.hasTypeFn: wrong arity");;
+      | _ -> raise (Useful.Bug "Model.hasTypeFn: wrong arity");;
 
   let eqRel _ elts =
       match elts with
         [x;y] -> Some (x = y)
-      | _ -> raise (Bug "Model.eqRel: wrong arity");;
+      | _ -> raise (Useful.Bug "Model.eqRel: wrong arity");;
 
   let basicFixed =
         let fns = Name_arity.Map.singleton (Term.hasTypeFunction,hasTypeFn)
@@ -5511,15 +5210,15 @@ let projectionList = minMaxInterval projectionMin projectionMax;;
 
 let projectionName i =
       let _ = projectionMin <= i ||
-              raise (Bug "Model.projectionName: less than projectionMin")
+              raise (Useful.Bug "Model.projectionName: less than projectionMin")
 
       in let _ = i <= projectionMax ||
-              raise (Bug "Model.projectionName: greater than projectionMax")
+              raise (Useful.Bug "Model.projectionName: greater than projectionMax")
     in
-      Name.fromString ("project" ^ Int.toString i)
+      Name.fromString ("project" ^ string_of_int i)
     ;;
 
-let projectionFn i _ elts = Some (Mlist.nth (elts, i - 1));;
+let projectionFn i _ elts = Some (List.nth elts (i - 1));;
 
 let arityProjectionFixed arity =
       let mkProj i = ((projectionName i, arity), projectionFn i)
@@ -5548,12 +5247,12 @@ let numeralList = minMaxInterval numeralMin numeralMax;;
 
 let numeralName i =
       let _ = numeralMin <= i ||
-              raise (Bug "Model.numeralName: less than numeralMin")
+              raise (Useful.Bug "Model.numeralName: less than numeralMin")
 
       in let _ = i <= numeralMax ||
-              raise (Bug "Model.numeralName: greater than numeralMax")
+              raise (Useful.Bug "Model.numeralName: greater than numeralMax")
 
-      in let s = if i < 0 then "negative" ^ Int.toString (-i) else Int.toString i
+      in let s = if i < 0 then "negative" ^ string_of_int (-i) else string_of_int i
     in
       Name.fromString s
     ;;
@@ -5593,10 +5292,10 @@ and sucName = Name.fromString "suc";;
   let divFn {size = n} x y =
         let y = if y = 0 then n else y
       in
-        Some (Int.div x y)
+        Some (x / y)
       ;;
 
-  let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
+  let expFn sz x y = Some (Useful.exp (multN sz) x y (oneN sz));;
 
   let modFn {size = n} x y =
         let y = if y = 0 then n else y
@@ -5616,7 +5315,7 @@ and sucName = Name.fromString "suc";;
 
   (* Relations *)
 
-  let dividesRel _ x y = Some (divides x y);;
+  let dividesRel _ x y = Some (Useful.divides x y);;
 
   let evenRel _ x = Some (x mod 2 = 0);;
 
@@ -5676,9 +5375,9 @@ and sucName = Name.fromString "suc";;
 
   let addFn sz x y = Some (cutN sz (x + y));;
 
-  let divFn _ x y = if y = 0 then None else Some (Int.div x y);;
+  let divFn _ x y = if y = 0 then None else Some (x / y);;
 
-  let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
+  let expFn sz x y = Some (Useful.exp (multN sz) x y (oneN sz));;
 
   let modFn {size = n} x y =
       if y = 0 || x = n - 1 then None else Some (x mod y);;
@@ -5702,7 +5401,7 @@ and sucName = Name.fromString "suc";;
       if x = 1 || y = 0 then Some true
       else if x = 0 then Some false
       else if y = n - 1 then None
-      else Some (divides x y);;
+      else Some (Useful.divides x y);;
 
   let evenRel {size = n} x =
       if x = n - 1 then None else Some (x mod 2 = 0);;
@@ -5778,7 +5477,7 @@ and universeName = Name.fromString "universe";;
   let eltN {size = n} =
         let rec f acc = function
             0 -> acc
-          | x -> f (acc + 1) (Int.div x 2)
+          | x -> f (acc + 1) (x / 2)
       in
         f (-1) n
       ;;
@@ -5934,10 +5633,10 @@ let zeroValuation = constantValuation zeroElement;;
 let getValuation v' v =
     match peekValuation v' v with
       Some i -> i
-    | None -> raise (Error "Model.getValuation: incomplete valuation");;
+    | None -> failwith "Model.getValuation: incomplete valuation";;
 
 let randomValuation {size = n} vs =
-      let f (v,v') = insertValuation v' (v, Portable.randomInt n)
+      let f (v,v') = insertValuation v' (v, Random.int n)
     in
       Name.Set.foldl f emptyValuation vs
     ;;
@@ -5990,7 +5689,7 @@ let newTable n arity =
     | Some space -> Array_table (Array.make space cUNKNOWN);;
 
 
-  let randomResult r = Portable.randomInt r;;
+  let randomResult r = Random.int r;;
   let lookupTable n vR table elts =
       match table with
         Forgetful_table -> randomResult vR
@@ -6112,7 +5811,7 @@ let peekFixedFunction vM (n,elts) =
       | Some fixFn -> fixFn elts
     ;;
 
-let isFixedFunction vM n_elts = Option.isSome (peekFixedFunction vM n_elts);;
+let isFixedFunction vM n_elts = Option.is_some (peekFixedFunction vM n_elts);;
 
 let peekFixedRelation vM (n,elts) =
       let {fixedRelations = fixRels} = vM
@@ -6122,7 +5821,7 @@ let peekFixedRelation vM (n,elts) =
       | Some fixRel -> fixRel elts
     ;;
 
-let isFixedRelation vM n_elts = Option.isSome (peekFixedRelation vM n_elts);;
+let isFixedRelation vM n_elts = Option.is_some (peekFixedRelation vM n_elts);;
 
 (* A default model *)
 
@@ -6317,7 +6016,7 @@ let perturb vM pert =
       (match tm with
         Model_var -> acc
       | Model_fn (func,tms,xs) ->
-          let onTarget ys = mem (interpretFunction vM (func,ys)) target
+          let onTarget ys = List.mem (interpretFunction vM (func,ys)) target
 
           in let func_xs = (func,xs)
 
@@ -6348,14 +6047,14 @@ let perturb vM pert =
             (_, [], [], acc) -> acc
           | (ys, (tm :: tms), (x :: xs), acc) ->
               let pred y =
-                  y <> x && onTarget (Mlist.revAppend (ys, y :: xs))
+                  y <> x && onTarget (List.rev_append ys (y :: xs))
 
               in let target = filterElements pred
 
               in let acc = pertTerm vM target tm acc
             in
               pert ((x :: ys), tms, xs, acc)
-          | (_, _, _, _) -> raise (Bug "Model.pertTerms.pert")
+          | (_, _, _, _) -> raise (Useful.Bug "Model.pertTerms.pert")
       in
         fun x y z -> pert ([],x,y,z)
       ;;
@@ -6380,7 +6079,7 @@ let perturb vM pert =
 
   let pickPerturb vM perts =
       if Mlist.null perts then ()
-      else perturb vM (Mlist.nth (perts, Portable.randomInt (length perts)));;
+      else perturb vM (List.nth perts (Random.int (length perts)));;
 
   let perturbTerm vM vV (tm,target) =
       pickPerturb vM (pertTerm vM target (fst (modelTerm vM vV tm)) []);;
@@ -6402,9 +6101,6 @@ end
 
 module Term_net = struct
 
-open Useful;;
-open Order;;
-
 (* ------------------------------------------------------------------------- *)
 (* Anonymous variables.                                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -6421,30 +6117,28 @@ type qterm =
   | Fn of Name_arity.nameArity * qterm list;;
 
   let rec cmp = function
-      [] -> Equal
-    | (q1_q2 :: qs) ->
-      if Portable.pointerEqual q1_q2 then cmp qs
+      [] -> 0
+    | (((q1, q2) as q1_q2) :: qs) ->
+      if q1 == q2 then cmp qs
       else
         match q1_q2 with
-          (Var,Var) -> Equal
-        | (Var, Fn _) -> Less
-        | (Fn _, Var) -> Greater
+          (Var,Var) -> 0
+        | (Var, Fn _) -> -1
+        | (Fn _, Var) -> 1
         | (Fn (f1, f1'), Fn (f2, f2')) -> fnCmp (f1,f1') (f2,f2') qs
 
   and fnCmp (n1,q1) (n2,q2) qs =
-    match Name_arity.compare (n1,n2) with
-      Less -> Less
-    | Equal -> cmp (zip q1 q2 @ qs)
-    | Greater -> Greater;;
+    let c = Name_arity.compare n1 n2 in
+    if c <> 0 then c else cmp (zip q1 q2 @ qs);;
 
-  let compareQterm q1_q2 = cmp [q1_q2];;
+  let compareQterm q1 q2 = cmp [(q1,q2)];;
 
-  let compareFnQterm (f1,f2) = fnCmp f1 f2 [];;
+  let compareFnQterm f1 f2 = fnCmp f1 f2 [];;
 
 
-let equalQterm q1 q2 = compareQterm (q1,q2) = Equal;;
+let equalQterm q1 q2 = compareQterm q1 q2 = 0;;
 
-let equalFnQterm f1 f2 = compareFnQterm (f1,f2) = Equal;;
+let equalFnQterm f1 f2 = compareFnQterm f1 f2 = 0;;
 
 let rec termToQterm = function
     (Term.Var _) -> Var
@@ -6485,9 +6179,9 @@ let rec termToQterm = function
       (Var, x) -> x
     | (x, Var) -> x
     | (Fn (f,a), Fn (g,b)) ->
-        let _ = Name_arity.equal f g || raise (Error "Term_net.qv")
+        let _ = Name_arity.equal f g || failwith "Term_net.qv"
       in
-        Fn (f, zipWith qv a b)
+        Fn (f, map2 qv a b)
       ;;
 
   let rec qu qsub = function
@@ -6500,11 +6194,11 @@ let rec termToQterm = function
         qu (Name.Map.insert qsub (v,qtm)) rest
     | ((Fn ((f,n),a), Term.Fn (g,b)) :: rest) ->
       if Name.equal f g && n = length b then qu qsub (zip a b @ rest)
-      else raise (Error "Term_net.qu");;
+      else failwith "Term_net.qu";;
 
-  let unifyQtermQterm qtm qtm' = total (qv qtm) qtm';;
+  let unifyQtermQterm qtm qtm' = Useful.total (qv qtm) qtm';;
 
-  let unifyQtermTerm qsub qtm tm = total (qu qsub) [(qtm,tm)];;
+  let unifyQtermTerm qsub qtm tm = Useful.total (qu qsub) [(qtm,tm)];;
 
   let rec qtermToTerm = function
       Var -> anonymousVar
@@ -6567,7 +6261,7 @@ let singles qtms a = Mlist.foldr (fun (x, y) -> Single (x, y)) a qtms;;
         let n = Name_arity.Map.peek fs f
       in
         Multiple (vs, Name_arity.Map.insert fs (f, oadd a (l @ qtms) n))
-    | _ -> raise (Bug "Term_net.insert: Match")
+    | _ -> raise (Useful.Bug "Term_net.insert: Match")
 
   and oadd a qtms = function
       None -> singles qtms a
@@ -6577,7 +6271,7 @@ let singles qtms a = Mlist.foldr (fun (x, y) -> Single (x, y)) a qtms;;
 
   let insert (Net (p,k,n)) (tm,a) =
       try Net (p, k + 1, ins (k,a) (termToQterm tm) (pre n))
-      with Error _ -> raise (Bug "Term_net.insert: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.insert: should never fail");;
 
 
 let fromList parm l = Mlist.foldl (fun (tm_a,n) -> insert n tm_a) (newNet parm) l;;
@@ -6593,19 +6287,19 @@ let filter pred =
              None -> None
            | Some n -> Some (Single (qtm,n)))
         | (Multiple (vs,fs)) ->
-            let vs = Option.mapPartial filt vs
+            let vs = Option.bind vs filt
 
             in let fs = Name_arity.Map.mapPartial (fun (_,n) -> filt n) fs
           in
-            if not (Option.isSome vs) && Name_arity.Map.null fs then None
+            if not (Option.is_some vs) && Name_arity.Map.null fs then None
             else Some (Multiple (vs,fs))
     in try
       function
          Net (_,_,None) as net -> net
        | Net (p, k, Some (_,n)) -> Net (p, k, netSize (filt n))
-    with Error _ -> raise (Bug "Term_net.filter: should never fail");;
+    with Failure _ -> raise (Useful.Bug "Term_net.filter: should never fail");;
 
-let toString net = "Term_net[" ^ Int.toString (size net) ^ "]";;
+let toString net = "Term_net[" ^ string_of_int (size net) ^ "]";;
 
 (* ------------------------------------------------------------------------- *)
 (* Specialized fold operations to support matching and unification.          *)
@@ -6613,7 +6307,7 @@ let toString net = "Term_net[" ^ Int.toString (size net) ^ "]";;
 
   let rec norm = function
       (0 :: ks, ((_,n) as f) :: fs, qtms) ->
-        let (a,qtms) = revDivide qtms n
+        let (a,qtms) = Mlist.revDivide qtms n
       in
         addQterm (Fn (f,a)) (ks,fs,qtms)
     | stack -> stack
@@ -6633,7 +6327,7 @@ let toString net = "Term_net[" ^ Int.toString (size net) ^ "]";;
 
   let stackValue = function
       ([],[],[qtm]) -> qtm
-    | _ -> raise (Bug "Term_net.stackValue");;
+    | _ -> raise (Useful.Bug "Term_net.stackValue");;
 
 
   let rec fold inc acc = function
@@ -6654,7 +6348,7 @@ let toString net = "Term_net[" ^ Int.toString (size net) ^ "]";;
             (k + n, stackAddFn f stack, net) :: x
       in
         fold inc acc (Name_arity.Map.foldr getFns rest fns)
-    | _ -> raise (Bug "Term_net.foldTerms.fold");;
+    | _ -> raise (Useful.Bug "Term_net.foldTerms.fold");;
 
   let foldTerms inc acc net = fold inc acc [(1,stackEmpty,net)];;
 
@@ -6670,7 +6364,7 @@ let foldEqualTerms pat inc acc =
           (match Name_arity.Map.peek fns f with
              None -> acc
            | Some net -> fold (a @ pats, net))
-        | _ -> raise (Bug "Term_net.foldEqualTerms.fold")
+        | _ -> raise (Useful.Bug "Term_net.foldEqualTerms.fold")
     in
       fun net -> fold ([pat],net)
     ;;
@@ -6701,7 +6395,7 @@ let foldEqualTerms pat inc acc =
             | Some net -> (a @ pats, stackAddFn f stack, net) :: rest
       in
         fold inc acc rest
-    | _ -> raise (Bug "Term_net.foldUnifiableTerms.fold");;
+    | _ -> raise (Useful.Bug "Term_net.foldUnifiableTerms.fold");;
 
   let foldUnifiableTerms pat inc acc net =
       fold inc acc [([pat],stackEmpty,net)];;
@@ -6713,9 +6407,9 @@ let foldEqualTerms pat inc acc =
 (* Filter afterwards to get the precise set of satisfying values.            *)
 (* ------------------------------------------------------------------------- *)
 
-  let idwise ((m,_),(n,_)) = Int.compare (m,n);;
+  let idwise (m,_) (n,_) = Int.compare m n;;
 
-  let fifoize ({fifo=fifo} : parameters) l = if fifo then sort idwise l else l;;
+  let fifoize ({fifo} : parameters) l = if fifo then List.sort idwise l else l;;
 
   let finally parm l = List.map snd (fifoize parm l);;
 
@@ -6737,13 +6431,13 @@ let foldEqualTerms pat inc acc =
               | Some n -> (n, l @ tms) :: rest
       in
         mat acc rest
-    | _ -> raise (Bug "Term_net.match: Match");;
+    | _ -> raise (Useful.Bug "Term_net.match: Match");;
 
   let matchNet x y = match (x,y) with
       (Net (_,_,None), _) -> []
     | (Net (p, _, Some (_,n)), tm) ->
       try finally p (mat [] [(n,[tm])])
-      with Error _ -> raise (Bug "Term_net.match: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.match: should never fail");;
 
 
   let unseenInc qsub v tms (qtm,net,rest) =
@@ -6769,13 +6463,13 @@ let foldEqualTerms pat inc acc =
             | Some net -> (qsub, net, a @ tms) :: rest
       in
         mat acc rest
-    | _ -> raise (Bug "Term_net.matched.mat");;
+    | _ -> raise (Useful.Bug "Term_net.matched.mat");;
 
   let matched x tm = match x with
       (Net (_,_,None)) -> []
     | (Net (parm, _, Some (_,net))) ->
       try finally parm (mat [] [(Name.Map.newMap (), net, [tm])])
-      with Error _ -> raise (Bug "Term_net.matched: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.matched: should never fail");;
 
 
   let inc qsub v tms (qtm,net,rest) =
@@ -6801,13 +6495,13 @@ let foldEqualTerms pat inc acc =
             | Some net -> (qsub, net, a @ tms) :: rest
       in
         mat acc rest
-    | _ -> raise (Bug "Term_net.unify.mat");;
+    | _ -> raise (Useful.Bug "Term_net.unify.mat");;
 
   let unify x tm = match x with
       (Net (_,_,None)) -> []
     | (Net (parm, _, Some (_,net))) ->
       try finally parm (mat [] [(Name.Map.newMap (), net, [tm])])
-      with Error _ -> raise (Bug "Term_net.unify: should never fail");;
+      with Failure _ -> raise (Useful.Bug "Term_net.unify: should never fail");;
 
 end
 
@@ -6818,8 +6512,6 @@ end
 
 module Atom_net = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -6827,7 +6519,7 @@ open Useful;;
 let atomToTerm atom = Term.Fn atom;;
 
 let termToAtom = function
-    (Term.Var _) -> raise (Bug "Atom_net.termToAtom")
+    (Term.Var _) -> raise (Useful.Bug "Atom_net.termToAtom")
   | (Term.Fn atom) -> atom;;
 
 (* ------------------------------------------------------------------------- *)
@@ -6852,7 +6544,7 @@ let fromList parm l = Mlist.foldl (fun (atm_a,n) -> insert n atm_a) (newNet parm
 
 let filter = Term_net.filter;;
 
-let toString net = "Atom_net[" ^ Int.toString (size net) ^ "]";;
+let toString net = "Atom_net[" ^ string_of_int (size net) ^ "]";;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -6878,8 +6570,6 @@ end
 
 module Literal_net = struct
 
-open Useful;;
-
 (* ------------------------------------------------------------------------- *)
 (* A type of literal sets that can be efficiently matched and unified.       *)
 (* ------------------------------------------------------------------------- *)
@@ -6896,16 +6586,16 @@ type 'a literalNet =
 
 let newNet parm = {positive = Atom_net.newNet parm; negative = Atom_net.newNet parm};;
 
-  let pos ({positive=positive} : 'a literalNet) = Atom_net.size positive;;
+  let pos ({positive} : 'a literalNet) = Atom_net.size positive;;
 
-  let neg ({negative=negative} : 'a literalNet) = Atom_net.size negative;;
+  let neg ({negative} : 'a literalNet) = Atom_net.size negative;;
 
   let size net = pos net + neg net;;
 
   (*let profile net = {positiveN = pos net; negativeN = neg net};;*)
 
 
-let insert {positive=positive;negative=negative} = function
+let insert {positive;negative} = function
     ((true,atm),a) ->
     {positive = Atom_net.insert positive (atm,a); negative = negative}
   | ((false,atm),a) ->
@@ -6913,11 +6603,11 @@ let insert {positive=positive;negative=negative} = function
 
 let fromList parm l = Mlist.foldl (fun (lit_a,n) -> insert n lit_a) (newNet parm) l;;
 
-let filter pred {positive=positive;negative=negative} =
+let filter pred {positive;negative} =
     {positive = Atom_net.filter pred positive;
      negative = Atom_net.filter pred negative};;
 
-let toString net = "Literal_net[" ^ Int.toString (size net) ^ "]";;
+let toString net = "Literal_net[" ^ string_of_int (size net) ^ "]";;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -6927,17 +6617,17 @@ let toString net = "Literal_net[" ^ Int.toString (size net) ^ "]";;
 (* Filter afterwards to get the precise set of satisfying values.            *)
 (* ------------------------------------------------------------------------- *)
 
-let matchNet ({positive=positive;negative=negative} : 'a literalNet) = function
+let matchNet ({positive;negative} : 'a literalNet) = function
     (true,atm) ->
     Atom_net.matchNet positive atm
   | (false,atm) -> Atom_net.matchNet negative atm;;
 
-let matched ({positive=positive;negative=negative} : 'a literalNet) = function
+let matched ({positive;negative} : 'a literalNet) = function
     (true,atm) ->
     Atom_net.matched positive atm
   | (false,atm) -> Atom_net.matched negative atm;;
 
-let unify ({positive=positive;negative=negative} : 'a literalNet) = function
+let unify ({positive;negative} : 'a literalNet) = function
     (true,atm) ->
     Atom_net.unify positive atm
   | (false,atm) -> Atom_net.unify negative atm;;
@@ -6951,9 +6641,6 @@ end
 
 module Subsume = struct
 
-open Useful;;
-open Order;;
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -6962,13 +6649,13 @@ let findRest pred =
       let rec f ys = function
           [] -> None
         | (x :: xs) ->
-          if pred x then Some (x, Mlist.revAppend (ys,xs)) else f (x :: ys) xs
+          if pred x then Some (x, List.rev_append ys xs) else f (x :: ys) xs
     in
       f []
     ;;
 
   let addSym (lit,acc) =
-      match total Literal.sym lit with
+      match Useful.total Literal.sym lit with
         None -> acc
       | Some lit -> lit :: acc
   let clauseSym lits = Mlist.foldl addSym lits lits;;
@@ -6977,7 +6664,7 @@ let findRest pred =
 let sortClause cl =
       let lits = Literal.Set.toList cl
     in
-      sortMap Literal.typedSymbols (revCompare Int.compare) lits
+      Mlist.sortMap Literal.typedSymbols (Useful.revCompare Int.compare) lits
     ;;
 
 let incompatible lit =
@@ -6996,11 +6683,9 @@ type clauseLength = int;;
 
   type idSet = (clauseId * clauseLength) Pset.set;;
 
-  let idCompare ((id1,len1),(id2,len2)) =
-      match Int.compare (len1,len2) with
-        Less -> Less
-      | Equal -> Int.compare (id1,id2)
-      | Greater -> Greater;;
+  let idCompare (id1,len1) (id2,len2) =
+      let c = Int.compare len1 len2 in
+      if c <> 0 then c else Int.compare id1 id2;;
 
   let idSetEmpty : idSet = Pset.empty idCompare;;
 
@@ -7036,10 +6721,10 @@ let newSubsume () =
           fstLits = Literal_net.newNet {fifo = false};
           sndLits = Literal_net.newNet {fifo = false}}};;
 
-let size ({empty=empty; unitn=unitn; nonunit = {clauses=clauses}}) =
+let size ({empty; unitn; nonunit = {clauses}}) =
     length empty + Literal_net.size unitn + Intmap.size clauses;;
 
-let insert ({empty=empty;unitn=unitn;nonunit=nonunit}) (cl',a) =
+let insert ({empty;unitn;nonunit}) (cl',a) =
     match sortClause cl' with
       [] ->
         let empty = (cl',Substitute.empty,a) :: empty
@@ -7050,7 +6735,7 @@ let insert ({empty=empty;unitn=unitn;nonunit=nonunit}) (cl',a) =
       in
         {empty = empty; unitn = unitn; nonunit = nonunit}
     | fstLit :: (sndLit :: otherLits as nonFstLits) ->
-        let {nextId=nextId;clauses=clauses;fstLits=fstLits;sndLits=sndLits} = nonunit
+        let {nextId;clauses;fstLits;sndLits} = nonunit
         in let id_length = (nextId, Literal.Set.size cl')
         in let fstLits = Literal_net.insert fstLits (fstLit,id_length)
         in let (sndLit,otherLits) =
@@ -7067,14 +6752,14 @@ let insert ({empty=empty;unitn=unitn;nonunit=nonunit}) (cl',a) =
         {empty = empty; unitn = unitn; nonunit = nonunit}
       ;;
 
-let filter pred ({empty=empty;unitn=unitn;nonunit=nonunit}) =
+let filter pred ({empty;unitn;nonunit}) =
       let pred3 (_,_,x) = pred x
       in let empty = List.filter pred3 empty
 
       in let unitn = Literal_net.filter pred3 unitn
 
       in let nonunit =
-            let {nextId=nextId;clauses=clauses;fstLits=fstLits;sndLits=sndLits} = nonunit
+            let {nextId;clauses;fstLits;sndLits} = nonunit
             in let clauses' = Intmap.filter (fun x -> pred3 (snd x)) clauses
           in
             if Intmap.size clauses = Intmap.size clauses' then nonunit
@@ -7089,7 +6774,7 @@ let filter pred ({empty=empty;unitn=unitn;nonunit=nonunit}) =
       {empty = empty; unitn = unitn; nonunit = nonunit}
     ;;
 
-let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
+let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -7097,18 +6782,18 @@ let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
 (* ------------------------------------------------------------------------- *)
 
   let matchLit lit' (lit,acc) =
-      match total (Literal.matchLiterals Substitute.empty lit') lit with
+      match Useful.total (Literal.matchLiterals Substitute.empty lit') lit with
         Some sub -> sub :: acc
       | None -> acc;;
 
   let genClauseSubsumes pred cl' lits' cl a =
         let rec mkSubsl acc sub = function
-            [] -> Some (sub, sortMap length Int.compare acc)
+            [] -> Some (sub, Mlist.sortMap length Int.compare acc)
           | (lit' :: lits') ->
             match Mlist.foldl (matchLit lit') [] cl with
               [] -> None
             | [sub'] ->
-              (match total (Substitute.union sub) sub' with
+              (match Useful.total (Substitute.union sub) sub' with
                  None -> None
                | Some sub -> mkSubsl acc sub lits')
             | subs -> mkSubsl (subs :: acc) sub lits'
@@ -7123,7 +6808,7 @@ let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
           | ((sub, (sub' :: subs) :: subsl) :: others) ->
               let others = (sub, subs :: subsl) :: others
             in
-              match total (Substitute.union sub) sub' with
+              match Useful.total (Substitute.union sub) sub' with
                 None -> search others
               | Some sub -> search ((sub,subsl) :: others)
       in
@@ -7138,16 +6823,16 @@ let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
   let unitSubsumes pred unitn =
         let subLit lit =
               let subUnit (lit',cl',a) =
-                  match total (Literal.matchLiterals Substitute.empty lit') lit with
+                  match Useful.total (Literal.matchLiterals Substitute.empty lit') lit with
                     None -> None
                   | Some sub ->
                       let x = (cl',sub,a)
                     in
                       if pred x then Some x else None
             in
-              first subUnit (Literal_net.matchNet unitn lit)
+              Mlist.first subUnit (Literal_net.matchNet unitn lit)
       in
-        first subLit
+        Mlist.first subLit
       ;;
 
   let nonunitSubsumes pred nonunit max cl =
@@ -7156,7 +6841,7 @@ let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
         in let subLit lits (lit,acc) =
             Mlist.foldl addId acc (Literal_net.matchNet lits lit)
 
-        in let {nextId = _; clauses=clauses; fstLits=fstLits; sndLits=sndLits} = nonunit
+        in let {nextId = _; clauses; fstLits; sndLits} = nonunit
 
         in let subCl' (id,_) =
               let (lits',cl',a) = Intmap.get clauses id
@@ -7170,7 +6855,7 @@ let toString subsume = "Subsume{" ^ Int.toString (size subsume) ^ "}";;
         Pset.firstl subCl' cands
       ;;
 
-  let genSubsumes pred ({empty=empty;unitn=unitn;nonunit=nonunit}) max cl =
+  let genSubsumes pred ({empty;unitn;nonunit}) max cl =
       match emptySubsumes pred empty with
         (Some _) as s -> s
       | None ->
@@ -7224,10 +6909,10 @@ let strictlySubsumes = fun pred -> fun subsume -> fun cl ->
     end;;
 *)
 
-let isSubsumed subs cl = Option.isSome (subsumes (kComb true) subs cl);;
+let isSubsumed subs cl = Option.is_some (subsumes (K true) subs cl);;
 
 let isStrictlySubsumed subs cl =
-    Option.isSome (strictlySubsumes (kComb true) subs cl);;
+    Option.is_some (strictlySubsumes (K true) subs cl);;
 
 (* ------------------------------------------------------------------------- *)
 (* Single clause versions.                                                   *)
@@ -7237,7 +6922,7 @@ let clauseSubsumes cl' cl =
       let lits' = sortClause cl'
       and lits = clauseSym (Literal.Set.toList cl)
     in
-      match genClauseSubsumes (kComb true) cl' lits' lits () with
+      match genClauseSubsumes (K true) cl' lits' lits () with
         Some (_,sub,()) -> Some sub
       | None -> None
     ;;
@@ -7255,9 +6940,6 @@ end
 
 module Knuth_bendix_order = struct
 
-open Useful;;
-open Order;;
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -7267,7 +6949,7 @@ let notEqualTerm (x,y) = not (Term.equal x y);;
 let firstNotEqualTerm f l =
     match Mlist.find notEqualTerm l with
       Some (x,y) -> f x y
-    | None -> raise (Bug "firstNotEqualTerm");;
+    | None -> raise (Useful.Bug "firstNotEqualTerm");;
 
 (* ------------------------------------------------------------------------- *)
 (* The weight of all constants must be at least 1, and there must be at most *)
@@ -7276,20 +6958,18 @@ let firstNotEqualTerm f l =
 
 type kbo =
      {weight : Term.function_t -> int;
-      precedence : Term.function_t * Term.function_t -> order};;
+      precedence : Term.function_t -> Term.function_t -> int};;
 
 (* Default weight = uniform *)
 
-let uniformWeight : Term.function_t -> int = kComb 1;;
+let uniformWeight : Term.function_t -> int = K 1;;
 
 (* Default precedence = by arity *)
 
-let arityPrecedence : Term.function_t * Term.function_t -> order =
-    fun ((f1,n1),(f2,n2)) ->
-       match Int.compare (n1,n2) with
-         Less -> Less
-       | Equal -> Name.compare (f1,f2)
-       | Greater -> Greater;;
+let arityPrecedence : Term.function_t -> Term.function_t -> int =
+    fun (f1,n1) (f2,n2) ->
+       let c = Int.compare n1 n2 in
+       if c <> 0 then c else Name.compare f1 f2;;
 
 (* The default order *)
 
@@ -7327,7 +7007,7 @@ let weightTerm weight =
       let rec wt m c = function
           [] -> Weight (m,c)
         | (Term.Var v :: tms) ->
-            let n = Option.getOpt (Name.Map.peek m v, 0)
+            let n = Option.value (Name.Map.peek m v) ~default:0
           in
             wt (Name.Map.insert m (v, n + 1)) (c + 1) tms
         | (Term.Fn (f,a) :: tms) ->
@@ -7370,7 +7050,7 @@ let weightToString = Print.toString ppWeight;;
 (* The Knuth-Bendix term order.                                              *)
 (* ------------------------------------------------------------------------- *)
 
-let compare {weight=weight;precedence=precedence} =
+let compare {weight;precedence} =
       let weightDifference tm1 tm2 =
             let w1 = weightTerm weight tm1
             and w2 = weightTerm weight tm2
@@ -7391,10 +7071,10 @@ let compare {weight=weight;precedence=precedence} =
 
       and precedenceLess x y = match (x,y) with
           (Term.Fn (f1,a1), Term.Fn (f2,a2)) ->
-          (match precedence ((f1, length a1), (f2, length a2)) with
-             Less -> true
-           | Equal -> firstNotEqualTerm weightLess (zip a1 a2)
-           | Greater -> false)
+          let c = precedence (f1, length a1) (f2, length a2) in
+          if c < 0 then true
+          else if c = 0 then firstNotEqualTerm weightLess (zip a1 a2)
+          else false
         | _ -> false
 
       in let weightDiffGreater w tm1 tm2 = weightDiffLess (weightNeg w) tm2 tm1
@@ -7403,33 +7083,33 @@ let compare {weight=weight;precedence=precedence} =
             let w = weightDifference tm1 tm2
           in
             if weightIsZero w then precedenceCmp tm1 tm2
-            else if weightDiffLess w tm1 tm2 then Some Less
-            else if weightDiffGreater w tm1 tm2 then Some Greater
+            else if weightDiffLess w tm1 tm2 then Some (-1)
+            else if weightDiffGreater w tm1 tm2 then Some 1
             else None
 
       and precedenceCmp x y = match (x,y) with
           (Term.Fn (f1,a1), Term.Fn (f2,a2)) ->
-          (match precedence ((f1, length a1), (f2, length a2)) with
-             Less -> Some Less
-           | Equal -> firstNotEqualTerm weightCmp (zip a1 a2)
-           | Greater -> Some Greater)
-        | _ -> raise (Bug "kboOrder.precendenceCmp")
+          let c = precedence (f1, length a1) (f2, length a2) in
+          if c < 0 then Some (-1)
+          else if c = 0 then firstNotEqualTerm weightCmp (zip a1 a2)
+          else Some 1
+        | _ -> raise (Useful.Bug "kboOrder.precendenceCmp")
     in
-      fun (tm1,tm2) ->
-         if Term.equal tm1 tm2 then Some Equal else weightCmp tm1 tm2
+      fun tm1 tm2 ->
+         if Term.equal tm1 tm2 then Some 0 else weightCmp tm1 tm2
     ;;
 
 (*MetisTrace7
-let compare = fun kbo -> fun (tm1,tm2) ->
+let compare = fun kbo -> fun tm1 tm2 ->
     let
       let () = Print.trace Term.pp "Knuth_bendix_order.compare: tm1" tm1
       let () = Print.trace Term.pp "Knuth_bendix_order.compare: tm2" tm2
-      let result = compare kbo (tm1,tm2)
+      let result = compare kbo tm1 tm2
       let () =
           match result with
             None -> trace "Knuth_bendix_order.compare: result = Incomparable\n"
           | Some x ->
-            Print.trace Print.ppOrder "Knuth_bendix_order.compare: result" x
+            Print.trace Print.ppInt "Knuth_bendix_order.compare: result" x
     in
       result
     end;;
@@ -7443,9 +7123,6 @@ end
 (* ========================================================================= *)
 
 module Rewrite = struct
-
-open Useful;;
-open Order;;
 
 (* ------------------------------------------------------------------------- *)
 (* Orientations of equations.                                                *)
@@ -7469,7 +7146,7 @@ let toStringOrientOption orto =
 (* A type of rewrite systems.                                                *)
 (* ------------------------------------------------------------------------- *)
 
-type reductionOrder = Term.term * Term.term -> order option;;
+type reductionOrder = Term.term -> Term.term -> int option;;
 
 type equationId = int;;
 
@@ -7486,14 +7163,14 @@ type rewrite =
     Rewrite of rewrite_t;;
 
 let updateWaiting rw waiting =
-      let Rewrite {order=order; known=known; redexes=redexes; subterms=subterms; waiting = _} = rw
+      let Rewrite {order; known; redexes; subterms; waiting = _} = rw
     in
       Rewrite
         {order = order; known = known; redexes = redexes;
          subterms = subterms; waiting = waiting}
     ;;
 
-let deleteWaiting (Rewrite {waiting=waiting} as rw) id =
+let deleteWaiting (Rewrite {waiting} as rw) id =
     updateWaiting rw (Intset.delete waiting id);;
 
 (* ------------------------------------------------------------------------- *)
@@ -7509,11 +7186,11 @@ let newRewrite order =
        subterms = Term_net.newNet {fifo = false};
        waiting = Intset.empty};;
 
-let peek (Rewrite {known=known}) id = Intmap.peek known id;;
+let peek (Rewrite {known}) id = Intmap.peek known id;;
 
-let size (Rewrite {known=known}) = Intmap.size known;;
+let size (Rewrite {known}) = Intmap.size known;;
 
-let equations (Rewrite {known=known}) =
+let equations (Rewrite {known}) =
     Intmap.foldr (fun (_,(eqn,_),eqns) -> eqn :: eqns) [] known;;
 
 
@@ -7578,10 +7255,10 @@ end;;
 
 let termReducible order known id =
       let eqnRed ((l,r),_) tm =
-          match total (Substitute.matchTerms Substitute.empty l) tm with
+          match Useful.total (Substitute.matchTerms Substitute.empty l) tm with
             None -> false
           | Some sub ->
-            order (tm, Substitute.subst (Substitute.normalize sub) r) = Some Greater
+            order tm (Substitute.subst (Substitute.normalize sub) r) = Some 1
 
       in let knownRed tm (eqnId,(eqn,ort)) =
           eqnId <> id &&
@@ -7610,9 +7287,9 @@ let thmReducible order known id th =
 (* ------------------------------------------------------------------------- *)
 
 let orderToOrient = function
-    (Some Equal) -> raise (Error "Rewrite.orient: reflexive")
-  | (Some Greater) -> Some Left_to_right
-  | (Some Less) -> Some Right_to_left
+    Some 0 -> failwith "Rewrite.orient: reflexive"
+  | Some c when c > 0 -> Some Left_to_right
+  | Some _ -> Some Right_to_left
   | None -> None;;
 
   let ins redexes redex id ort = Term_net.insert redexes (redex,(id,ort));;
@@ -7624,12 +7301,12 @@ let orderToOrient = function
       | None -> ins (ins redexes l id Left_to_right) r id Right_to_left;;
 
 
-let add (Rewrite {known=known} as rw) (id,eqn) =
+let add (Rewrite {known} as rw) (id,eqn) =
     if Intmap.inDomain id known then rw
     else
-        let Rewrite {order=order;redexes=redexes;subterms=subterms;waiting=waiting} = rw
+        let Rewrite {order;redexes;subterms;waiting} = rw
 
-        in let ort = orderToOrient (order (fst eqn))
+        in let ort = let (l,r) = fst eqn in orderToOrient (order l r)
 
         in let known = Intmap.insert known (id,(eqn,ort))
 
@@ -7655,8 +7332,8 @@ let add (Rewrite {known=known} as rw) (id,eqn) =
 (* Rewriting (the order must be a refinement of the rewrite order).          *)
 (* ------------------------------------------------------------------------- *)
 
-  let reorder ((i,_),(j,_)) = Int.compare (j,i);;
-  let matchingRedexes redexes tm = sort reorder (Term_net.matchNet redexes tm);;
+  let reorder (i,_) (j,_) = Int.compare j i;;
+  let matchingRedexes redexes tm = List.sort reorder (Term_net.matchNet redexes tm);;
 
 
 let wellOriented x y = match (x,y) with
@@ -7675,21 +7352,21 @@ let orientedEquation dir eqn = match dir with
 
 let rewrIdConv' order known redexes id tm =
       let rewr (id',lr) =
-            let _ = id <> id' || raise (Error "same theorem")
+            let _ = id <> id' || failwith "same theorem"
             in let (eqn,ort) = Intmap.get known id'
-            in let _ = wellOriented ort lr || raise (Error "orientation")
+            in let _ = wellOriented ort lr || failwith "orientation"
             in let (l,r) = redexResidue lr eqn
             in let sub = Substitute.normalize (Substitute.matchTerms Substitute.empty l tm)
             in let tm' = Substitute.subst sub r
-            in let _ = Option.isSome ort ||
-                    order (tm,tm') = Some Greater ||
-                    raise (Error "order")
+            in let _ = Option.is_some ort ||
+                    order tm tm' = Some 1 ||
+                    failwith "order"
             in let (_,th) = orientedEquation lr eqn
           in
             (tm', Thm.subst sub th)
     in
-      match first (total rewr) (matchingRedexes redexes tm) with
-        None -> raise (Error "Rewrite.rewrIdConv: no matching rewrites")
+      match Mlist.first (Useful.total rewr) (matchingRedexes redexes tm) with
+        None -> failwith "Rewrite.rewrIdConv: no matching rewrites"
       | Some res -> res
     ;;
 
@@ -7700,19 +7377,19 @@ let rewriteIdConv' order known redexes id =
 let mkNeqConv order lit =
       let (l,r) = Literal.destNeq lit
     in
-      match order (l,r) with
-        None -> raise (Error "incomparable")
-      | Some Less ->
+      match order l r with
+        None -> failwith "incomparable"
+      | Some c when c < 0 ->
           let th = Rule.symmetryRule l r
         in
           fun tm ->
-             if Term.equal tm r then (l,th) else raise (Error "mkNeqConv: RL")
-      | Some Equal -> raise (Error "irreflexive")
-      | Some Greater ->
+             if Term.equal tm r then (l,th) else failwith "mkNeqConv: RL"
+      | Some 0 -> failwith "irreflexive"
+      | Some _ ->
           let th = Thm.assume lit
         in
           fun tm ->
-             if Term.equal tm l then (r,th) else raise (Error "mkNeqConv: LR")
+             if Term.equal tm l then (r,th) else failwith "mkNeqConv: LR"
     ;;
 
 type neqConvs = Neq_convs of Rule.conv Literal.Map.map;;
@@ -7722,7 +7399,7 @@ let neqConvsEmpty = Neq_convs (Literal.Map.newMap ());;
 let neqConvsNull (Neq_convs m) = Literal.Map.null m;;
 
 let neqConvsAdd order (Neq_convs m) lit =
-    match total (mkNeqConv order) lit with
+    match Useful.total (mkNeqConv order) lit with
       None -> None
     | Some conv -> Some (Neq_convs (Literal.Map.insert m (lit,conv)));;
 
@@ -7770,7 +7447,7 @@ let rewriteIdEqn' order known redexes id ((l_r,th) as eqn) =
          else if not (Thm.negateMember lit litTh) then litTh
          else Thm.resolve lit th litTh);;
 (*MetisDebug
-    handle Error err -> raise (Error ("Rewrite.rewriteIdEqn':\n" ^ err));;
+    handle Failure err -> failwith ("Rewrite.rewriteIdEqn':\n" ^ err);;
 *)
 
 let rewriteIdLiteralsRule' order known redexes id lits th =
@@ -7782,7 +7459,8 @@ let rewriteIdLiteralsRule' order known redexes id lits th =
           in
             if Literal.equal lit lit' then acc
             else
-                let th = Thm.resolve lit th litTh
+                let th = if Thm.member lit th then Thm.resolve lit th litTh
+                         else th
               in
                 match neqConvsAdd order neq lit' with
                   Some neq -> (true,neq,lits,th)
@@ -7822,30 +7500,30 @@ let rewriteIdRule' = fun order -> fun known -> fun redexes -> fun id -> fun th -
       let () = Print.trace Thm.pp "Rewrite.rewriteIdRule': result" result
 *)
       let _ = not (thmReducible order known id result) ||
-              raise Bug "rewriteIdRule: should be normalized"
+              raise Useful.Bug "rewriteIdRule: should be normalized"
     in
       result
     end
-    handle Error err -> raise (Error ("Rewrite.rewriteIdRule:\n" ^ err));;
+    handle Failure err -> failwith ("Rewrite.rewriteIdRule:\n" ^ err);;
 *)
 
-let rewrIdConv (Rewrite {known=known;redexes=redexes}) order =
+let rewrIdConv (Rewrite {known;redexes}) order =
     rewrIdConv' order known redexes;;
 
 let rewrConv rewrite order = rewrIdConv rewrite order (-1);;
 
-let rewriteIdConv (Rewrite {known=known;redexes=redexes}) order =
+let rewriteIdConv (Rewrite {known;redexes}) order =
     rewriteIdConv' order known redexes;;
 
 let rewriteConv rewrite order = rewriteIdConv rewrite order (-1);;
 
-let rewriteIdLiteralsRule (Rewrite {known=known;redexes=redexes}) order =
+let rewriteIdLiteralsRule (Rewrite {known;redexes}) order =
     rewriteIdLiteralsRule' order known redexes;;
 
 let rewriteLiteralsRule rewrite order =
     rewriteIdLiteralsRule rewrite order (-1);;
 
-let rewriteIdRule (Rewrite {known=known;redexes=redexes}) order =
+let rewriteIdRule (Rewrite {known;redexes}) order =
     rewriteIdRule' order known redexes;;
 
 let rewriteRule rewrite order = rewriteIdRule rewrite order (-1);;
@@ -7884,8 +7562,8 @@ let findReducibles order known subterms id =
             else
                 let tm' = Substitute.subst (Substitute.normalize sub) r
               in
-                if order (tm,tm') = Some Greater then ()
-                else raise (Error "order")
+                if order tm tm' = Some 1 then ()
+                else failwith "order"
 
       in let addRed lr ((id',left,path),todo) =
           if id <> id' && not (Intset.member id' todo) &&
@@ -7901,7 +7579,7 @@ let findReducibles order known subterms id =
 
 let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
       let (eq0,_) = eqn0
-      in let Rewrite {order=order;known=known;redexes=redexes;subterms=subterms;waiting=waiting} = rw
+      in let Rewrite {order;known;redexes;subterms;waiting} = rw
       in let (eq,_) as eqn = rewriteIdEqn' order known redexes id eqn0
       in let identical =
             let (l0,r0) = eq0
@@ -7914,7 +7592,7 @@ let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
       in let changed =
           if not newx && identical then changed else Intset.add changed id
       in let ort =
-          if same_redexes then Some ort0 else total orderToOrient (order eq)
+          if same_redexes then Some ort0 else let (l,r) = eq in Useful.total orderToOrient (order l r)
     in
       match ort with
         None ->
@@ -7999,7 +7677,7 @@ let pick known set =
         let () = Print.trace ppPl "Rewrite.rebuild: rpl" rpl
         let () = Print.trace ppPl "Rewrite.rebuild: spl" spl
 *)
-        let Rewrite {order=order;known=known;redexes=redexes;subterms=subterms;waiting=waiting} = rw
+        let Rewrite {order;known;redexes;subterms;waiting} = rw
         in let redexes = cleanRedexes known redexes rpl
         in let subterms = cleanSubterms known subterms spl
       in
@@ -8011,7 +7689,7 @@ let pick known set =
            waiting = waiting}
       ;;
 
-let rec reduceAcc (rpl, spl, todo, (Rewrite {known=known;waiting=waiting} as rw), changed) =
+let rec reduceAcc (rpl, spl, todo, (Rewrite {known;waiting} as rw), changed) =
     match pick known todo with
       Some (id,eqn_ort) ->
         let todo = Intset.delete todo id
@@ -8025,7 +7703,7 @@ let rec reduceAcc (rpl, spl, todo, (Rewrite {known=known;waiting=waiting} as rw)
           reduceAcc (reduce1 true id eqn_ort (rpl,spl,todo,rw,changed))
       | None -> (rebuild rpl spl rw, Intset.toList changed);;
 
-let isReduced (Rewrite {waiting=waiting}) = Intset.null waiting;;
+let isReduced (Rewrite {waiting}) = Intset.null waiting;;
 
 let reduce' rw =
     if isReduced rw then (rw,[])
@@ -8046,11 +7724,11 @@ let reduce' = fun rw ->
       let ths = List.map (fun (id,((_,th),_)) -> (id,th)) (Intmap.toList known')
       let _ =
           not (List.exists (uncurry (thmReducible order known')) ths) ||
-          raise Bug "Rewrite.reduce': not fully reduced"
+          raise Useful.Bug "Rewrite.reduce': not fully reduced"
     in
       result
     end
-    handle Error err -> raise (Bug ("Rewrite.reduce': shouldn't fail\n" ^ err));;
+    handle Failure err -> raise (Useful.Bug ("Rewrite.reduce': shouldn't fail\n" ^ err));;
 *)
 
 let reduce rw = fst (reduce' rw);;
@@ -8061,12 +7739,12 @@ let reduce rw = fst (reduce' rw);;
 
   let addEqn (id_eqn,rw) = add rw id_eqn;;
   let orderedRewrite order ths =
-      let rw = Mlist.foldl addEqn (newRewrite order) (enumerate ths)
+      let rw = Mlist.foldl addEqn (newRewrite order) (Mlist.enumerate ths)
     in
       rewriteRule rw order
     ;;
 
-  let order : reductionOrder = kComb (Some Greater);;
+  let order : reductionOrder = fun _ _ -> Some 1;;
   let rewrite = orderedRewrite order;;
 
 
@@ -8077,8 +7755,6 @@ end
 (* ========================================================================= *)
 
 module Units = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of unit store.                                                     *)
@@ -8097,7 +7773,7 @@ let empty = Units (Literal_net.newNet {fifo = false});;
 
 let size (Units net) = Literal_net.size net;;
 
-let toString units = "U{" ^ Int.toString (size units) ^ "}";;
+let toString units = "U{" ^ string_of_int (size units) ^ "}";;
 
 (* ------------------------------------------------------------------------- *)
 (* Add units into the store.                                                 *)
@@ -8106,7 +7782,7 @@ let toString units = "U{" ^ Int.toString (size units) ^ "}";;
 let add (Units net) ((lit,th) as uTh) =
       let net = Literal_net.insert net (lit,uTh)
     in
-      match total Literal.sym lit with
+      match Useful.total Literal.sym lit with
         None -> Units net
       | Some ((pol,_) as lit') ->
           let th' = (if pol then Rule.symEq else Rule.symNeq) lit th
@@ -8123,11 +7799,11 @@ let addList = Mlist.foldl (fun (th,u) -> add u th);;
 
 let matchUnits (Units net) lit =
       let check ((lit',_) as uTh) =
-          match total (Literal.matchLiterals Substitute.empty lit') lit with
+          match Useful.total (Literal.matchLiterals Substitute.empty lit') lit with
             None -> None
           | Some sub -> Some (uTh,sub)
     in
-      first check (Literal_net.matchNet net lit)
+      Mlist.first check (Literal_net.matchNet net lit)
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -8136,7 +7812,7 @@ let matchUnits (Units net) lit =
 
 let reduce units =
       let red1 (lit,news_th) =
-          match total Literal.destIrrefl lit with
+          match Useful.total Literal.destIrrefl lit with
             Some tm ->
               let (news,th) = news_th
               in let th = Thm.resolve lit th (Thm.refl tm)
@@ -8172,9 +7848,6 @@ end
 
 module Clause = struct
 
-open Useful;;
-open Order;;
-
 (* ------------------------------------------------------------------------- *)
 (* Helper functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -8189,7 +7862,7 @@ let newId =
           in
             n
     in
-      fun () -> Portable.critical newI ()
+      fun () -> Useful.critical newI ()
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -8217,7 +7890,7 @@ type clause = Clause of clauseInfo;;
 (* Pretty printing.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let toString (Clause {id=id;thm=thm}) = Thm.toString thm;;
+let toString (Clause {id;thm}) = Thm.toString thm;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -8244,36 +7917,36 @@ let newClause parameters thm =
 
 let literals cl = Thm.clause (thm cl);;
 
-let isTautology (Clause {thm=thm}) = Thm.isTautology thm;;
+let isTautology (Clause {thm}) = Thm.isTautology thm;;
 
-let isContradiction (Clause {thm=thm}) = Thm.isContradiction thm;;
+let isContradiction (Clause {thm}) = Thm.isContradiction thm;;
 
 (* ------------------------------------------------------------------------- *)
 (* The term ordering is used to cut down inferences.                         *)
 (* ------------------------------------------------------------------------- *)
 
-let strictlyLess ordering x_y =
-    match Knuth_bendix_order.compare ordering x_y with
-      Some Less -> true
+let strictlyLess ordering x y =
+    match Knuth_bendix_order.compare ordering x y with
+      Some c when c < 0 -> true
     | _ -> false;;
 
-let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
-    not orderTerms || not (strictlyLess ordering l_r);;
+let isLargerTerm ({ordering;orderTerms} : parameters) (l,r) =
+    not orderTerms || not (strictlyLess ordering l r);;
 
   let atomToTerms atm =
-      match total Atom.destEq atm with
+      match Useful.total Atom.destEq atm with
         None -> [Term.Fn atm]
       | Some (l,r) -> [l;r];;
 
   let notStrictlyLess ordering (xs,ys) =
-        let less x = List.exists (fun y -> strictlyLess ordering (x,y)) ys
+        let less x = List.exists (fun y -> strictlyLess ordering x y) ys
       in
-        not (Mlist.all less xs)
+        not (List.for_all less xs)
       ;;
 
-  let isLargerLiteral ({ordering=ordering;orderLiterals=orderLiterals} : parameters) lits =
+  let isLargerLiteral ({ordering;orderLiterals} : parameters) lits =
       match orderLiterals with
-        No_literal_order -> kComb true
+        No_literal_order -> K true
       | Unsigned_literal_order ->
           let addLit ((_,atm),acc) = atomToTerms atm @ acc
 
@@ -8281,8 +7954,8 @@ let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
         in
           fun (_,atm') -> notStrictlyLess ordering (atomToTerms atm', tms)
       | Positive_literal_order ->
-        match Literal.Set.findl (kComb true) lits with
-          None -> kComb true
+        match Literal.Set.findl (K true) lits with
+          None -> K true
         | Some (pol,_) ->
             let addLit ((p,atm),acc) =
                 if p = pol then atomToTerms atm @ acc else acc
@@ -8295,7 +7968,7 @@ let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
           ;;
 
 
-let largestLiterals (Clause {parameters=parameters;thm=thm}) =
+let largestLiterals (Clause {parameters;thm}) =
       let litSet = Thm.clause thm
       in let isLarger = isLargerLiteral parameters litSet
       in let addLit (lit,s) = if isLarger lit then Literal.Set.add s lit else s
@@ -8315,12 +7988,12 @@ let largestLiterals = fun cl ->
     end;;
 *)
 
-let largestEquations (Clause {parameters=parameters} as cl) =
+let largestEquations (Clause {parameters} as cl) =
       let addEq lit ort ((l,_) as l_r) acc =
           if isLargerTerm parameters l_r then (lit,ort,l) :: acc else acc
 
       in let addLit (lit,acc) =
-          match total Literal.destEq lit with
+          match Useful.total Literal.destEq lit with
             None -> acc
           | Some (l,r) ->
               let acc = addEq lit Rewrite.Right_to_left (r,l) acc
@@ -8352,20 +8025,20 @@ let subsumes (subs : clause Subsume.subsume) cl =
 (* Simplifying rules: these preserve the clause id.                          *)
 (* ------------------------------------------------------------------------- *)
 
-let freshVars (Clause {parameters=parameters;id=id;thm=thm}) =
+let freshVars (Clause {parameters;id;thm}) =
     Clause {parameters = parameters; id = id; thm = Rule.freshVars thm};;
 
-let simplify (Clause {parameters=parameters;id=id;thm=thm}) =
+let simplify (Clause {parameters;id;thm}) =
     match Rule.simplify thm with
       None -> None
     | Some thm -> Some (Clause {parameters = parameters; id = id; thm = thm});;
 
-let reduce units (Clause {parameters=parameters;id=id;thm=thm}) =
+let reduce units (Clause {parameters;id;thm}) =
     Clause {parameters = parameters; id = id; thm = Units.reduce units thm};;
 
-let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
+let rewrite rewr (Clause {parameters;id;thm}) =
       let simp th =
-            let {ordering=ordering} = parameters
+            let {ordering} = parameters
             in let cmp = Knuth_bendix_order.compare ordering
           in
             Rewrite.rewriteIdRule rewr cmp id th
@@ -8389,14 +8062,14 @@ let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
     in
       result;;
 (*MetisDebug
-    handle Error err -> raise (Error ("Clause.rewrite:\n" ^ err));;
+    handle Failure err -> failwith "Clause.rewrite:\n" ^ err);;
 *)
 
 (* ------------------------------------------------------------------------- *)
 (* Inference rules: these generate new clause ids.                           *)
 (* ------------------------------------------------------------------------- *)
 
-let factor (Clause {parameters=parameters;thm=thm} as cl) =
+let factor (Clause {parameters;thm} as cl) =
       let lits = largestLiterals cl
 
       in let apply sub = newClause parameters (Thm.subst sub thm)
@@ -8422,7 +8095,7 @@ let resolve (cl1,lit1) (cl2,lit2) =
       let () = Print.trace pp "Clause.resolve: cl2" cl2
       let () = Print.trace Literal.pp "Clause.resolve: lit2" lit2
 *)
-      let Clause {parameters=parameters; thm = th1} = cl1
+      let Clause {parameters; thm = th1} = cl1
       and Clause {thm = th2} = cl2
       in let sub = Literal.unify Substitute.empty lit1 (Literal.negate lit2)
 (*MetisTrace5
@@ -8436,12 +8109,12 @@ let resolve (cl1,lit1) (cl2,lit2) =
 (*MetisTrace5
               (trace "Clause.resolve: th1 violates ordering\n";; false) ||
 *)
-              raise (Error "resolve: clause1: ordering constraints")
+              failwith "resolve: clause1: ordering constraints"
       in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 ||
 (*MetisTrace5
               (trace "Clause.resolve: th2 violates ordering\n";; false) ||
 *)
-              raise (Error "resolve: clause2: ordering constraints")
+              failwith "resolve: clause2: ordering constraints"
       in let th = Thm.resolve lit1 th1 th2
 (*MetisTrace5
       let () = Print.trace Thm.pp "Clause.resolve: th" th
@@ -8465,7 +8138,7 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       let () = Print.trace Term.ppPath "Clause.paramodulate: path2" path2
       let () = Print.trace Term.pp "Clause.paramodulate: tm2" tm2
 *)
-      let Clause {parameters=parameters; thm = th1} = cl1
+      let Clause {parameters; thm = th1} = cl1
       and Clause {thm = th2} = cl2
       in let sub = Substitute.unify Substitute.empty tm1 tm2
       in let lit1 = Literal.subst sub lit1
@@ -8474,9 +8147,9 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       and th2 = Thm.subst sub th2
 
       in let _ = isLargerLiteral parameters (Thm.clause th1) lit1 ||
-              raise (Error "Clause.paramodulate: with clause: ordering")
+              failwith "Clause.paramodulate: with clause: ordering"
       in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 ||
-              raise (Error "Clause.paramodulate: into clause: ordering")
+              failwith "Clause.paramodulate: into clause: ordering"
 
       in let eqn = (Literal.destEq lit1, th1)
       in let (l_r,_) as eqn =
@@ -8487,7 +8160,7 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       let () = Print.trace Rule.ppEquation "Clause.paramodulate: eqn" eqn
 *)
       in let _ = isLargerTerm parameters l_r ||
-              raise (Error "Clause.paramodulate: equation: ordering constraints")
+              failwith "Clause.paramodulate: equation: ordering constraints"
       in let th = Rule.rewrRule eqn lit2 path2 th2
 (*MetisTrace5
       let () = Print.trace Thm.pp "Clause.paramodulate: th" th
@@ -8495,11 +8168,11 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
     in
       Clause {parameters = parameters; id = newId (); thm = th}
 (*MetisTrace5
-    handle Error err ->
+    handle Failure err ->
       let
         let () = trace ("Clause.paramodulate: failed: " ^ err ^ "\n")
       in
-        raise Error err
+        raise Failure err
       end;;
 *)
 
@@ -8520,8 +8193,6 @@ end
 
 module Active = struct
 
-open Useful;;
-open Order;;
 open Ax_cj
 
 (* ------------------------------------------------------------------------- *)
@@ -8536,7 +8207,7 @@ local
             let
               let {id, thm = th, ...} = Clause.dest cl
             in
-              match total Thm.destUnitEq th with
+              match Useful.total Thm.destUnitEq th with
                 Some l_r -> Rewrite.add rw (id,(l_r,th))
               | None -> rw
             end
@@ -8563,7 +8234,7 @@ local
         let allClause2 cl_lit cl =
             let
               let allLiteral2 lit =
-                  match total (Clause.resolve cl_lit) (cl,lit) with
+                  match Useful.total (Clause.resolve cl_lit) (cl,lit) with
                     None -> true
                   | Some cl -> allFactors red [cl]
             in
@@ -8606,7 +8277,7 @@ local
                     let para = Clause.paramodulate cl_lit_ort_tm
 
                     let allSubterms (path,tm) =
-                        match total para (cl,lit,path,tm) with
+                        match Useful.total para (cl,lit,path,tm) with
                           None -> true
                         | Some cl -> allFactors red [cl]
                   in
@@ -8639,7 +8310,7 @@ local
                   let
                     let allCl2 x = List.all (allClause2 x) cls
                   in
-                    match total Literal.destEq lit with
+                    match Useful.total Literal.destEq lit with
                       None -> true
                     | Some (l,r) ->
                       allCl2 (cl,lit,Rewrite.Left_to_right,l) &&
@@ -8717,7 +8388,7 @@ end;;
 
 let checkSaturated ordering subs cls =
     if isSaturated ordering subs cls then ()
-    else raise (Bug "Active.checkSaturated");;
+    else raise (Useful.Bug "Active.checkSaturated");;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -8753,8 +8424,8 @@ let getSubsume (Active {subsume = s}) = s;;
 
 let setRewrite active rewrite =
       let Active
-            {parameters=parameters;clauses=clauses;units=units;subsume=subsume;literals=literals;equations=equations;
-             subterms=subterms;allSubterms=allSubterms} = active
+            {parameters;clauses;units;subsume;literals;equations;
+             subterms;allSubterms} = active
     in
       Active
         {parameters = parameters; clauses = clauses; units = units;
@@ -8775,8 +8446,8 @@ let default : parameters =
 
 open Term_net
 let empty parameters =
-      let {clause=clause} = parameters
-      in let {Clause.ordering=ordering} = clause
+      let {clause} = parameters
+      in let {Clause.ordering} = clause
     in
       Active
         {parameters = parameters;
@@ -8790,7 +8461,7 @@ let empty parameters =
          allSubterms = Term_net.newNet {fifo = false}}
     ;;
 
-let size (Active {clauses=clauses}) = Intmap.size clauses;;
+let size (Active {clauses}) = Intmap.size clauses;;
 
 let clauses (Active {clauses = cls}) =
       let add (_,cl,acc) = cl :: acc
@@ -8834,10 +8505,29 @@ let toString active = "Active{" ^ string_of_int (size active) ^ "}";;
 let simplify simp units rewr subs =
       let {subsumes = s; reduce = r; rewrites = w} = simp
 
-      in let rewrite cl =
+      in let rec rewrite cl =
             let cl' = Clause.rewrite rewr cl
           in
-            if Clause.equalThms cl cl' then Some cl else Clause.simplify cl'
+            if Clause.equalThms cl cl' then Some cl
+            else
+              match Clause.simplify cl' with
+                None -> None
+              | Some cl'' ->
+                (*                                                         *)
+                (* Post-rewrite simplification can enable more rewrites:   *)
+                (*                                                         *)
+                (*  ~(X = f(X)) \/ ~(g(Y) = f(X)) \/ ~(c = f(X))           *)
+                (* ---------------------------------------------- rewrite  *)
+                (*  ~(X = f(X)) \/ ~(g(Y) = X) \/ ~(c = X)                 *)
+                (* ---------------------------------------------- simplify *)
+                (*  ~(g(Y) = f(g(Y))) \/ ~(c = g(Y))                       *)
+                (* ---------------------------------------------- rewrite  *)
+                (*  ~(c = f(c)) \/ ~(c = g(Y))                             *)
+                (*                                                         *)
+                (* This was first observed in a bug discovered by Martin   *)
+                (* Desharnais and Jasmin Blanchett                         *)
+                (*                                                         *)
+                if Clause.equalThms cl' cl'' then Some cl' else rewrite cl''
     in
       fun cl ->
          match Clause.simplify cl with
@@ -8881,7 +8571,7 @@ let simplify = fun simp -> fun units -> fun rewr -> fun subs -> fun cl ->
                 let () = f ()
               in
                 raise
-                  Bug
+                  Useful.Bug
                     ("Active.simplify: clause should have been simplified "^e)
               end
     in
@@ -8890,7 +8580,7 @@ let simplify = fun simp -> fun units -> fun rewr -> fun subs -> fun cl ->
 *)
 
 let simplifyActive simp active =
-      let Active {units=units;rewrite=rewrite;subsume=subsume} = active
+      let Active {units;rewrite;subsume} = active
     in
       simplify simp units rewrite subsume
     ;;
@@ -8902,7 +8592,7 @@ let simplifyActive simp active =
 let addUnit units cl =
       let th = Clause.thm cl
     in
-      match total Thm.destUnit th with
+      match Useful.total Thm.destUnit th with
         Some lit -> Units.add units (lit,th)
       | None -> units
     ;;
@@ -8910,7 +8600,7 @@ let addUnit units cl =
 let addRewrite rewrite cl =
       let th = Clause.thm cl
     in
-      match total Thm.destUnitEq th with
+      match Useful.total Thm.destUnitEq th with
         Some l_r -> Rewrite.add rewrite (Clause.id cl, (l_r,th))
       | None -> rewrite
     ;;
@@ -8948,8 +8638,8 @@ let addAllSubterms allSubterms cl =
 
 let addClause active cl =
       let Active
-            {parameters=parameters;clauses=clauses;units=units;rewrite=rewrite;subsume=subsume;literals=literals;
-             equations=equations;subterms=subterms;allSubterms=allSubterms} = active
+            {parameters;clauses;units;rewrite;subsume;literals;
+             equations;subterms;allSubterms} = active
       in let clauses = Intmap.insert clauses (Clause.id cl, cl)
       and subsume = addSubsume subsume cl
       and literals = addLiterals literals cl
@@ -8966,8 +8656,8 @@ let addClause active cl =
 
 let addFactorClause active cl =
       let Active
-            {parameters=parameters;clauses=clauses;units=units;rewrite=rewrite;subsume=subsume;literals=literals;
-             equations=equations;subterms=subterms;allSubterms=allSubterms} = active
+            {parameters;clauses;units;rewrite;subsume;literals;
+             equations;subterms;allSubterms} = active
       in let units = addUnit units cl
       and rewrite = addRewrite rewrite cl
     in
@@ -8988,7 +8678,7 @@ let deduceResolution literals cl ((_,atm) as lit, acc) =
           print_endline ("lit1 = " ^ Literal.toString lit1);
           print_endline ("cl = " ^ Clause.toString cl);
           print_endline ("lit = " ^ Literal.toString lit);*)
-          match total (Clause.resolve cl_lit) (cl,lit) with
+          match Useful.total (Clause.resolve cl_lit) (cl,lit) with
             Some cl' -> cl' :: acc
           | None -> acc
 (*MetisTrace4
@@ -9002,7 +8692,7 @@ let deduceResolution literals cl ((_,atm) as lit, acc) =
 
 let deduceParamodulationWith subterms cl ((lit,ort,tm),acc) =
       let para (cl_lit_path_tm,acc) =
-          match total (Clause.paramodulate (cl,lit,ort,tm)) cl_lit_path_tm with
+          match Useful.total (Clause.paramodulate (cl,lit,ort,tm)) cl_lit_path_tm with
             Some cl' -> cl' :: acc
           | None -> acc
     in
@@ -9011,7 +8701,7 @@ let deduceParamodulationWith subterms cl ((lit,ort,tm),acc) =
 
 let deduceParamodulationInto equations cl ((lit,path,tm),acc) =
       let para (cl_lit_ort_tm,acc) =
-          match total (Clause.paramodulate cl_lit_ort_tm) (cl,lit,path,tm) with
+          match Useful.total (Clause.paramodulate cl_lit_ort_tm) (cl,lit,path,tm) with
             Some cl' -> cl' :: acc
           | None -> acc
     in
@@ -9019,7 +8709,7 @@ let deduceParamodulationInto equations cl ((lit,path,tm),acc) =
     ;;
 
 let deduce active cl =
-      let Active {parameters=parameters;literals=literals;equations=equations;subterms=subterms} = active
+      let Active {parameters;literals;equations;subterms} = active
 
       in let lits = Clause.largestLiterals cl
       in let eqns = Clause.largestEquations cl
@@ -9056,7 +8746,7 @@ let deduce active cl =
 (* ------------------------------------------------------------------------- *)
 
   let clause_rewritables active =
-        let Active {clauses=clauses;rewrite=rewrite} = active
+        let Active {clauses;rewrite} = active
 
         in let rewr (id,cl,ids) =
               let cl' = Clause.rewrite rewrite cl
@@ -9078,8 +8768,8 @@ let deduce active cl =
       | Some _ -> [];;
 
   let rewrite_rewritables active rewr_ids =
-        let Active {parameters=parameters;rewrite=rewrite;clauses=clauses;allSubterms=allSubterms} = active
-        in let {clause = {Clause.ordering=ordering}} = parameters
+        let Active {parameters;rewrite;clauses;allSubterms} = active
+        in let {clause = {Clause.ordering}} = parameters
         in let order = Knuth_bendix_order.compare ordering
 
         in let addRewr (id,acc) =
@@ -9087,13 +8777,13 @@ let deduce active cl =
 
         in let addReduce ((l,r,ord),acc) =
               let isValidRewr tm =
-                  match total (Substitute.matchTerms Substitute.empty l) tm with
+                  match Useful.total (Substitute.matchTerms Substitute.empty l) tm with
                     None -> false
                   | Some sub ->
                     ord ||
                       let tm' = Substitute.subst (Substitute.normalize sub) r
                     in
-                      order (tm,tm') = Some Greater
+                      order tm tm' = Some 1
 
               in let addRed ((cl,tm),acc) =
 (*MetisTrace5
@@ -9156,7 +8846,7 @@ let deduce active cl =
                 let () = Print.trace ppIds
                            "Active.rewritables: rewrite_ids" rewrite_ids
               in
-                raise Bug "Active.rewritables: ~(rewrite_ids SUBSET clause_ids)"
+                raise Useful.Bug "Active.rewritables: ~(rewrite_ids SUBSET clause_ids)"
               end
       in
         if choose_clause_rewritables active ids then clause_ids else rewrite_ids
@@ -9171,15 +8861,15 @@ let deduce active cl =
           in let clausePred cl = idPred (Clause.id cl)
 
           in let Active
-                {parameters=parameters;
-                 clauses=clauses;
-                 units=units;
-                 rewrite=rewrite;
-                 subsume=subsume;
-                 literals=literals;
-                 equations=equations;
-                 subterms=subterms;
-                 allSubterms=allSubterms} = active
+                {parameters;
+                 clauses;
+                 units;
+                 rewrite;
+                 subsume;
+                 literals;
+                 equations;
+                 subterms;
+                 allSubterms} = active
 
           in let cP1 (x,_) = clausePred x
           in let cP1_4 (x,_,_,_) = clausePred x
@@ -9202,7 +8892,7 @@ let deduce active cl =
              allSubterms = allSubterms}
         ;;
 
-  let extract_rewritables (Active {clauses=clauses;rewrite=rewrite} as active) =
+  let extract_rewritables (Active {clauses;rewrite} as active) =
       if Rewrite.isReduced rewrite then (active,[])
       else
 (*MetisTrace3
@@ -9219,8 +8909,8 @@ let deduce active cl =
         in
           (delete active ids, cls)
 (*MetisDebug
-        handle Error err ->
-          raise (Bug ("Active.extract_rewritables: shouldn't fail\n" ^ err));;
+        handle Failure err ->
+          raise (Useful.Bug ("Active.extract_rewritables: shouldn't fail\n" ^ err));;
 *)
 ;;
 
@@ -9229,15 +8919,15 @@ let deduce active cl =
 (* ------------------------------------------------------------------------- *)
 
   let prefactor_simplify active subsume =
-        let Active {parameters=parameters;units=units;rewrite=rewrite} = active
-        in let {prefactor=prefactor} = parameters
+        let Active {parameters;units;rewrite} = active
+        in let {prefactor} = parameters
       in
         simplify prefactor units rewrite subsume
       ;;
 
   let postfactor_simplify active subsume =
-        let Active {parameters=parameters;units=units;rewrite=rewrite} = active
-        in let {postfactor=postfactor} = parameters
+        let Active {parameters;units;rewrite} = active
+        in let {postfactor} = parameters
       in
         simplify postfactor units rewrite subsume
       ;;
@@ -9249,7 +8939,7 @@ let deduce active cl =
             | 1 -> if Thm.isUnitEq (Clause.thm cl) then 0 else 1
             | n -> n
       in
-        sortMap utility Int.compare
+        Mlist.sortMap utility Int.compare
       ;;
 
   let rec post_factor (cl, ((active,subsume,acc) as active_subsume_acc)) =
@@ -9318,8 +9008,8 @@ let factor = fun active -> fun cls ->
 let mk_clause params th =
   Clause.mk {Clause.parameters = params; Clause.id = Clause.newId (); Clause.thm = th};;
 
-let newActive parameters {axioms_thm=axioms_thm;conjecture_thm=conjecture_thm} =
-      let {clause=clause} = parameters
+let newActive parameters {axioms_thm;conjecture_thm} =
+      let {clause} = parameters
 
       in let mk_clause = mk_clause clause
       in let active = empty parameters
@@ -9364,15 +9054,13 @@ end
 
 module Waiting = struct
 
-open Useful;;
 open Ax_cj
-open Real
 
 (* ------------------------------------------------------------------------- *)
 (* A type of waiting sets of clauses.                                        *)
 (* ------------------------------------------------------------------------- *)
 
-type weight = real;;
+type weight = float;;
 
 type modelParameters =
      {model : Model.parameters;
@@ -9387,7 +9075,7 @@ type parameters =
       literalsWeight : weight;
       modelsP : modelParameters list};;
 
-type distance = real;;
+type distance = float;;
 
 type waiting_t =
       {parameters : parameters;
@@ -9414,9 +9102,9 @@ let default : parameters =
       variablesWeight = 1.0;
       modelsP = defaultModels};;
 
-let size (Waiting {clauses=clauses}) = Heap.size clauses;;
+let size (Waiting {clauses}) = Heap.size clauses;;
 
-let toString w = "Waiting{" ^ Int.toString (size w) ^ "}";;
+let toString w = "Waiting{" ^ string_of_int (size w) ^ "}";;
 
 (*let toString (Waiting {clauses}) = "\n" ^
   String.concat "\n" (List.map (fun (w, (d, c)) -> Clause.toString c) (Heap.toList clauses));;*)
@@ -9446,7 +9134,7 @@ let mkModelClause cl =
 let mkModelClauses = List.map mkModelClause;;
 
 let perturbModel vM cls =
-    if Mlist.null cls then kComb ()
+    if Mlist.null cls then K ()
     else
         let vN = {Model.size = Model.msize vM}
 
@@ -9456,13 +9144,13 @@ let perturbModel vM cls =
               if Model.interpretClause vM vV cl then ()
               else Model.perturbClause vM vV cl
 
-        in let perturbClauses () = app perturbClause cls
+        in let perturbClauses () = List.iter perturbClause cls
       in
         fun n -> funpow n perturbClauses ()
       ;;
 
 let initialModel axioms conjecture parm =
-      let {model=model;initialPerturbations=initialPerturbations}  = parm
+      let {model;initialPerturbations}  = parm
       in let m = Model.newModel model
       in let () = perturbModel m conjecture initialPerturbations
       in let () = perturbModel m axioms initialPerturbations
@@ -9472,64 +9160,64 @@ let initialModel axioms conjecture parm =
 
 let checkModels parms models (fv,cl) =
       let check ((parm,model),z) =
-            let {maxChecks=maxChecks;weight=weight} = parm
+            let {maxChecks;weight} = parm
             in let n = maxChecks
             in let (vT,vF) = Model.check Model.interpretClause n model fv cl
           in
-            Math.pow (1.0 +. Real.fromInt vT /. Real.fromInt (vT + vF), weight) *. z
+            (1.0 +. float_of_int vT /. float_of_int (vT + vF) ** weight) *. z
     in
       Mlist.foldl check 1.0 (zip parms models)
     ;;
 
 let perturbModels parms models cls =
       let perturb (parm,model) =
-            let {perturbations=perturbations} = parm
+            let {perturbations} = parm
           in
             perturbModel model cls perturbations
     in
-      app perturb (zip parms models)
+      List.iter perturb (zip parms models)
     ;;
 
 (* ------------------------------------------------------------------------- *)
 (* Clause weights.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-  let clauseSymbols cl = Real.fromInt (Literal.Set.typedSymbols cl);;
+  let clauseSymbols cl = float_of_int (Literal.Set.typedSymbols cl);;
 
   let clauseVariables cl =
-      Real.fromInt (Name.Set.size (Literal.Set.freeVars cl) + 1);;
+      float_of_int (Name.Set.size (Literal.Set.freeVars cl) + 1);;
 
-  let clauseLiterals cl = Real.fromInt (Literal.Set.size cl);;
+  let clauseLiterals cl = float_of_int (Literal.Set.size cl);;
 
-  let clausePriority cl = 1e-12 *. Real.fromInt (Clause.id cl);;
+  let clausePriority cl = 1e-12 *. float_of_int (Clause.id cl);;
 
   let clauseWeight (parm : parameters) mods dist mcl cl =
 (*MetisTrace3
         let () = Print.trace Clause.pp "Waiting.clauseWeight: cl" cl
 *)
-        let {symbolsWeight=symbolsWeight;variablesWeight=variablesWeight;literalsWeight=literalsWeight;modelsP=modelsP} = parm
+        let {symbolsWeight;variablesWeight;literalsWeight;modelsP} = parm
         in let lits = Clause.literals cl
-        in let symbolsW = Math.pow (clauseSymbols lits, symbolsWeight)
-        in let variablesW = Math.pow (clauseVariables lits, variablesWeight)
-        in let literalsW = Math.pow (clauseLiterals lits, literalsWeight)
+        in let symbolsW = clauseSymbols lits ** symbolsWeight
+        in let variablesW = clauseVariables lits ** variablesWeight
+        in let literalsW = clauseLiterals lits ** literalsWeight
         in let modelsW = checkModels modelsP mods mcl
 (*MetisTrace4
         let () = trace ("Waiting.clauseWeight: dist = " ^
-                        Real.toString dist ^ "\n")
+                        Float.to_string dist ^ "\n")
         let () = trace ("Waiting.clauseWeight: symbolsW = " ^
-                        Real.toString symbolsW ^ "\n")
+                        Float.to_string symbolsW ^ "\n")
         let () = trace ("Waiting.clauseWeight: variablesW = " ^
-                        Real.toString variablesW ^ "\n")
+                        Float.to_string variablesW ^ "\n")
         let () = trace ("Waiting.clauseWeight: literalsW = " ^
-                        Real.toString literalsW ^ "\n")
+                        Float.to_string literalsW ^ "\n")
         let () = trace ("Waiting.clauseWeight: modelsW = " ^
-                        Real.toString modelsW ^ "\n")
+                        Float.to_string modelsW ^ "\n")
 *)
         in let weight = dist *. symbolsW *. variablesW *. literalsW *. modelsW
         in let weight = weight +. clausePriority cl
 (*MetisTrace3
         let () = trace ("Waiting.clauseWeight: weight = " ^
-                        Real.toString weight ^ "\n")
+                        Float.to_string weight ^ "\n")
 *)
       in
         weight
@@ -9540,18 +9228,18 @@ let perturbModels parms models cls =
 (* ------------------------------------------------------------------------- *)
 
 let add' waiting dist mcls cls =
-      let Waiting {parameters=parameters;clauses=clauses;models=models} = waiting
+      let Waiting {parameters;clauses;models} = waiting
       in let {modelsP = modelParameters} = parameters
 
 (*MetisDebug
       let _ = not (Mlist.null cls) ||
-              raise Bug "Waiting.add': null"
+              raise Useful.Bug "Waiting.add': null"
 
       let _ = length mcls = length cls ||
-              raise Bug "Waiting.add': different lengths"
+              raise Useful.Bug "Waiting.add': different lengths"
 *)
 
-      in let dist = dist +. Math.ln (Real.fromInt (length cls))
+      in let dist = dist +. log (float_of_int (length cls))
 
       in let addCl ((mcl,cl),acc) =
             let weight = clauseWeight parameters models dist mcl cl
@@ -9582,7 +9270,7 @@ let add waiting (dist,cls) =
         waiting
       ;;
 
-  let cmp ((w1,_),(w2,_)) = Real.compare (w1,w2);;
+  let cmp (w1,_) (w2,_) = Float.compare w1 w2;;
 
   let empty parameters axioms conjecture =
         let {modelsP = modelParameters} = parameters
@@ -9592,7 +9280,7 @@ let add waiting (dist,cls) =
         Waiting {parameters = parameters; clauses = clauses; models = models}
       ;;
 
-  let newWaiting parameters {axioms_cl=axioms_cl;conjecture_cl=conjecture_cl} =
+  let newWaiting parameters {axioms_cl;conjecture_cl} =
         let mAxioms = mkModelClauses axioms_cl
         and mConjecture = mkModelClauses conjecture_cl
 
@@ -9613,7 +9301,7 @@ let add waiting (dist,cls) =
 (* Removing the lightest clause.                                             *)
 (* ------------------------------------------------------------------------- *)
 
-let remove (Waiting {parameters=parameters;clauses=clauses;models=models}) =
+let remove (Waiting {parameters;clauses;models}) =
     if Heap.null clauses then None
     else
         let ((_,dcl),clauses) = Heap.remove clauses
@@ -9635,8 +9323,6 @@ end
 (* ========================================================================= *)
 
 module Resolution = struct
-
-open Useful;;
 
 (* ------------------------------------------------------------------------- *)
 (* A type of resolution proof procedures.                                    *)
@@ -9697,7 +9383,7 @@ type state =
   | Undecided of resolution;;
 
 let iterate res =
-      let Resolution {parameters=parameters;active=active;waiting=waiting} = res
+      let Resolution {parameters;active;waiting} = res
 
 (*MetisTrace2
       let () = Print.trace Active.pp "Resolution.iterate: active" active
@@ -10195,11 +9881,11 @@ open Metis_prover
 let metis_name = string_of_int
 
 let rec metis_of_term env consts tm =
-  if is_var tm && not (mem tm consts) then
+  if is_var tm && not (List.mem tm consts) then
     (Term.Var(metis_name (Meson.fol_of_var tm)))
   else (
     let f,args = strip_comb tm in
-    if mem f env then failwith "metis_of_term: higher order" else
+    if List.mem f env then failwith "metis_of_term: higher order" else
     let ff = Meson.fol_of_const f in
     Term.Fn (metis_name ff, map (metis_of_term env consts) args))
 
@@ -10210,7 +9896,7 @@ let metis_of_atom env consts tm =
       Atom.mkEq (l', r')
   with Failure _ ->
       let f,args = strip_comb tm in
-      if mem f env then failwith "metis_of_atom: higher order" else
+      if List.mem f env then failwith "metis_of_atom: higher order" else
       let ff = Meson.fol_of_const f in
       (metis_name ff, map (metis_of_term env consts) args)
 
@@ -10357,7 +10043,7 @@ let SIMPLE_METIS_REFUTE ths =
     Format.printf "Metis end.\n%!";
   end;
   let allhyps = List.concat (List.map hyp ths) in
-  assert (forall (fun h -> mem h allhyps) (hyp proof));
+  assert (forall (fun h -> List.mem h allhyps) (hyp proof));
   assert (concl proof = `F`);
   proof
 
