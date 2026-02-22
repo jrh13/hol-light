@@ -135,6 +135,7 @@ GREAT_100_THEOREMS:= \
 	100/combinations \
 	100/constructible \
 	100/cosine \
+	100/cubedissection \
 	100/cubic \
 	100/derangements \
 	100/desargues \

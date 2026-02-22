@@ -8,6 +8,17 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 21st Feb 2026       100/cubedissection.ml [new file]
+
+Added a formalization of the impossibility of cube dissection into finitely
+many smaller cubes of pairwise distinct sizes ("cubing the cube"), originally
+proved by R. L. Brooks, C. A. B. Smith, A. H. Stone and W. T. Tutte, "The
+Dissection of Rectangles into Squares", Duke Mathematical Journal, vol. 7
+(1940), pp. 312-340. The proof follows the elegant argument presented in J. E.
+Littlewood, "A Mathematician's Miscellany" (CUP, 1953), revised edition
+"Littlewood's Miscellany" (ed. B. Bollobas, CUP, 1986), pp. 28-29 and the HOL
+Light formalization was almost entirely written by Claude Code (Opus 4.6).
+
 Thu 19th Feb 2026       Multivariate/metric.ml
 
 Added some basic definitions and theorems about the Cantor space. The
