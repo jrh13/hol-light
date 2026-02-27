@@ -9228,21 +9228,21 @@ let perturbModels parms models cls =
         in let modelsW = checkModels modelsP mods mcl
 (*MetisTrace4
         let () = trace ("Waiting.clauseWeight: dist = " ^
-                        Float.to_string dist ^ "\n")
+                        string_of_float dist ^ "\n")
         let () = trace ("Waiting.clauseWeight: symbolsW = " ^
-                        Float.to_string symbolsW ^ "\n")
+                        string_of_float symbolsW ^ "\n")
         let () = trace ("Waiting.clauseWeight: variablesW = " ^
-                        Float.to_string variablesW ^ "\n")
+                        string_of_float variablesW ^ "\n")
         let () = trace ("Waiting.clauseWeight: literalsW = " ^
-                        Float.to_string literalsW ^ "\n")
+                        string_of_float literalsW ^ "\n")
         let () = trace ("Waiting.clauseWeight: modelsW = " ^
-                        Float.to_string modelsW ^ "\n")
+                        string_of_float modelsW ^ "\n")
 *)
         in let weight = dist *. symbolsW *. variablesW *. literalsW *. modelsW
         in let weight = weight +. clausePriority cl
 (*MetisTrace3
         let () = trace ("Waiting.clauseWeight: weight = " ^
-                        Float.to_string weight ^ "\n")
+                        string_of_float weight ^ "\n")
 *)
       in
         weight
@@ -9295,7 +9295,7 @@ let add waiting (dist,cls) =
         waiting
       ;;
 
-  let cmp (w1,_) (w2,_) = Float.compare w1 w2;;
+  let cmp ((w1 : float),_) (w2,_) = compare w1 w2;;
 
   let empty parameters axioms conjecture =
         let {modelsP = modelParameters} = parameters
