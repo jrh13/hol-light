@@ -29,7 +29,7 @@ module Metis_prover = struct
 module Word = struct
 
 type word = int;;
-let compare x y = Int.compare x y;;
+let compare (x : word) (y : word) = compare x y;;
 
 let shiftLeft (x, y) = x lsl y;;
 let shiftRight (x, y) = x lsr y;;
@@ -136,6 +136,13 @@ let lexCompare cmp =
         | (x :: xs, y :: ys) ->
             let c = cmp x y in if c <> 0 then c else lex xs ys
     in lex;;
+
+let boolCompare x y = match (x, y) with
+    (false, true) -> -1
+  | (true, false) -> 1
+  | _ -> 0;;
+
+let intCompare (x : int) y = compare x y;;
 
 (* ------------------------------------------------------------------------- *)
 (* Strings.                                                                  *)
@@ -1371,7 +1378,7 @@ let count pred =
 let compare compareValue m1 m2 =
     if m1 == m2 then 0
     else
-      let c = Int.compare (size m1) (size m2) in
+      let c = Useful.intCompare (size m1) (size m2) in
       if c <> 0 then c
       else
           let Map (compareKey,_) = m1
@@ -2076,7 +2083,7 @@ and ternary = nary 3;;
 
 let compare (n1,i1) (n2,i2) =
     let c = Name.compare n1 n2 in
-    if c <> 0 then c else Int.compare i1 i2;;
+    if c <> 0 then c else Useful.intCompare i1 i2;;
 
 let equal (n1,i1) (n2,i2) = i1 = i2 && Name.equal n1 n2;;
 
@@ -2227,7 +2234,7 @@ let compare tm1 tm2 =
               let c = Name.compare f1 f2 in
               if c <> 0 then c
               else
-                let c = Int.compare (List.length a1) (List.length a2) in
+                let c = Useful.intCompare (List.length a1) (List.length a2) in
                 if c <> 0 then c else cmp (a1 @ tms1, a2 @ tms2))
     | _ -> raise (Useful.Bug "Term.compare")
   in cmp ([tm1], [tm2]);;
@@ -3500,7 +3507,7 @@ let symbols ((_,atm) : literal) = Atom.symbols atm;;
 (* A total comparison function for literals.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let compare = Useful.prodCompare Bool.compare Atom.compare;;
+let compare = Useful.prodCompare Useful.boolCompare Atom.compare;;
 
 let equal (p1,atm1) (p2,atm2) = p1 = p2 && Atom.equal atm1 atm2;;
 
@@ -6407,7 +6414,7 @@ let foldEqualTerms pat inc acc =
 (* Filter afterwards to get the precise set of satisfying values.            *)
 (* ------------------------------------------------------------------------- *)
 
-  let idwise (m,_) (n,_) = Int.compare m n;;
+  let idwise (m,_) (n,_) = Useful.intCompare m n;;
 
   let fifoize ({fifo} : parameters) l = if fifo then List.sort idwise l else l;;
 
@@ -6664,7 +6671,7 @@ let findRest pred =
 let sortClause cl =
       let lits = Literal.Set.toList cl
     in
-      Mlist.sortMap Literal.typedSymbols (Useful.revCompare Int.compare) lits
+      Mlist.sortMap Literal.typedSymbols (Useful.revCompare Useful.intCompare) lits
     ;;
 
 let incompatible lit =
@@ -6684,8 +6691,8 @@ type clauseLength = int;;
   type idSet = (clauseId * clauseLength) Pset.set;;
 
   let idCompare (id1,len1) (id2,len2) =
-      let c = Int.compare len1 len2 in
-      if c <> 0 then c else Int.compare id1 id2;;
+      let c = Useful.intCompare len1 len2 in
+      if c <> 0 then c else Useful.intCompare id1 id2;;
 
   let idSetEmpty : idSet = Pset.empty idCompare;;
 
@@ -6788,7 +6795,7 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
 
   let genClauseSubsumes pred cl' lits' cl a =
         let rec mkSubsl acc sub = function
-            [] -> Some (sub, Mlist.sortMap length Int.compare acc)
+            [] -> Some (sub, Mlist.sortMap length Useful.intCompare acc)
           | (lit' :: lits') ->
             match Mlist.foldl (matchLit lit') [] cl with
               [] -> None
@@ -6968,7 +6975,7 @@ let uniformWeight : Term.function_t -> int = K 1;;
 
 let arityPrecedence : Term.function_t -> Term.function_t -> int =
     fun (f1,n1) (f2,n2) ->
-       let c = Int.compare n1 n2 in
+       let c = Useful.intCompare n1 n2 in
        if c <> 0 then c else Name.compare f1 f2;;
 
 (* The default order *)
@@ -7332,7 +7339,7 @@ let add (Rewrite {known} as rw) (id,eqn) =
 (* Rewriting (the order must be a refinement of the rewrite order).          *)
 (* ------------------------------------------------------------------------- *)
 
-  let reorder (i,_) (j,_) = Int.compare j i;;
+  let reorder (i,_) (j,_) = Useful.intCompare j i;;
   let matchingRedexes redexes tm = List.sort reorder (Term_net.matchNet redexes tm);;
 
 
@@ -8939,7 +8946,7 @@ let deduce active cl =
             | 1 -> if Thm.isUnitEq (Clause.thm cl) then 0 else 1
             | n -> n
       in
-        Mlist.sortMap utility Int.compare
+        Mlist.sortMap utility Useful.intCompare
       ;;
 
   let rec post_factor (cl, ((active,subsume,acc) as active_subsume_acc)) =
