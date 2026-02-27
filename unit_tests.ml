@@ -200,6 +200,16 @@ assert (pow (num 1 // num 2) (-3) = num 8);;
 assert (pow (num 1 // num 2) (-4) = num 16);;
 assert (pow (num 1 // num 2) 0 = num 1);;
 
+(* ------------------------------------------------------------------------- *)
+(* Test UNIFY_REFL_TAC.                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let UNIFY_REFL_TAC_TEST = prove(`?x. 1 = x`, META_EXISTS_TAC THEN UNIFY_REFL_TAC);;
+let UNIFY_REFL_TAC_TEST2 = prove(`?f. y + z = f y z`,
+                META_EXISTS_TAC THEN UNIFY_REFL_TAC);;
+let UNIFY_REFL_TAC_TEST3 = prove(`?f. y + 1 = f y 0`,
+                META_EXISTS_TAC THEN UNIFY_REFL_TAC);;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)

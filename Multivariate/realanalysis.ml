@@ -86,8 +86,9 @@ let real_compact = prove
 
 parse_as_infix("--->",(12,"right"));;
 
-let tendsto_real = new_definition
-  `(f ---> l) net <=> !e. &0 < e ==> eventually (\x. abs(f(x) - l) < e) net`;;
+let tendsto_real = prove
+ (`(f ---> l) net <=> !e. &0 < e ==> eventually (\x. abs(f(x) - l) < e) net`,
+  REWRITE_TAC[tendsto_real_def; LIM_EQ_LIFT; tendsto; o_THM; DIST_LIFT]);;
 
 let reallim = new_definition
  `reallim net f = @l. (f ---> l) net`;;
