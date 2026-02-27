@@ -88,6 +88,24 @@ let sortMap f cmp = function
 
 end
 
+module Option = struct
+
+let is_some = function
+    Some _ -> true
+  | None -> false;;
+
+let bind opt f =
+  match opt with
+  | Some x -> f x
+  | None   -> None
+
+let value opt ~default =
+  match opt with
+  | Some x -> x
+  | None   -> default
+
+end
+
 (* ========================================================================= *)
 (* ML UTILITY FUNCTIONS                                                      *)
 (* ========================================================================= *)
