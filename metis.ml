@@ -362,7 +362,7 @@ let rec treeLeftSpine acc tree =
     | Tree node -> nodeLeftSpine acc node
 
 and nodeLeftSpine acc node =
-      let {left} = node
+      let {left=left} = node
     in
       treeLeftSpine (node :: acc) left
     ;;
@@ -373,7 +373,7 @@ let rec treeRightSpine acc tree =
     | Tree node -> nodeRightSpine acc node
 
 and nodeRightSpine acc node =
-      let {right} = node
+      let {right=right} = node
     in
       treeRightSpine (node :: acc) right
     ;;
@@ -420,13 +420,13 @@ let rec treeAppend tree1 tree2 =
         Empty -> tree1
       | Tree node2 ->
         if lowerPriorityNode node1 node2 then
-            let {priority;left;key;value;right} = node2
+            let {priority=priority;left=left;key=key;value=value;right=right} = node2
 
             in let left = treeAppend tree1 left
           in
             mkTree priority left key value right
         else
-            let {priority;left;key;value;right} = node1
+            let {priority=priority;left=left;key=key;value=value;right=right} = node1
 
             in let right = treeAppend right tree2
           in
@@ -455,7 +455,7 @@ let rec treePeek compareKey pkey tree =
     | Tree node -> nodePeek compareKey pkey node
 
 and nodePeek compareKey pkey node =
-      let {left;key;value;right} = node
+      let {left=left;key=key;value=value;right=right} = node
     in
       let c = compareKey pkey key in
       if c < 0 then treePeek compareKey pkey left
@@ -475,7 +475,7 @@ let rec treePeekPath compareKey pkey path tree =
     | Tree node -> nodePeekPath compareKey pkey path node
 
 and nodePeekPath compareKey pkey path node =
-      let {left;key;right} = node
+      let {left=left;key=key;right=right} = node
     in
       let c = compareKey pkey key in
       if c < 0 then treePeekPath compareKey pkey ((true,node) :: path) left
@@ -486,7 +486,7 @@ and nodePeekPath compareKey pkey path node =
 (* A path splits a tree into left/right components *)
 
 let addSidePath ((wentLeft,node),(leftTree,rightTree)) =
-      let {priority;left;key;value;right} = node
+      let {priority=priority;left=left;key=key;value=value;right=right} = node
     in
       if wentLeft then (leftTree, mkTree priority rightTree key value right)
       else (mkTree priority left key value leftTree, rightTree)
@@ -499,7 +499,7 @@ let mkSidesPath path = addSidesPath (Empty,Empty) path;;
 (* Updating the subtree at a path *)
 
   let updateTree ((wentLeft,node),tree) =
-        let {priority;left;key;value;right} = node
+        let {priority=priority;left=left;key=key;value=value;right=right} = node
       in
         if wentLeft then mkTree priority tree key value right
         else mkTree priority left key value tree;;
@@ -544,7 +544,7 @@ let nodePartition compareKey pkey node =
         in
           (left,None,right)
       | Some node ->
-          let {left;key;value;right} = node
+          let {left=left;key=key;value=value;right=right} = node
 
           in let (left,right) = addSidesPath (left,right) path
         in
@@ -561,7 +561,7 @@ let rec treePeekKey compareKey pkey tree =
     | Tree node -> nodePeekKey compareKey pkey node
 
 and nodePeekKey compareKey pkey node =
-      let {left;key;value;right} = node
+      let {left=left;key=key;value=value;right=right} = node
     in
       let c = compareKey pkey key in
       if c < 0 then treePeekKey compareKey pkey left
@@ -584,7 +584,7 @@ let treeInsert compareKey key_value tree =
         in
           insertNodePath node path
       | Some node ->
-          let {size;priority;left;right} = node
+          let {size=size;priority=priority;left=left;right=right} = node
 
           in let node =
                 {size = size;
@@ -608,7 +608,7 @@ let rec treeDelete compareKey dkey tree =
     | Tree node -> nodeDelete compareKey dkey node
 
 and nodeDelete compareKey dkey node =
-      let {size;priority;left;key;value;right} = node
+      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
     in
       let c = compareKey dkey key in
       if c < 0 then
@@ -650,7 +650,7 @@ let rec treeMapPartial f tree =
       Empty -> Empty
     | Tree node -> nodeMapPartial f node
 
-and nodeMapPartial f ({priority;left;key;value;right}) =
+and nodeMapPartial f ({priority=priority;left=left;key=key;value=value;right=right}) =
       let left = treeMapPartial f left
       and vo = f (key,value)
       and right = treeMapPartial f right
@@ -670,7 +670,7 @@ let rec treeMap f tree =
     | Tree node -> Tree (nodeMap f node)
 
 and nodeMap f node =
-      let {size;priority;left;key;value;right} = node
+      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
 
       in let left = treeMap f left
       and value = f (key,value)
@@ -698,7 +698,7 @@ let rec treeMerge compareKey f1 f2 fb tree1 tree2 =
       | Tree node2 -> nodeMerge compareKey f1 f2 fb node1 node2
 
 and nodeMerge compareKey f1 f2 fb node1 node2 =
-      let {priority;left;key;value;right} = node2
+      let {priority=priority;left=left;key=key;value=value;right=right} = node2
 
       in let (l,kvo,r) = nodePartition compareKey key node1
 
@@ -733,7 +733,7 @@ let rec treeUnion compareKey f f2 tree1 tree2 =
 and nodeUnion compareKey f f2 node1 node2 =
     if node1 == node2 then nodeMapPartial f2 node1
     else
-        let {priority;left;key;value;right} = node2
+        let {priority=priority;left=left;key=key;value=value;right=right} = node2
 
         in let (l,kvo,r) = nodePartition compareKey key node1
 
@@ -766,7 +766,7 @@ let rec treeIntersect compareKey f t1 t2 =
       | Tree n2 -> nodeIntersect compareKey f n1 n2
 
 and nodeIntersect compareKey f n1 n2 =
-      let {priority;left;key;value;right} = n2
+      let {priority=priority;left=left;key=key;value=value;right=right} = n2
 
       in let (l,kvo,r) = nodePartition compareKey key n1
 
@@ -798,7 +798,7 @@ let rec treeUnionDomain compareKey tree1 tree2 =
         else nodeUnionDomain compareKey node1 node2
 
 and nodeUnionDomain compareKey node1 node2 =
-      let {priority;left;key;value;right} = node2
+      let {priority=priority;left=left;key=key;value=value;right=right} = node2
 
       in let (l,_,r) = nodePartition compareKey key node1
 
@@ -825,7 +825,7 @@ let rec treeIntersectDomain compareKey tree1 tree2 =
         else nodeIntersectDomain compareKey node1 node2
 
 and nodeIntersectDomain compareKey node1 node2 =
-      let {priority;left;key;value;right} = node2
+      let {priority=priority;left=left;key=key;value=value;right=right} = node2
 
       in let (l,kvo,r) = nodePartition compareKey key node1
 
@@ -851,7 +851,7 @@ let rec treeDifferenceDomain compareKey t1 t2 =
 and nodeDifferenceDomain compareKey n1 n2 =
     if n1 == n2 then Empty
     else
-        let {priority;left;key;value;right} = n1
+        let {priority=priority;left=left;key=key;value=value;right=right} = n1
 
         in let (l,kvo,r) = nodePartition compareKey key n2
 
@@ -876,7 +876,7 @@ let rec treeSubsetDomain compareKey tree1 tree2 =
 
 and nodeSubsetDomain compareKey node1 node2 =
     node1 == node2 ||
-      let {size;left;key;right} = node1
+      let {size=size;left=left;key=key;right=right} = node1
     in
       size <= nodeSize node2 &&
         let (l,kvo,r) = nodePartition compareKey key node2
@@ -891,7 +891,7 @@ and nodeSubsetDomain compareKey node1 node2 =
 (* ------------------------------------------------------------------------- *)
 
 let rec nodePick node =
-      let {key;value} = node
+      let {key=key;value=value} = node
     in
       (key,value)
     ;;
@@ -906,7 +906,7 @@ let treePick tree =
 (* ------------------------------------------------------------------------- *)
 
 let rec nodeDeletePick node =
-      let {left;key;value;right} = node
+      let {left=left;key=key;value=value;right=right} = node
     in
       ((key,value), treeAppend left right)
     ;;
@@ -926,7 +926,7 @@ let rec treeNth n tree =
     | Tree node -> nodeNth n node
 
 and nodeNth n node =
-      let {left;key;value;right} = node
+      let {left=left;key=key;value=value;right=right} = node
 
       in let k = treeSize left
     in
@@ -945,7 +945,7 @@ let rec treeDeleteNth n tree =
     | Tree node -> nodeDeleteNth n node
 
 and nodeDeleteNth n node =
-      let {size;priority;left;key;value;right} = node
+      let {size=size;priority=priority;left=left;key=key;value=value;right=right} = node
 
       in let k = treeSize left
     in
@@ -995,13 +995,13 @@ type ('key,'value) iterator =
 let fromSpineLeftToRightIterator nodes =
     match nodes with
       [] -> None
-    | {key;value;right} :: nodes ->
+    | {key=key;value=value;right=right} :: nodes ->
       Some (Left_to_right_iterator ((key,value),right,nodes));;
 
 let fromSpineRightToLeftIterator nodes =
     match nodes with
       [] -> None
-    | {key;value;left} :: nodes ->
+    | {key=key;value=value;left=left} :: nodes ->
       Some (Right_to_left_iterator ((key,value),left,nodes));;
 
 let addLeftToRightIterator nodes tree = fromSpineLeftToRightIterator (treeLeftSpine nodes tree);;
@@ -6416,7 +6416,7 @@ let foldEqualTerms pat inc acc =
 
   let idwise (m,_) (n,_) = Useful.intCompare m n;;
 
-  let fifoize ({fifo} : parameters) l = if fifo then List.sort idwise l else l;;
+  let fifoize ({fifo=fifo} : parameters) l = if fifo then List.sort idwise l else l;;
 
   let finally parm l = List.map snd (fifoize parm l);;
 
@@ -6593,16 +6593,16 @@ type 'a literalNet =
 
 let newNet parm = {positive = Atom_net.newNet parm; negative = Atom_net.newNet parm};;
 
-  let pos ({positive} : 'a literalNet) = Atom_net.size positive;;
+  let pos ({positive=positive} : 'a literalNet) = Atom_net.size positive;;
 
-  let neg ({negative} : 'a literalNet) = Atom_net.size negative;;
+  let neg ({negative=negative} : 'a literalNet) = Atom_net.size negative;;
 
   let size net = pos net + neg net;;
 
   (*let profile net = {positiveN = pos net; negativeN = neg net};;*)
 
 
-let insert {positive;negative} = function
+let insert {positive=positive;negative=negative} = function
     ((true,atm),a) ->
     {positive = Atom_net.insert positive (atm,a); negative = negative}
   | ((false,atm),a) ->
@@ -6610,7 +6610,7 @@ let insert {positive;negative} = function
 
 let fromList parm l = Mlist.foldl (fun (lit_a,n) -> insert n lit_a) (newNet parm) l;;
 
-let filter pred {positive;negative} =
+let filter pred {positive=positive;negative=negative} =
     {positive = Atom_net.filter pred positive;
      negative = Atom_net.filter pred negative};;
 
@@ -6624,17 +6624,17 @@ let toString net = "Literal_net[" ^ string_of_int (size net) ^ "]";;
 (* Filter afterwards to get the precise set of satisfying values.            *)
 (* ------------------------------------------------------------------------- *)
 
-let matchNet ({positive;negative} : 'a literalNet) = function
+let matchNet ({positive=positive;negative=negative} : 'a literalNet) = function
     (true,atm) ->
     Atom_net.matchNet positive atm
   | (false,atm) -> Atom_net.matchNet negative atm;;
 
-let matched ({positive;negative} : 'a literalNet) = function
+let matched ({positive=positive;negative=negative} : 'a literalNet) = function
     (true,atm) ->
     Atom_net.matched positive atm
   | (false,atm) -> Atom_net.matched negative atm;;
 
-let unify ({positive;negative} : 'a literalNet) = function
+let unify ({positive=positive;negative=negative} : 'a literalNet) = function
     (true,atm) ->
     Atom_net.unify positive atm
   | (false,atm) -> Atom_net.unify negative atm;;
@@ -6728,10 +6728,10 @@ let newSubsume () =
           fstLits = Literal_net.newNet {fifo = false};
           sndLits = Literal_net.newNet {fifo = false}}};;
 
-let size ({empty; unitn; nonunit = {clauses}}) =
+let size ({empty=empty; unitn=unitn; nonunit = {clauses=clauses}}) =
     length empty + Literal_net.size unitn + Intmap.size clauses;;
 
-let insert ({empty;unitn;nonunit}) (cl',a) =
+let insert ({empty=empty;unitn=unitn;nonunit=nonunit}) (cl',a) =
     match sortClause cl' with
       [] ->
         let empty = (cl',Substitute.empty,a) :: empty
@@ -6742,7 +6742,7 @@ let insert ({empty;unitn;nonunit}) (cl',a) =
       in
         {empty = empty; unitn = unitn; nonunit = nonunit}
     | fstLit :: (sndLit :: otherLits as nonFstLits) ->
-        let {nextId;clauses;fstLits;sndLits} = nonunit
+        let {nextId=nextId;clauses=clauses;fstLits=fstLits;sndLits=sndLits} = nonunit
         in let id_length = (nextId, Literal.Set.size cl')
         in let fstLits = Literal_net.insert fstLits (fstLit,id_length)
         in let (sndLit,otherLits) =
@@ -6759,14 +6759,14 @@ let insert ({empty;unitn;nonunit}) (cl',a) =
         {empty = empty; unitn = unitn; nonunit = nonunit}
       ;;
 
-let filter pred ({empty;unitn;nonunit}) =
+let filter pred ({empty=empty;unitn=unitn;nonunit=nonunit}) =
       let pred3 (_,_,x) = pred x
       in let empty = List.filter pred3 empty
 
       in let unitn = Literal_net.filter pred3 unitn
 
       in let nonunit =
-            let {nextId;clauses;fstLits;sndLits} = nonunit
+            let {nextId=nextId;clauses=clauses;fstLits=fstLits;sndLits=sndLits} = nonunit
             in let clauses' = Intmap.filter (fun x -> pred3 (snd x)) clauses
           in
             if Intmap.size clauses = Intmap.size clauses' then nonunit
@@ -6848,7 +6848,7 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
         in let subLit lits (lit,acc) =
             Mlist.foldl addId acc (Literal_net.matchNet lits lit)
 
-        in let {nextId = _; clauses; fstLits; sndLits} = nonunit
+        in let {nextId = _; clauses=clauses; fstLits=fstLits; sndLits=sndLits} = nonunit
 
         in let subCl' (id,_) =
               let (lits',cl',a) = Intmap.get clauses id
@@ -6862,7 +6862,7 @@ let toString subsume = "Subsume{" ^ string_of_int (size subsume) ^ "}";;
         Pset.firstl subCl' cands
       ;;
 
-  let genSubsumes pred ({empty;unitn;nonunit}) max cl =
+  let genSubsumes pred ({empty=empty;unitn=unitn;nonunit=nonunit}) max cl =
       match emptySubsumes pred empty with
         (Some _) as s -> s
       | None ->
@@ -7057,7 +7057,7 @@ let weightToString = Print.toString ppWeight;;
 (* The Knuth-Bendix term order.                                              *)
 (* ------------------------------------------------------------------------- *)
 
-let compare {weight;precedence} =
+let compare {weight=weight;precedence=precedence} =
       let weightDifference tm1 tm2 =
             let w1 = weightTerm weight tm1
             and w2 = weightTerm weight tm2
@@ -7170,14 +7170,14 @@ type rewrite =
     Rewrite of rewrite_t;;
 
 let updateWaiting rw waiting =
-      let Rewrite {order; known; redexes; subterms; waiting = _} = rw
+      let Rewrite {order=order; known=known; redexes=redexes; subterms=subterms; waiting = _} = rw
     in
       Rewrite
         {order = order; known = known; redexes = redexes;
          subterms = subterms; waiting = waiting}
     ;;
 
-let deleteWaiting (Rewrite {waiting} as rw) id =
+let deleteWaiting (Rewrite {waiting=waiting} as rw) id =
     updateWaiting rw (Intset.delete waiting id);;
 
 (* ------------------------------------------------------------------------- *)
@@ -7193,11 +7193,11 @@ let newRewrite order =
        subterms = Term_net.newNet {fifo = false};
        waiting = Intset.empty};;
 
-let peek (Rewrite {known}) id = Intmap.peek known id;;
+let peek (Rewrite {known=known}) id = Intmap.peek known id;;
 
-let size (Rewrite {known}) = Intmap.size known;;
+let size (Rewrite {known=known}) = Intmap.size known;;
 
-let equations (Rewrite {known}) =
+let equations (Rewrite {known=known}) =
     Intmap.foldr (fun (_,(eqn,_),eqns) -> eqn :: eqns) [] known;;
 
 
@@ -7308,10 +7308,10 @@ let orderToOrient = function
       | None -> ins (ins redexes l id Left_to_right) r id Right_to_left;;
 
 
-let add (Rewrite {known} as rw) (id,eqn) =
+let add (Rewrite {known=known} as rw) (id,eqn) =
     if Intmap.inDomain id known then rw
     else
-        let Rewrite {order;redexes;subterms;waiting} = rw
+        let Rewrite {order=order;redexes=redexes;subterms=subterms;waiting=waiting} = rw
 
         in let ort = let (l,r) = fst eqn in orderToOrient (order l r)
 
@@ -7514,23 +7514,23 @@ let rewriteIdRule' = fun order -> fun known -> fun redexes -> fun id -> fun th -
     handle Failure err -> failwith ("Rewrite.rewriteIdRule:\n" ^ err);;
 *)
 
-let rewrIdConv (Rewrite {known;redexes}) order =
+let rewrIdConv (Rewrite {known=known;redexes=redexes}) order =
     rewrIdConv' order known redexes;;
 
 let rewrConv rewrite order = rewrIdConv rewrite order (-1);;
 
-let rewriteIdConv (Rewrite {known;redexes}) order =
+let rewriteIdConv (Rewrite {known=known;redexes=redexes}) order =
     rewriteIdConv' order known redexes;;
 
 let rewriteConv rewrite order = rewriteIdConv rewrite order (-1);;
 
-let rewriteIdLiteralsRule (Rewrite {known;redexes}) order =
+let rewriteIdLiteralsRule (Rewrite {known=known;redexes=redexes}) order =
     rewriteIdLiteralsRule' order known redexes;;
 
 let rewriteLiteralsRule rewrite order =
     rewriteIdLiteralsRule rewrite order (-1);;
 
-let rewriteIdRule (Rewrite {known;redexes}) order =
+let rewriteIdRule (Rewrite {known=known;redexes=redexes}) order =
     rewriteIdRule' order known redexes;;
 
 let rewriteRule rewrite order = rewriteIdRule rewrite order (-1);;
@@ -7586,7 +7586,7 @@ let findReducibles order known subterms id =
 
 let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
       let (eq0,_) = eqn0
-      in let Rewrite {order;known;redexes;subterms;waiting} = rw
+      in let Rewrite {order=order;known=known;redexes=redexes;subterms=subterms;waiting=waiting} = rw
       in let (eq,_) as eqn = rewriteIdEqn' order known redexes id eqn0
       in let identical =
             let (l0,r0) = eq0
@@ -7684,7 +7684,7 @@ let pick known set =
         let () = Print.trace ppPl "Rewrite.rebuild: rpl" rpl
         let () = Print.trace ppPl "Rewrite.rebuild: spl" spl
 *)
-        let Rewrite {order;known;redexes;subterms;waiting} = rw
+        let Rewrite {order=order;known=known;redexes=redexes;subterms=subterms;waiting=waiting} = rw
         in let redexes = cleanRedexes known redexes rpl
         in let subterms = cleanSubterms known subterms spl
       in
@@ -7696,7 +7696,7 @@ let pick known set =
            waiting = waiting}
       ;;
 
-let rec reduceAcc (rpl, spl, todo, (Rewrite {known;waiting} as rw), changed) =
+let rec reduceAcc (rpl, spl, todo, (Rewrite {known=known;waiting=waiting} as rw), changed) =
     match pick known todo with
       Some (id,eqn_ort) ->
         let todo = Intset.delete todo id
@@ -7710,7 +7710,7 @@ let rec reduceAcc (rpl, spl, todo, (Rewrite {known;waiting} as rw), changed) =
           reduceAcc (reduce1 true id eqn_ort (rpl,spl,todo,rw,changed))
       | None -> (rebuild rpl spl rw, Intset.toList changed);;
 
-let isReduced (Rewrite {waiting}) = Intset.null waiting;;
+let isReduced (Rewrite {waiting=waiting}) = Intset.null waiting;;
 
 let reduce' rw =
     if isReduced rw then (rw,[])
@@ -7897,7 +7897,7 @@ type clause = Clause of clauseInfo;;
 (* Pretty printing.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let toString (Clause {id;thm}) = Thm.toString thm;;
+let toString (Clause {id=id;thm=thm}) = Thm.toString thm;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -7924,9 +7924,9 @@ let newClause parameters thm =
 
 let literals cl = Thm.clause (thm cl);;
 
-let isTautology (Clause {thm}) = Thm.isTautology thm;;
+let isTautology (Clause {thm=thm}) = Thm.isTautology thm;;
 
-let isContradiction (Clause {thm}) = Thm.isContradiction thm;;
+let isContradiction (Clause {thm=thm}) = Thm.isContradiction thm;;
 
 (* ------------------------------------------------------------------------- *)
 (* The term ordering is used to cut down inferences.                         *)
@@ -7937,7 +7937,7 @@ let strictlyLess ordering x y =
       Some c when c < 0 -> true
     | _ -> false;;
 
-let isLargerTerm ({ordering;orderTerms} : parameters) (l,r) =
+let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) (l,r) =
     not orderTerms || not (strictlyLess ordering l r);;
 
   let atomToTerms atm =
@@ -7951,7 +7951,7 @@ let isLargerTerm ({ordering;orderTerms} : parameters) (l,r) =
         not (List.for_all less xs)
       ;;
 
-  let isLargerLiteral ({ordering;orderLiterals} : parameters) lits =
+  let isLargerLiteral ({ordering=ordering;orderLiterals=orderLiterals} : parameters) lits =
       match orderLiterals with
         No_literal_order -> K true
       | Unsigned_literal_order ->
@@ -7975,7 +7975,7 @@ let isLargerTerm ({ordering;orderTerms} : parameters) (l,r) =
           ;;
 
 
-let largestLiterals (Clause {parameters;thm}) =
+let largestLiterals (Clause {parameters=parameters;thm=thm}) =
       let litSet = Thm.clause thm
       in let isLarger = isLargerLiteral parameters litSet
       in let addLit (lit,s) = if isLarger lit then Literal.Set.add s lit else s
@@ -7995,7 +7995,7 @@ let largestLiterals = fun cl ->
     end;;
 *)
 
-let largestEquations (Clause {parameters} as cl) =
+let largestEquations (Clause {parameters=parameters} as cl) =
       let addEq lit ort ((l,_) as l_r) acc =
           if isLargerTerm parameters l_r then (lit,ort,l) :: acc else acc
 
@@ -8032,20 +8032,20 @@ let subsumes (subs : clause Subsume.subsume) cl =
 (* Simplifying rules: these preserve the clause id.                          *)
 (* ------------------------------------------------------------------------- *)
 
-let freshVars (Clause {parameters;id;thm}) =
+let freshVars (Clause {parameters=parameters;id=id;thm=thm}) =
     Clause {parameters = parameters; id = id; thm = Rule.freshVars thm};;
 
-let simplify (Clause {parameters;id;thm}) =
+let simplify (Clause {parameters=parameters;id=id;thm=thm}) =
     match Rule.simplify thm with
       None -> None
     | Some thm -> Some (Clause {parameters = parameters; id = id; thm = thm});;
 
-let reduce units (Clause {parameters;id;thm}) =
+let reduce units (Clause {parameters=parameters;id=id;thm=thm}) =
     Clause {parameters = parameters; id = id; thm = Units.reduce units thm};;
 
-let rewrite rewr (Clause {parameters;id;thm}) =
+let rewrite rewr (Clause {parameters=parameters;id=id;thm=thm}) =
       let simp th =
-            let {ordering} = parameters
+            let {ordering=ordering} = parameters
             in let cmp = Knuth_bendix_order.compare ordering
           in
             Rewrite.rewriteIdRule rewr cmp id th
@@ -8076,7 +8076,7 @@ let rewrite rewr (Clause {parameters;id;thm}) =
 (* Inference rules: these generate new clause ids.                           *)
 (* ------------------------------------------------------------------------- *)
 
-let factor (Clause {parameters;thm} as cl) =
+let factor (Clause {parameters=parameters;thm=thm} as cl) =
       let lits = largestLiterals cl
 
       in let apply sub = newClause parameters (Thm.subst sub thm)
@@ -8102,7 +8102,7 @@ let resolve (cl1,lit1) (cl2,lit2) =
       let () = Print.trace pp "Clause.resolve: cl2" cl2
       let () = Print.trace Literal.pp "Clause.resolve: lit2" lit2
 *)
-      let Clause {parameters; thm = th1} = cl1
+      let Clause {parameters=parameters; thm = th1} = cl1
       and Clause {thm = th2} = cl2
       in let sub = Literal.unify Substitute.empty lit1 (Literal.negate lit2)
 (*MetisTrace5
@@ -8145,7 +8145,7 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       let () = Print.trace Term.ppPath "Clause.paramodulate: path2" path2
       let () = Print.trace Term.pp "Clause.paramodulate: tm2" tm2
 *)
-      let Clause {parameters; thm = th1} = cl1
+      let Clause {parameters=parameters; thm = th1} = cl1
       and Clause {thm = th2} = cl2
       in let sub = Substitute.unify Substitute.empty tm1 tm2
       in let lit1 = Literal.subst sub lit1
@@ -8431,8 +8431,8 @@ let getSubsume (Active {subsume = s}) = s;;
 
 let setRewrite active rewrite =
       let Active
-            {parameters;clauses;units;subsume;literals;equations;
-             subterms;allSubterms} = active
+            {parameters=parameters;clauses=clauses;units=units;subsume=subsume;literals=literals;equations=equations;
+             subterms=subterms;allSubterms=allSubterms} = active
     in
       Active
         {parameters = parameters; clauses = clauses; units = units;
@@ -8453,8 +8453,8 @@ let default : parameters =
 
 open Term_net
 let empty parameters =
-      let {clause} = parameters
-      in let {Clause.ordering} = clause
+      let {clause=clause} = parameters
+      in let {Clause.ordering=ordering} = clause
     in
       Active
         {parameters = parameters;
@@ -8468,7 +8468,7 @@ let empty parameters =
          allSubterms = Term_net.newNet {fifo = false}}
     ;;
 
-let size (Active {clauses}) = Intmap.size clauses;;
+let size (Active {clauses=clauses}) = Intmap.size clauses;;
 
 let clauses (Active {clauses = cls}) =
       let add (_,cl,acc) = cl :: acc
@@ -8587,7 +8587,7 @@ let simplify = fun simp -> fun units -> fun rewr -> fun subs -> fun cl ->
 *)
 
 let simplifyActive simp active =
-      let Active {units;rewrite;subsume} = active
+      let Active {units=units;rewrite=rewrite;subsume=subsume} = active
     in
       simplify simp units rewrite subsume
     ;;
@@ -8645,8 +8645,8 @@ let addAllSubterms allSubterms cl =
 
 let addClause active cl =
       let Active
-            {parameters;clauses;units;rewrite;subsume;literals;
-             equations;subterms;allSubterms} = active
+            {parameters=parameters;clauses=clauses;units=units;rewrite=rewrite;subsume=subsume;literals=literals;
+             equations=equations;subterms=subterms;allSubterms=allSubterms} = active
       in let clauses = Intmap.insert clauses (Clause.id cl, cl)
       and subsume = addSubsume subsume cl
       and literals = addLiterals literals cl
@@ -8663,8 +8663,8 @@ let addClause active cl =
 
 let addFactorClause active cl =
       let Active
-            {parameters;clauses;units;rewrite;subsume;literals;
-             equations;subterms;allSubterms} = active
+            {parameters=parameters;clauses=clauses;units=units;rewrite=rewrite;subsume=subsume;literals=literals;
+             equations=equations;subterms=subterms;allSubterms=allSubterms} = active
       in let units = addUnit units cl
       and rewrite = addRewrite rewrite cl
     in
@@ -8716,7 +8716,7 @@ let deduceParamodulationInto equations cl ((lit,path,tm),acc) =
     ;;
 
 let deduce active cl =
-      let Active {parameters;literals;equations;subterms} = active
+      let Active {parameters=parameters;literals=literals;equations=equations;subterms=subterms} = active
 
       in let lits = Clause.largestLiterals cl
       in let eqns = Clause.largestEquations cl
@@ -8753,7 +8753,7 @@ let deduce active cl =
 (* ------------------------------------------------------------------------- *)
 
   let clause_rewritables active =
-        let Active {clauses;rewrite} = active
+        let Active {clauses=clauses;rewrite=rewrite} = active
 
         in let rewr (id,cl,ids) =
               let cl' = Clause.rewrite rewrite cl
@@ -8775,8 +8775,8 @@ let deduce active cl =
       | Some _ -> [];;
 
   let rewrite_rewritables active rewr_ids =
-        let Active {parameters;rewrite;clauses;allSubterms} = active
-        in let {clause = {Clause.ordering}} = parameters
+        let Active {parameters=parameters;rewrite=rewrite;clauses=clauses;allSubterms=allSubterms} = active
+        in let {clause = {Clause.ordering=ordering}} = parameters
         in let order = Knuth_bendix_order.compare ordering
 
         in let addRewr (id,acc) =
@@ -8868,15 +8868,15 @@ let deduce active cl =
           in let clausePred cl = idPred (Clause.id cl)
 
           in let Active
-                {parameters;
-                 clauses;
-                 units;
-                 rewrite;
-                 subsume;
-                 literals;
-                 equations;
-                 subterms;
-                 allSubterms} = active
+                {parameters=parameters;
+                 clauses=clauses;
+                 units=units;
+                 rewrite=rewrite;
+                 subsume=subsume;
+                 literals=literals;
+                 equations=equations;
+                 subterms=subterms;
+                 allSubterms=allSubterms} = active
 
           in let cP1 (x,_) = clausePred x
           in let cP1_4 (x,_,_,_) = clausePred x
@@ -8899,7 +8899,7 @@ let deduce active cl =
              allSubterms = allSubterms}
         ;;
 
-  let extract_rewritables (Active {clauses;rewrite} as active) =
+  let extract_rewritables (Active {clauses=clauses;rewrite=rewrite} as active) =
       if Rewrite.isReduced rewrite then (active,[])
       else
 (*MetisTrace3
@@ -8926,15 +8926,15 @@ let deduce active cl =
 (* ------------------------------------------------------------------------- *)
 
   let prefactor_simplify active subsume =
-        let Active {parameters;units;rewrite} = active
-        in let {prefactor} = parameters
+        let Active {parameters=parameters;units=units;rewrite=rewrite} = active
+        in let {prefactor=prefactor} = parameters
       in
         simplify prefactor units rewrite subsume
       ;;
 
   let postfactor_simplify active subsume =
-        let Active {parameters;units;rewrite} = active
-        in let {postfactor} = parameters
+        let Active {parameters=parameters;units=units;rewrite=rewrite} = active
+        in let {postfactor=postfactor} = parameters
       in
         simplify postfactor units rewrite subsume
       ;;
@@ -9015,8 +9015,8 @@ let factor = fun active -> fun cls ->
 let mk_clause params th =
   Clause.mk {Clause.parameters = params; Clause.id = Clause.newId (); Clause.thm = th};;
 
-let newActive parameters {axioms_thm;conjecture_thm} =
-      let {clause} = parameters
+let newActive parameters {axioms_thm=axioms_thm;conjecture_thm=conjecture_thm} =
+      let {clause=clause} = parameters
 
       in let mk_clause = mk_clause clause
       in let active = empty parameters
@@ -9109,7 +9109,7 @@ let default : parameters =
       variablesWeight = 1.0;
       modelsP = defaultModels};;
 
-let size (Waiting {clauses}) = Heap.size clauses;;
+let size (Waiting {clauses=clauses}) = Heap.size clauses;;
 
 let toString w = "Waiting{" ^ string_of_int (size w) ^ "}";;
 
@@ -9157,7 +9157,7 @@ let perturbModel vM cls =
       ;;
 
 let initialModel axioms conjecture parm =
-      let {model;initialPerturbations}  = parm
+      let {model=model;initialPerturbations=initialPerturbations}  = parm
       in let m = Model.newModel model
       in let () = perturbModel m conjecture initialPerturbations
       in let () = perturbModel m axioms initialPerturbations
@@ -9167,7 +9167,7 @@ let initialModel axioms conjecture parm =
 
 let checkModels parms models (fv,cl) =
       let check ((parm,model),z) =
-            let {maxChecks;weight} = parm
+            let {maxChecks=maxChecks;weight=weight} = parm
             in let n = maxChecks
             in let (vT,vF) = Model.check Model.interpretClause n model fv cl
           in
@@ -9178,7 +9178,7 @@ let checkModels parms models (fv,cl) =
 
 let perturbModels parms models cls =
       let perturb (parm,model) =
-            let {perturbations} = parm
+            let {perturbations=perturbations} = parm
           in
             perturbModel model cls perturbations
     in
@@ -9202,7 +9202,7 @@ let perturbModels parms models cls =
 (*MetisTrace3
         let () = Print.trace Clause.pp "Waiting.clauseWeight: cl" cl
 *)
-        let {symbolsWeight;variablesWeight;literalsWeight;modelsP} = parm
+        let {symbolsWeight=symbolsWeight;variablesWeight=variablesWeight;literalsWeight=literalsWeight;modelsP=modelsP} = parm
         in let lits = Clause.literals cl
         in let symbolsW = clauseSymbols lits ** symbolsWeight
         in let variablesW = clauseVariables lits ** variablesWeight
@@ -9235,7 +9235,7 @@ let perturbModels parms models cls =
 (* ------------------------------------------------------------------------- *)
 
 let add' waiting dist mcls cls =
-      let Waiting {parameters;clauses;models} = waiting
+      let Waiting {parameters=parameters;clauses=clauses;models=models} = waiting
       in let {modelsP = modelParameters} = parameters
 
 (*MetisDebug
@@ -9287,7 +9287,7 @@ let add waiting (dist,cls) =
         Waiting {parameters = parameters; clauses = clauses; models = models}
       ;;
 
-  let newWaiting parameters {axioms_cl;conjecture_cl} =
+  let newWaiting parameters {axioms_cl=axioms_cl;conjecture_cl=conjecture_cl} =
         let mAxioms = mkModelClauses axioms_cl
         and mConjecture = mkModelClauses conjecture_cl
 
@@ -9308,7 +9308,7 @@ let add waiting (dist,cls) =
 (* Removing the lightest clause.                                             *)
 (* ------------------------------------------------------------------------- *)
 
-let remove (Waiting {parameters;clauses;models}) =
+let remove (Waiting {parameters=parameters;clauses=clauses;models=models}) =
     if Heap.null clauses then None
     else
         let ((_,dcl),clauses) = Heap.remove clauses
@@ -9390,7 +9390,7 @@ type state =
   | Undecided of resolution;;
 
 let iterate res =
-      let Resolution {parameters;active;waiting} = res
+      let Resolution {parameters=parameters;active=active;waiting=waiting} = res
 
 (*MetisTrace2
       let () = Print.trace Active.pp "Resolution.iterate: active" active
