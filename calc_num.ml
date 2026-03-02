@@ -1051,7 +1051,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
       | (Comb(Const("BIT1",_),mtm),Comb(Const("BIT1",_),ntm)) ->
           if k <= 50 || l <= 50 ||
              num k */ num k <=/ num l ||
-             num l */ num l <= num k then
+             num l */ num l <=/ num k then
             match (mtm,ntm) with
               (Comb(Const("BIT1",_),Comb(Const("BIT1",_),_)),_) ->
                  let th1 = NUM_ADC_RULE zero_tm tm in
