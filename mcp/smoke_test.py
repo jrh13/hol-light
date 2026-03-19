@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Smoke test: starts hol-light-mcp as a real MCP server and runs all tools."""
+
+import asyncio
+import json
+import sys
+from mcp.client.stdio import stdio_client, StdioServerParameters
+from mcp.client.session import ClientSession
+
+SERVER = StdioServerParameters(
+    command="uv",
+    args=["run", "--directory", __import__("os").path.dirname(__import__("os").path.abspath(__file__)), "hol-light-mcp"],
+)
+
+passed = 0
+failed = 0
+
+
+def check(name, condition, detail=""):
+    global passed, failed
+    if condition:
+        passed += 1
+        print(f"  ✓ {name}")
+    else:
+        failed += 1
+        print(f"  ✗ {name}")
+        if detail:
+            print(f"    {detail[:200]}")
+
+
+async def main():
+    print("Starting hol-light-mcp server...")
+    async with stdio_client(SERVER) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Check tools registered
+            tools = await session.list_tools()
+            tool_names = sorted(t.name for t in tools.tools)
+            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_load", "hol_type", "search_theorems", "set_goal"],
+                  f"got {tool_names}")
+
+            # eval — basic arithmetic
+            r = await session.call_tool("eval", {"code": "ARITH_RULE `1 + 1 = 2`"})
+            check("eval: ARITH_RULE", "|- 1 + 1 = 2" in r.content[0].text, r.content[0].text)
+
+            # goal_state — no goal set
+            r = await session.call_tool("goal_state", {})
+            gs = json.loads(r.content[0].text)
+            check("goal_state: empty", gs["goals"] == [] and gs["total_goals"] == 0, str(gs))
+
+            # Set a goal via set_goal
+            r = await session.call_tool("set_goal", {"goal": "`!n. n + 0 = n`"})
+            gs = json.loads(r.content[0].text)
+            check("set_goal: returns goal", len(gs["goals"]) == 1, str(gs))
+
+            # goal_state — should have one goal
+            r = await session.call_tool("goal_state", {})
+            gs = json.loads(r.content[0].text)
+            check("goal_state: has goal", len(gs["goals"]) == 1, str(gs))
+            check("goal_state: conclusion", "n + 0 = n" in gs["goals"][0]["conclusion"], str(gs))
+
+            # apply_tactic — GEN_TAC
+            r = await session.call_tool("apply_tactic", {"tactic": "GEN_TAC"})
+            gs = json.loads(r.content[0].text)
+            check("apply_tactic: GEN_TAC", len(gs["goals"]) >= 1, str(gs))
+
+            # backtrack
+            r = await session.call_tool("backtrack", {"steps": 1})
+            gs = json.loads(r.content[0].text)
+            check("backtrack: restored", "n + 0 = n" in gs["goals"][0]["conclusion"], str(gs))
+
+            # apply_tactic — complete the proof
+            r = await session.call_tool("apply_tactic", {"tactic": "GEN_TAC THEN ARITH_TAC"})
+            result = json.loads(r.content[0].text)
+            check("apply_tactic: proof complete", result.get("proved") == True, str(result))
+            check("apply_tactic: theorem", "n + 0 = n" in result.get("theorem", ""), str(result))
+
+            # apply_tactic — error case
+            await session.call_tool("eval", {"code": "g `T`"})
+            r = await session.call_tool("apply_tactic", {"tactic": "FAKE_NONEXISTENT_TAC"})
+            result = json.loads(r.content[0].text)
+            check("apply_tactic: error", "error" in result, str(result))
+
+            # search_theorems
+            r = await session.call_tool("search_theorems", {"name": "ADD_SYM", "limit": 5})
+            results = json.loads(r.content[0].text)
+            check("search_theorems: found", len(results) > 0, str(results))
+            check("search_theorems: has name", any("ADD_SYM" in entry["name"] for entry in results), str(results))
+
+            # hol_type
+            r = await session.call_tool("hol_type", {"term": "`1 + 1`"})
+            check("hol_type", "num" in r.content[0].text, r.content[0].text)
+
+            print(f"\n{passed}/{passed + failed} passed")
+            return failed == 0
+
+
+if __name__ == "__main__":
+    success = asyncio.run(main())
+    sys.exit(0 if success else 1)
