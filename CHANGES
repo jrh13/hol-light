@@ -8,6 +8,44 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 22nd Mar 2026       100/buffon.ml [new file], holtest.mk
+
+Added a proof, entirely autoformalized by Claude Opus 4.6, of the solution
+to the Buffon Needle problem, in both the "short needle" and "long needle"
+cases. The statements are formulated in terms of the newly added probability
+theory, with the "position" and "angle" being independent random variables.
+
+  BUFFON_SHORT =
+   |- !p X Theta l d.
+       &0 < l /\ l <= d /\ &0 < d /\
+       uniform_rv p X (&0) (d / &2) /\
+       uniform_rv p Theta (&0) pi /\
+       indep_rv p X Theta
+       ==> prob p {x | x IN prob_carrier p /\ X x <= (l / &2) * sin(Theta x)} =
+           (&2 * l) / (pi * d)
+
+  BUFFON_LONG =
+   |- !p X Theta l d.
+       &0 < l /\ &0 < d /\ d <= l /\
+       uniform_rv p X (&0) (d / &2) /\
+       uniform_rv p Theta (&0) pi /\
+       indep_rv p X Theta
+       ==> prob p {x | x IN prob_carrier p /\ X x <= (l / &2) * sin(Theta x)} =
+           (&2 / (pi * d)) *
+           (l - sqrt(l pow 2 - d pow 2) + d * acs(d / l))
+
+Sat 21st Mar 2026       Probability/* [new directory], holtest.mk
+
+Added the first version of a new probability theory library. This was
+autonomously formalized by Claude Opus 4.6, approximately following the
+presentation in Williams's textbook "Probability with Martingales". It
+includes the development of Lebesgue-type integration theory within the setting
+of probability measure spaces as part of the foundational material. Among
+the classic results proved are the Central Limit Theorem, Laws of Large
+Numbers (weak and strong), Fair Games Theorem (Doob optional stopping),
+Borel-Cantelli lemmas, martingale convergence and the Azuma-Hoeffding
+inequality.
+
 Thu 26th Feb 2026       Multivariate/metric.ml, Multivariate/paths.ml
 
 Added major new results about path-connectedness in general metric

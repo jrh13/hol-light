@@ -97,6 +97,7 @@ EXTENDED_EXAMPLES:=\
 	Multivariate/make_complex \
 	Ntrie/ntrie \
 	Permutation/make \
+	Probability/make \
 	QBF/make \
 	Quaternions/make \
 	RichterHilbertAxiomGeometry/miz3/make \
@@ -127,6 +128,7 @@ GREAT_100_THEOREMS:= \
 	100/bernoulli \
 	100/bertrand-primerecip \
 	100/birthday \
+	100/buffon \
 	100/cantor \
 	100/cayley_hamilton \
 	100/ceva \
