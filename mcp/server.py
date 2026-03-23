@@ -4,15 +4,44 @@
 import os
 import re
 import subprocess
+import sys
 import threading
 import time
-from mcp.server.fastmcp import FastMCP
 
 HOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MCP_DIR = os.path.dirname(os.path.abspath(__file__))
 SENTINEL = "HOL_MCP_DONE_a7f3b2e1"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
+
+def _load_config():
+    """Load config from hol-mcp.toml. Search order:
+    1. --config CLI arg  2. HOL_MCP_CONFIG env  3. CWD  4. MCP_DIR"""
+    import tomllib
+    config_path = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "--config" and i + 1 < len(sys.argv):
+            config_path = sys.argv[i + 1]
+            break
+    if not config_path:
+        config_path = os.environ.get("HOL_MCP_CONFIG")
+    if not config_path:
+        for d in [os.getcwd(), MCP_DIR]:
+            p = os.path.join(d, "hol-mcp.toml")
+            if os.path.isfile(p):
+                config_path = p
+                break
+    if config_path and os.path.isfile(config_path):
+        with open(config_path, "rb") as f:
+            return tomllib.load(f)
+    return {}
+
+
+_config = _load_config()
+TIMEOUT = _config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600")))
+CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "noledit"))
+
+from mcp.server.fastmcp import FastMCP
 mcp = FastMCP("hol-light")
 
 _proc = None
@@ -53,7 +82,7 @@ def _start_hol():
     global _proc
     if _proc is not None:
         return
-    ckpt_dir = os.path.join(HOL_DIR, "hol-noledit.ckpt")
+    ckpt_dir = os.path.join(HOL_DIR, f"hol-{CHECKPOINT_NAME}.ckpt")
     ckpt_files = sorted(
         f for f in os.listdir(ckpt_dir) if f.startswith("ckpt_") and f.endswith(".dmtcp")
     ) if os.path.isdir(ckpt_dir) else []
@@ -85,7 +114,9 @@ def _start_hol():
     t.start()
 
 
-def _wait_for_sentinel(timeout=300):
+def _wait_for_sentinel(timeout=None):
+    if timeout is None:
+        timeout = TIMEOUT
     deadline = time.time() + timeout
     while time.time() < deadline:
         for i, line in enumerate(_output_buf):
@@ -257,6 +288,23 @@ def hol_load(file: str) -> str:
     Returns the output from loading.
     """
     return _strip_ansi(_eval_code(f'needs "{_ocaml_escape(file)}"'))
+
+
+@mcp.tool()
+def hol_interrupt() -> str:
+    """Send an interrupt signal to cancel a long-running HOL Light command.
+
+    Use when a tactic hangs (e.g., MESON_TAC on a hard goal).
+    After interrupting, the goal state is preserved and you can try
+    a different tactic.
+    """
+    import signal
+    if _proc and _proc.poll() is None:
+        _proc.send_signal(signal.SIGINT)
+        time.sleep(0.5)
+        _output_buf.clear()
+        return "Interrupt sent."
+    return "No HOL Light process running."
 
 
 def _ocaml_escape(s: str) -> str:

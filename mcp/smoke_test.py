@@ -37,7 +37,7 @@ async def main():
             # Check tools registered
             tools = await session.list_tools()
             tool_names = sorted(t.name for t in tools.tools)
-            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_load", "hol_type", "search_theorems", "set_goal"],
+            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_interrupt", "hol_load", "hol_type", "search_theorems", "set_goal"],
                   f"got {tool_names}")
 
             # eval — basic arithmetic

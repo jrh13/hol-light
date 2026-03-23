@@ -26,4 +26,4 @@ hol_lib_inlined.ml
 unit_tests_inlined.ml
 unit_tests.byte
 unit_tests.native
-hol-noledit.ckpt
+hol-*.ckpt

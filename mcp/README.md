@@ -20,7 +20,7 @@ apply_tactic  "ASM_REWRITE_TAC[EVEN_MULT]"
 → {"proved":true,"theorem":"|- forall n. EVEN n ==> EVEN (n * n)"}
 ```
 
-See [TUTORIAL.md](TUTORIAL.md) for more examples and [SKILL.md](SKILL.md) for a tactic reference.
+See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proofs) and [SKILL.md](SKILL.md) for a tactic reference.
 
 ## Tools
 
@@ -34,6 +34,7 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples and [SKILL.md](SKILL.md) for a 
 | `search_theorems` | Search theorem database by name | Structured JSON |
 | `hol_type` | Get the type of a term | Raw text |
 | `hol_load` | Load a HOL Light file via `needs` | Raw text |
+| `hol_interrupt` | Cancel a long-running command | Status message |
 
 ## Setup
 
@@ -54,14 +55,26 @@ git clone https://github.com/dmtcp/dmtcp.git /tmp/dmtcp
 cd /tmp/dmtcp && ./configure --prefix=$HOME/.local && make -j$(nproc) && make install
 ```
 
-Create a checkpoint:
+Create named checkpoints:
 
 ```bash
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
-python3 mcp/make_checkpoint.py
+
+# Bare HOL Light (~75s)
+python3 mcp/make_checkpoint.py --name base
+
+# With s2n-bignum ARM infrastructure (~5-10min)
+python3 mcp/make_checkpoint.py --name s2n -I /path/to/s2n-bignum 'needs "arm/proofs/base.ml"'
 ```
 
-This creates `hol-noledit.ckpt/` in the HOL Light root. The server auto-detects it on startup.
+Configure which checkpoint to use in `hol-mcp.toml`:
+
+```toml
+checkpoint = "s2n"
+timeout = 600
+```
+
+The server finds `hol-mcp.toml` in CWD or `mcp/`, or pass `--config path/to/hol-mcp.toml`.
 
 ## Usage
 
@@ -98,8 +111,18 @@ uv run python smoke_test.py           # MCP integration test (14 checks)
 
 ~75s on first run, ~2s with checkpoint.
 
+## Security Considerations
+
+The `eval` tool executes arbitrary OCaml code, which has full access to the host system. This is inherent to theorem proving. However, the server uses stdio transport (no network sockets), so it is only accessible to the MCP client process that spawned it. It is not exposed to the network, even on an EC2 instance with open ports.
+
+Treat DMTCP checkpoint files (`hol-noledit.ckpt/`) as executable code---don't restore untrusted checkpoints.
+
 ## Related Work
 
 [mkannwischer/mcp-hol-light](https://github.com/mkannwischer/mcp-hol-light) is another MCP server for HOL Light. It connects to a separate [hol-server](https://github.com/monadius/hol_server) TCP process and exposes a similar set of tools (`hol_eval`, `hol_tactic`, `hol_back`, `hol_search`, etc.). It implements the MCP protocol directly rather than using an SDK, and returns raw REPL text from all tools.
 
 We take a different approach: we embed HOL Light as a subprocess (no external server needed), use OCaml-side JSON serialization to return structured goal states and search results, and support DMTCP checkpointing for instant startup. We find that structured output is particularly useful for automated proof search, where an LLM agent needs to programmatically inspect goals, detect proof completion, and implement backtracking strategies without parsing REPL text.
+
+## Acknowledgments
+
+Thanks to kceren for sharing HOL Light agent configurations and tactic advice that informed the SKILL.md guide.
