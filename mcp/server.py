@@ -88,7 +88,7 @@ def _start_hol():
     ) if os.path.isdir(ckpt_dir) else []
     if ckpt_files:
         _proc = subprocess.Popen(
-            ["dmtcp_restart", "--no-strict-checking"] +
+            ["dmtcp_restart", "--no-strict-checking", "--coord-port", "0"] +
             [os.path.join(ckpt_dir, f) for f in ckpt_files],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
