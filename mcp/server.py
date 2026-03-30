@@ -48,6 +48,7 @@ _proc = None
 _lock = threading.Lock()
 _output_buf = []
 _helpers_loaded = False
+_start_time = None
 
 
 def _reader_thread(proc):
@@ -110,6 +111,8 @@ def _start_hol():
             bufsize=1,
             env=_opam_env(),
         )
+    global _start_time
+    _start_time = time.time()
     t = threading.Thread(target=_reader_thread, args=(_proc,), daemon=True)
     t.start()
 
@@ -144,7 +147,7 @@ def _load_helpers():
         raise RuntimeError(f"Failed to load MCP helpers: {result}")
 
 
-def _eval_raw(code: str) -> str:
+def _eval_raw(code: str, timeout: int = None) -> str:
     """Eval code, return raw output. Caller must hold _lock and ensure HOL is started."""
     _output_buf.clear()
     full = code.rstrip()
@@ -153,23 +156,23 @@ def _eval_raw(code: str) -> str:
     full += f'\nPrintf.printf "{SENTINEL}\\n%!";;\n'
     _proc.stdin.write(full)
     _proc.stdin.flush()
-    return _wait_for_sentinel()
+    return _wait_for_sentinel(timeout)
 
 
-def _eval_code(code: str) -> str:
+def _eval_code(code: str, timeout: int = None) -> str:
     with _lock:
         _start_hol()
         _load_helpers()
-        return _eval_raw(code)
+        return _eval_raw(code, timeout)
 
 
-def _eval_json(code: str) -> str:
+def _eval_json(code: str, timeout: int = None) -> str:
     """Eval OCaml code that produces a string, print it to stdout, return it.
     Uses print_string to avoid OCaml's string truncation in REPL output."""
     with _lock:
         _start_hol()
         _load_helpers()
-        return _eval_raw(f'print_string ({code}); print_newline ()')
+        return _eval_raw(f'print_string ({code}); print_newline ()', timeout)
 
 
 def _strip_ansi(s: str) -> str:
@@ -177,7 +180,7 @@ def _strip_ansi(s: str) -> str:
 
 
 @mcp.tool()
-def eval(code: str) -> str:
+def eval(code: str, timeout: int = None) -> str:
     """Evaluate OCaml/HOL Light code and return the output.
 
     Examples:
@@ -185,7 +188,7 @@ def eval(code: str) -> str:
         TAUT `p /\\ q ==> q /\\ p`;;
         search [name "ARITH"];;
     """
-    return _strip_ansi(_eval_code(code))
+    return _strip_ansi(_eval_code(code, timeout))
 
 
 @mcp.tool()
@@ -200,7 +203,7 @@ def goal_state() -> str:
 
 
 @mcp.tool()
-def apply_tactic(tactic: str) -> str:
+def apply_tactic(tactic: str, timeout: int = None) -> str:
     """Apply a tactic to the current goal and return the resulting state as JSON.
 
     The tactic should be a valid HOL Light tactic expression, e.g.:
@@ -216,7 +219,7 @@ def apply_tactic(tactic: str) -> str:
     with _lock:
         _start_hol()
         _load_helpers()
-        tac_result = _eval_raw(f"e({tactic})")
+        tac_result = _eval_raw(f"e({tactic})", timeout)
         if "Exception" in tac_result or "Error" in tac_result or "Failure" in tac_result:
             err = _strip_ansi(tac_result).strip()
             return '{"error":' + _json_quote(err) + '}'
@@ -328,6 +331,24 @@ def hol_restart() -> str:
         _start_hol()
         _load_helpers()
     return "HOL Light restarted."
+
+
+@mcp.tool()
+def hol_status() -> str:
+    """Check whether the HOL Light subprocess is alive.
+
+    Returns JSON: {"alive": bool, "pid": int|null, "checkpoint": str,
+                   "uptime_seconds": float|null, "timeout": int}
+    """
+    import json
+    alive = _proc is not None and _proc.poll() is None
+    return json.dumps({
+        "alive": alive,
+        "pid": _proc.pid if alive else None,
+        "checkpoint": CHECKPOINT_NAME,
+        "uptime_seconds": round(time.time() - _start_time, 1) if alive and _start_time else None,
+        "timeout": TIMEOUT,
+    })
 
 
 def _ocaml_escape(s: str) -> str:
