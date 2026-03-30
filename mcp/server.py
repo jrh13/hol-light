@@ -307,6 +307,29 @@ def hol_interrupt() -> str:
     return "No HOL Light process running."
 
 
+@mcp.tool()
+def hol_restart() -> str:
+    """Kill and restart the HOL Light subprocess.
+
+    Use when HOL Light has died or is in a bad state.
+    Any in-progress proof state will be lost.
+    """
+    global _proc, _helpers_loaded
+    with _lock:
+        if _proc is not None:
+            try:
+                _proc.kill()
+                _proc.wait(timeout=5)
+            except Exception:
+                pass
+            _proc = None
+        _helpers_loaded = False
+        _output_buf.clear()
+        _start_hol()
+        _load_helpers()
+    return "HOL Light restarted."
+
+
 def _ocaml_escape(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
