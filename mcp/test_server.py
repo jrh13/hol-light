@@ -97,3 +97,53 @@ def test_search_theorems():
     results = json.loads(server._extract_json(result))
     assert len(results) > 0
     assert any("ADD_SYM" in r["name"] for r in results)
+
+
+# --- hol_status ---
+
+def test_hol_status_alive():
+    result = json.loads(server.hol_status())
+    assert result["alive"] is True
+    assert isinstance(result["pid"], int)
+    assert isinstance(result["checkpoint"], str)
+    assert result["uptime_seconds"] > 0
+    assert isinstance(result["timeout"], int)
+
+
+def test_hol_status_reports_checkpoint_name():
+    result = json.loads(server.hol_status())
+    assert result["checkpoint"] == server.CHECKPOINT_NAME
+
+
+# --- per-call timeout ---
+
+def test_eval_with_custom_timeout():
+    result = server.eval("1 + 1", timeout=30)
+    assert "2" in result
+
+
+def test_apply_tactic_with_custom_timeout():
+    server._eval_code("g `!n. n + 0 = n`")
+    result = json.loads(server.apply_tactic("GEN_TAC THEN ARITH_TAC", timeout=30))
+    assert result.get("proved") is True
+
+
+def test_eval_timeout_expires():
+    # Infinite loop should exceed a 1-second timeout
+    result = server.eval("let rec loop () = loop () in loop ()", timeout=1)
+    assert "timeout" in result.lower()
+    # The process is now stuck; restart so subsequent tests work
+    server.hol_restart()
+
+
+# --- hol_restart ---
+
+def test_hol_restart():
+    old_pid = server._proc.pid
+    result = server.hol_restart()
+    assert "restarted" in result.lower()
+    assert server._proc.poll() is None, "new process should be alive"
+    assert server._proc.pid != old_pid
+    # verify it works after restart
+    result = server.eval("1 + 1")
+    assert "2" in result
