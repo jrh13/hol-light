@@ -37,7 +37,7 @@ async def main():
             # Check tools registered
             tools = await session.list_tools()
             tool_names = sorted(t.name for t in tools.tools)
-            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_interrupt", "hol_load", "hol_type", "search_theorems", "set_goal"],
+            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "search_theorems", "set_goal"],
                   f"got {tool_names}")
 
             # eval — basic arithmetic
@@ -91,6 +91,22 @@ async def main():
             # hol_type
             r = await session.call_tool("hol_type", {"term": "`1 + 1`"})
             check("hol_type", "num" in r.content[0].text, r.content[0].text)
+
+            # hol_status
+            r = await session.call_tool("hol_status", {})
+            status = json.loads(r.content[0].text)
+            check("hol_status: alive", status["alive"] is True, str(status))
+            check("hol_status: has pid", isinstance(status["pid"], int), str(status))
+
+            # eval with per-call timeout
+            r = await session.call_tool("eval", {"code": "1 + 1", "timeout": 30})
+            check("eval: custom timeout", "2" in r.content[0].text, r.content[0].text)
+
+            # hol_restart (run last — kills the process)
+            r = await session.call_tool("hol_restart", {})
+            check("hol_restart", "restarted" in r.content[0].text.lower(), r.content[0].text)
+            r = await session.call_tool("eval", {"code": "1 + 1"})
+            check("eval after restart", "2" in r.content[0].text, r.content[0].text)
 
             print(f"\n{passed}/{passed + failed} passed")
             return failed == 0

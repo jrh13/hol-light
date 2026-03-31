@@ -12,6 +12,8 @@ HOL Light is a classical higher-order logic theorem prover. The law of excluded 
 4. **apply_tactic** — apply a tactic; check response for `"proved":true`
 5. **backtrack** — undo if a tactic made things worse
 6. Repeat 2–5 until proved
+7. **hol_status** — check if HOL Light is alive (useful for debugging)
+8. **hol_restart** — restart HOL Light if it has died or is in a bad state
 
 Always read the goal state carefully before choosing a tactic. The structured JSON tells you exactly what hypotheses you have and what you need to show.
 

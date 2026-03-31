@@ -133,6 +133,8 @@ apply_tactic  "DISJ2_TAC THEN REWRITE_TAC[EVEN_ADD] THEN ASM_REWRITE_TAC[NOT_EVE
 4. **apply_tactic** — try automation first (`ARITH_TAC`, `MESON_TAC[]`), then targeted tactics
 5. **backtrack** — undo if a tactic didn't help
 6. Repeat until `"proved":true`
+7. **hol_status** — check if HOL Light is alive (useful for debugging)
+8. **hol_restart** — restart HOL Light if it has died or is in a bad state
 
 ---
 

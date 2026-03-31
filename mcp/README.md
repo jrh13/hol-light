@@ -35,6 +35,8 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 | `hol_type` | Get the type of a term | Raw text |
 | `hol_load` | Load a HOL Light file via `needs` | Raw text |
 | `hol_interrupt` | Cancel a long-running command | Status message |
+| `hol_restart` | Kill and restart the HOL Light subprocess | Status message |
+| `hol_status` | Check process health, uptime, checkpoint info | Structured JSON |
 
 ## Setup
 
@@ -106,7 +108,7 @@ The server speaks MCP over stdio.
 
 ```bash
 uv run pytest test_server.py -v       # unit tests
-uv run python smoke_test.py           # MCP integration test (14 checks)
+uv run python smoke_test.py           # MCP integration test
 ```
 
 ~75s on first run, ~2s with checkpoint.
@@ -125,4 +127,4 @@ We take a different approach: we embed HOL Light as a subprocess (no external se
 
 ## Acknowledgments
 
-Thanks to kceren for sharing HOL Light agent configurations and tactic advice that informed the SKILL.md guide.
+Thanks to kceren for advice on HOL Light tactics and proof patterns, to nebeid for suggesting named checkpoints, and to the s2n-bignum team for encouragement and tutorial examples.
