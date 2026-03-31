@@ -42,7 +42,16 @@ TIMEOUT = _config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600")))
 CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "noledit"))
 
 from mcp.server.fastmcp import FastMCP
-mcp = FastMCP("hol-light")
+mcp = FastMCP("hol-light",
+    instructions="HOL Light theorem prover. Call hol_help() for a tactic reference and proof guide.")
+
+
+def _read_skill():
+    path = os.path.join(MCP_DIR, "SKILL.md")
+    if os.path.isfile(path):
+        with open(path) as f:
+            return f.read()
+    return "SKILL.md not found."
 
 _proc = None
 _lock = threading.Lock()
@@ -349,6 +358,16 @@ def hol_status() -> str:
         "uptime_seconds": round(time.time() - _start_time, 1) if alive and _start_time else None,
         "timeout": TIMEOUT,
     })
+
+
+@mcp.tool()
+def hol_help() -> str:
+    """Return the HOL Light tactic reference and proof guide (SKILL.md).
+
+    Call this before your first proof to learn available tactics,
+    proof patterns, and common pitfalls.
+    """
+    return _read_skill()
 
 
 def _ocaml_escape(s: str) -> str:

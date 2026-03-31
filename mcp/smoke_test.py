@@ -37,7 +37,7 @@ async def main():
             # Check tools registered
             tools = await session.list_tools()
             tool_names = sorted(t.name for t in tools.tools)
-            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "search_theorems", "set_goal"],
+            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "search_theorems", "set_goal"],
                   f"got {tool_names}")
 
             # eval — basic arithmetic
@@ -97,6 +97,10 @@ async def main():
             status = json.loads(r.content[0].text)
             check("hol_status: alive", status["alive"] is True, str(status))
             check("hol_status: has pid", isinstance(status["pid"], int), str(status))
+
+            # hol_help
+            r = await session.call_tool("hol_help", {})
+            check("hol_help", "## Core tactics" in r.content[0].text, r.content[0].text[:200])
 
             # eval with per-call timeout
             r = await session.call_tool("eval", {"code": "1 + 1", "timeout": 30})

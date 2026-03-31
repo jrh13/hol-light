@@ -1,3 +1,9 @@
+---
+name: hol-light
+description: Prove theorems in HOL Light via MCP tools. Use when the user asks to prove a theorem, verify a proof, or work with HOL Light tactics, goals, or lemmas.
+compatibility: Requires the hol-light MCP server running (uv run hol-light-mcp).
+---
+
 # HOL Light MCP — LLM Skill Guide
 
 You have access to a HOL Light theorem prover via MCP tools. This document teaches you how to use them effectively.

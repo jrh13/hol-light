@@ -37,6 +37,7 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 | `hol_interrupt` | Cancel a long-running command | Status message |
 | `hol_restart` | Kill and restart the HOL Light subprocess | Status message |
 | `hol_status` | Check process health, uptime, checkpoint info | Structured JSON |
+| `hol_help` | Return tactic reference and proof guide (SKILL.md) | Markdown text |
 
 ## Setup
 
@@ -103,6 +104,10 @@ The server speaks MCP over stdio.
   }
 }
 ```
+
+### Skill / Tactic Guide
+
+The server includes a built-in `hol_help` tool that returns the full tactic reference and proof guide ([SKILL.md](SKILL.md)). The LLM can call it before its first proof — no extra configuration needed.
 
 ## Tests
 
