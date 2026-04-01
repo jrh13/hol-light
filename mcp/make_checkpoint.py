@@ -94,6 +94,18 @@ for load_cmd in extra_loads:
             print(f"  done.", flush=True)
             break
 
+print("Compacting GC before checkpoint...", flush=True)
+p.stdin.write(f'Gc.compact ();;\nPrintf.printf "{SENTINEL}\\n%!";;\n')
+p.stdin.flush()
+while True:
+    line = p.stdout.readline()
+    if not line:
+        print("ERROR: EOF during Gc.compact", flush=True)
+        sys.exit(1)
+    if SENTINEL in line:
+        print("  done.", flush=True)
+        break
+
 time.sleep(2)
 
 print("Checkpointing...", flush=True)
