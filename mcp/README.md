@@ -84,7 +84,7 @@ python3 mcp/make_checkpoint.py --name s2n -I /path/to/s2n-bignum 'needs "arm/pro
 By default, the server loads `/path/to/hol-light/mcp/hol-mcp.toml`. To use a different config, pass `--config /absolute/path/to/hol-mcp.toml`.
 
 ```toml
-# Which checkpoint to use (looks for hol-<name>.ckpt/ in HOL Light root).
+# Which checkpoint to use (looks for /path/to/hol-light/hol-<name>.ckpt/).
 checkpoint = "s2n"
 
 # Timeout in seconds for HOL Light commands.
@@ -139,7 +139,7 @@ First run includes HOL Light startup (~75s cold, ~2s with checkpoint).
 
 The `eval` tool executes arbitrary OCaml code, which has full access to the host system. This is inherent to theorem proving. However, the server uses stdio transport (no network sockets), so it is only accessible to the MCP client process that spawned it. It is not exposed to the network, even on an EC2 instance with open ports.
 
-Treat DMTCP checkpoint files (`hol-<name>.ckpt/`) as executable code — don't restore untrusted checkpoints.
+Treat DMTCP checkpoint files (`hol-<name>.ckpt/`) as executable code---don't restore untrusted checkpoints.
 
 ## Related Work
 
