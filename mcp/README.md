@@ -30,6 +30,8 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 | `set_goal` | Set a proof goal, return initial state | Structured JSON |
 | `goal_state` | Return current proof goals | Structured JSON |
 | `apply_tactic` | Apply a tactic, return new state or proved theorem | Structured JSON |
+| `apply_tactics` | Apply a list of tactics in one round-trip | Structured JSON |
+| `prove` | One-shot prove: goal + tactic → theorem | Structured JSON |
 | `backtrack` | Undo tactic steps | Structured JSON |
 | `search_theorems` | Search theorem database by name | Structured JSON |
 | `hol_type` | Get the type of a term | Raw text |

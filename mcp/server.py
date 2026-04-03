@@ -2,6 +2,7 @@
 """MCP server for HOL Light theorem prover."""
 
 import os
+import queue
 import re
 import subprocess
 import sys
@@ -55,14 +56,27 @@ def _read_skill():
 
 _proc = None
 _lock = threading.Lock()
-_output_buf = []
 _helpers_loaded = False
 _start_time = None
 
+# Queue-based sentinel signaling: reader thread produces results, eval consumes.
+# Eliminates race conditions — queue.get() is atomic consumption.
+_result_queue = queue.Queue(maxsize=1)
+_reader_buf = []
+
 
 def _reader_thread(proc):
-    for line in iter(proc.stdout.readline, ""):
-        _output_buf.append(line)
+    while True:
+        line = proc.stdout.readline()
+        if not line:
+            # Process died — signal immediately so callers don't hang
+            _result_queue.put("[HOL Light process died unexpectedly]")
+            break
+        if SENTINEL in line:
+            _result_queue.put("".join(_reader_buf).strip())
+            _reader_buf.clear()
+        else:
+            _reader_buf.append(line)
 
 
 def _opam_env():
@@ -129,15 +143,19 @@ def _start_hol():
 def _wait_for_sentinel(timeout=None):
     if timeout is None:
         timeout = TIMEOUT
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        for i, line in enumerate(_output_buf):
-            if SENTINEL in line:
-                result = "".join(_output_buf[:i])
-                _output_buf[:] = _output_buf[i + 1:]
-                return result.strip()
-        time.sleep(0.05)
-    return "[timeout waiting for HOL Light response]"
+    try:
+        return _result_queue.get(timeout=timeout)
+    except queue.Empty:
+        return "[timeout waiting for HOL Light response]"
+
+
+def _drain_queue():
+    """Discard any stale results in the queue."""
+    while not _result_queue.empty():
+        try:
+            _result_queue.get_nowait()
+        except queue.Empty:
+            break
 
 
 def _load_helpers():
@@ -145,7 +163,8 @@ def _load_helpers():
     if _helpers_loaded:
         return
     helpers_path = os.path.join(MCP_DIR, "mcp_helpers.ml")
-    _output_buf.clear()
+    _drain_queue()
+    _reader_buf.clear()
     cmd = f'#use "{helpers_path}";;\nPrintf.printf "{SENTINEL}\\n%!";;\n'
     _proc.stdin.write(cmd)
     _proc.stdin.flush()
@@ -158,7 +177,8 @@ def _load_helpers():
 
 def _eval_raw(code: str, timeout: int = None) -> str:
     """Eval code, return raw output. Caller must hold _lock and ensure HOL is started."""
-    _output_buf.clear()
+    _drain_queue()
+    _reader_buf.clear()
     full = code.rstrip()
     if not full.endswith(";;"):
         full += ";;"
@@ -178,10 +198,7 @@ def _eval_code(code: str, timeout: int = None) -> str:
 def _eval_json(code: str, timeout: int = None) -> str:
     """Eval OCaml code that produces a string, print it to stdout, return it.
     Uses print_string to avoid OCaml's string truncation in REPL output."""
-    with _lock:
-        _start_hol()
-        _load_helpers()
-        return _eval_raw(f'print_string ({code}); print_newline ()', timeout)
+    return _eval_code(f'print_string ({code}); print_newline ()', timeout)
 
 
 def _strip_ansi(s: str) -> str:
@@ -225,15 +242,59 @@ def apply_tactic(tactic: str, timeout: int = None) -> str:
       - Proof complete: {"proved": true, "theorem": "..."}
       - Error: {"error": "..."}
     """
-    with _lock:
-        _start_hol()
-        _load_helpers()
-        tac_result = _eval_raw(f"e({tactic})", timeout)
-        if "Exception" in tac_result or "Error" in tac_result or "Failure" in tac_result:
-            err = _strip_ansi(tac_result).strip()
-            return '{"error":' + _json_quote(err) + '}'
-        result = _eval_raw("print_string (mcp_json_after_tactic ()); print_newline ()")
-        return _extract_json(result)
+    code = (f'(try ignore(e({tactic})); '
+            f'print_string (mcp_json_after_tactic ()) '
+            f'with Failure s -> print_string (mcp_json_error s) '
+            f'| e -> print_string (mcp_json_error (Printexc.to_string e))); '
+            f'print_newline ()')
+    return _extract_json(_eval_code(code, timeout))
+
+
+@mcp.tool()
+def apply_tactics(tactics: list[str], timeout: int = None) -> str:
+    """Apply a list of tactics sequentially in a single round-trip.
+
+    Stops at the first error or when the proof is complete.
+
+    Args:
+        tactics: List of HOL Light tactic expressions.
+        timeout: Optional timeout in seconds for the entire batch.
+
+    Returns JSON with:
+      - Proof complete: {"proved": true, "theorem": "...", "steps": N}
+      - Error: {"error": "...", "step": N}
+      - Goal state after all tactics: goal state JSON with added "steps" field
+    """
+    if not tactics:
+        return '{"error":"empty tactic list"}'
+    tac_list = "[" + "; ".join(tactics) + "]"
+    code = (f'print_string (mcp_json_apply_tactics {tac_list}); print_newline ()')
+    return _extract_json(_eval_code(code, timeout))
+
+
+@mcp.tool()
+def prove(goal: str, tactic: str, timeout: int = None) -> str:
+    """Prove a theorem in one shot using a goal and tactic.
+
+    This is a convenience wrapper around HOL Light's prove() function.
+    Use for simple proofs that don't need interactive stepping.
+
+    Args:
+        goal: HOL Light term to prove (e.g., "`!n. n + 0 = n`")
+        tactic: Complete tactic to prove the goal (e.g., "GEN_TAC THEN ARITH_TAC")
+        timeout: Optional timeout in seconds.
+
+    Returns JSON:
+      - Success: {"proved": true, "theorem": "..."}
+      - Error: {"error": "..."}
+    """
+    code = (f'(try let th = prove({goal}, {tactic}) in '
+            f'print_string ("{{\\"proved\\":true,\\"theorem\\":" ^ '
+            f'mcp_json_string (string_of_thm th) ^ "}}") '
+            f'with Failure s -> print_string (mcp_json_error s) '
+            f'| e -> print_string (mcp_json_error (Printexc.to_string e))); '
+            f'print_newline ()')
+    return _extract_json(_eval_code(code, timeout))
 
 
 @mcp.tool()
@@ -270,12 +331,9 @@ def set_goal(goal: str) -> str:
 
     Returns JSON goal state.
     """
-    with _lock:
-        _start_hol()
-        _load_helpers()
-        _eval_raw(f"g({goal})")
-        result = _eval_raw("print_string (mcp_json_goalstate ()); print_newline ()")
-        return _extract_json(result)
+    code = (f'ignore(g({goal})); '
+            f'print_string (mcp_json_goalstate ()); print_newline ()')
+    return _extract_json(_eval_code(code))
 
 
 @mcp.tool()
@@ -311,11 +369,13 @@ def hol_interrupt() -> str:
     a different tactic.
     """
     import signal
-    if _proc and _proc.poll() is None:
-        _proc.send_signal(signal.SIGINT)
-        time.sleep(0.5)
-        _output_buf.clear()
-        return "Interrupt sent."
+    with _lock:
+        if _proc and _proc.poll() is None:
+            _proc.send_signal(signal.SIGINT)
+            time.sleep(0.5)
+            _drain_queue()
+            _reader_buf.clear()
+            return "Interrupt sent."
     return "No HOL Light process running."
 
 
@@ -336,7 +396,8 @@ def hol_restart() -> str:
                 pass
             _proc = None
         _helpers_loaded = False
-        _output_buf.clear()
+        _drain_queue()
+        _reader_buf.clear()
         _start_hol()
         _load_helpers()
     return "HOL Light restarted."

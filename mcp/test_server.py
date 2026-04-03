@@ -147,3 +147,134 @@ def test_hol_restart():
     # verify it works after restart
     result = server.eval("1 + 1")
     assert "2" in result
+
+
+# --- prove tool ---
+
+def test_prove_tool_success():
+    result = json.loads(server.prove("`!n. 0 + n = n`", "GEN_TAC THEN REWRITE_TAC[ADD]"))
+    assert result["proved"] is True
+    assert "0 + n = n" in result["theorem"]
+
+
+def test_prove_tool_error():
+    result = json.loads(server.prove("`!n. 0 + n = n`", "REWRITE_TAC[]"))
+    assert "error" in result
+
+
+# --- apply_tactics tool ---
+
+def test_apply_tactics_completes_proof():
+    server._eval_code("g `!n. n + 0 = n`")
+    result = json.loads(server.apply_tactics(["GEN_TAC", "ARITH_TAC"]))
+    assert result["proved"] is True
+    assert "n + 0 = n" in result["theorem"]
+    assert result["steps"] == 2
+
+
+def test_apply_tactics_partial():
+    server._eval_code("g `!m n. m + n = n + m`")
+    result = json.loads(server.apply_tactics(["GEN_TAC", "GEN_TAC"]))
+    assert "goals" in result
+    assert result["steps"] == 2
+
+
+def test_apply_tactics_error_stops():
+    server._eval_code("g `T /\\ T`")
+    # Second tactic should fail — goal after CONJ_TAC has no conjunction
+    result = json.loads(server.apply_tactics(["CONJ_TAC", "CONJ_TAC"]))
+    assert "error" in result
+    assert result["step"] == 1
+
+
+def test_apply_tactics_empty():
+    result = json.loads(server.apply_tactics([]))
+    assert "error" in result
+
+
+
+# --- goal_state tool ---
+
+def test_goal_state_tool_empty():
+    # Complete any leftover proof, then check goal_state returns valid JSON
+    server._eval_code("g `T`")
+    server._eval_code("e(REWRITE_TAC[])")
+    result = json.loads(server.goal_state())
+    assert "goals" in result
+    assert "total_goals" in result
+
+
+def test_goal_state_tool_with_goal():
+    server.set_goal("`T /\\ T`")
+    result = json.loads(server.goal_state())
+    assert len(result["goals"]) >= 1
+
+
+# --- set_goal tool ---
+
+def test_set_goal_tool():
+    result = json.loads(server.set_goal("`!n. n + 0 = n`"))
+    assert len(result["goals"]) == 1
+    assert "n + 0 = n" in result["goals"][0]["conclusion"]
+
+
+# --- backtrack tool ---
+
+def test_backtrack_tool():
+    server.set_goal("`!n. n + 0 = n`")
+    server.apply_tactic("GEN_TAC")
+    result = json.loads(server.backtrack())
+    assert "n + 0 = n" in result["goals"][0]["conclusion"]
+    # After backtrack, the universal quantifier should be restored
+    assert "n" in result["goals"][0]["conclusion"]
+
+
+# --- search_theorems tool ---
+
+def test_search_theorems_tool():
+    results = json.loads(server.search_theorems("ADD_SYM", limit=5))
+    assert len(results) > 0
+    assert any("ADD_SYM" in r["name"] for r in results)
+
+
+def test_search_theorems_tool_limit():
+    results = json.loads(server.search_theorems("ADD", limit=3))
+    assert len(results) <= 3
+
+
+# --- hol_type tool ---
+
+def test_hol_type_tool():
+    result = server.hol_type("`1 + 1`")
+    assert "num" in result
+
+
+def test_hol_type_tool_bool():
+    result = server.hol_type("`T`")
+    assert "bool" in result
+
+
+# --- hol_load tool ---
+
+def test_hol_load_tool():
+    # Loading an already-loaded file should succeed (idempotent via needs)
+    result = server.hol_load("list.ml")
+    # needs returns empty or "already loaded" — just check no error
+    assert "Failure" not in result and "Error" not in result
+
+
+# --- hol_interrupt tool ---
+
+def test_hol_interrupt_no_hang():
+    result = server.hol_interrupt()
+    # Should return one of the two expected messages
+    assert "Interrupt sent" in result or "No HOL Light process" in result
+
+
+# --- hol_help tool ---
+
+def test_hol_help_tool():
+    result = server.hol_help()
+    assert "## Core tactics" in result
+    assert "prove" in result.lower()
+
