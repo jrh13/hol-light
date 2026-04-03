@@ -127,14 +127,20 @@ apply_tactic  "DISJ2_TAC THEN REWRITE_TAC[EVEN_ADD] THEN ASM_REWRITE_TAC[NOT_EVE
 
 ## Proof workflow summary
 
+**One-shot:** Use **prove**(goal, tactic) when you know the full tactic.
+
+**Interactive:**
 1. **set_goal** — state the theorem
 2. **goal_state** — inspect hypotheses and conclusion
 3. **search_theorems** — find relevant lemmas
 4. **apply_tactic** — try automation first (`ARITH_TAC`, `MESON_TAC[]`), then targeted tactics
-5. **backtrack** — undo if a tactic didn't help
-6. Repeat until `"proved":true`
-7. **hol_status** — check if HOL Light is alive (useful for debugging)
-8. **hol_restart** — restart HOL Light if it has died or is in a bad state
+5. **apply_tactics** — batch multiple tactics in one call for straightforward sequences
+6. **backtrack** — undo if a tactic didn't help
+7. Repeat until `"proved":true`
+8. **hol_status** — check if HOL Light is alive (useful for debugging)
+9. **hol_restart** — restart HOL Light if it has died or is in a bad state
+
+**Utility tools:** **hol_type** (get term types), **hol_load** (load files), **hol_interrupt** (cancel hung tactics), **hol_help** (tactic reference)
 
 ---
 

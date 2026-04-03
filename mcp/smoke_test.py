@@ -37,7 +37,7 @@ async def main():
             # Check tools registered
             tools = await session.list_tools()
             tool_names = sorted(t.name for t in tools.tools)
-            check("tools registered", tool_names == ["apply_tactic", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "search_theorems", "set_goal"],
+            check("tools registered", tool_names == ["apply_tactic", "apply_tactics", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "prove", "search_theorems", "set_goal"],
                   f"got {tool_names}")
 
             # eval — basic arithmetic
@@ -101,6 +101,23 @@ async def main():
             # hol_help
             r = await session.call_tool("hol_help", {})
             check("hol_help", "## Core tactics" in r.content[0].text, r.content[0].text[:200])
+
+            # prove tool
+            r = await session.call_tool("prove", {"goal": "`!n. 0 + n = n`", "tactic": "GEN_TAC THEN REWRITE_TAC[ADD]"})
+            result = json.loads(r.content[0].text)
+            check("prove: success", result.get("proved") == True, str(result))
+            check("prove: theorem", "0 + n = n" in result.get("theorem", ""), str(result))
+
+            r = await session.call_tool("prove", {"goal": "`!n. 0 + n = n`", "tactic": "REWRITE_TAC[]"})
+            result = json.loads(r.content[0].text)
+            check("prove: error", "error" in result, str(result))
+
+            # apply_tactics tool
+            await session.call_tool("eval", {"code": "g `!n. n + 0 = n`"})
+            r = await session.call_tool("apply_tactics", {"tactics": ["GEN_TAC", "ARITH_TAC"]})
+            result = json.loads(r.content[0].text)
+            check("apply_tactics: proof complete", result.get("proved") == True, str(result))
+            check("apply_tactics: steps", result.get("steps") == 2, str(result))
 
             # eval with per-call timeout
             r = await session.call_tool("eval", {"code": "1 + 1", "timeout": 30})
