@@ -20,6 +20,13 @@ apply_tactic  "ASM_REWRITE_TAC[EVEN_MULT]"
 → {"proved":true,"theorem":"|- forall n. EVEN n ==> EVEN (n * n)"}
 ```
 
+Or as a one-shot proof:
+
+```
+prove  goal="`!n. EVEN n ==> EVEN(n * n)`"  tactic="GEN_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[EVEN_MULT]"
+→ {"proved":true,"theorem":"|- forall n. EVEN n ==> EVEN (n * n)"}
+```
+
 See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proofs) and [SKILL.md](SKILL.md) for a tactic reference.
 
 ## Tools
@@ -38,7 +45,7 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 | `hol_load` | Load a HOL Light file via `needs` | Raw text |
 | `hol_interrupt` | Cancel a long-running command | Status message |
 | `hol_restart` | Kill and restart the HOL Light subprocess | Status message |
-| `hol_status` | Check process health, uptime, checkpoint info | Structured JSON |
+| `hol_status` | Check process health, uptime, config, checkpoint | Structured JSON |
 | `hol_help` | Return tactic reference and proof guide (SKILL.md) | Markdown text |
 
 ## Setup
@@ -72,19 +79,25 @@ python3 mcp/make_checkpoint.py --name base
 python3 mcp/make_checkpoint.py --name s2n -I /path/to/s2n-bignum 'needs "arm/proofs/base.ml"'
 ```
 
-Configure which checkpoint to use in `hol-mcp.toml`:
+## Configuration
+
+By default, the server loads `/path/to/hol-light/mcp/hol-mcp.toml`. To use a different config, pass `--config /absolute/path/to/hol-mcp.toml`.
 
 ```toml
+# Which checkpoint to use (looks for hol-<name>.ckpt/ in HOL Light root).
 checkpoint = "s2n"
+
+# Timeout in seconds for HOL Light commands.
 timeout = 600
 ```
 
-The server finds `hol-mcp.toml` in CWD or `mcp/`, or pass `--config path/to/hol-mcp.toml`.
+Use `hol_status` to verify which config file and checkpoint are active.
 
 ## Usage
 
 ```bash
 uv run hol-light-mcp
+uv run hol-light-mcp --config /path/to/hol-mcp.toml
 ```
 
 The server speaks MCP over stdio.
@@ -98,7 +111,8 @@ The server speaks MCP over stdio.
   "mcpServers": {
     "hol-light": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/hol-light/mcp", "hol-light-mcp"],
+      "args": ["run", "--directory", "/path/to/hol-light/mcp", "hol-light-mcp",
+               "--config", "/path/to/your/project/hol-mcp.toml"],
       "env": {
         "PATH": "/home/user/.local/bin:/usr/bin:/bin"
       }
@@ -114,17 +128,18 @@ The server includes a built-in `hol_help` tool that returns the full tactic refe
 ## Tests
 
 ```bash
-uv run pytest test_server.py -v       # unit tests
-uv run python smoke_test.py           # MCP integration test
+cd mcp
+uv run pytest test_server.py -v       # 35 unit tests
+uv run python smoke_test.py           # 25 MCP integration checks
 ```
 
-~75s on first run, ~2s with checkpoint.
+First run includes HOL Light startup (~75s cold, ~2s with checkpoint).
 
 ## Security Considerations
 
 The `eval` tool executes arbitrary OCaml code, which has full access to the host system. This is inherent to theorem proving. However, the server uses stdio transport (no network sockets), so it is only accessible to the MCP client process that spawned it. It is not exposed to the network, even on an EC2 instance with open ports.
 
-Treat DMTCP checkpoint files (`hol-noledit.ckpt/`) as executable code---don't restore untrusted checkpoints.
+Treat DMTCP checkpoint files (`hol-<name>.ckpt/`) as executable code — don't restore untrusted checkpoints.
 
 ## Related Work
 

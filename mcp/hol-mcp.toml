@@ -1,5 +1,6 @@
 # HOL Light MCP server configuration.
-# Place in your project root as hol-mcp.toml, or pass via --config.
+# This file is loaded by default from /path/to/hol-light/mcp/hol-mcp.toml.
+# To use a different config, pass --config /absolute/path/to/hol-mcp.toml.
 
 # Which checkpoint to use (looks for hol-<name>.ckpt/ in HOL Light root).
 # Create with: python3 mcp/make_checkpoint.py --name <name> [options]

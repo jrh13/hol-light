@@ -106,6 +106,7 @@ def test_hol_status_alive():
     assert result["alive"] is True
     assert isinstance(result["pid"], int)
     assert isinstance(result["checkpoint"], str)
+    assert result["config"] is None or isinstance(result["config"], str)
     assert result["uptime_seconds"] > 0
     assert isinstance(result["timeout"], int)
 

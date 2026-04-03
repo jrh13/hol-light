@@ -34,11 +34,11 @@ def _load_config():
                 break
     if config_path and os.path.isfile(config_path):
         with open(config_path, "rb") as f:
-            return tomllib.load(f)
-    return {}
+            return tomllib.load(f), os.path.abspath(config_path)
+    return {}, None
 
 
-_config = _load_config()
+_config, CONFIG_PATH = _load_config()
 TIMEOUT = _config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600")))
 CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "noledit"))
 
@@ -408,7 +408,7 @@ def hol_status() -> str:
     """Check whether the HOL Light subprocess is alive.
 
     Returns JSON: {"alive": bool, "pid": int|null, "checkpoint": str,
-                   "uptime_seconds": float|null, "timeout": int}
+                   "config": str|null, "uptime_seconds": float|null, "timeout": int}
     """
     import json
     alive = _proc is not None and _proc.poll() is None
@@ -416,6 +416,7 @@ def hol_status() -> str:
         "alive": alive,
         "pid": _proc.pid if alive else None,
         "checkpoint": CHECKPOINT_NAME,
+        "config": CONFIG_PATH,
         "uptime_seconds": round(time.time() - _start_time, 1) if alive and _start_time else None,
         "timeout": TIMEOUT,
     })
