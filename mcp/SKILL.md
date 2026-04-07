@@ -12,14 +12,18 @@ HOL Light is a classical higher-order logic theorem prover. The law of excluded 
 
 ## Proof workflow
 
+**One-shot proofs:** If you know the full tactic, use **prove**(goal, tactic) to get the theorem in a single call.
+
+**Interactive proofs:**
 1. **set_goal** — state the theorem to prove
 2. **goal_state** — inspect current goals (check hypotheses and conclusion)
 3. **search_theorems** — find relevant lemmas by name substring
 4. **apply_tactic** — apply a tactic; check response for `"proved":true`
-5. **backtrack** — undo if a tactic made things worse
-6. Repeat 2–5 until proved
-7. **hol_status** — check if HOL Light is alive (useful for debugging)
-8. **hol_restart** — restart HOL Light if it has died or is in a bad state
+5. **apply_tactics** — apply multiple tactics in one round-trip (faster for straightforward sequences)
+6. **backtrack** — undo if a tactic made things worse
+7. Repeat 2–6 until proved
+8. **hol_status** — check if HOL Light is alive (useful for debugging)
+9. **hol_restart** — restart HOL Light if it has died or is in a bad state
 
 Always read the goal state carefully before choosing a tactic. The structured JSON tells you exactly what hypotheses you have and what you need to show.
 
@@ -168,6 +172,13 @@ ARM_STEPS_TAC EXEC (1--n) THEN
 ENSURES_FINAL_STATE_TAC THEN ASM_REWRITE_TAC[] THEN
 CONV_TAC WORD_RULE
 ```
+
+## Utility tools
+
+- **hol_type** — get the type of a HOL Light term (e.g., `hol_type` with term `` `1 + 1` `` returns `num`)
+- **hol_load** — load a HOL Light file via `needs` (e.g., `hol_load` with file `"Library/words.ml"`)
+- **hol_interrupt** — send SIGINT to cancel a hung tactic (e.g., when `MESON_TAC` diverges)
+- **hol_help** — return this tactic reference (SKILL.md). Call before your first proof.
 
 ## General advice
 
