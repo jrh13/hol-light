@@ -41,6 +41,7 @@ def _load_config():
 _config, CONFIG_PATH = _load_config()
 TIMEOUT = _config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600")))
 CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "noledit"))
+MAX_OUTPUT_CHARS = _config.get("max_output_chars", int(os.environ.get("HOL_MAX_OUTPUT", "4000")))
 
 from mcp.server.fastmcp import FastMCP
 mcp = FastMCP("hol-light",
@@ -175,27 +176,29 @@ def _load_helpers():
         raise RuntimeError(f"Failed to load MCP helpers: {result}")
 
 
-def _eval_raw(code: str, timeout: int = None) -> str:
-    """Eval code, return raw output. Caller must hold _lock and ensure HOL is started."""
+def _eval_raw(code: str, timeout: int = None) -> tuple[str, float]:
+    """Eval code, return (output, elapsed_seconds). Caller must hold _lock."""
     _drain_queue()
     _reader_buf.clear()
     full = code.rstrip()
     if not full.endswith(";;"):
         full += ";;"
     full += f'\nPrintf.printf "{SENTINEL}\\n%!";;\n'
+    t0 = time.time()
     _proc.stdin.write(full)
     _proc.stdin.flush()
-    return _wait_for_sentinel(timeout)
+    result = _wait_for_sentinel(timeout)
+    return result, round(time.time() - t0, 3)
 
 
-def _eval_code(code: str, timeout: int = None) -> str:
+def _eval_code(code: str, timeout: int = None) -> tuple[str, float]:
     with _lock:
         _start_hol()
         _load_helpers()
         return _eval_raw(code, timeout)
 
 
-def _eval_json(code: str, timeout: int = None) -> str:
+def _eval_json(code: str, timeout: int = None) -> tuple[str, float]:
     """Eval OCaml code that produces a string, print it to stdout, return it.
     Uses print_string to avoid OCaml's string truncation in REPL output."""
     return _eval_code(f'print_string ({code}); print_newline ()', timeout)
@@ -205,16 +208,48 @@ def _strip_ansi(s: str) -> str:
     return ANSI_RE.sub("", s)
 
 
-@mcp.tool()
-def eval(code: str, timeout: int = None) -> str:
-    """Evaluate OCaml/HOL Light code and return the output.
+def _truncate(s: str, limit: int) -> tuple[str, bool]:
+    """Truncate string to limit chars. Returns (result, was_truncated)."""
+    if len(s) <= limit:
+        return s, False
+    return s[:limit] + "... [truncated]", True
 
-    Examples:
-        ARITH_RULE `1 + 1 = 2`;;
-        TAUT `p /\\ q ==> q /\\ p`;;
-        search [name "ARITH"];;
+
+def _is_error_output(s: str) -> bool:
+    """Heuristic: check if OCaml output indicates an error."""
+    for marker in ("Error:", "Exception:", "Failure", "Unbound", "Parse error",
+                   "Syntax error", "Type error", "This expression has type"):
+        if marker in s:
+            return True
+    return False
+
+
+@mcp.tool()
+def eval(code: str, timeout: int = None, max_output_chars: int = None) -> str:
+    """Evaluate OCaml/HOL Light code and return structured JSON.
+
+    Args:
+        code: OCaml/HOL Light code to evaluate.
+        timeout: Optional timeout in seconds.
+        max_output_chars: Max chars for output field (default from config, typically 4000).
+
+    Returns JSON:
+        {"success": bool, "output": str, "output_truncated": bool,
+         "full_output_chars": int, "time_seconds": float}
     """
-    return _strip_ansi(_eval_code(code, timeout))
+    import json as _json
+    raw, elapsed = _eval_code(code, timeout)
+    raw = _strip_ansi(raw)
+    limit = max_output_chars if max_output_chars is not None else MAX_OUTPUT_CHARS
+    full_len = len(raw)
+    output, truncated = _truncate(raw, limit)
+    return _json.dumps({
+        "success": not _is_error_output(raw),
+        "output": output,
+        "output_truncated": truncated,
+        "full_output_chars": full_len,
+        "time_seconds": elapsed,
+    })
 
 
 @mcp.tool()
@@ -225,7 +260,7 @@ def goal_state() -> str:
                    "num_subgoals": N, "total_goals": M}
     Returns empty goals list if no proof is in progress.
     """
-    return _extract_json(_eval_json("mcp_json_goalstate ()"))
+    return _extract_json(_eval_json("mcp_json_goalstate ()")[0])
 
 
 @mcp.tool()
@@ -247,7 +282,7 @@ def apply_tactic(tactic: str, timeout: int = None) -> str:
             f'with Failure s -> print_string (mcp_json_error s) '
             f'| e -> print_string (mcp_json_error (Printexc.to_string e))); '
             f'print_newline ()')
-    return _extract_json(_eval_code(code, timeout))
+    return _extract_json(_eval_code(code, timeout)[0])
 
 
 @mcp.tool()
@@ -269,7 +304,7 @@ def apply_tactics(tactics: list[str], timeout: int = None) -> str:
         return '{"error":"empty tactic list"}'
     tac_list = "[" + "; ".join(tactics) + "]"
     code = (f'print_string (mcp_json_apply_tactics {tac_list}); print_newline ()')
-    return _extract_json(_eval_code(code, timeout))
+    return _extract_json(_eval_code(code, timeout)[0])
 
 
 @mcp.tool()
@@ -294,7 +329,7 @@ def prove(goal: str, tactic: str, timeout: int = None) -> str:
             f'with Failure s -> print_string (mcp_json_error s) '
             f'| e -> print_string (mcp_json_error (Printexc.to_string e))); '
             f'print_newline ()')
-    return _extract_json(_eval_code(code, timeout))
+    return _extract_json(_eval_code(code, timeout)[0])
 
 
 @mcp.tool()
@@ -306,7 +341,7 @@ def backtrack(steps: int = 1) -> str:
 
     Returns JSON goal state or {"error": "..."} if can't back up.
     """
-    return _extract_json(_eval_json(f"mcp_json_backtrack {steps}"))
+    return _extract_json(_eval_json(f"mcp_json_backtrack {steps}")[0])
 
 
 @mcp.tool()
@@ -319,7 +354,7 @@ def search_theorems(name: str, limit: int = 20) -> str:
 
     Returns JSON array: [{"name": "...", "statement": "..."}, ...]
     """
-    return _extract_json(_eval_json(f'mcp_json_search "{_ocaml_escape(name)}" {limit}'))
+    return _extract_json(_eval_json(f'mcp_json_search "{_ocaml_escape(name)}" {limit}')[0])
 
 
 @mcp.tool()
@@ -333,7 +368,7 @@ def set_goal(goal: str) -> str:
     """
     code = (f'ignore(g({goal})); '
             f'print_string (mcp_json_goalstate ()); print_newline ()')
-    return _extract_json(_eval_code(code))
+    return _extract_json(_eval_code(code)[0])
 
 
 @mcp.tool()
@@ -345,7 +380,7 @@ def hol_type(term: str) -> str:
 
     Returns the type as a string.
     """
-    return _strip_ansi(_eval_code(f"type_of {term}"))
+    return _strip_ansi(_eval_code(f"type_of {term}")[0])
 
 
 @mcp.tool()
@@ -355,9 +390,21 @@ def hol_load(file: str) -> str:
     Args:
         file: File path to load (e.g., "Library/words.ml")
 
-    Returns the output from loading.
+    Returns JSON:
+        {"success": bool, "file": str, "time_seconds": float}
+        On failure: {"success": false, "file": str, "error": str, "time_seconds": float}
     """
-    return _strip_ansi(_eval_code(f'needs "{_ocaml_escape(file)}"'))
+    import json as _json
+    raw, elapsed = _eval_code(f'needs "{_ocaml_escape(file)}"')
+    raw = _strip_ansi(raw)
+    if _is_error_output(raw):
+        return _json.dumps({
+            "success": False, "file": file, "error": raw.strip(),
+            "time_seconds": elapsed,
+        })
+    return _json.dumps({
+        "success": True, "file": file, "time_seconds": elapsed,
+    })
 
 
 @mcp.tool()
@@ -408,7 +455,8 @@ def hol_status() -> str:
     """Check whether the HOL Light subprocess is alive.
 
     Returns JSON: {"alive": bool, "pid": int|null, "checkpoint": str,
-                   "config": str|null, "uptime_seconds": float|null, "timeout": int}
+                   "config": str|null, "uptime_seconds": float|null,
+                   "timeout": int, "max_output_chars": int}
     """
     import json
     alive = _proc is not None and _proc.poll() is None
@@ -419,6 +467,7 @@ def hol_status() -> str:
         "config": CONFIG_PATH,
         "uptime_seconds": round(time.time() - _start_time, 1) if alive and _start_time else None,
         "timeout": TIMEOUT,
+        "max_output_chars": MAX_OUTPUT_CHARS,
     })
 
 

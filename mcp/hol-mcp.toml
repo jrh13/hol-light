@@ -8,3 +8,6 @@ checkpoint = "noledit"
 
 # Timeout in seconds for HOL Light commands.
 timeout = 600
+
+# Maximum characters for eval output before truncation.
+max_output_chars = 4000

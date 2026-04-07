@@ -33,7 +33,7 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 
 | Tool | Description | Output |
 |------|-------------|--------|
-| `eval` | Evaluate arbitrary OCaml/HOL Light code | Raw text (ANSI stripped) |
+| `eval` | Evaluate arbitrary OCaml/HOL Light code | Structured JSON (truncated) |
 | `set_goal` | Set a proof goal, return initial state | Structured JSON |
 | `goal_state` | Return current proof goals | Structured JSON |
 | `apply_tactic` | Apply a tactic, return new state or proved theorem | Structured JSON |
@@ -42,11 +42,15 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 | `backtrack` | Undo tactic steps | Structured JSON |
 | `search_theorems` | Search theorem database by name | Structured JSON |
 | `hol_type` | Get the type of a term | Raw text |
-| `hol_load` | Load a HOL Light file via `needs` | Raw text |
+| `hol_load` | Load a HOL Light file via `needs` | Structured JSON |
 | `hol_interrupt` | Cancel a long-running command | Status message |
 | `hol_restart` | Kill and restart the HOL Light subprocess | Status message |
 | `hol_status` | Check process health, uptime, config, checkpoint | Structured JSON |
 | `hol_help` | Return tactic reference and proof guide (SKILL.md) | Markdown text |
+
+`eval` returns `{"success", "output", "output_truncated", "full_output_chars", "time_seconds"}`. Large outputs are truncated to `max_output_chars` (default 4000, configurable). Override per-call with `max_output_chars=N`.
+
+`hol_load` returns `{"success", "file", "time_seconds"}` (plus `"error"` on failure). Intermediate output is suppressed — use `eval` with `needs "file.ml"` if you need verbose output.
 
 ## Setup
 
@@ -89,6 +93,9 @@ checkpoint = "s2n"
 
 # Timeout in seconds for HOL Light commands.
 timeout = 600
+
+# Maximum characters for eval output before truncation.
+max_output_chars = 4000
 ```
 
 Use `hol_status` to verify which config file and checkpoint are active.
@@ -129,8 +136,8 @@ The server includes a built-in `hol_help` tool that returns the full tactic refe
 
 ```bash
 cd mcp
-uv run pytest test_server.py -v       # 35 unit tests
-uv run python smoke_test.py           # 25 MCP integration checks
+uv run pytest test_server.py -v       # 38 unit tests
+uv run python smoke_test.py           # 34 MCP integration checks
 ```
 
 First run includes HOL Light startup (~75s cold, ~2s with checkpoint).
