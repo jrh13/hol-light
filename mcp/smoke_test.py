@@ -40,9 +40,18 @@ async def main():
             check("tools registered", tool_names == ["apply_tactic", "apply_tactics", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "prove", "search_theorems", "set_goal"],
                   f"got {tool_names}")
 
-            # eval — basic arithmetic
+            # eval — basic arithmetic (now returns JSON)
             r = await session.call_tool("eval", {"code": "ARITH_RULE `1 + 1 = 2`"})
-            check("eval: ARITH_RULE", "|- 1 + 1 = 2" in r.content[0].text, r.content[0].text)
+            ev = json.loads(r.content[0].text)
+            check("eval: ARITH_RULE success", ev["success"] is True, str(ev))
+            check("eval: ARITH_RULE output", "|- 1 + 1 = 2" in ev["output"], ev["output"])
+            check("eval: has time_seconds", isinstance(ev["time_seconds"], float), str(ev))
+            check("eval: has full_output_chars", isinstance(ev["full_output_chars"], int), str(ev))
+
+            # eval — truncation
+            r = await session.call_tool("eval", {"code": 'search [name "ADD"]', "max_output_chars": 100})
+            ev = json.loads(r.content[0].text)
+            check("eval: truncation works", ev["output_truncated"] is True and ev["full_output_chars"] > 100, str(ev))
 
             # goal_state — no goal set
             r = await session.call_tool("goal_state", {})
@@ -92,15 +101,26 @@ async def main():
             r = await session.call_tool("hol_type", {"term": "`1 + 1`"})
             check("hol_type", "num" in r.content[0].text, r.content[0].text)
 
+            # hol_load (now returns JSON)
+            r = await session.call_tool("hol_load", {"file": "Library/iter.ml"})
+            hl = json.loads(r.content[0].text)
+            check("hol_load: success", hl["success"] is True, str(hl))
+            check("hol_load: has time", isinstance(hl["time_seconds"], float), str(hl))
+
             # hol_status
             r = await session.call_tool("hol_status", {})
             status = json.loads(r.content[0].text)
             check("hol_status: alive", status["alive"] is True, str(status))
             check("hol_status: has pid", isinstance(status["pid"], int), str(status))
+            check("hol_status: has max_output_chars", isinstance(status["max_output_chars"], int), str(status))
 
             # hol_help
             r = await session.call_tool("hol_help", {})
             check("hol_help", "## Core tactics" in r.content[0].text, r.content[0].text[:200])
+
+            # hol_interrupt
+            r = await session.call_tool("hol_interrupt", {})
+            check("hol_interrupt", "Interrupt sent" in r.content[0].text or "No HOL Light process" in r.content[0].text, r.content[0].text)
 
             # prove tool
             r = await session.call_tool("prove", {"goal": "`!n. 0 + n = n`", "tactic": "GEN_TAC THEN REWRITE_TAC[ADD]"})
@@ -121,13 +141,15 @@ async def main():
 
             # eval with per-call timeout
             r = await session.call_tool("eval", {"code": "1 + 1", "timeout": 30})
-            check("eval: custom timeout", "2" in r.content[0].text, r.content[0].text)
+            ev = json.loads(r.content[0].text)
+            check("eval: custom timeout", "2" in ev["output"], ev["output"])
 
             # hol_restart (run last — kills the process)
             r = await session.call_tool("hol_restart", {})
             check("hol_restart", "restarted" in r.content[0].text.lower(), r.content[0].text)
             r = await session.call_tool("eval", {"code": "1 + 1"})
-            check("eval after restart", "2" in r.content[0].text, r.content[0].text)
+            ev = json.loads(r.content[0].text)
+            check("eval after restart", "2" in ev["output"], ev["output"])
 
             print(f"\n{passed}/{passed + failed} passed")
             return failed == 0
