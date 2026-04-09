@@ -102,7 +102,7 @@ async def main():
             check("hol_type", "num" in r.content[0].text, r.content[0].text)
 
             # hol_load (now returns JSON)
-            r = await session.call_tool("hol_load", {"file": "list.ml"})
+            r = await session.call_tool("hol_load", {"file": "Library/iter.ml"})
             hl = json.loads(r.content[0].text)
             check("hol_load: success", hl["success"] is True, str(hl))
             check("hol_load: has time", isinstance(hl["time_seconds"], float), str(hl))
