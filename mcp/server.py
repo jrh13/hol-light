@@ -60,6 +60,10 @@ _lock = threading.Lock()
 _helpers_loaded = False
 _start_time = None
 
+# Proof recording state
+_recording_path = None  # path to JSONL file; None = not recording
+_recording = []         # list of {"action": "tactic", "tactic": ..., "total_goals": ...}
+
 # Queue-based sentinel signaling: reader thread produces results, eval consumes.
 # Eliminates race conditions — queue.get() is atomic consumption.
 _result_queue = queue.Queue(maxsize=1)
@@ -238,8 +242,23 @@ def eval(code: str, timeout: int = None, max_output_chars: int = None) -> str:
          "full_output_chars": int, "time_seconds": float}
     """
     import json as _json
-    raw, elapsed = _eval_code(code, timeout)
-    raw = _strip_ansi(raw)
+    # Detect recording patterns before eval
+    is_bt = _is_backtrack(code) if _recording_path else None
+    tac = _extract_e_tactic(code) if (_recording_path and not is_bt) else None
+
+    with _lock:
+        _start_hol()
+        _load_helpers()
+        raw, elapsed = _eval_raw(code, timeout)
+        raw = _strip_ansi(raw)
+        # Record e(...) and b() calls while still holding the lock
+        if _recording_path:
+            if is_bt:
+                _record_backtrack(1)
+            elif tac and not _is_error_output(raw):
+                gs_raw, _ = _eval_raw("print_string (mcp_json_after_tactic ()); print_newline ()")
+                _record_tactic(tac, _extract_json(gs_raw))
+
     limit = max_output_chars if max_output_chars is not None else MAX_OUTPUT_CHARS
     full_len = len(raw)
     output, truncated = _truncate(raw, limit)
@@ -282,7 +301,12 @@ def apply_tactic(tactic: str, timeout: int = None) -> str:
             f'with Failure s -> print_string (mcp_json_error s) '
             f'| e -> print_string (mcp_json_error (Printexc.to_string e))); '
             f'print_newline ()')
-    return _extract_json(_eval_code(code, timeout)[0])
+    with _lock:
+        _start_hol()
+        _load_helpers()
+        result = _extract_json(_eval_raw(code, timeout)[0])
+        _record_tactic(tactic, result)
+    return result
 
 
 @mcp.tool()
@@ -304,7 +328,12 @@ def apply_tactics(tactics: list[str], timeout: int = None) -> str:
         return '{"error":"empty tactic list"}'
     tac_list = "[" + "; ".join(tactics) + "]"
     code = (f'print_string (mcp_json_apply_tactics {tac_list}); print_newline ()')
-    return _extract_json(_eval_code(code, timeout)[0])
+    with _lock:
+        _start_hol()
+        _load_helpers()
+        result = _extract_json(_eval_raw(code, timeout)[0])
+        _record_tactics_batch(tactics, result)
+    return result
 
 
 @mcp.tool()
@@ -341,7 +370,12 @@ def backtrack(steps: int = 1) -> str:
 
     Returns JSON goal state or {"error": "..."} if can't back up.
     """
-    return _extract_json(_eval_json(f"mcp_json_backtrack {steps}")[0])
+    with _lock:
+        _start_hol()
+        _load_helpers()
+        result = _extract_json(_eval_raw(f'print_string (mcp_json_backtrack {steps}); print_newline ()')[0])
+        _record_backtrack(steps)
+    return result
 
 
 @mcp.tool()
@@ -489,6 +523,113 @@ def _json_quote(s: str) -> str:
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
 
+# --- Proof recording helpers ---
+
+def _flush_recording():
+    """Write the current recording to disk.
+    Rewrites the full file each time so backtrack deletions are reflected.
+    """
+    import json
+    if _recording_path:
+        with open(_recording_path, 'w') as f:
+            for entry in _recording:
+                f.write(json.dumps(entry) + "\n")
+
+
+def _record_tactic(tactic_str, result_json_str):
+    """Record a successful tactic application."""
+    import json
+    if not _recording_path:
+        return
+    try:
+        result = json.loads(result_json_str)
+    except (json.JSONDecodeError, TypeError):
+        return
+    if "error" in result:
+        return
+    total = 0 if result.get("proved") else result.get("total_goals", 0)
+    _recording.append({"action": "tactic", "tactic": tactic_str, "total_goals": total})
+    _flush_recording()
+
+
+def _record_backtrack(steps):
+    """Remove the last N tactic entries from the recording."""
+    if not _recording_path:
+        return
+    removed = 0
+    while removed < steps and _recording:
+        if _recording[-1]["action"] == "tactic":
+            _recording.pop()
+            removed += 1
+        else:
+            break
+    _flush_recording()
+
+
+def _record_tactics_batch(tactics, result_json_str):
+    """Record successful tactics from an apply_tactics batch."""
+    import json
+    if not _recording_path:
+        return
+    try:
+        result = json.loads(result_json_str)
+    except (json.JSONDecodeError, TypeError):
+        return
+    if "error" in result and "step" in result:
+        # Error at step N: record tactics 0..N-1 (0-indexed, step is 1-indexed)
+        succeeded = result["step"] - 1
+    elif "steps" in result:
+        succeeded = result["steps"]
+    else:
+        return
+    for tac in tactics[:succeeded]:
+        _recording.append({"action": "tactic", "tactic": tac, "total_goals": 0})
+    if succeeded > 0:
+        _flush_recording()
+
+
+def _extract_e_tactic(code: str) -> str | None:
+    """Extract tactic string from 'e(TACTIC);;' pattern using paren counting."""
+    stripped = code.strip()
+    m = re.match(r'\s*e\s*\(', stripped)
+    if not m:
+        return None
+    start = m.end()
+    depth = 1
+    in_str = False
+    in_backtick = False
+    esc = False
+    for i in range(start, len(stripped)):
+        c = stripped[i]
+        if esc:
+            esc = False
+            continue
+        if c == '\\' and in_str:
+            esc = True
+            continue
+        if c == '"' and not in_backtick:
+            in_str = not in_str
+            continue
+        if c == '`' and not in_str:
+            in_backtick = not in_backtick
+            continue
+        if in_str or in_backtick:
+            continue
+        if c == '(':
+            depth += 1
+        elif c == ')':
+            depth -= 1
+            if depth == 0:
+                return stripped[start:i].strip()
+    return None
+
+
+def _is_backtrack(code: str) -> bool:
+    """Check if code is a b() call."""
+    stripped = code.strip().rstrip(';').strip()
+    return bool(re.match(r'^b\s*\(\s*\)\s*$', stripped))
+
+
 def _extract_json(output: str) -> str:
     """Extract JSON from print_string output. The output contains the JSON
     printed to stdout, followed by 'val it : unit = ()'."""
@@ -524,6 +665,39 @@ def _extract_json(output: str) -> str:
                 if depth == 0:
                     return stripped[idx:i+1]
     return '{"error":' + _json_quote(f"Unexpected output: {stripped[:200]}") + '}'
+
+
+@mcp.tool()
+def start_recording(path: str) -> str:
+    """Start recording proof tactics to a JSONL file.
+
+    Args:
+        path: File path for the recording (e.g., "/tmp/recording.jsonl")
+
+    Returns confirmation message.
+    """
+    global _recording_path, _recording
+    with _lock:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        _recording_path = path
+        _recording = []
+        _flush_recording()
+    return f"Recording started: {path}"
+
+
+@mcp.tool()
+def stop_recording() -> str:
+    """Stop recording proof tactics and return the recording path.
+
+    Returns the path to the recording file.
+    """
+    global _recording_path
+    with _lock:
+        path = _recording_path
+        _recording_path = None
+    if path:
+        return f"Recording stopped: {path}"
+    return "No recording was active."
 
 
 def main():
