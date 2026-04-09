@@ -13,6 +13,14 @@ let lspace = new_definition
    {f:real^M->real^N | f measurable_on s /\
                        (\x. lift(norm(f x) rpow p)) integrable_on s}`;;
 
+let LSPACE_ALT = prove
+ (`lspace s p =
+   {f | (f:real^M->real^N) measurable_on s /\
+        (\x. lift(norm(f x) rpow p)) absolutely_integrable_on s}`,
+  REWRITE_TAC[lspace] THEN
+  SIMP_TAC[ABSOLUTELY_INTEGRABLE_EQ_INTEGRABLE_POS;
+           LIFT_DROP; RPOW_POS_LE; NORM_POS_LE]);;
+
 let LSPACE_ZERO = prove
  (`!s. lspace s (&0) =
           if measurable s then {f:real^M->real^N | f measurable_on s} else {}`,
@@ -277,6 +285,14 @@ let LSPACE_INCLUSION = prove
   REWRITE_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC LSPACE_MONO THEN EXISTS_TAC `q:real` THEN
   ASM_REWRITE_TAC[]);;
+
+let LSPACE_SUBSET = prove
+ (`!(f:real^M->real^N) s t p.
+        f IN lspace t p /\ lebesgue_measurable s /\ s SUBSET t
+        ==> f IN lspace s p`,
+  REWRITE_TAC[LSPACE_ALT; IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
+  ASM_MESON_TAC[MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET;
+                ABSOLUTELY_INTEGRABLE_ON_LEBESGUE_MEASURABLE_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The corresponding seminorm; Hoelder and Minkowski inequalities.           *)

@@ -1653,6 +1653,24 @@ let CEXP_INTEGER_2PI = prove
   REWRITE_TAC[CEXP_EQ_1; IM_MUL_II; RE_MUL_II; RE_CX; IM_CX] THEN
   REWRITE_TAC[REAL_NEG_0] THEN MESON_TAC[]);;
 
+let CEXP_LIPSCHITZ_BOUNDED = prove
+ (`!M a b. norm(a) <= M /\ norm(b) <= M
+           ==> norm(cexp a - cexp b) <= exp(M) * norm(a - b)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`cexp`; `cexp`; `cball(Cx(&0):complex,M)`; `exp(M)`]
+                COMPLEX_DIFFERENTIABLE_BOUND) THEN
+  REWRITE_TAC[CONVEX_CBALL] THEN ANTS_TAC THENL
+   [REWRITE_TAC[IN_CBALL; dist; COMPLEX_SUB_LZERO; NORM_NEG] THEN
+    X_GEN_TAC `x:complex` THEN DISCH_TAC THEN CONJ_TAC THENL
+     [SIMP_TAC[HAS_COMPLEX_DERIVATIVE_AT_WITHIN;
+               HAS_COMPLEX_DERIVATIVE_CEXP];
+      REWRITE_TAC[NORM_CEXP; REAL_EXP_MONO_LE] THEN
+      MP_TAC(SPEC `x:complex` COMPLEX_NORM_GE_RE_IM) THEN
+      ASM_REAL_ARITH_TAC];
+    DISCH_THEN(MP_TAC o SPECL [`a:complex`; `b:complex`]) THEN
+    REWRITE_TAC[IN_CBALL; dist; COMPLEX_SUB_LZERO; NORM_NEG] THEN
+    ASM_REWRITE_TAC[]]);;
+
 let SIN_COS_EQ = prove
  (`!x y. sin y = sin x /\ cos y = cos x <=>
          ?n. integer n /\ y = x + &2 * n * pi`,

@@ -8,6 +8,160 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed  8th Apr 2026       100/green.ml [new file], 100/isoperimetric.ml, Library/words.ml, Multivariate/measure.ml, Multivariate/transcendentals.ml, Multivariate/realanalysis.ml, Multivariate/cauchy.ml
+
+Added a proof of Green's theorem in a fairly general form, autoformalized by
+Claude Opus 4.6. The proof is based on the Cauchy transform as a left inverse
+of the Wirtinger d-bar derivative operator. This approach, avoiding any
+approximation or subdivision arguments while allowing quite general path
+parametrization, was inspired by Kostya_I's answer here:
+
+  https://mathoverflow.net/questions/307713
+
+The technique is rooted in the Cauchy transform / dbar framework of Ahlfors,
+"Lectures on Quasiconformal Mappings" (1966, 2nd ed. 2006), and appears in
+Bonk's UCLA complex analysis lecture notes, Ch. 20:
+
+  https://www.math.ucla.edu/~mbonk/complana.pdf
+
+The primary versions use complex infrastructure in the statements. More
+traditional (but verbose) real-analytic variants of the Green theorem and
+area formulas are derived as easy consequences, e.g.
+
+  GREEN_THEOREM_CURL =
+   |- f g u.
+          g absolutely_continuous_on interval[vec 0,vec 1] /\
+          pathfinish g = pathstart g /\
+          (!z. z IN inside(path_image g) ==> winding_number(g,z) = Cx(&1)) /\
+          open u /\
+          inside(path_image g) UNION path_image g SUBSET u /\
+          f differentiable_on u /\
+          (!h:real^2. (\z. frechet_derivative f (at z) h) continuous_on u)
+          ==> (\z. lift(frechet_derivative f (at z) (basis 1) $1 -
+                        frechet_derivative f (at z) (basis 2) $2))
+              integrable_on inside(path_image g) /\
+              (\t. lift(f(g t)$2 * vector_derivative g (at t) $1 +
+                        f(g t)$1 * vector_derivative g (at t) $2))
+              integrable_on interval[vec 0,vec 1] /\
+              integral (interval[vec 0,vec 1])
+                (\t. lift(f(g t)$2 * vector_derivative g (at t) $1 +
+                          f(g t)$1 * vector_derivative g (at t) $2)) =
+              integral (inside(path_image g))
+                (\z. lift(frechet_derivative f (at z) (basis 1) $1 -
+                          frechet_derivative f (at z) (basis 2) $2))
+
+As a side-effect, added a number of general lemmas to the Multivariate
+libraries, notably some results on absolutely continuous paths including
+the winding number integral HAS_PATH_INTEGRAL_WINDING_NUMBER_AC, a
+complement to HAS_PATH_INTEGRAL_WINDING_NUMBER with non-comparable
+hypotheses:
+
+        ABSOLUTELY_CONTINUOUS_IMP_PATH
+        ABSOLUTELY_CONTINUOUS_IMP_RECTIFIABLE_PATH
+        ABSOLUTELY_CONTINUOUS_JOINPATHS
+        ABSOLUTELY_CONTINUOUS_REVERSEPATH
+        ABSOLUTELY_INTEGRABLE_VECTOR_DERIVATIVE_ABSOLUTELY_CONTINUOUS
+        CEXP_LIPSCHITZ_BOUNDED
+        HAS_PATH_INTEGRAL_WINDING_NUMBER_AC
+        LEBESGUE_MEASURABLE_SING
+        LSPACE_ALT
+        LSPACE_SUBSET
+        MEASURABLE_ON_CLOG
+        MEASURABLE_ON_CPOW
+        NEGLIGIBLE_REAL
+
+Wed  8th Apr 2026       Library/words.ml
+
+Added a word-level carryless multiplication operation word_pmul, in
+effect performing multiplication in GF2[X], using the bits of a
+machine word to represent polynomial coefficients in a quite standard
+way (little-endian: LSB = constant term). It has generic word sizes
+`word_pmul:M word->N word->P word`, so it can be used as a target for
+modeling different variants supported by CPUs or just used in other
+settings. There is an associated evaluation conversion WORD_PMUL_CONV
+that is included in the usual WORD_RED_CONV / WORD_REDUCE_CONV suite,
+as well as a bitwise conversion BIT_WORD_PMUL_CONV. New definition:
+
+            word_pmul
+
+new theorems:
+
+            BITVAL_BIT_WORD_PMUL
+            BIT_WORD_PMUL
+            BIT_WORD_PMUL_ALT
+            WORD_PMUL_0
+            WORD_PMUL_POW2
+            WORD_PMUL_STEP
+            WORD_PMUL_SYM
+            WORD_PMUL_XOR
+            WORD_PMUL_ZX
+
+and conversions:
+
+            WORD_PMUL_CONV
+            BIT_WORD_PMUL_CONV
+
+Wed  8th Apr 2026       Examples/doomsday.ml
+
+Added a new example autoformalized by Claude Opus 4.6, Conway's "Doomsday
+Algorithm" for finding the weekday for a given (valid Gregorian) date.
+The overall correctness theorem is:
+
+  DOOMSDAY_ALGORITHM_CORRECT =
+    |- !y m d. valid_date(y,m,d)
+               ==> doomsday_algorithm y m d = day_of_week y m d
+
+Tue  7th Apr 2026       mcp/*
+
+Incorporated a number of updates from Sanketh Menda to the MCP server,
+including queue-based sentinel signaling (in place of polling) and
+a more efficient apply_tactic, consolidated into a single MCP eval
+roundtrip.
+
+Thu  2nd Apr 2026       mcp/make_checkpoint.py
+
+Added a small but useful refinement from Nevin Ebeid to the MCP checkpointing
+script, with a new block to send Gc.compact ();; to the OCaml REPL right
+after any extra loads finish and before the DMTCP checkpoint is taken. This
+performs heap compaction before creating the checkpoint, which can dramatically
+decrease the checkpoint size.
+
+Mon 31st Mar 2026       Library/components.ml, Library/records.ml [new files], unit_tests.ml
+
+Added a port by June Lee of code originating in s2n-bignum for creating record
+types using a natural syntax, together with the supporting library of state
+components ("lenses").
+
+Mon 31st Mar 2026       calc_num.ml
+
+Added a fix from Daniel Nezamabadi to a case where polymorphic comparison <=
+was mistakenly being used on the bignum type instead of the appropriate special
+numeric comparison <=/.
+
+Mon 31st Mar 2026       mcp/* [new directory]
+
+Added a HOL Light MCP server contributed by Sanketh Menda, to support
+LLM-assisted theorem proving more efficiently. This is a FastMCPstdio server,
+embedding HOL Light as a subprocess with OCaml-side JSON serialization for
+structured goal states. It also provides a custom checkpoint creation script
+mcp/make_checkpoint.py for creating efficiently restartable checkpoints (on
+Linux). The tools provided are:
+
+      - apply_tactic: apply tactic, return new state or proved theorem
+      - backtrack: undo N tactic steps
+      - eval: raw OCaml/HOL Light evaluation
+      - goal_state: inspect current goals as JSON
+      - hol_help: serve SKILL.md directly from the MCP server
+      - hol_interrupt: send SIGINT to cancel hung tactics
+      - hol_load: load a HOL Light file via needs
+      - hol_restart: Kill existing HOL process and start a fresh one
+      - hol_status: report alive/dead, pid, checkpoint name, uptime etc.
+      - hol_type: get the type of a term
+      - search_theorems: search by name, return JSON results
+      - set_goal: set proof goal, return JSON goal state
+
+See mcp/README.md and other mcp/*.md for more information.
+
 Sun 22nd Mar 2026       100/buffon.ml [new file], holtest.mk
 
 Added a proof, entirely autoformalized by Claude Opus 4.6, of the solution
@@ -45,6 +199,34 @@ the classic results proved are the Central Limit Theorem, Laws of Large
 Numbers (weak and strong), Fair Games Theorem (Doob optional stopping),
 Borel-Cantelli lemmas, martingale convergence and the Azuma-Hoeffding
 inequality.
+
+Thu  5th Mar 2026       Help/mapi.hlp
+
+Added a documentation file for the new "mapi" function introduced as
+part of the METIS restructuring.
+
+Wed  4th Mar 2026       Library/words.ml
+
+Added a few miscellaneous word lemmas connecting logical left and right
+shifts with (1) leading/trailing bit counts, and (2) bit reversal.
+
+  WORD_CLZ_USHR =
+    |- !(x:N word) n.
+          word_clz (word_ushr x n) = MIN (dimindex(:N)) (word_clz x + n)
+
+  WORD_CTZ_SHL =
+    |- !(x:N word) n.
+          word_ctz (word_shl x n) = MIN (dimindex(:N)) (word_ctz x + n)
+
+  WORD_SHL_AS_USHR =
+    |- !(x:N word) n.
+          word_shl x n =
+          word_reversefields 1 (word_ushr (word_reversefields 1 x) n)
+
+  WORD_USHR_AS_SHL =
+    |- !(x:N word) n.
+          word_ushr x n =
+          word_reversefields 1 (word_shl (word_reversefields 1 x) n)
 
 Thu 26th Feb 2026       Multivariate/metric.ml, Multivariate/paths.ml
 

@@ -1,0 +1,28 @@
+\DOC mapi
+
+\TYPE {mapi : (int -> 'a -> 'b) -> 'a list -> 'b list}
+
+\SYNOPSIS
+Applies a function to every element of a list, supplying the element's index.
+
+\DESCRIBE
+{mapi f [x0;...;xn]} returns {[f 0 x0; f 1 x1;...;f n xn]}. The function {f}
+receives the zero-based index of each element as its first argument.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # mapi (fun i x -> (i, x)) ["a"; "b"; "c"];;
+  val it : (int * string) list = [(0, "a"); (1, "b"); (2, "c")]
+  # mapi (fun i x -> x + i) [10; 20; 30];;
+  val it : int list = [10; 21; 32]
+  # mapi (fun i _ -> i) [5; 5; 5; 5];;
+  val it : int list = [0; 1; 2; 3]
+}
+
+\SEEALSO
+map, map2.
+
+\ENDDOC

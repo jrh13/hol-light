@@ -22,6 +22,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/digit_serial_methods \
 	Examples/division_algebras \
 	Examples/dlo \
+	Examples/doomsday \
 	Library/fieldtheory \
 	Library/floor \
 	Examples/forster \
@@ -153,6 +154,7 @@ GREAT_100_THEOREMS:= \
 	100/friendship \
 	100/fta \
 	100/gcd \
+	100/green \
 	100/heron \
 	100/isoperimetric \
 	100/inclusion_exclusion \

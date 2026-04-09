@@ -9648,6 +9648,11 @@ let LEBESGUE_MEASURABLE_DELETE = prove
   EXISTS_TAC `{a:real^N}` THEN
   REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
 
+let LEBESGUE_MEASURABLE_SING = prove
+ (`!a:real^N. lebesgue_measurable {a}`,
+  GEN_TAC THEN MATCH_MP_TAC NEGLIGIBLE_IMP_LEBESGUE_MEASURABLE THEN
+  REWRITE_TAC[NEGLIGIBLE_SING]);;
+
 let ABSOLUTELY_INTEGRABLE_ON_LEBESGUE_MEASURABLE_INTER = prove
  (`!f:real^M->real^N s t.
         f absolutely_integrable_on s /\ lebesgue_measurable t
@@ -27599,6 +27604,262 @@ let CONVERGENCE_IN_MEASURE_UNIQUE = prove
   REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN
   CONJ_TAC THENL [MATCH_MP_TAC LIM_SUBSEQUENCE; ALL_TAC] THEN
   ASM_SIMP_TAC[o_DEF]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Basic path notions for AC paths; these can be useful for working          *)
+(* with rectifiable paths where we want to explicitly pick an AC             *)
+(* parametrization, e.g. by ARC_LENGTH_REPARAMETRIZATION                     *)
+(* ------------------------------------------------------------------------- *)
+
+let ABSOLUTELY_CONTINUOUS_IMP_PATH = prove
+ (`!g:real^1->real^N.
+    g absolutely_continuous_on interval[vec 0,vec 1] ==> path g`,
+  REWRITE_TAC[path] THEN
+  MESON_TAC[ABSOLUTELY_CONTINUOUS_ON_IMP_CONTINUOUS; IS_INTERVAL_INTERVAL]);;
+
+let ABSOLUTELY_CONTINUOUS_IMP_RECTIFIABLE_PATH = prove
+ (`!g:real^1->real^N.
+    g absolutely_continuous_on interval[vec 0,vec 1] ==> rectifiable_path g`,
+  GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[rectifiable_path] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[ABSOLUTELY_CONTINUOUS_IMP_PATH; path];
+    MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_IMP_HAS_BOUNDED_VARIATION_ON THEN
+    ASM_REWRITE_TAC[BOUNDED_INTERVAL]]);;
+
+let ABSOLUTELY_INTEGRABLE_VECTOR_DERIVATIVE_ABSOLUTELY_CONTINUOUS = prove
+ (`!g:real^1->real^N.
+    g absolutely_continuous_on interval[vec 0,vec 1]
+    ==> (\t. vector_derivative g (at t))
+        absolutely_integrable_on interval[vec 0,vec 1]`,
+  GEN_TAC THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+    `g:real^1->real^N has_bounded_variation_on interval[vec 0,vec 1]`
+    MP_TAC THENL
+  [MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_IMP_HAS_BOUNDED_VARIATION_ON THEN
+   ASM_REWRITE_TAC[BOUNDED_INTERVAL]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP
+    ABSOLUTELY_INTEGRABLE_BOUNDED_VARIATION_DERIVATIVE) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`gd:real^1->real^N`; `s1:real^1->bool`] THEN
+  STRIP_TAC THEN
+  REWRITE_TAC[absolutely_integrable_on] THEN CONJ_TAC THENL
+   [MP_TAC(ISPECL
+      [`gd:real^1->real^N`;
+       `\t:real^1. vector_derivative (g:real^1->real^N) (at t)`;
+       `s1:real^1->bool`;
+       `interval[vec 0:real^1,vec 1]`]
+      INTEGRABLE_SPIKE) THEN
+    CONV_TAC(LAND_CONV(DEPTH_CONV BETA_CONV)) THEN
+    REWRITE_TAC[IMP_IMP] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+     [X_GEN_TAC `t:real^1` THEN REWRITE_TAC[IN_DIFF] THEN STRIP_TAC THEN
+      MATCH_MP_TAC VECTOR_DERIVATIVE_AT THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[IN_DIFF];
+      ASM_MESON_TAC[absolutely_integrable_on]];
+    MP_TAC(ISPECL
+      [`\t:real^1. lift(norm((gd:real^1->real^N) t))`;
+       `\t:real^1. lift(norm(vector_derivative (g:real^1->real^N) (at t)))`;
+       `s1:real^1->bool`;
+       `interval[vec 0:real^1,vec 1]`]
+      INTEGRABLE_SPIKE) THEN
+    CONV_TAC(LAND_CONV(DEPTH_CONV BETA_CONV)) THEN
+    REWRITE_TAC[IMP_IMP] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+     [X_GEN_TAC `t:real^1` THEN REWRITE_TAC[IN_DIFF] THEN STRIP_TAC THEN
+      AP_TERM_TAC THEN AP_TERM_TAC THEN
+      MATCH_MP_TAC VECTOR_DERIVATIVE_AT THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[IN_DIFF];
+      ASM_MESON_TAC[absolutely_integrable_on]]]);;
+
+let ABSOLUTELY_CONTINUOUS_REVERSEPATH = prove
+ (`!g:real^1->real^N.
+    g absolutely_continuous_on interval[vec 0,vec 1]
+    ==> (reversepath g) absolutely_continuous_on interval[vec 0,vec 1]`,
+  GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[reversepath] THEN
+  SUBGOAL_THEN
+    `(\t:real^1. (g:real^1->real^N)(vec 1 - t)) =
+     (g:real^1->real^N) o (\t:real^1. vec 1 - t)`
+    SUBST1_TAC THENL
+   [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(\t:real^1. vec 1 - t)
+     absolutely_continuous_on interval[vec 0:real^1, vec 1]`
+    ASSUME_TAC THENL
+   [MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_SUB THEN
+    REWRITE_TAC[ABSOLUTELY_CONTINUOUS_ON_CONST; ABSOLUTELY_CONTINUOUS_ON_ID];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+    [`g:real^1->real^N`;
+     `\t:real^1. vec 1 - t`;
+     `interval[vec 0:real^1, vec 1]`;
+     `interval[vec 0:real^1, vec 1]`]
+    ABSOLUTELY_CONTINUOUS_ON_COMPOSE) THEN
+  REWRITE_TAC[o_DEF] THEN
+  ASM_REWRITE_TAC[IS_INTERVAL_INTERVAL; BOUNDED_INTERVAL] THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_INTERVAL_1; DROP_VEC; DROP_SUB] THEN
+    REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  SUBGOAL_THEN
+    `g:real^1->real^N has_bounded_variation_on interval[vec 0, vec 1]`
+    ASSUME_TAC THENL
+   [MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_IMP_HAS_BOUNDED_VARIATION_ON THEN
+    ASM_REWRITE_TAC[BOUNDED_INTERVAL]; ALL_TAC] THEN
+  MP_TAC(ISPECL
+    [`\t:real^1. vec 1 - t`;
+     `g:real^1->real^N`;
+     `vec 0:real^1`; `vec 1:real^1`]
+    HAS_BOUNDED_VARIATION_COMPOSE_DECREASING) THEN
+  REWRITE_TAC[o_DEF] THEN
+  ANTS_TAC THENL
+   [CONJ_TAC THENL
+     [REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; DROP_SUB] THEN REAL_ARITH_TAC;
+      REWRITE_TAC[VECTOR_SUB_RZERO; VECTOR_SUB_REFL] THEN
+      ASM_REWRITE_TAC[]];
+    SIMP_TAC[]]);;
+
+let ABSOLUTELY_CONTINUOUS_JOINPATHS = prove
+ (`!g1 g2:real^1->real^N.
+        pathfinish g1 = pathstart g2 /\
+        g1 absolutely_continuous_on interval[vec 0,vec 1] /\
+        g2 absolutely_continuous_on interval[vec 0,vec 1]
+        ==> (g1 ++ g2) absolutely_continuous_on interval[vec 0,vec 1]`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+    [`(g1 ++ g2):real^1->real^N`;
+     `vec 0:real^1`; `vec 1:real^1`; `lift(&1 / &2)`]
+    ABSOLUTELY_CONTINUOUS_ON_COMBINE) THEN
+  REWRITE_TAC[DROP_VEC; LIFT_DROP] THEN
+  ANTS_TAC THENL [REAL_ARITH_TAC; DISCH_THEN SUBST1_TAC] THEN
+  CONJ_TAC THENL
+   [(* First half: (g1 ++ g2) AC on [0, 1/2] *)
+    MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_EQ THEN
+    EXISTS_TAC `\x:real^1. (g1:real^1->real^N)(&2 % x)` THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; LIFT_DROP; joinpaths] THEN
+      REPEAT STRIP_TAC THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+      `(\x:real^1. (g1:real^1->real^N)(&2 % x)) =
+       g1 o (\x:real^1. &2 % x)`
+      SUBST1_TAC THENL
+     [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+    SUBGOAL_THEN
+      `(\x:real^1. &2 % x)
+       absolutely_continuous_on interval[vec 0, lift(&1 / &2)]`
+      ASSUME_TAC THENL
+     [MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_CMUL THEN
+      REWRITE_TAC[ABSOLUTELY_CONTINUOUS_ON_ID];
+      ALL_TAC] THEN
+    MP_TAC(ISPECL
+      [`g1:real^1->real^N`;
+       `\x:real^1. &2 % x`;
+       `interval[vec 0:real^1, lift(&1 / &2)]`;
+       `interval[vec 0:real^1, vec 1]`]
+      ABSOLUTELY_CONTINUOUS_ON_COMPOSE) THEN
+    REWRITE_TAC[o_DEF] THEN
+    ASM_REWRITE_TAC[IS_INTERVAL_INTERVAL; BOUNDED_INTERVAL] THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_INTERVAL_1;
+                  DROP_VEC; DROP_CMUL; LIFT_DROP] THEN
+      REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    DISCH_THEN SUBST1_TAC THEN
+    SUBGOAL_THEN
+      `(g1:real^1->real^N) has_bounded_variation_on interval[vec 0, vec 1]`
+      ASSUME_TAC THENL
+     [MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_IMP_HAS_BOUNDED_VARIATION_ON THEN
+      ASM_REWRITE_TAC[BOUNDED_INTERVAL];
+      ALL_TAC] THEN
+    MP_TAC(ISPECL
+      [`\x:real^1. &2 % x`;
+       `g1:real^1->real^N`;
+       `vec 0:real^1`; `lift(&1 / &2)`]
+      HAS_BOUNDED_VARIATION_COMPOSE_INCREASING) THEN
+    REWRITE_TAC[o_DEF] THEN
+    ANTS_TAC THENL
+     [CONJ_TAC THENL
+       [REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; DROP_CMUL; LIFT_DROP] THEN
+        REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+        ASM_REAL_ARITH_TAC;
+        REWRITE_TAC[VECTOR_MUL_RZERO; GSYM LIFT_CMUL] THEN
+        CONV_TAC REAL_RAT_REDUCE_CONV THEN
+        REWRITE_TAC[LIFT_NUM] THEN ASM_REWRITE_TAC[]];
+      SIMP_TAC[]];
+
+    (* Second half: (g1 ++ g2) AC on [1/2, 1] *)
+    MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_EQ THEN
+    EXISTS_TAC `\x:real^1. (g2:real^1->real^N)(&2 % x - vec 1)` THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; LIFT_DROP; joinpaths] THEN
+      REPEAT STRIP_TAC THEN
+      COND_CASES_TAC THENL
+       [SUBGOAL_THEN `&2 % x - vec 1 = vec 0:real^1` SUBST1_TAC THENL
+         [REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_SUB; DROP_VEC] THEN
+          ASM_REAL_ARITH_TAC;
+          ALL_TAC] THEN
+        SUBGOAL_THEN `&2 % x = vec 1:real^1` SUBST1_TAC THENL
+         [REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_VEC] THEN
+          ASM_REAL_ARITH_TAC;
+          ALL_TAC] THEN
+        UNDISCH_TAC `pathfinish g1 = pathstart (g2:real^1->real^N)` THEN
+        REWRITE_TAC[pathfinish; pathstart] THEN MESON_TAC[];
+        REFL_TAC];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+      `(\x:real^1. (g2:real^1->real^N)(&2 % x - vec 1)) =
+       g2 o (\x:real^1. &2 % x - vec 1)`
+      SUBST1_TAC THENL
+     [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+    SUBGOAL_THEN
+      `(\x:real^1. &2 % x - vec 1)
+       absolutely_continuous_on interval[lift(&1 / &2), vec 1]`
+      ASSUME_TAC THENL
+     [MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_SUB THEN
+      REWRITE_TAC[ABSOLUTELY_CONTINUOUS_ON_CONST] THEN
+      MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_CMUL THEN
+      REWRITE_TAC[ABSOLUTELY_CONTINUOUS_ON_ID];
+      ALL_TAC] THEN
+    MP_TAC(ISPECL
+      [`g2:real^1->real^N`;
+       `\x:real^1. &2 % x - vec 1`;
+       `interval[lift(&1 / &2):real^1, vec 1]`;
+       `interval[vec 0:real^1, vec 1]`]
+      ABSOLUTELY_CONTINUOUS_ON_COMPOSE) THEN
+    REWRITE_TAC[o_DEF] THEN
+    ASM_REWRITE_TAC[IS_INTERVAL_INTERVAL; BOUNDED_INTERVAL] THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_INTERVAL_1;
+                  DROP_VEC; DROP_CMUL; DROP_SUB; LIFT_DROP] THEN
+      REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    DISCH_THEN SUBST1_TAC THEN
+    SUBGOAL_THEN
+      `(g2:real^1->real^N) has_bounded_variation_on interval[vec 0, vec 1]`
+      ASSUME_TAC THENL
+     [MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_ON_IMP_HAS_BOUNDED_VARIATION_ON THEN
+      ASM_REWRITE_TAC[BOUNDED_INTERVAL];
+      ALL_TAC] THEN
+    MP_TAC(ISPECL
+      [`\x:real^1. &2 % x - vec 1`;
+       `g2:real^1->real^N`;
+       `lift(&1 / &2)`; `vec 1:real^1`]
+      HAS_BOUNDED_VARIATION_COMPOSE_INCREASING) THEN
+    REWRITE_TAC[o_DEF] THEN
+    ANTS_TAC THENL
+     [CONJ_TAC THENL
+       [REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; DROP_CMUL; DROP_SUB; LIFT_DROP] THEN
+        ASM_REAL_ARITH_TAC;
+        SUBGOAL_THEN
+          `&2 % lift(&1 / &2) - vec 1 = vec 0:real^1 /\
+           &2 % vec 1 - vec 1 = vec 1:real^1`
+          (fun th -> REWRITE_TAC[th]) THENL
+         [REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_SUB; DROP_VEC;
+                      LIFT_DROP] THEN
+          REAL_ARITH_TAC;
+          ASM_REWRITE_TAC[]]];
+      SIMP_TAC[]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Fubini-type results for measure.                                          *)
