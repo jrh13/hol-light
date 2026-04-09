@@ -64,6 +64,13 @@ _start_time = None
 _recording_path = None  # path to JSONL file; None = not recording
 _recording = []         # list of {"action": "tactic", "tactic": ..., "total_goals": ...}
 
+# Auto-recording: if recording_dir is set in config or env, enable recording at startup.
+_auto_record_dir = _config.get("recording_dir") or os.environ.get("HOL_RECORDING_DIR")
+if _auto_record_dir:
+    _auto_record_dir = os.path.abspath(_auto_record_dir)
+    os.makedirs(_auto_record_dir, exist_ok=True)
+    _recording_path = os.path.join(_auto_record_dir, "recording.jsonl")
+
 # Queue-based sentinel signaling: reader thread produces results, eval consumes.
 # Eliminates race conditions — queue.get() is atomic consumption.
 _result_queue = queue.Queue(maxsize=1)

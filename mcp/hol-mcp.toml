@@ -11,3 +11,7 @@ timeout = 600
 
 # Maximum characters for eval output before truncation.
 max_output_chars = 4000
+
+# Auto-record proof tactics to this directory (recording.jsonl).
+# Relative paths resolved against CWD. Also settable via HOL_RECORDING_DIR env var.
+# recording_dir = "/path/to/work"
