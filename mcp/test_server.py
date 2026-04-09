@@ -76,8 +76,6 @@ def test_eval_truncation():
     assert len(r["output"]) <= 200  # 100 + marker
 
 
-
-
 def test_eval_default_truncation():
     # Default limit should be MAX_OUTPUT_CHARS from config
     r = json.loads(server.eval("1 + 1"))
