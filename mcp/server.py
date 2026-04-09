@@ -185,6 +185,48 @@ def _load_helpers():
         _helpers_loaded = True
     else:
         raise RuntimeError(f"Failed to load MCP helpers: {result}")
+    _replay_prefix()
+
+
+def _replay_prefix():
+    """Replay a tactic prefix on startup to restore proof state.
+
+    Loads replay_init (ML file) then replays replay_prefix (JSONL of tactics).
+    Both are optional; configured via hol-mcp.toml or env vars.
+    """
+    init_path = _config.get("replay_init") or os.environ.get("HOL_REPLAY_INIT")
+    prefix_path = _config.get("replay_prefix") or os.environ.get("HOL_REPLAY_PREFIX")
+    if not init_path and not prefix_path:
+        return
+    if init_path:
+        result, _ = _eval_raw(f'#use "{_ocaml_escape(init_path)}"')
+        if _is_error_output(_strip_ansi(result)):
+            return
+    if not prefix_path or not os.path.exists(prefix_path):
+        return
+    import json
+    replayed = []
+    try:
+        with open(prefix_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                entry = json.loads(line)
+                if entry.get("action") == "tactic":
+                    result, _ = _eval_raw(f'e({entry["tactic"]})')
+                    if _is_error_output(_strip_ansi(result)):
+                        for _ in range(len(replayed)):
+                            _eval_raw("b()")
+                        return
+                    replayed.append(entry)
+    except (json.JSONDecodeError, KeyError, OSError):
+        for _ in range(len(replayed)):
+            _eval_raw("b()")
+        return
+    global _recording
+    _recording = replayed
+    _flush_recording()
 
 
 def _eval_raw(code: str, timeout: int = None) -> tuple[str, float]:
