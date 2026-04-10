@@ -1,5 +1,6 @@
 .DS_Store
 .vscode
+.claude/settings*.json
 _opam
 *.a
 *.cma
@@ -27,3 +28,5 @@ unit_tests_inlined.ml
 unit_tests.byte
 unit_tests.native
 hol-*.ckpt
+*.egg-info/
+__pycache__/

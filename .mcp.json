@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "hol-light": {
-      "command": "uv",
-      "args": ["run", "--directory", "/home/hol/hol-light/mcp", "hol-light-mcp"]
+      "command": "bash",
+      "args": ["-lc", "uv run --directory /home/hol/hol-light/mcp hol-light-mcp"]
     }
   }
 }
