@@ -1,0 +1,20 @@
+{
+  "name": "HOL Light",
+  "build": {
+    "dockerfile": "../Dockerfile"
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/hol/hol-light,type=bind,consistency=cached",
+  "workspaceFolder": "/home/hol/hol-light",
+  "remoteUser": "hol",
+  "postCreateCommand": "bash -lc 'make clean && make && cd mcp && uv sync'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ocamllabs.ocaml-platform"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}
