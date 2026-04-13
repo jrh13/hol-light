@@ -37,7 +37,7 @@ async def main():
             # Check tools registered
             tools = await session.list_tools()
             tool_names = sorted(t.name for t in tools.tools)
-            check("tools registered", tool_names == ["apply_tactic", "apply_tactics", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "prove", "search_theorems", "set_goal"],
+            check("tools registered", tool_names == ["apply_tactic", "apply_tactics", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "prove", "search_theorems", "set_goal", "start_recording", "stop_recording"],
                   f"got {tool_names}")
 
             # eval — basic arithmetic (now returns JSON)
@@ -143,6 +143,20 @@ async def main():
             r = await session.call_tool("eval", {"code": "1 + 1", "timeout": 30})
             ev = json.loads(r.content[0].text)
             check("eval: custom timeout", "2" in ev["output"], ev["output"])
+
+            # start_recording / stop_recording
+            import tempfile, os
+            rec_path = os.path.join(tempfile.mkdtemp(), "test_recording.jsonl")
+            r = await session.call_tool("start_recording", {"path": rec_path})
+            check("start_recording", "Recording started" in r.content[0].text, r.content[0].text)
+            await session.call_tool("eval", {"code": "g `!n. n + 0 = n`"})
+            await session.call_tool("apply_tactic", {"tactic": "GEN_TAC THEN ARITH_TAC"})
+            r = await session.call_tool("stop_recording", {})
+            check("stop_recording", "Recording stopped" in r.content[0].text, r.content[0].text)
+            check("recording file exists", os.path.exists(rec_path), rec_path)
+            with open(rec_path) as f:
+                entries = [json.loads(line) for line in f if line.strip()]
+            check("recording has entries", len(entries) > 0 and entries[0]["action"] == "tactic", str(entries[:2]))
 
             # hol_restart (run last — kills the process)
             r = await session.call_tool("hol_restart", {})

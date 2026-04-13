@@ -5,6 +5,7 @@ shared across all tests via module-scoped fixture.
 """
 
 import json
+import os
 import pytest
 import server
 
@@ -302,3 +303,107 @@ def test_hol_help_tool():
     result = server.hol_help()
     assert "## Core tactics" in result
     assert "prove" in result.lower()
+
+
+# --- start_recording / stop_recording tools ---
+
+def test_start_recording(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    result = server.start_recording(path)
+    assert "Recording started" in result
+    assert os.path.exists(path)
+    server.stop_recording()
+
+
+def test_stop_recording_returns_path(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    server.start_recording(path)
+    result = server.stop_recording()
+    assert path in result
+
+
+def test_stop_recording_when_inactive():
+    result = server.stop_recording()
+    assert "No recording" in result
+
+
+def test_recording_captures_apply_tactic(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    server.start_recording(path)
+    server.set_goal("`!n. n + 0 = n`")
+    server.apply_tactic("GEN_TAC THEN ARITH_TAC")
+    server.stop_recording()
+    with open(path) as f:
+        entries = [json.loads(line) for line in f if line.strip()]
+    assert len(entries) == 1
+    assert entries[0]["action"] == "tactic"
+    assert entries[0]["tactic"] == "GEN_TAC THEN ARITH_TAC"
+
+
+def test_recording_backtrack_removes_entry(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    server.start_recording(path)
+    server.set_goal("`!n. n + 0 = n`")
+    server.apply_tactic("GEN_TAC")
+    server.backtrack()
+    server.stop_recording()
+    with open(path) as f:
+        entries = [json.loads(line) for line in f if line.strip()]
+    assert len(entries) == 0
+
+
+def test_recording_skips_failed_tactic(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    server.start_recording(path)
+    server.set_goal("`T`")
+    server.apply_tactic("FAKE_NONEXISTENT_TAC")
+    server.stop_recording()
+    with open(path) as f:
+        entries = [json.loads(line) for line in f if line.strip()]
+    assert len(entries) == 0
+
+
+def test_start_recording_creates_parent_dirs(tmp_path):
+    path = str(tmp_path / "nested" / "dir" / "rec.jsonl")
+    server.start_recording(path)
+    assert os.path.exists(path)
+    server.stop_recording()
+
+
+def test_recording_captures_apply_tactics_batch(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    server.start_recording(path)
+    server.set_goal("`!n. n + 0 = n`")
+    server.apply_tactics(["GEN_TAC", "ARITH_TAC"])
+    server.stop_recording()
+    with open(path) as f:
+        entries = [json.loads(line) for line in f if line.strip()]
+    assert len(entries) == 2
+    assert entries[0]["tactic"] == "GEN_TAC"
+    assert entries[1]["tactic"] == "ARITH_TAC"
+
+
+def test_recording_captures_eval_e_tactic(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    server.start_recording(path)
+    server.set_goal("`!n. n + 0 = n`")
+    server.eval("e(GEN_TAC);;")
+    server.stop_recording()
+    with open(path) as f:
+        entries = [json.loads(line) for line in f if line.strip()]
+    assert len(entries) == 1
+    assert entries[0]["tactic"] == "GEN_TAC"
+
+
+def test_recording_backtrack_removes_last(tmp_path):
+    path = str(tmp_path / "rec.jsonl")
+    server.start_recording(path)
+    server.set_goal("`!m n. m + n = n + m`")
+    server.apply_tactic("GEN_TAC")
+    server.apply_tactic("GEN_TAC")
+    server.backtrack()
+    server.stop_recording()
+    with open(path) as f:
+        entries = [json.loads(line) for line in f if line.strip()]
+    assert len(entries) == 1
+    assert entries[0]["tactic"] == "GEN_TAC"
