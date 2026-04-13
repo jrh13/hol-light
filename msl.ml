@@ -321,13 +321,24 @@ let REMOVE_CANCEL = prove(
   ASM_REWRITE_TAC [IS_SOME_SOME] THEN
   MESON_TAC [option_INJ]);;
 
+let REMOVE_SELF = prove(
+  `!x:RES. REMOVE x x = UNIT`,
+  MESON_TAC [REMOVE_CANCEL; JOIN_UNIT_RIGHT]);;
+
+let REMOVE_INVOL = prove(
+  `!h ft:RES. IS_SUB ft h ==> REMOVE h (REMOVE h ft) = ft`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC (SPECL [`h:RES`; `ft:RES`] REMOVE_THM) THEN ASM_REWRITE_TAC [] THEN
+  DISCH_TAC THEN MATCH_MP_TAC REMOVE_CANCEL THEN
+  ASM_MESON_TAC [JOIN_COMM]);;
+
 (* Validity conditions for MSL computations (remainder-passing).
-   1. Substate: the remainder rm is a substate of the input h.
+   1. Footprint tightness: the footprint is enough for successful computation.
    2. Frame preservation: adding a compatible frame frm to the input adds the
       same frame to the remainder. *)
 let IS_VALID_MSL_DEF = new_definition
   `IS_VALID_MSL (f:RES->(A#RES)option) <=>
-   (!h b rm. f h = SOME (b,rm) ==> IS_SUB rm h) /\
+   (!h b rm. f h = SOME (b,rm) ==> IS_SUB rm h /\ f (REMOVE h rm) = SOME (b, UNIT)) /\
    (!h b rm frm h'. f h = SOME (b,rm) /\ JOIN (SOME h) (SOME frm) = SOME h'
      ==> ?rm'. JOIN (SOME rm) (SOME frm) = SOME rm' /\ f h' = SOME (b,rm'))`;;
 
@@ -435,12 +446,18 @@ let TO_MSL_INTRO = prove(
 let TO_MSL_VALID = prove(
   `!P:A->RES->bool. IS_FUNCTIONAL P ==> IS_VALID_MSL (TO_MSL P)`,
   GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC [IS_VALID_MSL_DEF] THEN CONJ_TAC THENL [
-    (* Substate: REMOVE h ft <= h *)
-    REPEAT STRIP_TAC THEN
+    (* Substate + tightness *)
+    REPEAT GEN_TAC THEN DISCH_TAC THEN
     MP_TAC (SPECL [`P:A->RES->bool`; `h:RES`; `b:A`; `rm:RES`] TO_MSL_SPEC) THEN
-    ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
-    MP_TAC (SPECL [`h:RES`; `ft:RES`] REMOVE_THM) THEN
-    ASM_REWRITE_TAC [] THEN MESON_TAC [IS_SUB_DEF; JOIN_COMM];
+    ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [
+      (* IS_SUB (REMOVE h ft) h *)
+      MP_TAC (SPECL [`h:RES`; `ft:RES`] REMOVE_THM) THEN
+      ASM_REWRITE_TAC [] THEN MESON_TAC [IS_SUB_DEF; JOIN_COMM];
+      (* Tightness: TO_MSL P (REMOVE h (REMOVE h ft)) = TO_MSL P ft = SOME (b, UNIT) *)
+      MP_TAC (SPECL [`h:RES`; `ft:RES`] REMOVE_INVOL) THEN ASM_REWRITE_TAC [] THEN
+      DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
+      MP_TAC (SPECL [`P:A->RES->bool`; `ft:RES`; `b:A`; `ft:RES`] TO_MSL_INTRO) THEN
+      ASM_REWRITE_TAC [IS_SUB_REFL; REMOVE_SELF]];
 
     (* Frame preservation *)
     REPEAT STRIP_TAC THEN
@@ -462,3 +479,270 @@ let TO_MSL_VALID = prove(
       REWRITE_TAC [GSYM JOIN_ASSOC] THEN ASM_REWRITE_TAC [IS_SOME_SOME];
       ASM_MESON_TAC [option_INJ]]
   ]);;
+
+
+(* ========================================================================= *)
+(* Monad operations (remainder-passing).                                     *)
+(* ========================================================================= *)
+
+(* RET: return a value without consuming any resource. *)
+let RET_DEF = new_definition
+  `RET (x:A) (h:RES) : (A#RES)option = SOME (x, h)`;;
+
+(* BIND: sequence two MSL computations; pass remainder of f to g. *)
+let BIND_DEF = new_definition
+  `BIND (f:RES->(A#RES)option) (g:A->RES->(B#RES)option) (h:RES) : (B#RES)option =
+    match f h with
+    | NONE -> NONE
+    | SOME p -> g (FST p) (SND p)`;;
+
+(* Case-based rewrites for BIND. *)
+let OPTION_CASES = prove(
+  `!x:(A)option. x = NONE \/ ?a. x = SOME a`,
+  MESON_TAC [cases "option"]);;
+
+let BIND_NONE = prove(
+  `!f:RES->(A#RES)option. !g:A->RES->(B#RES)option. !h.
+     f h = NONE ==> BIND f g h = NONE`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC [BIND_DEF] THEN ASM_REWRITE_TAC []);;
+
+let BIND_SOME = prove(
+  `!f:RES->(A#RES)option. !g:A->RES->(B#RES)option. !h a rm.
+     f h = SOME (a, rm) ==> BIND f g h = g a rm`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC [BIND_DEF] THEN ASM_REWRITE_TAC [FST; SND]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Monad laws.                                                               *)
+(* ------------------------------------------------------------------------- *)
+
+(* Left unit: BIND (RET x) g = g x *)
+let BIND_LEFT_UNIT = prove(
+  `!x:A. !g:A->RES->(B#RES)option. BIND (RET x) g = g x`,
+  REWRITE_TAC [FUN_EQ_THM; BIND_DEF; RET_DEF; FST; SND]);;
+
+(* Right unit: BIND f RET = f *)
+let BIND_RIGHT_UNIT = prove(
+  `!f:RES->(A#RES)option. BIND f RET = f`,
+  GEN_TAC THEN REWRITE_TAC [FUN_EQ_THM; BIND_DEF; RET_DEF] THEN
+  GEN_TAC THEN
+  MP_TAC (ISPEC `(f:RES->(A#RES)option) x` OPTION_CASES) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
+  MP_TAC (ISPEC `a:A#RES` PAIR_SURJECTIVE) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC [FST; SND]);;
+
+(* Associativity: BIND (BIND f g) k = BIND f (\a. BIND (g a) k) *)
+let BIND_ASSOC = prove(
+  `!f:RES->(A#RES)option. !g:A->RES->(B#RES)option. !k:B->RES->(C#RES)option.
+     BIND (BIND f g) k = BIND f (\a. BIND (g a) k)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC [FUN_EQ_THM; BIND_DEF] THEN
+  GEN_TAC THEN
+  MP_TAC (ISPEC `(f:RES->(A#RES)option) x` OPTION_CASES) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC [] THENL [
+    ALL_TAC;
+    MP_TAC (ISPEC `a:A#RES` PAIR_SURJECTIVE) THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC [FST; SND] THEN
+    MP_TAC (ISPEC `(g:A->RES->(B#RES)option) x' y` OPTION_CASES) THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
+    MP_TAC (ISPEC `a':B#RES` PAIR_SURJECTIVE) THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC [FST; SND]]);;
+
+let BIND_COMM = prove(
+  `!f:RES->(A#RES)option. !g:RES->(B#RES)option. !k:A->B->RES->(C#RES)option.
+     BIND f (\a:A. BIND g (\b:B. k a b)) = BIND g (\b:B. BIND f (\a:A. k a b))`,
+  CHEAT_TAC
+);;
+
+(* ------------------------------------------------------------------------- *)
+(* Validity preservation.                                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let RET_VALID = prove(
+  `!x:A. IS_VALID_MSL (RET x)`,
+  GEN_TAC THEN REWRITE_TAC [IS_VALID_MSL_DEF; RET_DEF; option_INJ; PAIR_EQ] THEN
+  MESON_TAC [IS_SUB_REFL; REMOVE_SELF]);;
+
+let BIND_VALID = prove(
+  `!f:RES->(A#RES)option. !g:A->RES->(B#RES)option.
+     IS_VALID_MSL f /\ (!a. IS_VALID_MSL (g a)) ==>
+     IS_VALID_MSL (BIND f g)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC [IS_VALID_MSL_DEF] THEN STRIP_TAC THEN CONJ_TAC THENL [
+    (* Substate + tightness *)
+    REPEAT GEN_TAC THEN DISCH_TAC THEN
+    (* Case split on f h *)
+    MP_TAC (ISPEC `(f:RES->(A#RES)option) h` OPTION_CASES) THEN STRIP_TAC THENL [
+      UNDISCH_TAC `BIND (f:RES->(A#RES)option) g h = SOME (b:B, rm:RES)` THEN
+      ASM_SIMP_TAC [BIND_NONE; option_DISTINCT];
+      MP_TAC (ISPEC `a:A#RES` PAIR_SURJECTIVE) THEN STRIP_TAC THEN
+      SUBGOAL_THEN `(f:RES->(A#RES)option) h = SOME (x:A, y:RES)` ASSUME_TAC THENL [
+        ASM_REWRITE_TAC []; ALL_TAC] THEN
+      SUBGOAL_THEN `(g:A->RES->(B#RES)option) x y = SOME (b, rm)` ASSUME_TAC THENL [
+        ASM_MESON_TAC [BIND_SOME]; ALL_TAC] THEN
+      CONJ_TAC THENL [
+        (* IS_SUB rm h by transitivity *)
+        MATCH_MP_TAC IS_SUB_TRANS THEN EXISTS_TAC `y:RES` THEN CONJ_TAC THENL [
+          FIRST_X_ASSUM (MP_TAC o SPEC `x:A`) THEN STRIP_TAC THEN ASM_MESON_TAC [];
+          ASM_MESON_TAC []];
+        (* Tightness: BIND f g (REMOVE h rm) = SOME (b, UNIT) *)
+        (* f's tightness: f (REMOVE h y) = SOME (x, UNIT) *)
+        SUBGOAL_THEN `(f:RES->(A#RES)option) (REMOVE h y) = SOME (x, UNIT)`
+          ASSUME_TAC THENL [ASM_MESON_TAC []; ALL_TAC] THEN
+        (* g's tightness: g x (REMOVE y rm) = SOME (b, UNIT) *)
+        SUBGOAL_THEN `(g:A->RES->(B#RES)option) x (REMOVE y rm) = SOME (b, UNIT)`
+          ASSUME_TAC THENL [
+            FIRST_X_ASSUM (MP_TAC o SPEC `x:A`) THEN STRIP_TAC THEN ASM_MESON_TAC [];
+            ALL_TAC] THEN
+        (* f's frame preservation: f (REMOVE h y) = SOME (x, UNIT), frame = REMOVE y rm
+           JOIN (SOME (REMOVE h y)) (SOME (REMOVE y rm)) = SOME (REMOVE h rm)
+           ==> f (REMOVE h rm) = SOME (x, REMOVE y rm) *)
+        SUBGOAL_THEN `IS_SUB rm y` ASSUME_TAC THENL [
+          FIRST_X_ASSUM (MP_TAC o SPEC `x:A`) THEN STRIP_TAC THEN ASM_MESON_TAC [];
+          ALL_TAC] THEN
+        SUBGOAL_THEN `IS_SUB y h` ASSUME_TAC THENL [ASM_MESON_TAC []; ALL_TAC] THEN
+        (* JOIN (REMOVE h y) (REMOVE y rm) = REMOVE h rm *)
+        SUBGOAL_THEN `JOIN (SOME (REMOVE h y)) (SOME (REMOVE y rm)) = SOME (REMOVE h rm)`
+          ASSUME_TAC THENL [
+            MP_TAC (SPECL [`h:RES`; `y:RES`] REMOVE_THM) THEN ASM_REWRITE_TAC [] THEN
+            DISCH_TAC THEN
+            MP_TAC (SPECL [`y:RES`; `rm:RES`] REMOVE_THM) THEN ASM_REWRITE_TAC [] THEN
+            DISCH_TAC THEN
+            MP_TAC (SPECL [`h:RES`; `rm:RES`] REMOVE_THM) THEN
+            (SUBGOAL_THEN `IS_SUB rm h` (fun th -> REWRITE_TAC [th]) THENL [
+              ASM_MESON_TAC [IS_SUB_TRANS]; ALL_TAC]) THEN
+            DISCH_TAC THEN
+            (* JOIN (SOME rm) (JOIN (SOME (REMOVE y rm)) (SOME (REMOVE h y))) = SOME h
+               by associativity: JOIN (JOIN rm (REMOVE y rm)) (REMOVE h y) = h
+                                 JOIN (SOME y) (SOME (REMOVE h y)) = h *)
+            MP_TAC (SPECL [`SOME (rm:RES)`;
+              `JOIN (SOME (REMOVE y rm)) (SOME (REMOVE h y))`;
+              `SOME (REMOVE h rm)`] JOIN_CANCEL_LEFT) THEN
+            ANTS_TAC THENL [
+              CONJ_TAC THENL [
+                REWRITE_TAC [GSYM JOIN_ASSOC] THEN
+                ONCE_REWRITE_TAC [JOIN_COMM] THEN
+                REWRITE_TAC [GSYM JOIN_ASSOC] THEN
+                ASM_REWRITE_TAC [];
+                ASM_REWRITE_TAC [IS_SOME_SOME]];
+              ASM_MESON_TAC [option_INJ]];
+          ALL_TAC] THEN
+        (* Now apply f's frame preservation *)
+        SUBGOAL_THEN `(f:RES->(A#RES)option) (REMOVE h rm) = SOME (x, REMOVE y rm)`
+          ASSUME_TAC THENL [
+            FIRST_X_ASSUM (MP_TAC o SPECL [`REMOVE h y`; `x:A`; `UNIT:RES`;
+              `REMOVE y rm`; `REMOVE h rm`]) THEN
+            ASM_REWRITE_TAC [JOIN_UNIT_LEFT] THEN
+            MESON_TAC [option_INJ; PAIR_EQ];
+            ALL_TAC] THEN
+        (* BIND f g (REMOVE h rm) = g x (REMOVE y rm) = SOME (b, UNIT) *)
+        ASM_MESON_TAC [BIND_SOME]]];
+
+    (* Frame preservation *)
+    INTRO_TAC "!h b rm frm h'; bind_eq join_eq" THEN
+    MP_TAC (ISPEC `(f:RES->(A#RES)option) h` OPTION_CASES) THEN STRIP_TAC THENL [
+      UNDISCH_TAC `BIND (f:RES->(A#RES)option) g h = SOME (b:B, rm:RES)` THEN
+      ASM_SIMP_TAC [BIND_NONE; option_DISTINCT];
+      MP_TAC (ISPEC `a:A#RES` PAIR_SURJECTIVE) THEN STRIP_TAC THEN
+      SUBGOAL_THEN `(f:RES->(A#RES)option) h = SOME (x:A, y:RES)` ASSUME_TAC THENL [
+        ASM_REWRITE_TAC []; ALL_TAC] THEN
+      SUBGOAL_THEN `(g:A->RES->(B#RES)option) x y = SOME (b, rm)` ASSUME_TAC THENL [
+        ASM_MESON_TAC [BIND_SOME]; ALL_TAC] THEN
+      (* f's preservation: JOIN y frm = rm_f' /\ f h' = SOME (x, rm_f') *)
+      FIRST_X_ASSUM (MP_TAC o SPECL [`h:RES`; `x:A`; `y:RES`; `frm:RES`; `h':RES`]) THEN
+      ASM_REWRITE_TAC [] THEN
+      DISCH_THEN (X_CHOOSE_THEN `rm_f':RES` STRIP_ASSUME_TAC) THEN
+      (* g's preservation: JOIN rm frm = rm' /\ g x rm_f' = SOME (b, rm') *)
+      FIRST_X_ASSUM (MP_TAC o SPEC `x:A`) THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPECL [`y:RES`; `b:B`; `rm:RES`; `frm:RES`; `rm_f':RES`]) THEN
+      ASM_REWRITE_TAC [] THEN
+      DISCH_THEN (X_CHOOSE_THEN `rm':RES` STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC `rm':RES` THEN ASM_REWRITE_TAC [] THEN
+      ASM_MESON_TAC [BIND_SOME]]]);;
+
+
+(* ========================================================================= *)
+(* Round-trip theorems: FROM_MSL and TO_MSL form a bijection.                *)
+(* ========================================================================= *)
+
+(* Helper: REMOVE h ft = UNIT implies ft = h *)
+let REMOVE_EQ_UNIT = prove(
+  `!h ft:RES. IS_SUB ft h /\ REMOVE h ft = UNIT ==> ft = h`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC (SPECL [`h:RES`; `ft:RES`] REMOVE_THM) THEN ASM_REWRITE_TAC [] THEN
+  ASM_REWRITE_TAC [JOIN_UNIT_RIGHT] THEN MESON_TAC [option_INJ]);;
+
+(* Direction 1: FROM_MSL (TO_MSL P) = P
+   - P b h ==> TO_MSL P h = SOME (b, REMOVE h h) = SOME (b, UNIT)
+              ==> FROM_MSL (TO_MSL P) b h
+   - FROM_MSL (TO_MSL P) b h ==> TO_MSL P h = SOME (b, UNIT)
+              ==> P b ft with REMOVE h ft = UNIT, so ft = h, so P b h *)
+let FROM_MSL_TO_MSL = prove(
+  `!P:A->RES->bool. IS_FUNCTIONAL P ==> FROM_MSL (TO_MSL P) = P`,
+  GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC [FUN_EQ_THM] THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC [FROM_MSL_DEF] THEN EQ_TAC THENL [
+    (* TO_MSL P x' = SOME (x, UNIT) ==> P x x' *)
+    DISCH_TAC THEN
+    MP_TAC (SPECL [`P:A->RES->bool`; `x':RES`; `x:A`; `UNIT:RES`] TO_MSL_SPEC) THEN
+    ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `ft:RES = x'` SUBST_ALL_TAC THENL [
+      MATCH_MP_TAC REMOVE_EQ_UNIT THEN ASM_REWRITE_TAC [];
+      ASM_REWRITE_TAC []];
+    (* P x x' ==> TO_MSL P x' = SOME (x, UNIT) *)
+    DISCH_TAC THEN
+    MP_TAC (SPECL [`P:A->RES->bool`; `x':RES`; `x:A`; `x':RES`] TO_MSL_INTRO) THEN
+    ASM_REWRITE_TAC [IS_SUB_REFL; REMOVE_SELF]]);;
+
+(* Direction 2: TO_MSL (FROM_MSL f) = f
+   - f h = SOME (b, rm): by tightness, f (REMOVE h rm) = SOME (b, UNIT),
+     i.e. FROM_MSL f b (REMOVE h rm). By TO_MSL_INTRO,
+     TO_MSL (FROM_MSL f) h = SOME (b, REMOVE h (REMOVE h rm)) = SOME (b, rm).
+   - f h = NONE: if some ft <= h had FROM_MSL f b ft (i.e. f ft = SOME (b, UNIT)),
+     frame preservation would give f h = SOME (...), contradiction.
+     So the TO_MSL condition is false, giving NONE. *)
+let TO_MSL_FROM_MSL = prove(
+  `!f:RES->(A#RES)option. IS_VALID_MSL f ==> TO_MSL (FROM_MSL f) = f`,
+  GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP FROM_MSL_FUNCTIONAL) THEN
+  REWRITE_TAC [FUN_EQ_THM] THEN GEN_TAC THEN
+  MP_TAC (ISPEC `(f:RES->(A#RES)option) x` OPTION_CASES) THEN STRIP_TAC THENL [
+    (* f x = NONE *)
+    ASM_REWRITE_TAC [TO_MSL_DEF] THEN
+    COND_CASES_TAC THENL [
+      (* Contradiction: ?b ft. FROM_MSL f b ft /\ IS_SUB ft x *)
+      FIRST_X_ASSUM STRIP_ASSUME_TAC THEN
+      UNDISCH_TAC `FROM_MSL (f:RES->(A#RES)option) b ft` THEN
+      REWRITE_TAC [FROM_MSL_DEF] THEN DISCH_TAC THEN
+      (* f ft = SOME (b, UNIT), IS_SUB ft x *)
+      SUBGOAL_THEN `?rm1. JOIN (SOME ft) (SOME rm1) = SOME x` STRIP_ASSUME_TAC THENL [
+        ASM_MESON_TAC [IS_SUB_DEF]; ALL_TAC] THEN
+      (* frame preservation on f ft with frame rm1 *)
+      FIRST_X_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE [IS_VALID_MSL_DEF]) THEN
+      FIRST_X_ASSUM (MP_TAC o SPECL [`ft:RES`; `b:A`; `UNIT:RES`; `rm1:RES`; `x:RES`]) THEN
+      ASM_REWRITE_TAC [JOIN_UNIT_LEFT] THEN
+      ASM_MESON_TAC [option_DISTINCT];
+      REWRITE_TAC []];
+    (* f x = SOME a *)
+    MP_TAC (ISPEC `a:A#RES` PAIR_SURJECTIVE) THEN STRIP_TAC THEN
+    SUBGOAL_THEN `(f:RES->(A#RES)option) x = SOME (x':A, y:RES)` ASSUME_TAC THENL [
+      ASM_REWRITE_TAC []; ALL_TAC] THEN
+    (* By tightness: f (REMOVE x y) = SOME (x', UNIT) *)
+    FIRST_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE [IS_VALID_MSL_DEF]) THEN
+    SUBGOAL_THEN `(f:RES->(A#RES)option) (REMOVE x y) = SOME (x', UNIT)`
+      ASSUME_TAC THENL [ASM_MESON_TAC []; ALL_TAC] THEN
+    (* IS_SUB y x *)
+    SUBGOAL_THEN `IS_SUB y x` ASSUME_TAC THENL [ASM_MESON_TAC []; ALL_TAC] THEN
+    (* IS_SUB (REMOVE x y) x *)
+    SUBGOAL_THEN `IS_SUB (REMOVE x y) x` ASSUME_TAC THENL [
+      MP_TAC (SPECL [`x:RES`; `y:RES`] REMOVE_THM) THEN ASM_REWRITE_TAC [] THEN
+      MESON_TAC [IS_SUB_DEF; JOIN_COMM]; ALL_TAC] THEN
+    (* FROM_MSL f x' (REMOVE x y) holds *)
+    SUBGOAL_THEN `FROM_MSL (f:RES->(A#RES)option) x' (REMOVE x y)` ASSUME_TAC THENL [
+      ASM_REWRITE_TAC [FROM_MSL_DEF]; ALL_TAC] THEN
+    (* TO_MSL_INTRO: TO_MSL (FROM_MSL f) x = SOME (x', REMOVE x (REMOVE x y)) *)
+    MP_TAC (SPECL [`FROM_MSL (f:RES->(A#RES)option)`; `x:RES`; `x':A`;
+      `REMOVE x y`] TO_MSL_INTRO) THEN
+    ASM_REWRITE_TAC [] THEN
+    (* REMOVE x (REMOVE x y) = y by REMOVE_INVOL *)
+    MP_TAC (SPECL [`x:RES`; `y:RES`] REMOVE_INVOL) THEN ASM_REWRITE_TAC [] THEN
+    DISCH_TAC THEN ASM_REWRITE_TAC []]);;
