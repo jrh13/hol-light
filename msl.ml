@@ -34,42 +34,64 @@ x is in the domain of given full heap and v0 is the value at x.
 
 We are especially interested in a class of precise separation-logic assertions
 that are "functional". We say a separation-logic predicate (i.e., functions that
-return a SL assertion) is functional if its arguments can be split into inputs
-and outputs (i.e., P : IN × OUT → SL for some types IN and OUT), and its inputs
-uniquely determine the output as well as the footprint. Intuitively, _ ↦ _ is a
-functional predicate where the input is the address and the output is the value.
+return a SL assertion) is functional if some of its arguments can be viewed as
+outputs: given a full heap, the footprint subheap and the outputs are uniquely
+determined. For example, x ↦ _ is a functional predicate where the address is
+given as the input and the value is the output; on the other hand, _ ↦ v is not
+a functional predicate because there might be multiple v storing at different
+addresses.
 
-More precisely, a functional separation-logic predicate P should satisfy two
-uniqueness properties on footprint and output for any given input:
+More precisely, a functional separation-logic predicate should satisfy
+uniqueness properties on footprint and output (assuming inputs are fixed). For
+a separation-logic predicate P : OUT → SL:
 
-  (1) ∀(a:IN). IS_PRECISE (∃b:OUT. P (a, b))       [∃ here is lifted into SL]
-   ⇔ ∀(a:IN). IS_PRECISE (⋃{P (a, b) | b:OUT})
+  (1) IS_PRECISE (∃b:OUT. P b)       [∃ here is lifted into SL]
+   ⇔ IS_PRECISE (⋃{P b | b:OUT})
+  (2) ∀(b1 b2:OUT) (h:RES). P b1 h ∧ P b2 h ⇒ b1 = b2 .
+
+It is direct that (1) ensures the footprint is unique. Under (1), (2) ensures
+the output is also unique. It is not hard to see that (1) ∧ (2) are equivalent
+to the following:
   
-  (2) ∀(a:IN) (b1 b2:OUT) (h:RES). P (a, b1) h ∧ P (a, b2) h ⇒ b1 = b2 .
-
-It is not hard to see that (1) and (2) are equivalent to the following property:
-  
-  (3) IS_FUNCTIONAL : (IN × OUT → SL) → bool
-  IS_FUNCTIONAL P ⇔ ∀a h b1 b2 h1 h2.
-        h1 ≼ h ∧ h2 ≼ h ∧ P (a, b1) h1 ∧ P (a, b2) h2
-        ⇒ b1 = b2 ∧ h1 = h2
+  (3) IS_FUNCTIONAL P ⇔ ∀h b1 b2 ft1 ft2.
+        ft1 ≼ h ∧ ft2 ≼ h ∧ P b1 ft1 ∧ P b2 ft2
+        ⇒ b1 = b2 ∧ ft1 = ft2 .
 
 Note that any precise separation-logic assertion can be trivially viewed as a
-functional separation-logic predicate by taking all free variables as input with
-the OUT type unit.
+functional separation-logic predicate by taking the OUT type as unit.
 
 Finally, a functional separation-logic predicate P can be equivalently viewed as
-a monadic computation that runs on a heap and returns an output as well as the
-footprint subheap. This RUN operation could be defined using the Hilbert
-operator:
+a heap-dependent computation that runs on a heap and returns an output and the
+remainder subheap with footprint carved out. This TO_MSL conversion operation
+can be specified as:
 
   (A)MSL ≔ RES → (A × RES) option
   
-  RUN : (IN × OUT → SL) → (IN → (OUT)MSL)
-  RUN P a h = 
-    if ∃b ft. P (a, b) ft ∧ ft ≼ h then
-      SOME (@(b, ft). P (a, b) ft ∧ ft ≼ h)   [@ is the Hilbert choice operator]
+  TO_MSL : (OUT → SL) → (OUT)MSL
+  TO_MSL P = λh. 
+    if ∃b ft. P b ft ∧ ft ≼ h then
+      SOME (@(b, rm). ∃ft. P b ft ∧ ft ≼ h ∧ rm = REMOVE h ft)
     else NONE
+  [@ is the Hilbert choice operator] .
+
+Conversely, the FROM_MSL conversion operation can be specified as:
+
+  FROM_MSL : (OUT)MSL → (OUT → SL)
+  FROM_MSL f ⇔ λb h. f h = SOME (b, UNIT)  [UNIT is the empty subheap]
+
+We can prove the following equivalence between the computational view and the
+separation-logic predicate view:
+
+  IS_FUNCTIONAL P ⇒ IS_VALID_MSL (TO_MSL P)
+  IS_VALID_MSL f ⇒ IS_FUNCTIONAL (FROM_MSL f)
+  
+  IS_VALID_MSL : (OUT)MSL → bool
+  IS_VALID_MSL f ⇔
+    (∀h b rm. f h = SOME (b, rm) ⇒ rm ≼ h)           [substate]
+    (∀h b rm. f h = SOME (b, rm) ⇒
+       ∀frm. h#frm ⇒ f (h⊎frm) = SOME (b, rm⊎frm))   [preservation]
+       
+    [# is the separation operator, ⊎ is the disjoint union operator] .
 
 But more importantly, many functional separation-logic predicates can be defined
 directly as a monadic computation. For example, the predicate _ ↦ _ can be
@@ -78,60 +100,45 @@ redefined as:
   data_at : addr → (val)MSL  [assume RES ≔ addr → val]
   data_at x h =
     if x ∈ dom h then
-      SOME (h x, {x ↦ h x})
+      SOME (h x, h\{x})  [\ is the set difference operator]
     else NONE
 
-We can prove the following equivalence between the computational view and the
-traditional separation-logic view:
+Well-behaved MSL computations form a monad. The bind operation composes MSL
+computations by passing on the remainder heap of the first computation and
+the output of the first computation as inputs to the next computation:
 
-  IS_FUNCTIONAL P ⇔ WELL_BEHAVED (RUN P)
-  
-  WELL_BEHAVED : (B)MSL → bool
-  WELL_BEHAVED f ⇔
-    [sufficiency]   (∀h. ∃b ft. f h = SOME (b, ft) ⇒ ft ≼ h ∧ P (a, b) ft) ∧
-    [preservation]  (∀h h' b ft. h ≼ h' ∧ f h = SOME (b, ft)
-                            ⇒ f h' = SOME (b, ft))
-
-  
-
-The bind operation passes on the result and the remainder heap to the next
-computation:
+  RET : OUT → (OUT)MSL
+  RET x = SOME (x, UNIT)
 
   BIND : (A)MSL → (A → (B)MSL) → (B)MSL
-  
-  Well-behaved MSL computations correspond to a class of precise-and-functional
-  separation-logic predicates.
-  
-  These programs must be well-behaved: a frame-preserving and a determinism condition is imposed.
+  BIND f g h =
+    match f h with
+    | NONE -> NONE
+    | SOME (b, rm) -> f b (REMOVE h rm)
 
-  Formally, for any predicate p : (in:A) -> (out:B) -> (h:RES) -> bool, a MSL
-  predicate msl(p): A -> RES -> (B # RES) option can be constructed:
+Apart from these basic monadic operations, we can define some other useful
+operations that also preserve well-behavedness. For example, using these
+operations and the computational view of data_at, the traditioanl singly-linked
+list predicate
 
-  msl(p) = λ (in:A) (h:RES). 
-   
-  When the following conditions are met on p, msl(p) is well-behaved:
-  
-    - for all (in:A) (out:B). IS_PRECISE (p in out)
-    - for all (h:RES) (in:A) (out1 out2:B).
-        p in out1 h /\ p in out2 h ==> out1 = out2
+  sll_at : (addr: val) -> (values: val list) -> SL
+  sll p l =
+    match l with
+    | [] -> ⎡p = null⎤
+    | hd :: tl ->
+      ∃hd nxt. ⎡p ≠ null⎤ ⋆ p ↦ (hd,nxt) ⋆ sll nxt tl
 
-  Expressing specifications in this way is good for dynamic checking and
-  deterministic entailment proofs.
+can be rewritten as a monadic computation:
 
-  For example, the traditioanl singly-linked list predicate:
-
-  sll : (addr : val) -> (l : val list) -> 
-
-  It can be rewritten as:
-
-  list : addr → (val list)CSL
-  list x =
-    cond (x = null)
-      (return [])
-      (bind (read_at x) (λv.
-        bind (read_at (x + 1)) (λnext.
-          bind (list next) (λrest.
-            return (v :: rest)))))
+  sll_at : addr → (val list)MSL
+  sll_at p =
+    if l = [] then
+      RET []
+    else
+      BIND (data_at p) (λhd.
+      BIND (data_at (p + 1)) (λnxt.
+      BIND (sll_at nxt) (λtl.
+      RET (hd :: tl))))
 
 
 ==============================================================================*)
@@ -144,7 +151,7 @@ let IS_SOME_SOME = prove(`!x : A. IS_SOME (SOME x)`, METIS_TAC [IS_SOME_DEF]);;
 let IS_SOME_NONE = prove(`~IS_SOME NONE`, REWRITE_TAC [IS_SOME_DEF; option_DISTINCT]);;
 
 (*------------------------------------------------------------------------------
-  Resource algebra: PCM + cancellative + positivity + well-foundedness. It is
+  Resource algebra: PCM + cancellative + well-foundedness. It is
   used to model resources that can be separately owned and exhausted.
 ------------------------------------------------------------------------------*)
 new_type ("RES", 0);;
@@ -234,9 +241,27 @@ let JOIN_SELF_IMP = prove(`!x y. JOIN (SOME x) y = SOME x ==> y = SOME UNIT`,
 let SUB_PROPER_DEF = new_definition `!x y. SUB_PROPER x y <=> IS_SUB x y /\ ~(x = y)`;;
 let SUB_PROPER_WF = new_axiom `WF (SUB_PROPER)`;;
 
-(* TODO: should follow from SUB_PROPER_WF. Otherwise infinite chain of x < UNIT < x < UNIT < ... *)
-let JOIN_POSITIVE = new_axiom
-  `!x y. JOIN (SOME x) (SOME y) = SOME UNIT ==> x = UNIT /\ y = UNIT`;;
+let JOIN_POSITIVE = prove(
+  `!x y. JOIN (SOME x) (SOME y) = SOME UNIT ==> x = UNIT /\ y = UNIT`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  (* Step 1: IS_SUB x UNIT and IS_SUB UNIT x *)
+  SUBGOAL_THEN `IS_SUB x UNIT` ASSUME_TAC THENL [
+    REWRITE_TAC [IS_SUB_DEF] THEN ASM_MESON_TAC []; ALL_TAC] THEN
+  SUBGOAL_THEN `IS_SUB UNIT x` ASSUME_TAC THENL [
+    ACCEPT_TAC (SPEC `x:RES` IS_SUB_UNIT); ALL_TAC] THEN
+  (* Step 2: x = UNIT by contradiction using WF_ANTISYM *)
+  SUBGOAL_THEN `x:RES = UNIT` ASSUME_TAC THENL [
+    ASM_CASES_TAC `x:RES = UNIT` THEN ASM_REWRITE_TAC [] THEN
+    MP_TAC (MP (ISPECL [`SUB_PROPER`; `x:RES`; `UNIT:RES`] WF_ANTISYM) SUB_PROPER_WF) THEN
+    REWRITE_TAC [SUB_PROPER_DEF] THEN
+    ASM_MESON_TAC [];
+    ALL_TAC] THEN
+  (* Step 3: y = UNIT from x = UNIT *)
+  ASM_REWRITE_TAC [] THEN
+  SUBGOAL_THEN `JOIN (SOME UNIT) (SOME y) = SOME UNIT` MP_TAC THENL [
+    ASM_MESON_TAC [];
+    REWRITE_TAC [JOIN_UNIT_LEFT] THEN MESON_TAC [option_INJ]]
+);;
 
 let IS_SUB_ANTISYM = prove(`!x y. IS_SUB x y /\ IS_SUB y x ==> x = y`,
   REWRITE_TAC [IS_SUB_DEF] THEN
@@ -259,17 +284,13 @@ let IS_SUB_ANTISYM = prove(`!x y. IS_SUB x y /\ IS_SUB y x ==> x = y`,
 let SL_IND, SL_REC = define_type "SL = SLProp (RES -> bool)";;
 let IS_PRECISE_DEF = define `!p:RES->bool. IS_PRECISE (SLProp p) <=>
   !x y1 y2. IS_SUB y1 x /\ IS_SUB y2 x /\ p y1 /\ p y2 ==> y1 = y2`;;
-let IS_PRECISE_ALT = prove(`!p:RES->bool. IS_PRECISE (SLProp p) <=>
-  !y. p y ==> !x. IS_SUB y x ==> (?!ft. IS_SUB ft x /\ p ft)`,
-  MESON_TAC[IS_PRECISE_DEF]
-);;
 
 
 (* ========================================================================= *)
-(* Computational precise separation logic (footprint-based semantics).     *)
+(* Computational precise separation logic (footprint-based semantics).       *)
 (*                                                                           *)
 (* RUN p r = SOME (ft, a) means:                                             *)
-(*   p succeeds on resource r, its footprint is ft (<= r), returning a.     *)
+(*   p succeeds on resource r, its footprint is ft (<= r), returning a.      *)
 (*   The remainder (unconsumed resource) is implicitly REMOVE r ft.          *)
 (* ========================================================================= *)
 
