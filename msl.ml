@@ -213,7 +213,6 @@ let IS_SUB_TRANS = prove(`!x y z. IS_SUB x y /\ IS_SUB y z ==> IS_SUB x z`,
   INTRO_TAC "@a' bc. _ Jbc" THEN
   EXISTS_TAC `bc:RES` THEN ASM_MESON_TAC []
 );;
-(* MESON_TAC [IS_SUB_DEF; JOIN_ASSOC; JOIN_SOME_IMP]) *)
 
 let JOIN_CANCEL_LEFT = new_axiom
   `!x y z. JOIN x y = JOIN x z /\ IS_SOME (JOIN x y) ==> y = z`;;
@@ -281,120 +280,185 @@ let IS_SUB_ANTISYM = prove(`!x y. IS_SUB x y /\ IS_SUB y x ==> x = y`,
   Traditional precise separation logic predicates.
 ---------------------------------------------------------------------------*)
 
-let SL_IND, SL_REC = define_type "SL = SLProp (RES -> bool)";;
-let IS_PRECISE_DEF = define `!p:RES->bool. IS_PRECISE (SLProp p) <=>
+let IS_PRECISE_DEF = define `IS_PRECISE p <=>
   !x y1 y2. IS_SUB y1 x /\ IS_SUB y2 x /\ p y1 /\ p y2 ==> y1 = y2`;;
 
+(* IS_FUNCTIONAL: a functional SL predicate P : A -> RES -> bool has its
+   footprint and output uniquely determined by any super-resource h. *)
+let IS_FUNCTIONAL_DEF = new_definition
+  `IS_FUNCTIONAL (P:A->RES->bool) <=>
+   !h b1 b2 ft1 ft2. IS_SUB ft1 h /\ IS_SUB ft2 h /\
+                      P b1 ft1 /\ P b2 ft2 ==> b1 = b2 /\ ft1 = ft2`;;
+
+(* Equivalence: IS_FUNCTIONAL P <=> (1) precision of the existential lift
+   and (2) output uniqueness on the same footprint. *)
+let IS_FUNCTIONAL_ALT = prove(
+  `!P:A->RES->bool. IS_FUNCTIONAL P <=>
+    IS_PRECISE (\h. ?b. P b h) /\
+    (!b1 b2 h. P b1 h /\ P b2 h ==> b1 = b2)`,
+  GEN_TAC THEN REWRITE_TAC [IS_FUNCTIONAL_DEF; IS_PRECISE_DEF] THEN
+  MESON_TAC [IS_SUB_REFL]);;
+
 
 (* ========================================================================= *)
-(* Computational precise separation logic (footprint-based semantics).       *)
+(* Monadic Separation Logic (remainder-passing semantics).                   *)
 (*                                                                           *)
-(* RUN p r = SOME (ft, a) means:                                             *)
-(*   p succeeds on resource r, its footprint is ft (<= r), returning a.      *)
-(*   The remainder (unconsumed resource) is implicitly REMOVE r ft.          *)
+(* f h = SOME (b, rm) means:                                                 *)
+(*   f succeeds on resource h, returning output b with remainder rm.         *)
+(*   The footprint (consumed resource) is implicitly REMOVE h rm.            *)
 (* ========================================================================= *)
 
-let CSL_IND, CSL_REC = define_type "CSL = CSLProp (RES -> (RES # A)option)";;
-let RUN_DEF = define `RUN (CSLProp p) = p`;;
+(* Helper: REMOVE inverts JOIN (cancellation via Hilbert choice). *)
+let REMOVE_CANCEL = prove(
+  `!x y z. JOIN (SOME x) (SOME y) = SOME z ==> REMOVE z x = y`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `IS_SUB x z` ASSUME_TAC THENL [
+    REWRITE_TAC [IS_SUB_DEF] THEN ASM_MESON_TAC []; ALL_TAC] THEN
+  MP_TAC (SPECL [`z:RES`; `x:RES`] REMOVE_THM) THEN
+  ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
+  MP_TAC (SPECL [`SOME (x:RES)`; `SOME (y:RES)`; `SOME (REMOVE z x)`]
+    JOIN_CANCEL_LEFT) THEN
+  ASM_REWRITE_TAC [IS_SOME_SOME] THEN
+  MESON_TAC [option_INJ]);;
 
+(* Validity conditions for MSL computations (remainder-passing).
+   1. Substate: the remainder rm is a substate of the input h.
+   2. Frame preservation: adding a compatible frame frm to the input adds the
+      same frame to the remainder. *)
+let IS_VALID_MSL_DEF = new_definition
+  `IS_VALID_MSL (f:RES->(A#RES)option) <=>
+   (!h b rm. f h = SOME (b,rm) ==> IS_SUB rm h) /\
+   (!h b rm frm h'. f h = SOME (b,rm) /\ JOIN (SOME h) (SOME frm) = SOME h'
+     ==> ?rm'. JOIN (SOME rm) (SOME frm) = SOME rm' /\ f h' = SOME (b,rm'))`;;
 
-(* Validity conditions:
-   1. footprint validity: ft <= r, and ft is self-sufficient (tightness);
-   2. determinism under extension: enlarging the input does not change the result *)
-let VALID_DEF = define `VALID (CSLProp p: (A)CSL) <=>
-  (!r ft a. p r = SOME (ft, a) ==> IS_SUB ft r /\ p ft = SOME (ft, a)) /\
-  (!r1 r2. IS_SOME (p r1) /\ IS_SUB r1 r2 ==> p r2 = p r1)
-`;;
+(* FROM_MSL: extract the SL predicate from an MSL computation.
+   A resource h is a footprint of f for output b iff running f on h
+   returns b with empty remainder. *)
+let FROM_MSL_DEF = new_definition
+  `FROM_MSL (f:RES->(A#RES)option) (b:A) (h:RES) <=> f h = SOME (b, UNIT)`;;
 
-(* ------------------------------------------------------------------------- *)
-(* Erasure and lifting: bridge between CSL and classical precise SL.         *)
-(* ------------------------------------------------------------------------- *)
+(* TO_MSL: convert a functional SL predicate to an MSL computation.
+   Given input h, find the unique footprint ft satisfying P, return the
+   output and the remainder REMOVE h ft. *)
+let TO_MSL_DEF = new_definition
+  `TO_MSL (P:A->RES->bool) (h:RES) : (A#RES)option =
+   if (?b ft. P b ft /\ IS_SUB ft h) then
+     SOME ((@b:A. ?ft. P b ft /\ IS_SUB ft h),
+           REMOVE h (@ft:RES. ?b:A. P b ft /\ IS_SUB ft h))
+   else NONE`;;
 
-(* Erase computational content: r satisfies the predicate iff r is a footprint
-   (i.e., a fixed point: running on r returns r itself). *)
-let ERASE_DEF = define `ERASE (CSLProp p: (A)CSL) =
-  SLProp (\r:RES. ?a:A. p r = SOME (r, a))`;;
-
-(* Lift a precise predicate: find the unique substate satisfying q, return it
-   as the footprint. *)
-let LIFT_DEF = define `LIFT (SLProp q:SL) : (1)CSL =
-  CSLProp (\r:RES.
-    if (?ft. IS_SUB ft r /\ q ft)
-    then SOME ((@ft. IS_SUB ft r /\ q ft), one)
-    else NONE)`;;
 
 (* ========================================================================= *)
-(* Combinators (footprint-based)                                           *)
+(* Correspondence: IS_VALID_MSL <-> IS_FUNCTIONAL via FROM_MSL / TO_MSL      *)
 (* ========================================================================= *)
 
-let FAIL_DEF = new_definition `FAIL : (A)CSL = CSLProp (\r:RES. NONE)`;;
+(* Direction 1: every valid MSL computation induces a functional predicate.
+   Proof idea: by frame preservation, f ft_i = SOME (b_i, UNIT) lifts to
+   f h = SOME (b_i, rm_i) for the same h; injectivity of f h forces
+   b1 = b2 and rm1 = rm2; then JOIN cancellation gives ft1 = ft2. *)
+let FROM_MSL_FUNCTIONAL = prove(
+  `!f:RES->(A#RES)option. IS_VALID_MSL f ==> IS_FUNCTIONAL (FROM_MSL f)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC [IS_FUNCTIONAL_DEF; FROM_MSL_DEF] THEN
+  FIRST_X_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE [IS_VALID_MSL_DEF]) THEN
+  INTRO_TAC "!h b1 b2 ft1 ft2; sub1 sub2 f1 f2" THEN
+  (* Decompose IS_SUB into JOIN witnesses *)
+  SUBGOAL_THEN `?rm1. JOIN (SOME ft1) (SOME rm1) = SOME h` STRIP_ASSUME_TAC THENL [
+    ASM_MESON_TAC [IS_SUB_DEF]; ALL_TAC] THEN
+  SUBGOAL_THEN `?rm2. JOIN (SOME ft2) (SOME rm2) = SOME h` STRIP_ASSUME_TAC THENL [
+    ASM_MESON_TAC [IS_SUB_DEF]; ALL_TAC] THEN
+  (* Lift f ft1 = SOME (b1, UNIT) to f h = SOME (b1, rm1) via preservation *)
+  SUBGOAL_THEN `(f:RES->(A#RES)option) h = SOME (b1, rm1:RES)` ASSUME_TAC THENL [
+    FIRST_X_ASSUM (MP_TAC o SPECL [`ft1:RES`; `b1:A`; `UNIT:RES`; `rm1:RES`; `h:RES`]) THEN
+    ASM_REWRITE_TAC [JOIN_UNIT_LEFT] THEN
+    MESON_TAC [option_INJ; PAIR_EQ];
+    ALL_TAC] THEN
+  (* Lift f ft2 = SOME (b2, UNIT) to f h = SOME (b2, rm2) *)
+  SUBGOAL_THEN `(f:RES->(A#RES)option) h = SOME (b2, rm2:RES)` ASSUME_TAC THENL [
+    FIRST_X_ASSUM (MP_TAC o SPECL [`ft2:RES`; `b2:A`; `UNIT:RES`; `rm2:RES`; `h:RES`]) THEN
+    ASM_REWRITE_TAC [JOIN_UNIT_LEFT] THEN
+    MESON_TAC [option_INJ; PAIR_EQ];
+    ALL_TAC] THEN
+  (* f h determines unique output: b1 = b2, rm1 = rm2 *)
+  SUBGOAL_THEN `b1:A = b2 /\ rm1:RES = rm2` STRIP_ASSUME_TAC THENL [
+    ASM_MESON_TAC [option_INJ; PAIR_EQ]; ALL_TAC] THEN
+  ASM_REWRITE_TAC [] THEN
+  (* JOIN cancellation: ft1 = ft2 *)
+  SUBGOAL_THEN `JOIN (SOME ft1) (SOME rm1) = JOIN (SOME ft2) (SOME rm1) /\
+                IS_SOME (JOIN (SOME ft1) (SOME rm1))` MP_TAC THENL [
+    ASM_REWRITE_TAC [IS_SOME_SOME]; ALL_TAC] THEN
+  DISCH_THEN (MP_TAC o MATCH_MP JOIN_CANCEL_RIGHT) THEN
+  MESON_TAC [option_INJ]
+);;
 
-(* RET: consumes nothing, footprint = UNIT *)
-let RET_DEF = new_definition `RET (x:A) : (A)CSL = CSLProp (\r:RES. SOME (UNIT, x))`;;
+(* Under IS_FUNCTIONAL, the two epsilon selections are consistent. *)
+let FUNCTIONAL_SELECT = prove(
+  `!P:A->RES->bool. !h:RES.
+     IS_FUNCTIONAL P /\ (?b ft. P b ft /\ IS_SUB ft h) ==>
+     P (@b. ?ft. P b ft /\ IS_SUB ft h)
+       (@ft. ?b. P b ft /\ IS_SUB ft h) /\
+     IS_SUB (@ft. ?b. P b ft /\ IS_SUB ft h) h`,
+  REPEAT GEN_TAC THEN REWRITE_TAC [IS_FUNCTIONAL_DEF] THEN MESON_TAC []
+);;
 
-let EMP_DEF = new_definition `EMP : (1)CSL = RET one`;;
-let PROP_DEF = new_definition `PROP (p:bool) : (1)CSL = if p then EMP else FAIL`;;
+(* Characterize TO_MSL success: extract the witnessing footprint. *)
+let TO_MSL_SPEC = prove(
+  `!P:A->RES->bool. !h b rm.
+     IS_FUNCTIONAL P /\ TO_MSL P h = SOME (b, rm) ==>
+     ?ft. P b ft /\ IS_SUB ft h /\ rm = REMOVE h ft`,
+  REPEAT GEN_TAC THEN REWRITE_TAC [TO_MSL_DEF] THEN
+  COND_CASES_TAC THENL [ALL_TAC; MESON_TAC [option_DISTINCT]] THEN
+  REWRITE_TAC [option_INJ; PAIR_EQ] THEN STRIP_TAC THEN
+  EXISTS_TAC `@ft:RES. ?b:A. P b ft /\ IS_SUB ft h` THEN
+  MP_TAC (SPECL [`P:A->RES->bool`; `h:RES`] FUNCTIONAL_SELECT) THEN
+  ASM_MESON_TAC []);;
 
-(* BIND: run p on r to get footprint ft_p, then run (f a) on the remainder
-   REMOVE r ft_p, and combine the two footprints via JOIN. *)
-let BIND_DEF = new_definition `BIND (p:(A)CSL) (f:A->(B)CSL) : (B)CSL =
-  CSLProp (\r:RES.
-    match RUN p r with
-    | NONE -> NONE
-    | SOME (ft_p, a) ->
-      match RUN (f a) (REMOVE r ft_p) with
-      | NONE -> NONE
-      | SOME (ft_f, b) ->
-        match JOIN (SOME ft_p) (SOME ft_f) with
-        | NONE -> NONE
-        | SOME ft -> SOME (ft, b))`;;
+(* Introduce TO_MSL success from a known footprint. *)
+let TO_MSL_INTRO = prove(
+  `!P:A->RES->bool. !h b ft.
+     IS_FUNCTIONAL P /\ P b ft /\ IS_SUB ft h ==>
+     TO_MSL P h = SOME (b, REMOVE h ft)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC [TO_MSL_DEF] THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?b:A ft:RES. P b ft /\ IS_SUB ft h` (fun th -> REWRITE_TAC [th]) THENL [
+    ASM_MESON_TAC []; ALL_TAC] THEN
+  MP_TAC (SPECL [`P:A->RES->bool`; `h:RES`] FUNCTIONAL_SELECT) THEN
+  ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
+  REWRITE_TAC [option_INJ; PAIR_EQ] THEN
+  UNDISCH_TAC `IS_FUNCTIONAL (P:A->RES->bool)` THEN
+  REWRITE_TAC [IS_FUNCTIONAL_DEF] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM (MP_TAC o SPECL [`h:RES`;
+    `(@b:A. ?ft. P b ft /\ IS_SUB ft h)`; `b:A`;
+    `(@ft:RES. ?b:A. P b ft /\ IS_SUB ft h)`; `ft:RES`]) THEN
+  ASM_MESON_TAC []);;
 
-let SEQ_DEF = new_definition `SEQ (p:(A)CSL) (q:(B)CSL) : (B)CSL = BIND p (\(_:A). q)`;;
-let MAP_DEF = new_definition `MAP (f:A->B) (p:(A)CSL) : (B)CSL = BIND p (\a. RET (f a))`;;
-let STAR_DEF = new_definition `STAR (p:(A)CSL) (q:(B)CSL) : (A#B)CSL =
-  BIND p (\a. MAP (\b. (a,b)) q)`;;
+(* Direction 2: every functional SL predicate induces a valid MSL computation. *)
+let TO_MSL_VALID = prove(
+  `!P:A->RES->bool. IS_FUNCTIONAL P ==> IS_VALID_MSL (TO_MSL P)`,
+  GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC [IS_VALID_MSL_DEF] THEN CONJ_TAC THENL [
+    (* Substate: REMOVE h ft <= h *)
+    REPEAT STRIP_TAC THEN
+    MP_TAC (SPECL [`P:A->RES->bool`; `h:RES`; `b:A`; `rm:RES`] TO_MSL_SPEC) THEN
+    ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
+    MP_TAC (SPECL [`h:RES`; `ft:RES`] REMOVE_THM) THEN
+    ASM_REWRITE_TAC [] THEN MESON_TAC [IS_SUB_DEF; JOIN_COMM];
 
-(* EXISTS: requires a coherence side-condition *)
-let EXISTS_DEF = new_definition `EXISTS (f:A->(B)CSL) : (B)CSL =
-  CSLProp (\r:RES.
-    if ?a. IS_SOME (RUN (f a) r)
-    then RUN (f (@a. IS_SOME (RUN (f a) r))) r
-    else NONE)`;;
-
-(* ========================================================================= *)
-(* Characterization theorems: VALID <-> IS_PRECISE via ERASE / LIFT          *)
-(* ========================================================================= *)
-
-(* Thm 1: VALID p ==> IS_PRECISE (ERASE p)
-   Proof: by monotonicity, any two fixed-point substates of x
-   produce the same result on x, hence are equal. *)
-
-(* Thm 2: IS_PRECISE (SLProp q) ==> VALID (LIFT (SLProp q))
-   Proof: tightness by IS_SUB_REFL + precision;
-   monotonicity by IS_SUB_TRANS + precision. *)
-
-(* Thm 3 (round-trip):
-   IS_PRECISE (SLProp q) ==> ERASE (LIFT (SLProp q)) = SLProp q
-   VALID p ==> LIFT (ERASE p) = p    (when A = 1) *)
-
-(* Thm 4 (main characterization):
-   IS_PRECISE (SLProp q) <=> ?p:(1)CSL. VALID p /\ ERASE p = SLProp q *)
-
-(* ========================================================================= *)
-(* Validity Proofs                                                           *)
-(* ========================================================================= *)
-
-(* TODO: rewrite validity proofs for footprint-passing combinators.
-   Key structure for BIND_VALID:
-     VALID p /\ VALID (f a) ==>
-     - tightness: ft_p is a fixed point of p, ft_f of (f a);
-       REMOVE ft ft_p = ft_f (since ft is JOIN of ft_p and ft_f);
-       run (f a) on ft_f returns (ft_f, b), so BIND on ft returns (ft, b).
-     - monotonicity: p returns same ft_p on any r' >= r (by p's monotonicity);
-       REMOVE r' ft_p >= REMOVE r ft_p, so (f a) returns same ft_f
-       (by (f a)'s monotonicity); JOIN ft_p ft_f is unchanged. *)
-
-(* TODO: EXISTS_VALID needs a coherence condition:
-     !a b r. IS_SOME(RUN (f a) r) /\ IS_SOME(RUN (f b) r)
-       ==> RUN (f a) r = RUN (f b) r
-   Without this, epsilon-chosen witness may change after extension. *)
+    (* Frame preservation *)
+    REPEAT STRIP_TAC THEN
+    MP_TAC (SPECL [`P:A->RES->bool`; `h:RES`; `b:A`; `rm:RES`] TO_MSL_SPEC) THEN
+    ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
+    (* ft <= h <= h', so TO_MSL P h' succeeds with same (b, ft) *)
+    SUBGOAL_THEN `IS_SUB ft h'` ASSUME_TAC THENL [
+      ASM_MESON_TAC [IS_SUB_TRANS; IS_SUB_DEF]; ALL_TAC] THEN
+    MP_TAC (SPECL [`P:A->RES->bool`; `h':RES`; `b:A`; `ft:RES`] TO_MSL_INTRO) THEN
+    ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
+    EXISTS_TAC `REMOVE h' ft` THEN ASM_REWRITE_TAC [] THEN
+    (* JOIN (REMOVE h ft) frm = REMOVE h' ft by assoc + cancellation *)
+    MP_TAC (SPECL [`h:RES`; `ft:RES`] REMOVE_THM) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
+    MP_TAC (SPECL [`h':RES`; `ft:RES`] REMOVE_THM) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
+    MP_TAC (SPECL [`SOME (ft:RES)`;
+      `JOIN (SOME (REMOVE h ft)) (SOME frm)`;
+      `SOME (REMOVE h' ft)`] JOIN_CANCEL_LEFT) THEN
+    ANTS_TAC THENL [
+      REWRITE_TAC [GSYM JOIN_ASSOC] THEN ASM_REWRITE_TAC [IS_SOME_SOME];
+      ASM_MESON_TAC [option_INJ]]
+  ]);;
