@@ -1,49 +1,46 @@
 (*==============================================================================
 
 Monadic Separation Logic (MSL): a monadic reformulation of a class of separation
--logic predicates of functional nature as heap-dependent computations. This
-fragment has the benifit of efficient dynamic checking and deterministic search
-in entailment proofs. This fragment is shown to be interesting enough to write
-commonly seen separation-logic specifications, e.g., recursive representation
-predicates for linked data structures.
+-logic predicates of "functional" nature as well-behaved heap-reading-and-carving
+computations. This fragment has the benifit of efficient dynamic checking (cf. CN)
+and effective goal-directed search in entailment proofs (cf. RefinedC). We give a
+formal treatment of this fragment in this file.
 
 Traditional separation-logic assertions are defined by an arbitrary set of
 subheaps that satisfy the assertion:
     
   SL ≔ (RES)set     [(A)set is a shorthand for A → bool] .
 
-We can define a restriction operation to get the subheaps of a given (full)
-heap that satisfy the assertion:
-  
+This is a "tight heaplet" semantics, meaning it is satisfied only when the exact
+subheap is given (called "footprint" when a full heap is given). We can define a
+RESTRICT operation on assertions to get the possible footprints of a given heap:
+
   RESTRICT : SL → RES → (RES)set
-  RESTRICT P h = {h' | h' ≼ h ∧ P h'}
+  RESTRICT P h = {ft | ft ≼ h ∧ P ft}
                = {h' | h' ≼ h} ∩ P        [≼ is the substate relation] .
 
-This restriction operation tells us, given a full heap, which parts of it could
-potentially be the occupied substate (known as footprint). A precise separation
--logic assertion is one that for any given heap, there is at most one subheap
-that satisfies it:
+A "precise" separation-logic assertion is one that for any given heap, there is
+at most one footprint:
 
   IS_PRECISE : SL → bool
   IS_PRECISE P ⇔ ∀h. |RESTRICT P h| ≤ 1
                ⇔ ∀h h1 h2. h1 ≼ h ∧ h2 ≼ h ∧ P h1 ∧ P h2 ⇒ h1 = h2 .
 
-This means the footprint of a precise separation-logic assertion is unique. For
-example, the predicate ∃v. x ↦ v is precise, and its footprint is {x ↦ v0} when
-x is in the domain of given full heap and v0 is the value at x.
+This means the footprints of a precise separation-logic assertion are unique. For
+example, the predicate ∃v. x ↦ v is precise with footprint {x ↦ h x} when x is in
+the domain of given full heap h. And ⎡p⎤ is precise with the empty footprint.
 
 We are especially interested in a class of precise separation-logic assertions
 that are "functional". We say a separation-logic predicate (i.e., functions that
 return a SL assertion) is functional if some of its arguments can be viewed as
-outputs: given a full heap, the footprint subheap and the outputs are uniquely
+"outputs": given a full heap, the footprint subheap and the outputs are uniquely
 determined. For example, x ↦ _ is a functional predicate where the address is
-given as the input and the value is the output; on the other hand, _ ↦ v is not
-a functional predicate because there might be multiple v storing at different
-addresses.
+given as the input and the stored value is the output because it can be read out
+from the heap; on the other hand, _ ↦ v is not a functional predicate because
+there might be multiple v storing at different addresses.
 
-More precisely, a functional separation-logic predicate should satisfy
-uniqueness properties on footprint and output (assuming inputs are fixed). For
-a separation-logic predicate P : OUT → SL:
+Formally, a functional separation-logic predicate should satisfy two uniqueness
+properties on footprint and output (assuming inputs are fixed). For P: OUT → SL,
 
   (1) IS_PRECISE (∃b:OUT. P b)       [∃ here is lifted into SL]
    ⇔ IS_PRECISE (⋃{P b | b:OUT})
@@ -58,44 +55,50 @@ to the following:
         ⇒ b1 = b2 ∧ ft1 = ft2 .
 
 Note that any precise separation-logic assertion can be trivially viewed as a
-functional separation-logic predicate by taking the OUT type as unit.
+functional separation-logic predicate by viewing the OUT type as unit.
 
-Finally, a functional separation-logic predicate P can be equivalently viewed as
-a heap-dependent computation that runs on a heap and returns an output and the
-remainder subheap with footprint carved out. This TO_MSL conversion operation
-can be specified as:
+Functional separation-logic predicates are interesting because they can be
+equivalently viewed as well-behaved heap-dependent computation that runs on a
+heap and returns an output and the remainder subheap (with the occupied heaplet
+carved out). This TO_MSL conversion operation can be specified as:
 
   (A)MSL ≔ RES → (A × RES) option
   
   TO_MSL : (OUT → SL) → (OUT)MSL
   TO_MSL P = λh. 
-    if ∃b ft. P b ft ∧ ft ≼ h then
-      SOME (@(b, rm). ∃ft. P b ft ∧ ft ≼ h ∧ rm = REMOVE h ft)
+    if ∃b ft. P b ft ∧ ft ≼ h then      [if a footprint and output exists]
+      SOME (@(b, rm). ∃ft. P b ft ∧ ft ≼ h ∧ rm = REMOVE h ft) 
+                              [return the remainder as well as the output]
     else NONE
   [@ is the Hilbert choice operator] .
 
-Conversely, the FROM_MSL conversion operation can be specified as:
+Conversely, the FROM_MSL conversion extracts the functional separation-logic
+predicate from a well-behaved MSL computation:
 
   FROM_MSL : (OUT)MSL → (OUT → SL)
   FROM_MSL f ⇔ λb h. f h = SOME (b, UNIT)  [UNIT is the empty subheap]
 
-We can prove the following equivalence between the computational view and the
-separation-logic predicate view:
+We can prove the following "bijective correspondence" to transform between the
+computational view and the separation-logic predicate view:
 
-  IS_FUNCTIONAL P ⇒ IS_VALID_MSL (TO_MSL P)
-  IS_VALID_MSL f ⇒ IS_FUNCTIONAL (FROM_MSL f)
-  
+  (1) IS_FUNCTIONAL P ⇒ IS_VALID_MSL (TO_MSL P) ∧ P = FROM_MSL (TO_MSL P)
+  (2) IS_VALID_MSL f ⇒ IS_FUNCTIONAL (FROM_MSL f) ∧ f = TO_MSL (FROM_MSL f) .
+
+Where well-behavedness is defined as:
+
   IS_VALID_MSL : (OUT)MSL → bool
   IS_VALID_MSL f ⇔
-    (∀h b rm. f h = SOME (b, rm) ⇒ rm ≼ h)           [substate]
     (∀h b rm. f h = SOME (b, rm) ⇒
-       ∀frm. h#frm ⇒ f (h⊎frm) = SOME (b, rm⊎frm))   [preservation]
+       rm ≼ h ∧ f (REMOVE h rm) = SOME (b, UNIT)) ∧   [footprint tightness]
+       ∀frm. h#frm ⇒ f (h⊎frm) = SOME (b, rm⊎frm))     [frame preservation] 
        
+       ∃₁ft. ft ≼ h ∧ f ft = SOME (b, UNIT)  [alt. for footprint tightness]
+    
     [# is the separation operator, ⊎ is the disjoint union operator] .
 
 But more importantly, many functional separation-logic predicates can be defined
 directly as a monadic computation. For example, the predicate _ ↦ _ can be
-redefined as:
+redefined as a directly executable computation:
 
   data_at : addr → (val)MSL  [assume RES ≔ addr → val]
   data_at x h =
@@ -116,10 +119,12 @@ the output of the first computation as inputs to the next computation:
     | NONE -> NONE
     | SOME (b, rm) -> f b (REMOVE h rm)
 
-Apart from these basic monadic operations, we can define some other useful
-operations that also preserve well-behavedness. For example, using these
-operations and the computational view of data_at, the traditioanl singly-linked
-list predicate
+Apart from these basic monadic operations, this fragment is closed under guards
+(asserting facts) and conditionals (branching on facts). These allow us to write
+common separation-logic assertions in program specifications, such as recursive
+representation predicates for linked data structures.
+
+For example, the traditional singly-linked list predicate
 
   sll_at : (addr: val) -> (values: val list) -> SL
   sll p l =
@@ -128,19 +133,30 @@ list predicate
     | hd :: tl ->
       ∃hd nxt. ⎡p ≠ null⎤ ⋆ p ↦ (hd,nxt) ⋆ sll nxt tl
 
-can be rewritten as a monadic computation:
+can be rewritten as a monadic computation and proved well-behaved:
 
   sll_at : addr → (val list)MSL
   sll_at p =
-    if l = [] then
-      RET []
+    if l = [] then RET []
     else
       BIND (data_at p) (λhd.
       BIND (data_at (p + 1)) (λnxt.
       BIND (sll_at nxt) (λtl.
       RET (hd :: tl))))
 
+We prove entailment laws for this fragment, including commutative monadic laws,
+assertion extraction, and monotonicity:
+  
+  (1) Commutative monadic laws: f >>= (\x. g >>= \y. k x y) = g >>= (\y. f >>= \x. k x y)
+        [Requires footprint tightness]
+  (2) Associativity: (f >>= g) >>= h = f >>= (λx. g x >>= h)
+  (3) Left unit: RET x >>= f = f x
+  (4) Right unit: f >>= RET = f
 
+Note application of monotonicity laws is not guaranteed to preserve well-behavedness.
+And we can show a form of "cancellation law" for MSL computations, which is the basis
+for effective goal-directed search in entailment proofs (cf. RefinedC).
+  
 ==============================================================================*)
 
 (*------------------------------------------------------------------------------
