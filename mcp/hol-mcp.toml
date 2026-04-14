@@ -11,3 +11,14 @@ timeout = 600
 
 # Maximum characters for eval output before truncation.
 max_output_chars = 4000
+
+# Auto-record proof tactics to this directory (recording.jsonl).
+# Relative paths resolved against CWD. Also settable via HOL_RECORDING_DIR env var.
+# recording_dir = "/path/to/work"
+
+# Replay a tactic prefix on startup to restore proof state.
+# replay_init: ML file to #use before replaying (e.g., load project dependencies).
+# replay_prefix: JSONL file of tactics to replay (same format as recording.jsonl).
+# Also settable via HOL_REPLAY_INIT and HOL_REPLAY_PREFIX env vars.
+# replay_init = "/path/to/init.ml"
+# replay_prefix = "/path/to/prefix.jsonl"

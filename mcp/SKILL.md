@@ -190,6 +190,8 @@ CONV_TAC WORD_RULE
 - **hol_load** — load a HOL Light file via `needs` (e.g., `hol_load` with file `"Library/words.ml"`)
 - **hol_interrupt** — send SIGINT to cancel a hung tactic (e.g., when `MESON_TAC` diverges)
 - **hol_help** — return this tactic reference (SKILL.md). Call before your first proof.
+- **start_recording** — record all tactic applications to a JSONL file for later replay
+- **stop_recording** — stop recording and return the file path
 
 ## General advice
 
