@@ -140,7 +140,7 @@ apply_tactic  "DISJ2_TAC THEN REWRITE_TAC[EVEN_ADD] THEN ASM_REWRITE_TAC[NOT_EVE
 8. **hol_status** — check if HOL Light is alive (useful for debugging)
 9. **hol_restart** — restart HOL Light if it has died or is in a bad state
 
-**Utility tools:** **hol_type** (get term types), **hol_load** (load files), **hol_interrupt** (cancel hung tactics), **hol_help** (tactic reference)
+**Utility tools:** **hol_type** (get term types), **hol_load** (load files), **hol_interrupt** (cancel hung tactics), **hol_help** (tactic reference), **start_recording** / **stop_recording** (record tactics to JSONL for replay)
 
 ---
 

@@ -39,15 +39,19 @@ print(f"DMTCP port: {port}", flush=True)
 
 env = os.environ.copy()
 try:
-    r = subprocess.run(['opam', 'env', '--switch', HOL_DIR + '/', '--set-switch'],
-                       capture_output=True, text=True)
-    for line in r.stdout.strip().split('\n'):
-        if '=' in line and "'" in line:
-            key = line.split('=', 1)[0].strip()
-            val = line.split("'")[1]
-            env[key] = val
-except FileNotFoundError:
-    pass
+    from server import _opam_env
+    env = _opam_env()
+except ImportError:
+    try:
+        r = subprocess.run(['opam', 'env', '--switch', HOL_DIR + '/', '--set-switch'],
+                           capture_output=True, text=True)
+        for line in r.stdout.strip().split('\n'):
+            if '=' in line and "'" in line:
+                key = line.split('=', 1)[0].strip()
+                val = line.split("'")[1]
+                env[key] = val
+    except FileNotFoundError:
+        pass
 
 cmd = [
     'dmtcp_launch', '--new-coordinator', '--ckptdir', CKPT_DIR,

@@ -137,9 +137,32 @@ let mcp_json_apply_tactics (tacs : tactic list) =
       "{\"proved\":true,\"theorem\":" ^ mcp_json_string (string_of_thm th) ^
       ",\"steps\":" ^ string_of_int !steps ^ "}"
     else
-      let gs = mcp_json_goalstate () in
-      let n = String.length gs in
-      String.sub gs 0 (n - 1) ^ ",\"steps\":" ^ string_of_int !steps ^ "}"
+      let buf = Buffer.create 256 in
+      (match !current_goalstack with
+      | [] ->
+        Buffer.add_string buf "{\"goals\":[],\"num_subgoals\":0,\"total_goals\":0"
+      | [_, gl, _] ->
+        let n = List.length gl in
+        Buffer.add_string buf "{\"goals\":";
+        mcp_buf_goals buf gl;
+        Buffer.add_string buf ",\"num_subgoals\":";
+        Buffer.add_string buf (string_of_int (min 1 n));
+        Buffer.add_string buf ",\"total_goals\":";
+        Buffer.add_string buf (string_of_int n)
+      | (_, gl, _) :: (_, gl0, _) :: _ ->
+        let n = List.length gl in
+        let p = n - List.length gl0 in
+        let num_sub = if p < 1 then 1 else p + 1 in
+        Buffer.add_string buf "{\"goals\":";
+        mcp_buf_goals buf gl;
+        Buffer.add_string buf ",\"num_subgoals\":";
+        Buffer.add_string buf (string_of_int num_sub);
+        Buffer.add_string buf ",\"total_goals\":";
+        Buffer.add_string buf (string_of_int n));
+      Buffer.add_string buf ",\"steps\":";
+      Buffer.add_string buf (string_of_int !steps);
+      Buffer.add_char buf '}';
+      Buffer.contents buf
   with
   | Failure msg ->
     "{\"error\":" ^ mcp_json_string msg ^

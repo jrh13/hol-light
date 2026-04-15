@@ -349,7 +349,10 @@ def test_recording_backtrack_removes_entry(tmp_path):
     server.stop_recording()
     with open(path) as f:
         entries = [json.loads(line) for line in f if line.strip()]
-    assert len(entries) == 0
+    assert len(entries) == 2
+    assert entries[0]["action"] == "tactic"
+    assert entries[1]["action"] == "backtrack"
+    assert entries[1]["steps"] == 1
 
 
 def test_recording_skips_failed_tactic(tmp_path):
@@ -405,5 +408,8 @@ def test_recording_backtrack_removes_last(tmp_path):
     server.stop_recording()
     with open(path) as f:
         entries = [json.loads(line) for line in f if line.strip()]
-    assert len(entries) == 1
+    assert len(entries) == 3
     assert entries[0]["tactic"] == "GEN_TAC"
+    assert entries[1]["tactic"] == "GEN_TAC"
+    assert entries[2]["action"] == "backtrack"
+    assert entries[2]["steps"] == 1

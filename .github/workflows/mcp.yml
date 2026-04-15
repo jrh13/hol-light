@@ -12,6 +12,7 @@ on:
 jobs:
   mcp-tests:
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     name: MCP unit & smoke tests
 
     steps:
