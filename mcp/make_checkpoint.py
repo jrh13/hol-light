@@ -14,7 +14,7 @@ SENTINEL = "HOL_MCP_CKPT_READY"
 # Parse args
 include_dirs = []
 extra_loads = []
-ckpt_name = "noledit"
+ckpt_name = "base"
 i = 1
 while i < len(sys.argv):
     if sys.argv[i] == "-I" and i + 1 < len(sys.argv):

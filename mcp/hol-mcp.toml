@@ -4,7 +4,7 @@
 
 # Which checkpoint to use (looks for hol-<name>.ckpt/ in HOL Light root).
 # Create with: python3 mcp/make_checkpoint.py --name <name> [options]
-checkpoint = "noledit"
+checkpoint = "base"
 
 # Timeout in seconds for HOL Light commands.
 timeout = 600

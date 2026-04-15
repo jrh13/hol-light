@@ -40,7 +40,7 @@ def _load_config():
 
 _config, CONFIG_PATH = _load_config()
 TIMEOUT = _config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600")))
-CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "noledit"))
+CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "base"))
 MAX_OUTPUT_CHARS = _config.get("max_output_chars", int(os.environ.get("HOL_MAX_OUTPUT", "4000")))
 
 from mcp.server.fastmcp import FastMCP
