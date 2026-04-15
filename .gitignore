@@ -27,3 +27,4 @@ unit_tests_inlined.ml
 unit_tests.byte
 unit_tests.native
 hol-*.ckpt
+__pycache__/

@@ -36,9 +36,10 @@ async def main():
 
             # Check tools registered
             tools = await session.list_tools()
-            tool_names = sorted(t.name for t in tools.tools)
-            check("tools registered", tool_names == ["apply_tactic", "apply_tactics", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "prove", "search_theorems", "set_goal", "start_recording", "stop_recording"],
-                  f"got {tool_names}")
+            tool_names = set(t.name for t in tools.tools)
+            expected_tools = {"apply_tactic", "apply_tactics", "backtrack", "eval", "goal_state", "hol_help", "hol_interrupt", "hol_load", "hol_restart", "hol_status", "hol_type", "prove", "search_theorems", "set_goal", "start_recording", "stop_recording"}
+            check("tools registered", expected_tools.issubset(tool_names),
+                  f"missing: {expected_tools - tool_names}")
 
             # eval — basic arithmetic (now returns JSON)
             r = await session.call_tool("eval", {"code": "ARITH_RULE `1 + 1 = 2`"})

@@ -534,6 +534,8 @@ def hol_restart() -> str:
                 pass
             _proc = None
         _helpers_loaded = False
+        global _recording_flushed
+        _recording_flushed = 0
         _drain_queue()
         _reader_buf.clear()
         _start_hol()
@@ -651,8 +653,12 @@ def _record_tactics_batch(tactics, result_json_str):
         succeeded = result["steps"]
     else:
         return
-    for tac in tactics[:succeeded]:
-        _recording.append({"action": "tactic", "tactic": tac, "total_goals": 0})
+    for i, tac in enumerate(tactics[:succeeded]):
+        if i == succeeded - 1:
+            total = 0 if result.get("proved") else result.get("total_goals", 0)
+        else:
+            total = 0
+        _recording.append({"action": "tactic", "tactic": tac, "total_goals": total})
     if succeeded > 0:
         _flush_recording()
 
@@ -774,7 +780,7 @@ def start_recording(path: str) -> str:
         _recording = []
         global _recording_flushed
         _recording_flushed = 0
-        _flush_recording()
+        open(path, 'w').close()  # truncate any existing file
     return f"Recording started: {path}"
 
 
