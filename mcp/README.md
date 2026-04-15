@@ -78,7 +78,7 @@ Create named checkpoints:
 ```bash
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
 
-# Bare HOL Light (~75s)
+# Base HOL Light (~75s)
 python3 mcp/make_checkpoint.py --name base
 
 # With s2n-bignum ARM infrastructure (~5-10min)
