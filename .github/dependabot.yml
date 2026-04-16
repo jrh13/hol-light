@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "/mcp"
+    schedule:
+      interval: "weekly"
+    # Only alert on our direct dependencies, not transitive ones
+    # we can't control (pulled in by the mcp SDK).
+    allow:
+      - dependency-name: "mcp"
+      - dependency-name: "pytest"

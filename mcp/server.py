@@ -40,7 +40,7 @@ def _load_config():
 
 _config, CONFIG_PATH = _load_config()
 TIMEOUT = _config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600")))
-CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "noledit"))
+CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "base"))
 MAX_OUTPUT_CHARS = _config.get("max_output_chars", int(os.environ.get("HOL_MAX_OUTPUT", "4000")))
 
 from mcp.server.fastmcp import FastMCP
@@ -213,7 +213,14 @@ def _replay_prefix():
                 if not line:
                     continue
                 entry = json.loads(line)
-                if entry.get("action") == "tactic":
+                if entry.get("action") == "backtrack":
+                    steps = entry.get("steps", 1)
+                    removed = 0
+                    while removed < steps and replayed:
+                        replayed.pop()
+                        _eval_raw("b()")
+                        removed += 1
+                elif entry.get("action") == "tactic":
                     result, _ = _eval_raw(f'e({entry["tactic"]})')
                     if _is_error_output(_strip_ansi(result)):
                         for _ in range(len(replayed)):
@@ -224,9 +231,9 @@ def _replay_prefix():
         for _ in range(len(replayed)):
             _eval_raw("b()")
         return
-    global _recording
+    global _recording, _recording_flushed
     _recording = replayed
-    _flush_recording()
+    _recording_flushed = len(replayed)  # entries already on disk
 
 
 def _eval_raw(code: str, timeout: int = None) -> tuple[str, float]:
@@ -526,6 +533,8 @@ def hol_restart() -> str:
                 pass
             _proc = None
         _helpers_loaded = False
+        global _recording_flushed
+        _recording_flushed = len(_recording)
         _drain_queue()
         _reader_buf.clear()
         _start_hol()
@@ -575,14 +584,21 @@ def _json_quote(s: str) -> str:
 # --- Proof recording helpers ---
 
 def _flush_recording():
-    """Write the current recording to disk.
-    Rewrites the full file each time so backtrack deletions are reflected.
+    """Append new entries to the recording file.
+    Only writes entries added since the last flush (tracked by _recording_flushed).
+    Backtrack writes a marker so replay can skip undone tactics.
     """
     import json
-    if _recording_path:
-        with open(_recording_path, 'w') as f:
-            for entry in _recording:
-                f.write(json.dumps(entry) + "\n")
+    if not _recording_path:
+        return
+    with open(_recording_path, 'a') as f:
+        global _recording_flushed
+        for entry in _recording[_recording_flushed:]:
+            f.write(json.dumps(entry) + "\n")
+        _recording_flushed = len(_recording)
+
+
+_recording_flushed = 0  # index of first unflushed entry
 
 
 def _record_tactic(tactic_str, result_json_str):
@@ -602,16 +618,21 @@ def _record_tactic(tactic_str, result_json_str):
 
 
 def _record_backtrack(steps):
-    """Remove the last N tactic entries from the recording."""
+    """Record a backtrack marker and remove entries from in-memory list."""
+    global _recording_flushed
     if not _recording_path:
         return
     removed = 0
     while removed < steps and _recording:
         if _recording[-1]["action"] == "tactic":
             _recording.pop()
+            if _recording_flushed > len(_recording):
+                _recording_flushed = len(_recording)
             removed += 1
         else:
             break
+    if removed > 0:
+        _recording.append({"action": "backtrack", "steps": removed})
     _flush_recording()
 
 
@@ -625,14 +646,18 @@ def _record_tactics_batch(tactics, result_json_str):
     except (json.JSONDecodeError, TypeError):
         return
     if "error" in result and "step" in result:
-        # Error at step N: record tactics 0..N-1 (0-indexed, step is 1-indexed)
-        succeeded = result["step"] - 1
+        # step = number of tactics that succeeded before the error
+        succeeded = result["step"]
     elif "steps" in result:
         succeeded = result["steps"]
     else:
         return
-    for tac in tactics[:succeeded]:
-        _recording.append({"action": "tactic", "tactic": tac, "total_goals": 0})
+    for i, tac in enumerate(tactics[:succeeded]):
+        if i == succeeded - 1:
+            total = 0 if result.get("proved") else result.get("total_goals", 0)
+        else:
+            total = 0
+        _recording.append({"action": "tactic", "tactic": tac, "total_goals": total})
     if succeeded > 0:
         _flush_recording()
 
@@ -647,22 +672,43 @@ def _extract_e_tactic(code: str) -> str | None:
     depth = 1
     in_str = False
     in_backtick = False
+    in_comment = 0
     esc = False
-    for i in range(start, len(stripped)):
+    i = start
+    while i < len(stripped):
         c = stripped[i]
         if esc:
             esc = False
+            i += 1
+            continue
+        if in_comment > 0:
+            if c == '(' and i + 1 < len(stripped) and stripped[i + 1] == '*':
+                in_comment += 1
+                i += 2
+            elif c == '*' and i + 1 < len(stripped) and stripped[i + 1] == ')':
+                in_comment -= 1
+                i += 2
+            else:
+                i += 1
             continue
         if c == '\\' and in_str:
             esc = True
+            i += 1
             continue
         if c == '"' and not in_backtick:
             in_str = not in_str
+            i += 1
             continue
         if c == '`' and not in_str:
             in_backtick = not in_backtick
+            i += 1
             continue
         if in_str or in_backtick:
+            i += 1
+            continue
+        if c == '(' and i + 1 < len(stripped) and stripped[i + 1] == '*':
+            in_comment = 1
+            i += 2
             continue
         if c == '(':
             depth += 1
@@ -670,6 +716,7 @@ def _extract_e_tactic(code: str) -> str | None:
             depth -= 1
             if depth == 0:
                 return stripped[start:i].strip()
+        i += 1
     return None
 
 
@@ -730,7 +777,9 @@ def start_recording(path: str) -> str:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         _recording_path = path
         _recording = []
-        _flush_recording()
+        global _recording_flushed
+        _recording_flushed = 0
+        open(path, 'w').close()  # truncate any existing file
     return f"Recording started: {path}"
 
 

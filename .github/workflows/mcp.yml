@@ -1,0 +1,44 @@
+name: MCP Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [master]
+    paths: ['mcp/**']
+  push:
+    branches: [master]
+    paths: ['mcp/**']
+
+jobs:
+  mcp-tests:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    name: MCP unit & smoke tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install opam & build HOL Light
+        run: |
+          sudo apt update && sudo apt install -y opam xdot
+          opam init --disable-sandboxing
+          make switch
+          eval $(opam env)
+          make
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install MCP dependencies
+        run: cd mcp && uv sync
+
+      - name: Run unit tests
+        run: |
+          eval $(opam env)
+          cd mcp && uv run pytest test_server.py -v
+
+      - name: Run smoke tests
+        run: |
+          eval $(opam env)
+          cd mcp && uv run python smoke_test.py

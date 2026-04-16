@@ -47,6 +47,8 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 | `hol_restart` | Kill and restart the HOL Light subprocess | Status message |
 | `hol_status` | Check process health, uptime, config, checkpoint | Structured JSON |
 | `hol_help` | Return tactic reference and proof guide (SKILL.md) | Markdown text |
+| `start_recording` | Start recording proof tactics to a JSONL file | Status message |
+| `stop_recording` | Stop recording and return the file path | Status message |
 
 `eval` returns `{"success", "output", "output_truncated", "full_output_chars", "time_seconds"}`. Large outputs are truncated to `max_output_chars` (default 4000, configurable). Override per-call with `max_output_chars=N`.
 
@@ -76,7 +78,7 @@ Create named checkpoints:
 ```bash
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
 
-# Bare HOL Light (~75s)
+# Base HOL Light (~75s)
 python3 mcp/make_checkpoint.py --name base
 
 # With s2n-bignum ARM infrastructure (~5-10min)
@@ -136,8 +138,8 @@ The server includes a built-in `hol_help` tool that returns the full tactic refe
 
 ```bash
 cd mcp
-uv run pytest test_server.py -v       # 38 unit tests
-uv run python smoke_test.py           # 34 MCP integration checks
+uv run pytest test_server.py -v       # 48 unit tests
+uv run python smoke_test.py           # 37 MCP integration checks
 ```
 
 First run includes HOL Light startup (~75s cold, ~2s with checkpoint).
