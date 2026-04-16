@@ -233,8 +233,7 @@ def _replay_prefix():
         return
     global _recording, _recording_flushed
     _recording = replayed
-    _recording_flushed = 0
-    _flush_recording()
+    _recording_flushed = len(replayed)  # entries already on disk
 
 
 def _eval_raw(code: str, timeout: int = None) -> tuple[str, float]:
@@ -535,7 +534,7 @@ def hol_restart() -> str:
             _proc = None
         _helpers_loaded = False
         global _recording_flushed
-        _recording_flushed = 0
+        _recording_flushed = len(_recording)
         _drain_queue()
         _reader_buf.clear()
         _start_hol()
