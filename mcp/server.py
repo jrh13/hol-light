@@ -646,8 +646,8 @@ def _record_tactics_batch(tactics, result_json_str):
     except (json.JSONDecodeError, TypeError):
         return
     if "error" in result and "step" in result:
-        # Error at step N: record tactics 0..N-1 (0-indexed, step is 1-indexed)
-        succeeded = result["step"] - 1
+        # step = number of tactics that succeeded before the error
+        succeeded = result["step"]
     elif "steps" in result:
         succeeded = result["steps"]
     else:
