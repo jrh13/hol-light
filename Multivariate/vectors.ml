@@ -1818,7 +1818,7 @@ let EXPAND_VSUM_CONV =
     let nty = hd(tl(snd(dest_type(snd(dest_fun_ty(type_of ftm)))))) in
     let ilist = [nty,n_ty] in
     let ifn = inst ilist and tfn = INST_TYPE ilist in
-    if n < m then
+    if n </ m then
       let th1 = INST [ftm,ifn f_tm; mtm,m_tm; ntm,n_tm] (tfn pth_0) in
       MP th1 (EQT_ELIM(NUM_LT_CONV(lhand(concl th1))))
     else if n = m then CONV_RULE (RAND_CONV(TRY_CONV BETA_CONV))
