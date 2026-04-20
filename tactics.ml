@@ -922,7 +922,26 @@ let flush_goalstack() =
   let l = !current_goalstack in
   current_goalstack := [hd l];;
 
-let e tac = refine(by(VALID tac));;
+(* CHECK_VARTYPES_TAC detects whether there are variables having the same    *)
+(* name but different types.                                                 *)
+
+let CHECK_VARTYPES_TAC: tactic =
+  fun (asl,w) ->
+    let fvars_concl = freesl (w::(map (concl o snd) asl)) in
+    let fvars_dest = map dest_var fvars_concl in
+    let fvars_sorted = sort (fun (n1,_) (n2,_) -> n1 < n2) fvars_dest in
+    let rec checkfn l =
+      match l with
+      | [] -> ()
+      | h::[] -> ()
+      | (v1,ty1)::(v2,ty2)::t ->
+        if v1 = v2 && ty1 <> ty2
+        then failwith ("var " ^ v1 ^ " appearing with different types: " ^
+            (string_of_type ty1) ^ " vs. " ^ (string_of_type ty2))
+        else checkfn ((v2,ty2)::t)
+    in checkfn fvars_sorted; ALL_TAC (asl,w);;
+
+let e tac = refine(by(VALID tac THEN CHECK_VARTYPES_TAC));;
 
 let r n = refine(rotate n);;
 
