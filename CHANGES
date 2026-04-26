@@ -8,6 +8,105 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 23rd Apr 2026       Library/ringtheory.ml, Library/fieldtheory.ml, 100/transcendence.ml
+
+Adopted the "coeff" function from 100/transcendence.ml in the main ring theory
+file, with an equivalent but more direct definition. Added 28 new theorems
+about coefficient extraction for basic operations, the Cauchy product, degree
+interaction, polynomial characterization, and evaluation:
+
+        COEFF
+        COEFF_IN_CARRIER
+        COEFF_IN_CARRIER_ALT
+        COEFF_NONZERO_LE
+        COEFF_NONZERO_LE_DEG
+        COEFF_POLY_0
+        COEFF_POLY_1
+        COEFF_POLY_ADD
+        COEFF_POLY_CONST
+        COEFF_POLY_CONST_MUL
+        COEFF_POLY_MUL
+        COEFF_POLY_MUL_CONST
+        COEFF_POLY_NEG
+        COEFF_POLY_SUB
+        COEFF_POLY_SUM
+        FINITE_COEFF_SUPPORT
+        FUN_EQ_COEFF
+        POLY_DEG_EQ_COEFF
+        POLY_DEG_EQ_COEFF_FROM_LE
+        POLY_DEG_LE_COEFF
+        POLY_EVAL_COEFF
+        POLY_MUL_UNIVARIATE
+        POLY_TOP_EQ_0
+        RING_POLYNOMIAL_COEFF
+        RING_POLYNOMIAL_COEFF_BOUND
+        RING_POLYNOMIAL_COEFF_ZERO_FROM
+        RING_POLYNOMIAL_SUBRING_COEFF
+        RING_POWERSERIES_COEFF
+
+Also added helper lemmas LAMBDA_1_EQ, FINITE_FUN_FROM_1, MONOMIAL_DEG_ONE
+and moved EXISTS_FUN_FROM_1, FORALL_FUN_FROM_1 earlier in the file. Seven
+existing theorems are restated to use coeff in their statements:
+
+        POLY_DIVISION_GEN
+        POLY_EVAL_AT_0
+        POLY_EVAL_EXPAND
+        POLY_EXPAND
+        POLY_EXTEND_UNIVARIATE
+        POLY_TOP_NONZERO
+        POLY_TOP_TAIL
+
+Three proofs in Library/fieldtheory.ml are adjusted for the restated
+POLY_EXTEND_UNIVARIATE, and in 100/transcendence.ml the local coeff
+definition is replaced by a bridge lemma "coeff_x_monomial" connecting the
+ringtheory definition with the local x_monomial construct, and about 20
+proofs are simplified to one-line derivations from the new ringtheory
+theorems.
+
+Mon 20th Apr 2026       passim
+
+Fixed another case identified by Daniel Nezamabadi where polymorphic
+comparison was mistakenly being used on the bignum type, this one in
+Multivariate/vectors.ml; then assisted by Claude found and fixed many
+other instances of the same issue
+
+     - iterate.ml: EXPAND_NSUM_CONV, EXPAND_SUM_CONV
+     - printer.ml: DECIMAL printer
+     - calc_rat.ml: RAW_REAL_RAT_MUL_CONV
+     - calc_int.ml: is_realintconst, term_of_rat
+     - int.ml: is_intconst
+     - Library/calc_real.ml: REAL_FLOAT_MUL_CONV helper
+     - Library/bitmatch.ml: bitpat_matches, inst_bitpat_numeral, unword
+     - Library/isum.ml: EXPAND_ISUM_CONV
+
+Tue 14th Apr 2026       Library/tactician_light.ml [new file]
+
+Added "Tactician Light", a proof format translator for HOL Light, converting
+between interactive (g/e) and structured (prove) proof styles. It is inspired
+by Mark Adams' Tactician tool for HOL Light:
+
+  http://www.proof-technologies.com/tactician/
+
+which provided similar functionality via a "hiproof" representation and
+refactoring pipeline. This is a from-scratch reimplementation by Claude Code
+using string-based tactic recording rather than the original promotion/demotion
+mechanism. Although this simpler version requires some additional user work
+(e.g. saving a log of the tactic invocations to a file for processing by
+"i2s"), it is considerably simpler and less sensitive to OCaml internals.
+
+Mon 13th Apr 2026       mcp/*
+
+Merged an update from Ceren Kocaogullar adding proof recording tools
+"start_recording" and "stop_recording" to the MCP setup. This helps when
+the LLM is developing large proofs interactively in cases where the
+context window is exhausted or the session crashes. By retaining this
+record, the proof can resume where it left off.
+
+Sun 12th Apr 2026       mcp/SKILL.md
+
+Merged an update from Nevine Ebeid to the mcp/SKILL.md file that refines or
+corrects the explanations of several constructs and adds new pitfall warnings.
+
 Wed  8th Apr 2026       100/green.ml [new file], 100/isoperimetric.ml, Library/words.ml, Multivariate/measure.ml, Multivariate/transcendentals.ml, Multivariate/realanalysis.ml, Multivariate/cauchy.ml
 
 Added a proof of Green's theorem in a fairly general form, autoformalized by
@@ -199,6 +298,117 @@ the classic results proved are the Central Limit Theorem, Laws of Large
 Numbers (weak and strong), Fair Games Theorem (Doob optional stopping),
 Borel-Cantelli lemmas, martingale convergence and the Azuma-Hoeffding
 inequality.
+
+Mon  9th Mar 2026       Library/ringtheory.ml
+
+Added more elementary results in ring theory: the preservation of the UFD
+property in localization and in polynomial rings (the latter via Gauss's lemma,
+some forms of which are broken out, e.g. as POLY_PRIMITIVE_CONST_CANCEL), and
+the Eisenstein irreducibility criterion:
+
+        EISENSTEIN_IRREDUCIBILITY
+        EISENSTEIN_IRREDUCIBILITY_FRACTION_RING
+        EISENSTEIN_IRREDUCIBILITY_GEN
+        INTEGRAL_DOMAIN_LOCALIZATION
+        IRREDUCIBLE_PRIMITIVE_POLY_FRACTION_RING
+        LOCALEQUIV_MUL_CANCEL
+        MAKE_PRIMITIVE_IN_IDEAL
+        MONOMIAL_MUL_VAR_ONE
+        POLY_CLEAR_DENOMINATORS
+        POLY_CONST_DIVIDES_COEFFS
+        POLY_CONST_DIVIDES_COEFFS_EQ
+        POLY_CONST_DIVIDES_COEFFS_REV
+        POLY_MAKE_PRIMITIVE
+        POLY_MONOMIALS_ALT
+        POLY_MUL_VAR_COEFF_UNIVARIATE
+        POLY_PRIMITIVE_CONST_CANCEL
+        POLY_RING_HOMOMORPHISM_I
+        POLY_VAR_DIVIDES_UNIVARIATE
+        POLY_VAR_MONOMIAL_1
+        RING_DIVIDES_LOCALEQUIV
+        RING_PRIME_POLY_CONST
+        RING_PRIME_POLY_RING_MONO
+        RING_PRIME_POLY_VAR_UNIVARIATE
+        UFD_LOCALIZATION
+        UFD_POLY_RING
+
+Fri  6th Mar 2026       sets.ml, Library/grouptheory.ml, Library/permutations.ml, Library/symmetric_group.ml [new file]
+
+Added a definition of "solvable_group" to the group theory library with some
+of its basic properties, as well as additional material about permutations.
+Combining these, the new file Library/symmetric_group.ml gives a basic
+development of the symmetric group (the group of permutations on set) including
+its unsolvability for a set of size >= 5. New definitions:
+
+        solvable_group
+        symmetric_group
+        three_cycle
+
+and theorems:
+
+        ABELIAN_IMP_SOLVABLE_GROUP
+        ABELIAN_QUOTIENT_COMMUTATOR
+        ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE
+        ALL_TRANSPOSITIONS_GENERATE_SYMMETRIC
+        CARD_SYMMETRIC_GROUP
+        CAYLEY_THEOREM
+        CAYLEY_THEOREM_EXPLICIT
+        CHAIN_STEP_THREE_CYCLES_GEN
+        COMMUTATOR_IMP_ABELIAN_QUOTIENT
+        FINITE_SYMMETRIC_GROUP
+        INVERSE_UNIQUE_ALT
+        INVOLUTION_MOVES_2_IS_SWAP
+        INVOLUTION_SIZE_2_IS_SWAP
+        ISOMORPHIC_GROUP_SOLVABILITY
+        NOT_SOLVABLE_SYMMETRIC_GROUP
+        PERMUTES_THREE_CYCLE
+        POINT_TRANSPOSITIONS_GENERATE_ALL
+        PRIME_ORDER_PERM_NO_FIXPOINT
+        PRIME_ORDER_PERM_ORBIT
+        PRIME_ORDER_POW_PERM
+        RESTRICT_COMPOSE
+        RESTRICT_I
+        RESTRICT_INVERSE
+        RESTRICT_PERMUTES_SUBSET
+        RESTRICT_SWAP
+        RESTRICT_SYMMETRIC_GROUP_HOMOMORPHISM
+        SOLVABLE_GROUP_ALT
+        SOLVABLE_GROUP_EPIMORPHIC_IMAGE
+        SOLVABLE_GROUP_NORMAL_EXTENSION
+        SOLVABLE_GROUP_QUOTIENT
+        SOLVABLE_GROUP_SOLVABLE_QUOTIENT
+        SOLVABLE_GROUP_SUBGROUP
+        SUBGROUP_RESTRICT_PERMUTES
+        SWAP_CONJUGATE
+        SWAP_CONJUGATE_IN_SUBGROUP
+        SWAP_IN_SYMMETRIC_GROUP
+        SWAP_LEFT
+        SWAP_OTHER
+        SWAP_RIGHT
+        SWAP_TRIPLE
+        SWAP_TRIPLE_ALT
+        SYMMETRIC_GROUP
+        SYMMETRIC_GROUP_ACTION
+        SYMMETRIC_GROUP_ID
+        SYMMETRIC_GROUP_INV
+        SYMMETRIC_GROUP_MUL
+        SYMMETRIC_GROUP_POW
+        SYMMETRIC_GROUP_POW_IN
+        THREE_CYCLE_AS_COMMUTATOR
+        THREE_CYCLE_COMMUTATOR
+        THREE_CYCLE_COMPOSE_REVERSE
+        THREE_CYCLE_INVERSE
+        THREE_CYCLE_IN_SYMMETRIC
+        THREE_CYCLE_NOT_I
+        TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC
+        TRANSPOSITION_PCYCLE_GENERATES
+        TRIVIAL_IMP_SOLVABLE_GROUP
+
+Also added a few simple but natural lemmas to the sets.ml file in support:
+
+        CARD_LE_2 = |- CARD {a,b} <= 2
+        CARD_LE_3 = |- CARD {a,b,c} <= 3
+        CARD_LE_4 = |- CARD {a,b,c,d} <= 4
 
 Thu  5th Mar 2026       Help/mapi.hlp
 

@@ -2057,6 +2057,24 @@ let CARD_SING = prove
  (`!a:A. CARD {a} = 1`,
   SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY; NOT_IN_EMPTY; ARITH]);;
 
+let CARD_LE_2 = prove
+ (`!a (b:A). CARD{a,b} <= 2`,
+  SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY;
+           IN_INSERT; NOT_IN_EMPTY] THEN
+  REPEAT(GEN_TAC ORELSE COND_CASES_TAC) THEN ARITH_TAC);;
+
+let CARD_LE_3 = prove
+ (`!a b (c:A). CARD{a,b,c} <= 3`,
+  SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY;
+           IN_INSERT; NOT_IN_EMPTY] THEN
+  REPEAT(GEN_TAC ORELSE COND_CASES_TAC) THEN ARITH_TAC);;
+
+let CARD_LE_4 = prove
+ (`!a b c (d:A). CARD{a,b,c,d} <= 4`,
+  SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY;
+           IN_INSERT; NOT_IN_EMPTY] THEN
+  REPEAT(GEN_TAC ORELSE COND_CASES_TAC) THEN ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* A stronger still form of induction where we get to choose the element.    *)
 (* ------------------------------------------------------------------------- *)

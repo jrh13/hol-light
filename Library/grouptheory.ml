@@ -8838,7 +8838,7 @@ let GROUP_POW_EQ_ID = prove
   MP_TAC(SPECL [`n:num`; `d:num`] DIVISION) THEN
   ASM_REWRITE_TAC[GSYM LT_NZ] THEN
   DISCH_THEN(CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) THEN
-  REWRITE_TAC[NUMBER_RULE `d divides (a * d + b) <=> d divides b`] THEN
+  REWRITE_TAC[NUMBER_RULE `(d:num) divides (a * d + b) <=> d divides b`] THEN
   ONCE_REWRITE_TAC[MULT_SYM] THEN
   ASM_SIMP_TAC[GROUP_POW_ADD; GROUP_POW_MUL; GROUP_POW_ID] THEN
   ASM_SIMP_TAC[GROUP_MUL_LID; GROUP_POW] THEN
@@ -8925,7 +8925,7 @@ let GROUP_ELEMENT_ORDER_EQ_0 = prove
         ==> (group_element_order G x = 0 <=>
               !n. ~(n = 0) ==> ~(group_pow G x n = group_id G))`,
   SIMP_TAC[GROUP_POW_EQ_ID] THEN MESON_TAC
-   [NUMBER_RULE `0 divides n <=> n = 0`; NUMBER_RULE `!n. n divides n`]);;
+   [NUMBER_RULE `0 divides n <=> n = 0`; NUMBER_RULE `!n:num. n divides n`]);;
 
 let GROUP_ELEMENT_ORDER_UNIQUE = prove
  (`!G (x:A) d.
@@ -14476,7 +14476,7 @@ let FINITE_ABELIAN_GROUP_STRUCTURE = prove
   UNDISCH_TAC `~(p divides CARD(group_carrier G:A->bool))` THEN
   MATCH_MP_TAC(TAUT `(q ==> p) ==> (~p ==> q ==> r)`) THEN
   MATCH_MP_TAC(NUMBER_RULE
-   `p divides pk /\ x divides g ==> x = pk ==> p divides g`) THEN
+   `(p:num) divides pk /\ x divides g ==> x = pk ==> p divides g`) THEN
   ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER; PRIME_DIVEXP_EQ] THEN
   REWRITE_TAC[DIVIDES_REFL]);;
 
@@ -15607,6 +15607,866 @@ let ISOMORPHIC_FREE_ABELIAN_GROUPS = prove
     W(MP_TAC o PART_MATCH lhand FRAG_SUPPORT_ADD o lhand o snd) THEN
     MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS) THEN
     ASM_REWRITE_TAC[UNION_SUBSET; FRAG_SUPPORT_NEG]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Solvable groups. This material was formalized by Claude Opus 4.6 starting *)
+(* from Stillwell's "Galois Theory for Beginners" and the Wikipedia page.    *)
+(* ------------------------------------------------------------------------- *)
+
+(* Stillwell: A group G is solvable if it has a descending chain   *)
+(* G = G_0 > G_1 > ... > G_k = {1} with each G_i normal in G_{i-1} *)
+(* and G_{i-1}/G_i abelian.                                        *)
+
+let solvable_group = new_definition
+ `solvable_group (G:A group) <=>
+    ?k (c:num->A->bool).
+      c 0 = group_carrier G /\
+      c k = {group_id G} /\
+      (!i. i < k
+           ==> c(SUC i) normal_subgroup_of (subgroup_generated G (c i)) /\
+               abelian_group(quotient_group
+                               (subgroup_generated G (c i)) (c(SUC i))))`;;
+
+(* Alternative characterization with ascending chain (Wikipedia convention): *)
+(* {e} = G_0 <| G_1 <| ... <| G_k = G with G_i normal in G_{i+1} and         *)
+(* G_{i+1}/G_i abelian. Equivalent by reindexing c'(i) = c(k - i).           *)
+
+let SOLVABLE_GROUP_ALT = prove
+ (`!G:A group.
+     solvable_group G <=>
+     (?k c. c 0 = {group_id G} /\
+            c k = group_carrier G /\
+            (!i. i < k
+                 ==> c i normal_subgroup_of
+                     subgroup_generated G (c(SUC i)) /\
+                     abelian_group
+                     (quotient_group
+                        (subgroup_generated G (c(SUC i))) (c i))))`,
+  GEN_TAC THEN REWRITE_TAC[solvable_group] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `k:num` (X_CHOOSE_THEN `c:num->A->bool`
+      STRIP_ASSUME_TAC)) THEN
+    EXISTS_TAC `k:num` THEN
+    EXISTS_TAC `\i. (c:num->A->bool)(k - i)` THEN
+    CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+    ASM_REWRITE_TAC[SUB_0; SUB_REFL] THEN
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `k - i = SUC(k - SUC i)` SUBST1_TAC THENL
+     [ASM_ARITH_TAC; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `k - SUC i`) THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; SIMP_TAC[]];
+    DISCH_THEN(X_CHOOSE_THEN `k:num` (X_CHOOSE_THEN `c:num->A->bool`
+      STRIP_ASSUME_TAC)) THEN
+    EXISTS_TAC `k:num` THEN
+    EXISTS_TAC `\i. (c:num->A->bool)(k - i)` THEN
+    CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+    ASM_REWRITE_TAC[SUB_0; SUB_REFL] THEN
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `k - i = SUC(k - SUC i)` SUBST1_TAC THENL
+     [ASM_ARITH_TAC; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `k - SUC i`) THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; SIMP_TAC[]]]);;
+
+(* Stillwell: Since G_{i-1}/G_i is abelian, G_i is the kernel of a *)
+(* homomorphism of G_{i-1} onto [an] abelian group, and therefore  *)
+(* sigma, tau in G_{i-1} => sigma^{-1} tau^{-1} sigma tau in G_i.  *)
+(* We formalize this as: commutators land in the normal subgroup.  *)
+
+let ABELIAN_QUOTIENT_COMMUTATOR = prove
+ (`!G (n:A->bool).
+     n normal_subgroup_of G /\
+     abelian_group(quotient_group G n)
+     ==> !x y. x IN group_carrier G /\ y IN group_carrier G
+               ==> group_mul G (group_inv G x)
+                     (group_mul G (group_inv G y)
+                       (group_mul G x y)) IN n`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `(n:A->bool) subgroup_of G` ASSUME_TAC THENL
+   [ASM_MESON_TAC[normal_subgroup_of]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `right_coset G (n:A->bool)
+       (group_mul G (group_inv G x) (group_inv G y)) =
+     right_coset G n
+       (group_mul G (group_inv G y) (group_inv G x))`
+    MP_TAC THENL
+   [ASM_SIMP_TAC[GSYM QUOTIENT_GROUP_MUL; GROUP_INV] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [abelian_group]) THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[QUOTIENT_GROUP] THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN
+    CONJ_TAC THENL
+     [EXISTS_TAC `group_inv G (x:A)` THEN ASM_SIMP_TAC[GROUP_INV];
+      EXISTS_TAC `group_inv G (y:A)` THEN ASM_SIMP_TAC[GROUP_INV]];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[RIGHT_COSET_EQ; GROUP_MUL; GROUP_INV] THEN
+  REWRITE_TAC[group_div] THEN
+  ASM_SIMP_TAC[GROUP_INV_MUL; GROUP_INV; GROUP_INV_INV] THEN
+  ASM_SIMP_TAC[GSYM GROUP_MUL_ASSOC; GROUP_INV; GROUP_MUL]);;
+
+(* Trivial group is solvable *)
+
+let TRIVIAL_IMP_SOLVABLE_GROUP = prove
+ (`!G:A group. trivial_group G ==> solvable_group G`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[solvable_group] THEN
+  EXISTS_TAC `0` THEN EXISTS_TAC `\n:num. group_carrier(G:A group)` THEN
+  REWRITE_TAC[LT] THEN
+  FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[trivial_group]) THEN
+  SET_TAC[]);;
+
+(* Abelian groups are solvable *)
+
+let ABELIAN_IMP_SOLVABLE_GROUP = prove
+ (`!G:A group. abelian_group G ==> solvable_group G`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[solvable_group] THEN
+  EXISTS_TAC `1` THEN
+  EXISTS_TAC `\n:num. if n = 0 then group_carrier(G:A group)
+                      else {group_id G}` THEN
+  REWRITE_TAC[NOT_SUC; ARITH_RULE `i < 1 <=> i = 0`] THEN
+  CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+  REWRITE_TAC[ARITH_EQ; COND_CLAUSES] THEN
+  GEN_TAC THEN DISCH_THEN SUBST_ALL_TAC THEN
+  REWRITE_TAC[ARITH_EQ; COND_CLAUSES] THEN
+  REWRITE_TAC[SUBGROUP_GENERATED_GROUP_CARRIER] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[TRIVIAL_NORMAL_SUBGROUP_OF];
+    MATCH_MP_TAC ABELIAN_QUOTIENT_GROUP THEN
+    ASM_REWRITE_TAC[TRIVIAL_SUBGROUP_OF]]);;
+
+(* If N is normal in G with abelian quotient, and N is solvable, then G is *)
+(* solvable. This is used to concatenate the solvability chains from       *)
+(* individual radical adjunction steps (Stillwell p.25, tower argument).   *)
+
+let SOLVABLE_GROUP_NORMAL_EXTENSION = prove
+ (`!G (n:A->bool).
+     n normal_subgroup_of G /\
+     abelian_group(quotient_group G n) /\
+     solvable_group(subgroup_generated G n)
+     ==> solvable_group G`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+    (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  SUBGOAL_THEN `n subgroup_of (G:A group)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[NORMAL_SUBGROUP_IMP_SUBGROUP]; ALL_TAC] THEN
+  REWRITE_TAC[solvable_group] THEN
+  SUBGOAL_THEN
+    `group_carrier(subgroup_generated G (n:A->bool)) = n`
+    (fun th -> REWRITE_TAC[th]) THENL
+   [ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `group_id(subgroup_generated G (n:A->bool)) = group_id G`
+    (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[SUBGROUP_GENERATED]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:num` (X_CHOOSE_THEN `d:num->(A->bool)`
+    STRIP_ASSUME_TAC)) THEN
+  EXISTS_TAC `SUC m` THEN
+  EXISTS_TAC `\i. if i = 0 then group_carrier(G:A group)
+                  else (d:num->(A->bool))(i - 1)` THEN
+  CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+  REPEAT CONJ_TAC THENL
+   [(* c(0) = group_carrier G *)
+    CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[COND_CLAUSES];
+    (* c(SUC m) = {group_id G} *)
+    REWRITE_TAC[NOT_SUC; COND_CLAUSES; SUC_SUB1] THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  (* Auxiliary: d(j) subgroup_of (subgroup_generated G n) for all j <= m *)
+  SUBGOAL_THEN
+    `!j. j <= m
+         ==> (d:num->(A->bool)) j subgroup_of
+             subgroup_generated (G:A group) n /\
+             d j SUBSET n`
+    ASSUME_TAC THENL
+   [INDUCT_TAC THENL
+     [(* Base: d(0) = n, show n subgroup_of subgroup_generated G n /\
+         n SUBSET n *)
+      DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+      SUBGOAL_THEN `(n:A->bool) subgroup_of subgroup_generated (G:A group) n`
+        ASSUME_TAC THENL
+       [MP_TAC(ISPEC `subgroup_generated (G:A group) (n:A->bool)`
+          CARRIER_SUBGROUP_OF) THEN
+        ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP];
+        ASM_REWRITE_TAC[SUBSET_REFL]];
+      (* Step: d(SUC j) from d(j) *)
+      DISCH_TAC THEN
+      SUBGOAL_THEN `j <= (m:num)` ASSUME_TAC THENL
+       [ASM_ARITH_TAC; ALL_TAC] THEN
+      FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
+      ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+      SUBGOAL_THEN `j < (m:num)` ASSUME_TAC THENL
+       [ASM_ARITH_TAC; ALL_TAC] THEN
+      (* Get chain condition for j *)
+      FIRST_X_ASSUM(MP_TAC o SPEC `j:num`) THEN ASM_REWRITE_TAC[] THEN
+      STRIP_TAC THEN
+      (* d(SUC j) subgroup_of subgroup_generated(subgroup_generated G n)(d j) *)
+      SUBGOAL_THEN
+        `(d:num->(A->bool))(SUC j) subgroup_of
+         subgroup_generated (subgroup_generated (G:A group) n) (d j)`
+        ASSUME_TAC THENL
+       [ASM_MESON_TAC[NORMAL_SUBGROUP_IMP_SUBGROUP]; ALL_TAC] THEN
+      (* Use equivalence to derive both properties *)
+      SUBGOAL_THEN
+        `(d:num->(A->bool))(SUC j) subgroup_of
+         subgroup_generated (G:A group) n /\
+         (d:num->(A->bool))(SUC j) SUBSET (d:num->(A->bool)) j`
+        STRIP_ASSUME_TAC THENL
+       [MP_TAC(ISPECL [`subgroup_generated (G:A group) (n:A->bool)`;
+                         `(d:num->(A->bool)) (SUC j)`;
+                         `(d:num->(A->bool)) j`]
+          SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ) THEN
+        ASM_REWRITE_TAC[] THEN
+        DISCH_THEN(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[];
+        ALL_TAC] THEN
+      CONJ_TAC THENL
+       [ASM_REWRITE_TAC[];
+        MATCH_MP_TAC SUBSET_TRANS THEN
+        EXISTS_TAC `(d:num->(A->bool)) j` THEN
+        ASM_REWRITE_TAC[]]];
+    ALL_TAC] THEN
+  (* Main: show each step is normal with abelian quotient *)
+  X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `i = 0` THENL
+   [(* i = 0: c(1) = d(0) = n, need n normal in G with abelian quotient *)
+    ASM_REWRITE_TAC[NOT_SUC; COND_CLAUSES; SUC_SUB1] THEN
+    ASM_REWRITE_TAC[SUBGROUP_GENERATED_GROUP_CARRIER];
+    (* i > 0: c(SUC i) = d(i), c(i) = d(i-1) *)
+    ALL_TAC] THEN
+  SUBGOAL_THEN `?j. i = SUC j /\ j < m` STRIP_ASSUME_TAC THENL
+   [EXISTS_TAC `i - 1` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  ASM_REWRITE_TAC[ARITH_RULE `SUC(SUC j) - 1 = SUC j`;
+                   ARITH_RULE `SUC j - 1 = j`;
+                   NOT_SUC; COND_CLAUSES] THEN
+  (* Goal: d(SUC j) normal_subgroup_of subgroup_generated G (d j) /\
+     abelian_group(quotient_group (subgroup_generated G (d j)) (d(SUC j)))
+     Chain gives same with subgroup_generated(subgroup_generated G n)(d j).
+     Use SUBGROUP_GENERATED_IDEMPOT to equate them. *)
+  SUBGOAL_THEN
+    `subgroup_generated (subgroup_generated (G:A group) n)
+       ((d:num->(A->bool)) j) = subgroup_generated G (d j)`
+    (fun th -> REWRITE_TAC[GSYM th]) THENL
+   [MATCH_MP_TAC SUBGROUP_GENERATED_IDEMPOT THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `j:num`) THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; SIMP_TAC[]];
+    ALL_TAC] THEN
+  (* Skip past the auxiliary to get the chain condition *)
+  FIRST_X_ASSUM(MP_TAC o SPEC `j:num`) THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `j:num`) THEN ASM_REWRITE_TAC[]);;
+
+(* If f: G -> H is an epimorphism with n normal in G and G/n             *)
+(* abelian, then IMAGE f n is normal in H and H/(IMAGE f n) is abelian.  *)
+
+let ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE = prove
+ (`!(G:A group) (H:B group) (f:A->B) n.
+    group_epimorphism(G,H) f /\
+    n normal_subgroup_of G /\
+    abelian_group(quotient_group G n)
+    ==> IMAGE f n normal_subgroup_of H /\
+        abelian_group(quotient_group H (IMAGE f n))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `IMAGE (f:A->B) n normal_subgroup_of H` ASSUME_TAC THENL
+   [ASM_MESON_TAC[NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN
+  ABBREV_TAC `m:B->bool = IMAGE (f:A->B) n` THEN
+  SUBGOAL_THEN
+    `group_epimorphism(G:A group, quotient_group (H:B group) m)
+      (right_coset H m o (f:A->B))`
+    ASSUME_TAC THENL
+   [MATCH_MP_TAC GROUP_EPIMORPHISM_COMPOSE THEN
+    EXISTS_TAC `H:B group` THEN
+    ASM_SIMP_TAC[GROUP_EPIMORPHISM_RIGHT_COSET];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+    `n SUBSET group_kernel(G:A group, quotient_group (H:B group) m)
+      (right_coset H m o (f:A->B))`
+    ASSUME_TAC THENL
+   [REWRITE_TAC[SUBSET; group_kernel; IN_ELIM_THM; o_THM] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `(x:A) IN group_carrier G` ASSUME_TAC THENL
+     [ASM_MESON_TAC[NORMAL_SUBGROUP_OF_IMP_SUBSET; SUBSET]; ALL_TAC] THEN
+    ASM_REWRITE_TAC[] THEN
+    ASM_SIMP_TAC[QUOTIENT_GROUP_ID] THEN
+    SUBGOAL_THEN `(f:A->B) x IN group_carrier H` ASSUME_TAC THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE[group_epimorphism; group_homomorphism]) THEN
+      ASM SET_TAC[];
+      ALL_TAC] THEN
+    ASM_SIMP_TAC[RIGHT_COSET_EQ_SUBGROUP; NORMAL_SUBGROUP_IMP_SUBGROUP] THEN
+    EXPAND_TAC "m" THEN REWRITE_TAC[IN_IMAGE] THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`G:A group`;
+    `quotient_group (H:B group) (m:B->bool)`;
+    `n:A->bool`;
+    `right_coset (H:B group) (m:B->bool) o (f:A->B)`]
+    QUOTIENT_GROUP_UNIVERSAL_EPIMORPHISM) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:(A->bool)->(B->bool)` STRIP_ASSUME_TAC) THEN
+  ASM_MESON_TAC[ABELIAN_GROUP_EPIMORPHIC_IMAGE]);;
+
+(* Epimorphic images of solvable groups are solvable.               *)
+(* Proof: the chain IMAGE f (c i) witnesses solvability of H, using *)
+(* ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE to transfer each step.         *)
+
+let SOLVABLE_GROUP_EPIMORPHIC_IMAGE = prove
+ (`!(G:A group) (H:B group) (f:A->B).
+    group_epimorphism(G,H) f /\ solvable_group G ==> solvable_group H`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[solvable_group] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+    (X_CHOOSE_THEN `k:num` (X_CHOOSE_THEN `c:num->A->bool`
+      STRIP_ASSUME_TAC))) THEN
+  EXISTS_TAC `k:num` THEN
+  EXISTS_TAC `\i. IMAGE (f:A->B) ((c:num->A->bool) i)` THEN
+  CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+  SUBGOAL_THEN `group_homomorphism(G:A group, H:B group) (f:A->B)`
+    ASSUME_TAC THENL
+   [ASM_MESON_TAC[group_epimorphism]; ALL_TAC] THEN
+  SUBGOAL_THEN `IMAGE (f:A->B) (group_carrier G) = group_carrier (H:B group)`
+    ASSUME_TAC THENL
+   [ASM_MESON_TAC[group_epimorphism]; ALL_TAC] THEN
+  SUBGOAL_THEN `!j. j <= k ==> (c:num->A->bool) j SUBSET group_carrier G`
+    ASSUME_TAC THENL
+   [INDUCT_TAC THENL
+     [DISCH_TAC THEN ASM_REWRITE_TAC[SUBSET_REFL];
+      DISCH_TAC THEN
+      SUBGOAL_THEN `j < (k:num)` ASSUME_TAC THENL
+       [ASM_ARITH_TAC; ALL_TAC] THEN
+      SUBGOAL_THEN `(c:num->A->bool)(SUC j) normal_subgroup_of
+        subgroup_generated (G:A group) (c j)` ASSUME_TAC THENL
+       [ASM_MESON_TAC[]; ALL_TAC] THEN
+      ASM_MESON_TAC[NORMAL_SUBGROUP_OF_IMP_SUBSET; SUBSET_TRANS;
+                     GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET]];
+    ALL_TAC] THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_REWRITE_TAC[];
+    ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[SET_RULE `IMAGE (f:A->B) {a} = {f a}`] THEN
+    ASM_MESON_TAC[GROUP_HOMOMORPHISM_OF_ID];
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    SUBGOAL_THEN
+      `(c:num->A->bool)(SUC i) normal_subgroup_of
+         subgroup_generated (G:A group) (c i) /\
+       abelian_group(quotient_group (subgroup_generated G (c i)) (c(SUC i)))`
+      STRIP_ASSUME_TAC THENL
+     [ASM_MESON_TAC[]; ALL_TAC] THEN
+    SUBGOAL_THEN
+      `group_epimorphism
+        (subgroup_generated (G:A group) ((c:num->A->bool) i),
+         subgroup_generated (H:B group) (IMAGE (f:A->B) (c i))) f`
+      ASSUME_TAC THENL
+     [MATCH_MP_TAC GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS THEN
+      ASM_REWRITE_TAC[] THEN
+      FIRST_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+      ALL_TAC] THEN
+    MP_TAC(ISPECL
+     [`subgroup_generated (G:A group) ((c:num->A->bool) i)`;
+      `subgroup_generated (H:B group) (IMAGE (f:A->B) ((c:num->A->bool) i))`;
+      `f:A->B`;
+      `(c:num->A->bool)(SUC i)`]
+      ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE) THEN
+    ASM_REWRITE_TAC[]]);;
+
+(* Quotients of solvable groups are solvable *)
+
+let SOLVABLE_GROUP_QUOTIENT = prove
+ (`!(G:A group) n.
+     solvable_group G /\ n normal_subgroup_of G
+     ==> solvable_group(quotient_group G n)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SOLVABLE_GROUP_EPIMORPHIC_IMAGE THEN
+  EXISTS_TAC `G:A group` THEN
+  EXISTS_TAC `right_coset G (n:A->bool)` THEN
+  ASM_SIMP_TAC[GROUP_EPIMORPHISM_RIGHT_COSET]);;
+
+(* Isomorphic groups have the same solvability *)
+
+let ISOMORPHIC_GROUP_SOLVABILITY = prove
+ (`!(G:A group) (H:B group).
+     G isomorphic_group H ==> (solvable_group G <=> solvable_group H)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [isomorphic_group]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `f:A->B`) THEN
+    MATCH_MP_TAC(ISPECL [`G:A group`; `H:B group`; `f:A->B`]
+      SOLVABLE_GROUP_EPIMORPHIC_IMAGE) THEN
+    ASM_MESON_TAC[GROUP_ISOMORPHISM_IMP_EPIMORPHISM];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM ISOMORPHIC_GROUP_SYM]) THEN
+    DISCH_THEN(MP_TAC o GEN_REWRITE_RULE I [isomorphic_group]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `f:B->A`) THEN
+    MATCH_MP_TAC(ISPECL [`H:B group`; `G:A group`; `f:B->A`]
+      SOLVABLE_GROUP_EPIMORPHIC_IMAGE) THEN
+    ASM_MESON_TAC[GROUP_ISOMORPHISM_IMP_EPIMORPHISM]]);;
+
+(* Converse of ABELIAN_QUOTIENT_COMMUTATOR: if all commutators are in n, *)
+(* then the quotient is abelian. Used for SOLVABLE_GROUP_SUBGROUP.       *)
+
+let COMMUTATOR_IMP_ABELIAN_QUOTIENT = prove
+ (`!G (n:A->bool).
+     n normal_subgroup_of G /\
+     (!x y. x IN group_carrier G /\ y IN group_carrier G
+            ==> group_mul G (group_inv G x)
+                  (group_mul G (group_inv G y)
+                    (group_mul G x y)) IN n)
+     ==> abelian_group(quotient_group G n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `(n:A->bool) subgroup_of G` ASSUME_TAC THENL
+   [ASM_MESON_TAC[normal_subgroup_of]; ALL_TAC] THEN
+  REWRITE_TAC[abelian_group] THEN
+  ASM_SIMP_TAC[QUOTIENT_GROUP; IMP_CONJ; RIGHT_FORALL_IMP_THM;
+               FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  X_GEN_TAC `y:A` THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[GROUP_SETMUL_RIGHT_COSET] THEN
+  ASM_SIMP_TAC[RIGHT_COSET_EQ; GROUP_MUL] THEN
+  REWRITE_TAC[group_div] THEN
+  ASM_SIMP_TAC[GROUP_INV_MUL; GROUP_MUL; GROUP_INV] THEN
+  ASM_SIMP_TAC[GSYM GROUP_MUL_ASSOC; GROUP_MUL; GROUP_INV] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`group_inv G (x:A)`; `group_inv G (y:A)`]) THEN
+  ASM_SIMP_TAC[GROUP_INV; GROUP_INV_INV]);;
+
+(* Subgroups of solvable groups are solvable.                               *)
+(* Proof: intersect the solvability chain with the subgroup. The commutator *)
+(* and conjugation conditions transfer because subgroups are closed under   *)
+(* group operations.                                                        *)
+
+let SOLVABLE_GROUP_SUBGROUP = prove
+ (`!G (h:A->bool).
+     h subgroup_of G /\ solvable_group G
+     ==> solvable_group(subgroup_generated G h)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[solvable_group] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+    (X_CHOOSE_THEN `k:num` (X_CHOOSE_THEN `c:num->A->bool`
+      STRIP_ASSUME_TAC))) THEN
+  SUBGOAL_THEN `group_carrier(subgroup_generated G (h:A->bool)) = h`
+    ASSUME_TAC THENL
+   [ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP]; ALL_TAC] THEN
+  SUBGOAL_THEN `group_id(subgroup_generated G (h:A->bool)) = group_id G`
+    ASSUME_TAC THENL
+   [REWRITE_TAC[SUBGROUP_GENERATED]; ALL_TAC] THEN
+  EXISTS_TAC `k:num` THEN
+  EXISTS_TAC `\i. (c:num->A->bool) i INTER (h:A->bool)` THEN
+  CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+  REPEAT CONJ_TAC THENL
+   [(* c 0 INTER h = group_carrier(subgroup_generated G h) *)
+    ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(SET_RULE `(h:A->bool) SUBSET s ==> s INTER h = h`) THEN
+    ASM_MESON_TAC[subgroup_of];
+    (* c k INTER h = {group_id(subgroup_generated G h)} *)
+    ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[SET_RULE `{a:A} INTER (h:A->bool) = {a} <=> a IN h`] THEN
+    ASM_MESON_TAC[subgroup_of];
+    (* Main step *)
+    ALL_TAC] THEN
+  (* Auxiliary: c(j) subgroup_of G for all j <= k *)
+  SUBGOAL_THEN `!j. j <= k ==> (c:num->A->bool) j subgroup_of G`
+    ASSUME_TAC THENL
+   [INDUCT_TAC THENL
+     [DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+      REWRITE_TAC[CARRIER_SUBGROUP_OF];
+      DISCH_TAC THEN
+      SUBGOAL_THEN `j < (k:num)` ASSUME_TAC THENL
+       [ASM_ARITH_TAC; ALL_TAC] THEN
+      SUBGOAL_THEN `j <= (k:num)` ASSUME_TAC THENL
+       [ASM_ARITH_TAC; ALL_TAC] THEN
+      FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
+      ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+      MATCH_MP_TAC SUBGROUP_OF_SUBGROUP_GENERATED_REV THEN
+      EXISTS_TAC `(c:num->A->bool) j` THEN
+      ASM_MESON_TAC[NORMAL_SUBGROUP_IMP_SUBGROUP]];
+    ALL_TAC] THEN
+  X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+  (* Get chain conditions for step i *)
+  SUBGOAL_THEN
+    `(c:num->A->bool)(SUC i) normal_subgroup_of
+       subgroup_generated (G:A group) (c i) /\
+     abelian_group(quotient_group (subgroup_generated G (c i)) (c(SUC i)))`
+    STRIP_ASSUME_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `(c:num->A->bool) i subgroup_of G` ASSUME_TAC THENL
+   [FIRST_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `(c:num->A->bool)(SUC i) subgroup_of G` ASSUME_TAC THENL
+   [FIRST_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `(c:num->A->bool)(SUC i) SUBSET c i` ASSUME_TAC THENL
+   [ASM_MESON_TAC[NORMAL_SUBGROUP_OF_IMP_SUBSET;
+                   CARRIER_SUBGROUP_GENERATED_SUBGROUP]; ALL_TAC] THEN
+  SUBGOAL_THEN `(c:num->A->bool) i INTER h subgroup_of G` ASSUME_TAC THENL
+   [MATCH_MP_TAC SUBGROUP_OF_INTER THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `(c:num->A->bool)(SUC i) INTER h subgroup_of G`
+    ASSUME_TAC THENL
+   [MATCH_MP_TAC SUBGROUP_OF_INTER THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  (* d(i) subgroup_of subgroup_generated G h *)
+  SUBGOAL_THEN
+    `(c:num->A->bool) i INTER h subgroup_of
+     subgroup_generated (G:A group) (h:A->bool)` ASSUME_TAC THENL
+   [REWRITE_TAC[SUBGROUP_OF_SUBGROUP_GENERATED_EQ] THEN
+    ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+    SET_TAC[];
+    ALL_TAC] THEN
+  (* Use SUBGROUP_GENERATED_IDEMPOT to simplify nesting *)
+  SUBGOAL_THEN
+    `subgroup_generated (subgroup_generated G (h:A->bool))
+       ((c:num->A->bool) i INTER h) =
+     subgroup_generated G (c i INTER h)`
+    (fun th -> REWRITE_TAC[th]) THENL
+   [MATCH_MP_TAC SUBGROUP_GENERATED_IDEMPOT THEN SET_TAC[];
+    ALL_TAC] THEN
+  (* Goal: c(SUC i) INTER h normal_subgroup_of sg G (c i INTER h) /\
+     abelian_group(quotient_group (sg G (c i INTER h)) (c(SUC i) INTER h)) *)
+  (* Carrier of sg G (c i INTER h) = c i INTER h *)
+  SUBGOAL_THEN
+    `group_carrier(subgroup_generated G ((c:num->A->bool) i INTER h)) =
+     c i INTER h` ASSUME_TAC THENL
+   [ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP]; ALL_TAC] THEN
+  (* c(SUC i) INTER h subgroup_of sg G (c i INTER h) *)
+  SUBGOAL_THEN
+    `(c:num->A->bool)(SUC i) INTER h subgroup_of
+     subgroup_generated G (c i INTER h)` ASSUME_TAC THENL
+   [REWRITE_TAC[SUBGROUP_OF_SUBGROUP_GENERATED_EQ] THEN
+    ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  (* Key conjugation lemma: conjugation preserves c(SUC i) INTER h *)
+  SUBGOAL_THEN
+    `!a x. a IN (c:num->A->bool) i INTER h /\ x IN c(SUC i) INTER h
+           ==> group_conjugation G a x IN c(SUC i) INTER h`
+    ASSUME_TAC THENL
+   [REWRITE_TAC[IN_INTER] THEN
+    REPEAT GEN_TAC THEN STRIP_TAC THEN CONJ_TAC THENL
+     [(* group_conjugation G a x IN c(SUC i): from normality *)
+      MP_TAC(ASSUME
+        `(c:num->A->bool)(SUC i) normal_subgroup_of
+         subgroup_generated G (c i)`) THEN
+      REWRITE_TAC[NORMAL_SUBGROUP_CONJUGATION] THEN
+      ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+      DISCH_THEN(MP_TAC o SPEC `a:A` o CONJUNCT2) THEN
+      ASM_REWRITE_TAC[] THEN
+      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE;
+                   group_conjugation; SUBGROUP_GENERATED] THEN
+      DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[];
+      (* group_conjugation G a x IN h: subgroup closure *)
+      MATCH_MP_TAC IN_SUBGROUP_CONJUGATION THEN ASM_REWRITE_TAC[]];
+    ALL_TAC] THEN
+  (* Normality *)
+  SUBGOAL_THEN
+    `(c:num->A->bool)(SUC i) INTER h normal_subgroup_of
+     subgroup_generated G (c i INTER h)` ASSUME_TAC THENL
+   [REWRITE_TAC[NORMAL_SUBGROUP_CONJUGATION] THEN
+    ASM_REWRITE_TAC[] THEN
+    X_GEN_TAC `b:A` THEN DISCH_TAC THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+    X_GEN_TAC `y:A` THEN DISCH_TAC THEN
+    REWRITE_TAC[group_conjugation; SUBGROUP_GENERATED] THEN
+    REWRITE_TAC[GSYM group_conjugation] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[IN_INTER] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[IN_INTER]) THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN
+  (* Abelianness via COMMUTATOR_IMP_ABELIAN_QUOTIENT *)
+  MATCH_MP_TAC COMMUTATOR_IMP_ABELIAN_QUOTIENT THEN
+  ASM_REWRITE_TAC[SUBGROUP_GENERATED] THEN
+  MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN
+  REWRITE_TAC[IN_INTER] THEN STRIP_TAC THEN
+  REWRITE_TAC[IN_INTER] THEN CONJ_TAC THENL
+   [(* Commutator in c(SUC i): from abelian quotient *)
+    MP_TAC(ISPECL [`subgroup_generated G ((c:num->A->bool) i)`;
+                    `(c:num->A->bool)(SUC i)`]
+      ABELIAN_QUOTIENT_COMMUTATOR) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o SPECL [`x:A`; `y:A`]) THEN
+    ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+    REWRITE_TAC[SUBGROUP_GENERATED];
+    (* Commutator in h: subgroup closure *)
+    SUBGOAL_THEN `group_inv G (x:A) IN h /\ group_inv G y IN h`
+      STRIP_ASSUME_TAC THENL
+     [ASM_MESON_TAC[IN_SUBGROUP_INV]; ALL_TAC] THEN
+    REPEAT(MATCH_MP_TAC IN_SUBGROUP_MUL THEN ASM_REWRITE_TAC[])]);;
+
+(* "Three for the price of two": G is solvable iff N and G/N are both      *)
+(* solvable (backward direction; forward is SOLVABLE_GROUP_SUBGROUP +      *)
+(* SOLVABLE_GROUP_QUOTIENT). Proof: concatenate the solvability chains.    *)
+(* For G/N chain d(0)..d(m), take preimages c(i) = {x in G | f(x) in d(i)} *)
+(* where f = right_coset G n. For N chain e(0)..e(p), append directly.     *)
+
+let SOLVABLE_GROUP_SOLVABLE_QUOTIENT = prove
+ (`!G (n:A->bool).
+     n normal_subgroup_of G /\
+     solvable_group(subgroup_generated G n) /\
+     solvable_group(quotient_group G n)
+     ==> solvable_group G`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+    (CONJUNCTS_THEN2 MP_TAC MP_TAC)) THEN
+  REWRITE_TAC[solvable_group] THEN
+  SUBGOAL_THEN `(n:A->bool) subgroup_of G` ASSUME_TAC THENL
+   [ASM_MESON_TAC[NORMAL_SUBGROUP_IMP_SUBGROUP]; ALL_TAC] THEN
+  SUBGOAL_THEN `group_carrier(subgroup_generated G (n:A->bool)) = n`
+    (fun th -> REWRITE_TAC[th]) THENL
+   [ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP]; ALL_TAC] THEN
+  SUBGOAL_THEN `group_id(subgroup_generated G (n:A->bool)) = group_id G`
+    (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[SUBGROUP_GENERATED]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:num`
+    (X_CHOOSE_THEN `d:num->(A->bool)->bool`
+      (CONJUNCTS_THEN2 ASSUME_TAC
+        (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "d_cond"))))) THEN
+  DISCH_THEN(X_CHOOSE_THEN `p:num`
+    (X_CHOOSE_THEN `e:num->A->bool`
+      (CONJUNCTS_THEN2 ASSUME_TAC
+        (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "e_cond"))))) THEN
+  (* Epimorphism facts *)
+  SUBGOAL_THEN
+    `group_epimorphism(G,quotient_group G (n:A->bool)) (right_coset G n)`
+    ASSUME_TAC THENL
+   [ASM_SIMP_TAC[GROUP_EPIMORPHISM_RIGHT_COSET]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `group_homomorphism(G,quotient_group G (n:A->bool)) (right_coset G n)`
+    ASSUME_TAC THENL
+   [ASM_MESON_TAC[group_epimorphism]; ALL_TAC] THEN
+  (* d chain: subgroups of quotient_group G n *)
+  SUBGOAL_THEN
+    `!j. j <= m
+         ==> (d:num->(A->bool)->bool) j subgroup_of
+             quotient_group G (n:A->bool)`
+    (LABEL_TAC "d_sub") THENL
+   [INDUCT_TAC THENL
+     [DISCH_TAC THEN ASM_REWRITE_TAC[] THEN REWRITE_TAC[CARRIER_SUBGROUP_OF];
+      DISCH_TAC THEN
+      SUBGOAL_THEN `j < (m:num)` ASSUME_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      SUBGOAL_THEN `j <= (m:num)` ASSUME_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
+      ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+      MATCH_MP_TAC SUBGROUP_OF_SUBGROUP_GENERATED_REV THEN
+      EXISTS_TAC `(d:num->(A->bool)->bool) j` THEN
+      ASM_MESON_TAC[NORMAL_SUBGROUP_IMP_SUBGROUP]];
+    ALL_TAC] THEN
+  (* e chain: subgroups of subgroup_generated G n, subset of n *)
+  SUBGOAL_THEN
+    `!j. j <= p
+         ==> (e:num->A->bool) j subgroup_of subgroup_generated G (n:A->bool) /\
+             e j SUBSET n`
+    (LABEL_TAC "e_sub") THENL
+   [INDUCT_TAC THENL
+     [DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+      CONJ_TAC THENL
+       [MP_TAC(ISPEC `subgroup_generated G (n:A->bool)`
+          CARRIER_SUBGROUP_OF) THEN
+        ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP];
+        SET_TAC[]];
+      DISCH_TAC THEN
+      SUBGOAL_THEN `j < (p:num)` ASSUME_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      SUBGOAL_THEN `j <= (p:num)` ASSUME_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
+      ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+      SUBGOAL_THEN
+        `(e:num->A->bool)(SUC j) subgroup_of subgroup_generated G (n:A->bool)`
+        ASSUME_TAC THENL
+       [MATCH_MP_TAC SUBGROUP_OF_SUBGROUP_GENERATED_REV THEN
+        EXISTS_TAC `(e:num->A->bool) j` THEN
+        ASM_MESON_TAC[NORMAL_SUBGROUP_IMP_SUBGROUP]; ALL_TAC] THEN
+      ASM_REWRITE_TAC[] THEN
+      ASM_MESON_TAC[NORMAL_SUBGROUP_OF_IMP_SUBSET;
+                     CARRIER_SUBGROUP_GENERATED_SUBGROUP; SUBSET_TRANS]];
+    ALL_TAC] THEN
+  (* Key fact: preimage of d(m) = n, using GROUP_KERNEL_RIGHT_COSET *)
+  SUBGOAL_THEN
+    `{x:A | x IN group_carrier G /\
+            right_coset G n x IN (d:num->(A->bool)->bool) m} = n`
+    ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[] THEN
+    ASM_SIMP_TAC[QUOTIENT_GROUP_ID] THEN
+    REWRITE_TAC[IN_SING] THEN
+    SUBGOAL_THEN
+      `{x:A | x IN group_carrier G /\
+              right_coset G n x = (n:A->bool)} =
+       group_kernel(G,quotient_group G n) (right_coset G n)`
+      SUBST1_TAC THENL
+     [REWRITE_TAC[group_kernel] THEN ASM_SIMP_TAC[QUOTIENT_GROUP_ID];
+      ASM_SIMP_TAC[GROUP_KERNEL_RIGHT_COSET]];
+    ALL_TAC] THEN
+  (* Provide combined chain *)
+  EXISTS_TAC `m + p:num` THEN
+  EXISTS_TAC `\i:num. if i <= m
+    then {x:A | x IN group_carrier G /\
+                right_coset G n x IN (d:num->(A->bool)->bool) i}
+    else (e:num->A->bool)(i - m)` THEN
+  CONV_TAC(DEPTH_CONV BETA_CONV) THEN
+  REPEAT CONJ_TAC THENL
+   [(* c(0) = group_carrier G *)
+    REWRITE_TAC[LE_0] THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+    GEN_TAC THEN EQ_TAC THEN SIMP_TAC[] THEN DISCH_TAC THEN
+    ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM(MP_TAC o CONJUNCT1 o
+      GEN_REWRITE_RULE I [group_homomorphism]) THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[];
+    (* c(m+p) = {group_id G} *)
+    ASM_CASES_TAC `p = 0` THENL
+     [FIRST_X_ASSUM SUBST_ALL_TAC THEN
+      REWRITE_TAC[ADD_CLAUSES; LE_REFL] THEN
+      SUBGOAL_THEN `(n:A->bool) = {group_id G}` ASSUME_TAC THENL
+       [UNDISCH_TAC `(e:num->A->bool) 0 = {group_id(G:A group)}` THEN
+        UNDISCH_TAC `(e:num->A->bool) 0 = (n:A->bool)` THEN
+        MESON_TAC[];
+        ASM_REWRITE_TAC[]];
+      SUBGOAL_THEN `~(m + p:num <= m)` (fun th -> REWRITE_TAC[th]) THENL
+       [UNDISCH_TAC `~(p = 0)` THEN ARITH_TAC; ALL_TAC] THEN
+      ASM_REWRITE_TAC[ARITH_RULE `(m + p) - m:num = p`]];
+    (* Main: chain condition for all i < m + p *)
+    ALL_TAC] THEN
+  X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `i:num < m` THENL
+   [(* Case 1: i < m, both c(i) and c(SUC i) in preimage branch *)
+    SUBGOAL_THEN `i <= (m:num)` (fun th -> REWRITE_TAC[th]) THENL
+     [ASM_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `SUC i <= (m:num)` (fun th -> REWRITE_TAC[th]) THENL
+     [ASM_ARITH_TAC; ALL_TAC] THEN
+    (* First establish the d-chain subgroup facts we need *)
+    SUBGOAL_THEN `(d:num->(A->bool)->bool) i subgroup_of
+                  quotient_group G (n:A->bool)` ASSUME_TAC THENL
+     [USE_THEN "d_sub" MATCH_MP_TAC THEN ASM_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `(d:num->(A->bool)->bool)(SUC i) subgroup_of
+                  quotient_group G (n:A->bool)` ASSUME_TAC THENL
+     [USE_THEN "d_sub" MATCH_MP_TAC THEN ASM_ARITH_TAC; ALL_TAC] THEN
+    (* Set up the restricted epimorphism *)
+    ABBREV_TAC
+      `ci = {x:A | x IN group_carrier G /\
+                    right_coset G n x IN (d:num->(A->bool)->bool) i}` THEN
+    ABBREV_TAC
+      `csi = {x:A | x IN group_carrier G /\
+                     right_coset G n x IN (d:num->(A->bool)->bool)(SUC i)}` THEN
+    (* ci is a subgroup of G *)
+    SUBGOAL_THEN `(ci:A->bool) subgroup_of G` ASSUME_TAC THENL
+     [EXPAND_TAC "ci" THEN MATCH_MP_TAC SUBGROUP_OF_HOMOMORPHIC_PREIMAGE THEN
+      EXISTS_TAC `quotient_group G (n:A->bool)` THEN
+      CONV_TAC(ONCE_DEPTH_CONV ETA_CONV) THEN ASM_REWRITE_TAC[];
+      ALL_TAC] THEN
+    (* csi is a subgroup of G *)
+    SUBGOAL_THEN `(csi:A->bool) subgroup_of G` ASSUME_TAC THENL
+     [EXPAND_TAC "csi" THEN MATCH_MP_TAC SUBGROUP_OF_HOMOMORPHIC_PREIMAGE THEN
+      EXISTS_TAC `quotient_group G (n:A->bool)` THEN
+      CONV_TAC(ONCE_DEPTH_CONV ETA_CONV) THEN ASM_REWRITE_TAC[];
+      ALL_TAC] THEN
+    (* IMAGE (right_coset G n) ci = d i *)
+    SUBGOAL_THEN
+      `IMAGE (right_coset G (n:A->bool)) ci = (d:num->(A->bool)->bool) i`
+      ASSUME_TAC THENL
+     [EXPAND_TAC "ci" THEN
+      SUBGOAL_THEN `(d:num->(A->bool)->bool) i SUBSET
+                    IMAGE (right_coset G (n:A->bool)) (group_carrier G)`
+        ASSUME_TAC THENL
+       [MP_TAC(ASSUME `group_epimorphism(G,quotient_group G (n:A->bool))
+                         (right_coset G n)`) THEN
+        REWRITE_TAC[group_epimorphism] THEN
+        DISCH_THEN(fun th -> REWRITE_TAC[CONJUNCT2 th]) THEN
+        MP_TAC(ASSUME `(d:num->(A->bool)->bool) i subgroup_of
+                        quotient_group G (n:A->bool)`) THEN
+        REWRITE_TAC[subgroup_of] THEN SET_TAC[];
+        ASM SET_TAC[]];
+      ALL_TAC] THEN
+    (* Restricted epimorphism *)
+    SUBGOAL_THEN
+      `group_epimorphism
+        (subgroup_generated G ci,
+         subgroup_generated (quotient_group G (n:A->bool))
+           ((d:num->(A->bool)->bool) i))
+        (right_coset G n)` ASSUME_TAC THENL
+     [SUBGOAL_THEN
+        `subgroup_generated (quotient_group G (n:A->bool))
+           (IMAGE (right_coset G n) (ci:A->bool)) =
+         subgroup_generated (quotient_group G n) ((d:num->(A->bool)->bool) i)`
+        (fun th -> REWRITE_TAC[GSYM th]) THENL
+       [AP_TERM_TAC THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+      MATCH_MP_TAC GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS THEN
+      ASM_REWRITE_TAC[] THEN
+      MP_TAC(ASSUME `(ci:A->bool) subgroup_of G`) THEN
+      REWRITE_TAC[subgroup_of] THEN SET_TAC[]; ALL_TAC] THEN
+    (* Preimage of d(SUC i) under restricted map = csi *)
+    SUBGOAL_THEN
+      `{x:A | x IN group_carrier(subgroup_generated G ci) /\
+              right_coset G n x IN (d:num->(A->bool)->bool)(SUC i)} = csi`
+      ASSUME_TAC THENL
+     [ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+      EXPAND_TAC "ci" THEN EXPAND_TAC "csi" THEN
+      REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+      X_GEN_TAC `x:A` THEN EQ_TAC THENL
+       [STRIP_TAC THEN ASM_REWRITE_TAC[];
+        STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+        SUBGOAL_THEN
+          `(d:num->(A->bool)->bool)(SUC i) SUBSET d i` MP_TAC THENL
+         [USE_THEN "d_cond" (MP_TAC o SPEC `i:num`) THEN
+          ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+          DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+          DISCH_THEN(MP_TAC o MATCH_MP NORMAL_SUBGROUP_OF_IMP_SUBSET) THEN
+          USE_THEN "d_sub" (MP_TAC o SPEC `i:num`) THEN
+          ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+          ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP];
+          ASM SET_TAC[]]];
+      ALL_TAC] THEN
+    (* Chain condition for quotient: d(SUC i) normal in sg(G/N)(d i) *)
+    SUBGOAL_THEN
+      `(d:num->(A->bool)->bool)(SUC i) normal_subgroup_of
+       subgroup_generated (quotient_group G (n:A->bool)) (d i) /\
+       abelian_group(quotient_group
+         (subgroup_generated (quotient_group G n) (d i)) (d(SUC i)))`
+      STRIP_ASSUME_TAC THENL
+     [USE_THEN "d_cond" (MP_TAC o SPEC `i:num`) THEN
+      ANTS_TAC THENL [ASM_ARITH_TAC; SIMP_TAC[]];
+      ALL_TAC] THEN
+    (* Normality: csi normal in sg G ci *)
+    CONJ_TAC THENL
+     [SUBGOAL_THEN
+        `(csi:A->bool) normal_subgroup_of subgroup_generated G ci`
+        MP_TAC THENL
+       [ALL_TAC; REWRITE_TAC[]] THEN
+      FIRST_X_ASSUM(fun th -> REWRITE_TAC[SYM th]) THEN
+      MATCH_MP_TAC NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE THEN
+      EXISTS_TAC `subgroup_generated (quotient_group G (n:A->bool))
+                    ((d:num->(A->bool)->bool) i)` THEN
+      ASM_REWRITE_TAC[] THEN
+      CONV_TAC(ONCE_DEPTH_CONV ETA_CONV) THEN
+      FIRST_X_ASSUM(ACCEPT_TAC o CONJUNCT1 o
+        REWRITE_RULE[group_epimorphism]); ALL_TAC] THEN
+    (* Abelianness: quotient(sg G ci)(csi) abelian *)
+    SUBGOAL_THEN
+      `quotient_group (subgroup_generated G ci) (csi:A->bool)
+       isomorphic_group
+       quotient_group
+         (subgroup_generated (quotient_group G (n:A->bool))
+           ((d:num->(A->bool)->bool) i)) (d(SUC i))`
+      MP_TAC THENL
+     [MATCH_MP_TAC FIRST_GROUP_ISOMORPHISM_THEOREM_GEN THEN
+      EXISTS_TAC `right_coset G (n:A->bool)` THEN
+      ASM_REWRITE_TAC[];
+      DISCH_THEN(MP_TAC o MATCH_MP ISOMORPHIC_GROUP_ABELIANNESS) THEN
+      ASM_REWRITE_TAC[]];
+    (* Case 2: i >= m *)
+    SUBGOAL_THEN `~(i:num <= m) \/ i = m` MP_TAC THENL
+     [ASM_ARITH_TAC; ALL_TAC] THEN
+    DISCH_THEN(DISJ_CASES_THEN2 ASSUME_TAC SUBST_ALL_TAC) THENL
+     [(* Subcase: i > m, both in N chain *)
+      SUBGOAL_THEN `~(i <= m) /\ ~(SUC i <= m)` STRIP_ASSUME_TAC THENL
+       [ASM_ARITH_TAC; ALL_TAC] THEN
+      ASM_REWRITE_TAC[] THEN
+      SUBGOAL_THEN `SUC i - m = SUC(i - m)` SUBST1_TAC THENL
+       [ASM_ARITH_TAC; ALL_TAC] THEN
+      USE_THEN "e_sub" (MP_TAC o SPEC `i - m:num`) THEN
+      ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      DISCH_THEN(ASSUME_TAC o CONJUNCT2) THEN
+      USE_THEN "e_cond" (MP_TAC o SPEC `i - m:num`) THEN
+      ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      MP_TAC(MATCH_MP SUBGROUP_GENERATED_IDEMPOT
+        (ASSUME `(e:num->A->bool)(i - m) SUBSET (n:A->bool)`)) THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th]);
+      (* Subcase: i = m, junction between d-chain and e-chain *)
+      REWRITE_TAC[LE_REFL; ARITH_RULE `~(SUC m <= m)`] THEN
+      REWRITE_TAC[ARITH_RULE `SUC m - m = 1`] THEN
+      ASM_REWRITE_TAC[] THEN
+      USE_THEN "e_cond" (MP_TAC o SPEC `0`) THEN
+      ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      REWRITE_TAC[ARITH_RULE `SUC 0 = 1`;
+                   ASSUME `(e:num->A->bool) 0 = (n:A->bool)`] THEN
+      MP_TAC(ISPEC `G:A group`
+        (MATCH_MP SUBGROUP_GENERATED_IDEMPOT
+          (ISPEC `n:A->bool` SUBSET_REFL))) THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th])]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic things about exact sequences.                                       *)

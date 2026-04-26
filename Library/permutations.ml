@@ -39,6 +39,13 @@ let INVERSE_I = prove
  (`inverse I = I`,
   MATCH_MP_TAC INVERSE_UNIQUE_o THEN REWRITE_TAC[I_O_ID]);;
 
+let INVERSE_UNIQUE_ALT = prove
+ (`!(f:A->A) g. (!x. f(g x) = x) /\ (!x. g(f x) = x)
+                ==> inverse f = g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM; inverse] THEN
+  X_GEN_TAC `y:A` THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  X_GEN_TAC `x:A` THEN EQ_TAC THEN ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Transpositions.                                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -66,6 +73,66 @@ let INVERSE_SWAP = prove
 let SWAP_GALOIS = prove
  (`!a b x y. x = swap(a,b) y <=> y = swap(a,b) x`,
   REWRITE_TAC[swap] THEN MESON_TAC[]);;
+
+let SWAP_LEFT = prove
+ (`!a b:A. swap(a,b) a = b`,
+  REWRITE_TAC[swap]);;
+
+let SWAP_RIGHT = prove
+ (`!a b:A. swap(a,b) b = a`,
+  REWRITE_TAC[swap] THEN MESON_TAC[]);;
+
+let SWAP_OTHER = prove
+ (`!a b x:A. ~(x = a) /\ ~(x = b) ==> swap(a,b) x = x`,
+  REWRITE_TAC[swap] THEN MESON_TAC[]);;
+
+let SWAP_TRIPLE = prove
+ (`!a b c:A. ~(a = b) /\ ~(b = c) /\ ~(a = c)
+     ==> swap(a,b) o swap(b,c) o swap(a,b) = swap(a,c)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `~(b:A = a) /\ ~(c:A = b) /\ ~(c:A = a)` STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[FUN_EQ_THM; o_THM; swap] THEN
+  X_GEN_TAC `x:A` THEN
+  ASM_CASES_TAC `x:A = a` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `x:A = b` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `x:A = c` THEN ASM_REWRITE_TAC[]);;
+
+let SWAP_TRIPLE_ALT = prove
+ (`!a x y:A. ~(a = x) /\ ~(a = y) /\ ~(x = y)
+     ==> swap(a,x) o swap(a,y) o swap(a,x) = swap(x,y)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `~(x:A = a) /\ ~(y:A = a) /\ ~(y:A = x)` STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[FUN_EQ_THM; o_THM; swap] THEN
+  X_GEN_TAC `z:A` THEN
+  ASM_CASES_TAC `z:A = a` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `z:A = x` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `z:A = y` THEN ASM_REWRITE_TAC[]);;
+
+let INVOLUTION_SIZE_2_IS_SWAP = prove
+ (`!(s:A->bool) (p:A->A).
+        (!x. x IN s ==> p x IN s) /\
+        (!x. x IN s ==> p(p x) = x) /\
+        {x | x IN s /\ ~(p x = x)} HAS_SIZE 2
+        ==> ?a b. a IN s /\ b IN s /\ ~(a = b) /\
+                  !x. x IN s ==> p x = swap(a,b) x`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o CONV_RULE HAS_SIZE_CONV) THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_INSERT; NOT_IN_EMPTY; swap] THEN
+  ASM SET_TAC[]);;
+
+let INVOLUTION_MOVES_2_IS_SWAP = prove
+ (`!(s:A->bool) (p:A->A).
+     FINITE s /\
+     (!x. x IN s ==> p x IN s) /\
+     (!x. x IN s ==> p(p x) = x) /\
+     CARD {x | x IN s /\ ~(p x = x)} = 2
+     ==> ?(a:A) (b:A). a IN s /\ b IN s /\ ~(a = b) /\
+                       !x. x IN s ==> p x = swap(a,b) x`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INVOLUTION_SIZE_2_IS_SWAP THEN
+  ASM_SIMP_TAC[HAS_SIZE; FINITE_RESTRICT] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic consequences of the definition.                                     *)
@@ -202,6 +269,43 @@ let PERMUTES_TRANSFER = prove
   SIMP_TAC[PERMUTES_ALT] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Swap conjugation and triple swaps                                         *)
+(* ------------------------------------------------------------------------- *)
+
+(* Conjugating a swap by a permutation gives a swap of the images: *)
+(* sigma o swap(a,b) o sigma^{-1} = swap(sigma a, sigma b)         *)
+
+let SWAP_CONJUGATE = prove
+ (`!(p:A->A) s a b. p permutes s
+     ==> p o swap(a,b) o inverse p = swap(p a, p b)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP PERMUTES_INVERSES_o) THEN
+  SUBGOAL_THEN `!y:A. (p:A->A)(inverse p y) = y`
+    ASSUME_TAC THENL
+   [UNDISCH_TAC `(p:A->A) o inverse p = I` THEN
+    REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `!y:A. inverse (p:A->A) (p y) = y`
+    ASSUME_TAC THENL
+   [UNDISCH_TAC `inverse (p:A->A) o p = I` THEN
+    REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM];
+    ALL_TAC] THEN
+  REWRITE_TAC[FUN_EQ_THM; o_THM] THEN
+  X_GEN_TAC `x:A` THEN
+  ASM_CASES_TAC `(x:A) = (p:A->A) a` THENL
+   [ASM_REWRITE_TAC[SWAP_LEFT]; ALL_TAC] THEN
+  ASM_CASES_TAC `(x:A) = (p:A->A) b` THENL
+   [ASM_REWRITE_TAC[SWAP_RIGHT]; ALL_TAC] THEN
+  SUBGOAL_THEN `~(inverse (p:A->A) (x:A) = a) /\
+                 ~(inverse p x = b)` STRIP_ASSUME_TAC THENL
+   [CONJ_TAC THEN
+    DISCH_THEN(MP_TAC o AP_TERM `(p:A->A)`) THEN
+    ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[SWAP_OTHER] THEN
+  ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Group properties.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -324,6 +428,113 @@ let PERMUTES_FINITE_SURJECTIVE = prove
   ASM_CASES_TAC `(y:A) IN s` THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Restriction of permutations to subsets                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let RESTRICT_PERMUTES_SUBSET = prove
+ (`!s t (f:A->A).
+    FINITE t /\ t SUBSET s /\ f permutes s /\ IMAGE f t = t
+    ==> (\x. if x IN t then f x else x) permutes t`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC `t:A->bool` PERMUTES_FINITE_INJECTIVE) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+  REPEAT CONJ_TAC THENL
+   [X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    REWRITE_TAC[] THEN COND_CASES_TAC THEN ASM_MESON_TAC[];
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    REWRITE_TAC[] THEN ASM_REWRITE_TAC[] THEN
+    SUBGOAL_THEN `(f:A->A) x IN t` MP_TAC THENL
+     [ASM SET_TAC[]; SIMP_TAC[]];
+    MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
+    REWRITE_TAC[] THEN ASM_REWRITE_TAC[] THEN
+    ASM_MESON_TAC[PERMUTES_INJECTIVE]]);;
+
+(* Restriction of identity is identity *)
+let RESTRICT_I = prove
+ (`!t:A->bool. (\x. if x IN t then I x else x) = I`,
+  GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM; I_THM] THEN
+  GEN_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[]);;
+
+(* Restriction of composition = composition of restrictions,
+   when both permutations preserve the subset *)
+let RESTRICT_COMPOSE = prove
+ (`!s t (f:A->A) g.
+    t SUBSET s /\ f permutes s /\ g permutes s /\
+    IMAGE f t = t /\ IMAGE g t = t
+    ==> (\x. if x IN t then (f o g) x else x) =
+        (\x. if x IN t then f x else x) o (\x. if x IN t then g x else x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM; o_THM] THEN
+  X_GEN_TAC `x:A` THEN
+  ASM_CASES_TAC `(x:A) IN t` THENL
+   [ASM_REWRITE_TAC[] THEN
+    SUBGOAL_THEN `(g:A->A) x IN t` ASSUME_TAC THENL
+     [ASM SET_TAC[]; ASM_SIMP_TAC[]];
+    ASM_REWRITE_TAC[]]);;
+
+(* Restriction of inverse = inverse of restriction *)
+let RESTRICT_INVERSE = prove
+ (`!s t (f:A->A).
+    FINITE t /\ t SUBSET s /\ f permutes s /\ IMAGE f t = t
+    ==> (\x. if x IN t then inverse f x else x) =
+        inverse (\x. if x IN t then f x else x)`,
+  REPEAT STRIP_TAC THEN
+  ABBREV_TAC `g = \x:A. if x IN t then f x else x` THEN
+  SUBGOAL_THEN `(g:A->A) permutes t` ASSUME_TAC THENL
+   [EXPAND_TAC "g" THEN MATCH_MP_TAC RESTRICT_PERMUTES_SUBSET THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  (* Key fact: inverse f maps t to t *)
+  SUBGOAL_THEN `!z:A. z IN t ==> inverse f z IN t` ASSUME_TAC THENL
+   [GEN_TAC THEN DISCH_TAC THEN
+    SUBGOAL_THEN `(z:A) IN IMAGE (f:A->A) t` MP_TAC THENL
+     [ASM SET_TAC[];
+      REWRITE_TAC[IN_IMAGE] THEN
+      DISCH_THEN(X_CHOOSE_THEN `w:A` STRIP_ASSUME_TAC) THEN
+      SUBGOAL_THEN `inverse (f:A->A) z = w` SUBST1_TAC THENL
+       [MP_TAC(ASSUME `(f:A->A) permutes s`) THEN
+        DISCH_THEN(MP_TAC o MATCH_MP PERMUTES_INVERSE_EQ) THEN
+        ASM_MESON_TAC[];
+        ASM_REWRITE_TAC[]]];
+    ALL_TAC] THEN
+  (* Key fact: f(inverse f y) = y *)
+  SUBGOAL_THEN `!y:A. (f:A->A) (inverse f y) = y` ASSUME_TAC THENL
+   [GEN_TAC THEN
+    MP_TAC(MATCH_MP PERMUTES_INVERSES_o (ASSUME `(f:A->A) permutes s`)) THEN
+    DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+    DISCH_THEN(MP_TAC o REWRITE_RULE[FUN_EQ_THM; o_THM; I_THM]) THEN
+    DISCH_THEN(fun th -> REWRITE_TAC[th]);
+    ALL_TAC] THEN
+  (* Main: show inverse g y = (if y IN t then inverse f y else y) *)
+  REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `y:A` THEN
+  MATCH_MP_TAC EQ_SYM THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP PERMUTES_INVERSE_EQ) THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+  (* Goal: g (if y IN t then inverse f y else y) = y *)
+  ASM_CASES_TAC `(y:A) IN t` THENL
+   [ASM_REWRITE_TAC[] THEN
+    SUBGOAL_THEN `inverse (f:A->A) y IN t` ASSUME_TAC THENL
+     [ASM_MESON_TAC[]; ALL_TAC] THEN
+    SUBGOAL_THEN `(g:A->A) (inverse f y) = f (inverse f y)`
+      (fun th -> ASM_REWRITE_TAC[th]) THEN
+    EXPAND_TAC "g" THEN BETA_TAC THEN
+    COND_CASES_TAC THENL [REFL_TAC; ASM_MESON_TAC[]];
+    ASM_REWRITE_TAC[] THEN
+    EXPAND_TAC "g" THEN BETA_TAC THEN
+    COND_CASES_TAC THENL [ASM_MESON_TAC[]; REFL_TAC]]);;
+
+(* Helper: restriction of swap(a,b) to a set containing a and b is swap(a,b) *)
+let RESTRICT_SWAP = prove
+ (`!(s:A->bool) a b.
+    a IN s /\ b IN s
+    ==> (\x. if x IN s then swap(a,b) x else x) = swap(a,b)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+  X_GEN_TAC `x:A` THEN
+  ASM_CASES_TAC `(x:A) IN s` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[swap] THEN
+  REPEAT COND_CASES_TAC THEN ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Permutations of index set for iterated operations.                        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -380,6 +591,90 @@ let SWAP_INDEPENDENT = prove
   MAP_EVERY ASM_CASES_TAC [`x:A = a`; `x:A = b`; `x:A = c`] THEN
   REPEAT(FIRST_X_ASSUM SUBST_ALL_TAC) THEN ASM_REWRITE_TAC[] THEN
   ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Three-cycles: pure permutation combinatorics                              *)
+(* ------------------------------------------------------------------------- *)
+
+(* A 3-cycle (a b c) sends a -> b -> c -> a, fixes everything else *)
+let three_cycle = new_definition
+ `three_cycle (a:A) b c =
+    \x:A. if x = a then b else if x = b then c else if x = c then a else x`;;
+
+let PERMUTES_THREE_CYCLE = prove
+ (`!s a b c:A. a IN s /\ b IN s /\ c IN s /\
+               ~(a = b) /\ ~(b = c) /\ ~(a = c)
+               ==> three_cycle a b c permutes s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[permutes; three_cycle] THEN
+  ASM_MESON_TAC[]);;
+
+(* Composition of a three-cycle with its reverse gives identity *)
+let THREE_CYCLE_COMPOSE_REVERSE = prove
+ (`!a b c:A. ~(a = b) /\ ~(b = c) /\ ~(a = c)
+    ==> three_cycle a b c o three_cycle a c b = I /\
+        three_cycle a c b o three_cycle a b c = I`,
+  REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM; three_cycle] THEN MESON_TAC[]);;
+
+let THREE_CYCLE_INVERSE = prove
+ (`!a b c:A. ~(a = b) /\ ~(b = c) /\ ~(a = c)
+    ==> inverse (three_cycle a b c) = three_cycle a c b`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INVERSE_UNIQUE_ALT THEN
+  MP_TAC(SPECL [`a:A`; `b:A`; `c:A`] THREE_CYCLE_COMPOSE_REVERSE) THEN
+  ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN MESON_TAC[]);;
+
+(* Key commutator identity: (x_a x_b x_c) = sigma^{-1} tau^{-1} sigma tau  *)
+(* where sigma = (x_d x_a x_c) and tau = (x_c x_e x_b):                    *)
+(* every 3-cycle is a commutator of two 3-cycles (when n >= 5).            *)
+(* This is the core combinatorial fact for proving S_n is not solvable.    *)
+
+let THREE_CYCLE_AS_COMMUTATOR = prove
+ (`!a b c d e:A.
+     ~(a = b) /\ ~(a = c) /\ ~(a = d) /\ ~(a = e) /\
+     ~(b = c) /\ ~(b = d) /\ ~(b = e) /\
+     ~(c = d) /\ ~(c = e) /\
+     ~(d = e)
+     ==> three_cycle a b c =
+         (three_cycle d c a) o
+         (three_cycle c b e) o
+         (three_cycle d a c) o
+         (three_cycle c e b)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[FUN_EQ_THM; o_THM; three_cycle] THEN
+  X_GEN_TAC `x:A` THEN
+  ASM_CASES_TAC `x:A = a` THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  ASM_CASES_TAC `x:A = b` THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  ASM_CASES_TAC `x:A = c` THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  ASM_CASES_TAC `x:A = d` THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  ASM_CASES_TAC `x:A = e` THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[]);;
+
+(* Same identity but stated using inverse *)
+let THREE_CYCLE_COMMUTATOR = prove
+ (`!a b c d e:A.
+     ~(a = b) /\ ~(a = c) /\ ~(a = d) /\ ~(a = e) /\
+     ~(b = c) /\ ~(b = d) /\ ~(b = e) /\
+     ~(c = d) /\ ~(c = e) /\
+     ~(d = e)
+     ==> three_cycle a b c =
+         (inverse(three_cycle d a c)) o
+         (inverse(three_cycle c e b)) o
+         (three_cycle d a c) o
+         (three_cycle c e b)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `inverse(three_cycle d a (c:A)) = three_cycle d c a`
+    SUBST1_TAC THENL
+   [MATCH_MP_TAC THREE_CYCLE_INVERSE THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `inverse(three_cycle c e (b:A)) = three_cycle c b e`
+    SUBST1_TAC THENL
+   [MATCH_MP_TAC THREE_CYCLE_INVERSE THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC THREE_CYCLE_AS_COMMUTATOR THEN ASM_REWRITE_TAC[]);;
+
+(* A 3-cycle is nontrivial (not the identity) *)
+let THREE_CYCLE_NOT_I = prove
+ (`!a b c:A. ~(a = b) /\ ~(b = c) /\ ~(a = c)
+             ==> ~(three_cycle a b c = I)`,
+  REWRITE_TAC[FUN_EQ_THM; three_cycle; I_THM] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Permutations as transposition sequences.                                  *)
