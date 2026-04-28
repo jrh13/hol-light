@@ -8,6 +8,131 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 27th Apr 2026       Probability/*
+
+Substantially extended the probability theory library with new results,
+generalized definitions, and systematic naming cleanup, also adding
+standard discrete distributions. This work was entirely done by Claude
+Opus 4.6.
+
+The most significant structural change is the systematic generalization
+from simple random variables to integrable random variables. The original
+library developed much of the theory using simple_rv (finite-valued
+random variables) with simple_expectation. This update adds parallel
+general definitions using integrable/expectation (Lebesgue integration)
+and reproves key results at this level of generality. The naming
+convention is: unprefixed names (e.g. martingale, char_fn_re) now refer
+to the general versions, while the original simple-RV versions are
+preserved under SIMPLE_ prefixes (e.g. simple_martingale,
+simple_char_fn_re).
+
+IMPORTANT: Several definitions and theorem names that existed in the
+previous version now refer to different (strictly more general) objects.
+
+The following definitions changed meaning (old simple-RV-based
+definitions are preserved under the names shown):
+
+  martingale         now uses adapted/integrable/expectation
+                     (was: simple_adapted/simple_rv/simple_expectation;
+                      old version now called simple_martingale)
+
+  submartingale      same generalization pattern
+                     (old version now called simple_submartingale)
+
+  supermartingale    same generalization pattern
+                     (old version now called simple_supermartingale)
+
+  char_fn_re         now defined via expectation p (\x. cos(t * X x))
+                     (was: simple_expectation p (\x. cos(t * X x));
+                      old version now called simple_char_fn_re)
+
+  char_fn_im         now defined via expectation p (\x. sin(t * X x))
+                     (was: simple_expectation p (\x. sin(t * X x));
+                      old version now called simple_char_fn_im)
+
+  converges_L2       now defined via expectation
+                     (was: simple_expectation;
+                      old version now called simple_converges_L2)
+
+The following 20 theorem names that existed in the previous version now
+prove strictly stronger results (weaker hypotheses, same conclusions).
+In each case, the hypothesis "simple_rv" was replaced by
+"random_variable" or "integrable", and "simple_expectation" by
+"expectation". The old simple-RV versions are preserved with a SIMPLE_
+prefix:
+
+  CDF_LE_EXPECTATION                    CLT_CHAR_FN_CONVERGENCE
+  CHAR_FN_ADD_INDEP_IM                  CLT_CHAR_FN_IM_CONVERGENCE
+  CHAR_FN_ADD_INDEP_RE                  CLT_IM_ERROR_VANISHES
+  CHAR_FN_DETERMINES_NORMAL_CDF_LIMIT   EXPECTATION_LE_CDF
+  CHAR_FN_IM_BOUND                      MCT_NN_EXPECTATION
+  CHAR_FN_MODULUS_LE                    STEP_C_BOUND
+  CHAR_FN_RE_BOUND                      TRIG_POLY_WEAK_CONVERGENCE
+  CHAR_FN_RE_POW_CONV_EXP               WEAK_CONVERGENCE_FROM_CHAR_FN
+  CHAR_FN_SUM_IID_IM_SQ_BOUND           MEASURABLE_WRT_ADD
+  CHAR_FN_SUM_IID_RE_BOUND              MEASURABLE_WRT_SUB
+
+Major new results include:
+
+  KOLMOGOROV_SLLN: Kolmogorov's Strong Law of Large Numbers via the
+    maximal inequality for independent summands
+
+  IID_SLLN: for i.i.d. integrable random variables, the sample mean
+    converges almost surely to the common expectation
+
+  LINDEBERG_FELLER_CLT: the CLT under the Lindeberg condition for
+    triangular arrays of independent random variables
+
+  LEVY_CONTINUITY_GENERAL: pointwise convergence of characteristic
+    functions implies convergence in distribution
+
+  HELLY_SELECTION_THEOREM: every uniformly bounded sequence of
+    distribution functions has a convergent subsequence
+
+  PROHOROV_FORWARD: tightness implies relative sequential compactness
+    in the topology of convergence in distribution
+
+  RADON_NIKODYM: for an absolutely continuous signed measure, there
+    exists an integrable density
+
+  HAHN_DECOMPOSITION / JORDAN_DECOMPOSITION: every signed measure
+    admits a Hahn decomposition and a Jordan decomposition into
+    nonneg measures concentrated on complementary sets
+
+  GEN_COND_EXP_EXISTS / GEN_COND_EXP_TOWER / GEN_COND_EXP_ITERATED:
+    general conditional expectation via Radon-Nikodym with tower
+    property, iterated conditioning, monotonicity, and linearity
+
+  GEN_DOOB_DECOMPOSITION: general Doob decomposition of a
+    submartingale into a martingale plus a predictable increasing
+    process
+
+  BACKWARD_MARTINGALE_CONVERGENCE_L1_BOUNDED: L1-bounded backward
+    martingales converge almost surely
+
+  UI_SUBMARTINGALE_CONVERGENCE_AS / OPTIONAL_STOPPING_UI: uniformly
+    integrable submartingale convergence and optional stopping
+
+  AZUMA_HOEFFDING_TWO_SIDED / MCDIARMID_INEQUALITY: concentration
+    inequalities for martingales and bounded-differences functions
+
+  THREE_SERIES_SUFFICIENCY / THREE_SERIES_NECESSITY /
+  THREE_SERIES_NECESSITY_INDEP: Kolmogorov three-series theorem (both
+    directions; two independent proofs of necessity)
+
+  PALEY_ZYGMUND: reverse Markov-type inequality for lower bounds on
+    the probability that a nonneg RV exceeds a fraction of its mean
+
+  UI_BACKWARD_MARTINGALE_CONVERGENCE_AS: UI backward martingales
+    converge almost surely
+
+  WALD_EQUATION: for a martingale stopped at a bounded stopping time
+
+  FATOU_LEMMA / REVERSE_FATOU_LEMMA / DOMINATED_CONVERGENCE_AE:
+    convergence theorems for expectations
+
+  POISSON_LIMIT: the Poisson limit theorem (binomial -> Poisson)
+
 Thu 23rd Apr 2026       Library/ringtheory.ml, Library/fieldtheory.ml, 100/transcendence.ml
 
 Adopted the "coeff" function from 100/transcendence.ml in the main ring theory

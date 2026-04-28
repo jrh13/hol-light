@@ -30,3 +30,6 @@ loadt "Probability/characteristic_functions.ml";;
 
 (* Central Limit Theorem for integrable RVs *)
 loadt "Probability/clt.ml";;
+
+(* Standard discrete distributions *)
+loadt "Probability/distributions.ml";;
