@@ -23,7 +23,8 @@ For a description of the subgoal package, see {set_goal}.
 the tactic diverges for the goal. It will fail if there are no unproven goals.
 This could be because no goal has been set using {set_goal} or because the last
 goal set has been completely proved. It will also fail in cases when the tactic
-is invalid.
+is invalid. It will also fail if any of the resulting subgoals include free
+variables with the same name but different types ({CHECK_VARTYPES_TAC}).
 
 \EXAMPLE
 {
@@ -52,6 +53,6 @@ is invalid.
 Doing a step in an interactive goal-directed proof.
 
 \SEEALSO
-b, er, g, p, r, set_goal, top_goal, top_thm.
+b, er, g, p, r, set_goal, top_goal, top_thm, CHECK_VARTYPES_TAC.
 
 \ENDDOC

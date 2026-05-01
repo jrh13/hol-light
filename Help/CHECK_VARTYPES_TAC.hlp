@@ -1,0 +1,22 @@
+\DOC CHECK_VARTYPES_TAC
+
+\TYPE {CHECK_VARTYPES_TAC : tactic}
+
+\SYNOPSIS
+Checks whether there are free variables in the goal with the same name
+but different types.
+
+\DESCRIBE
+Given any goal {A ?- p}, the tactic {CHECK_VARTYPES_TAC} checks whether
+there are any free variables in the conclusion and assumptions that have the
+same name but different types.
+
+{e tac} runs {CHECK_VARTYPES_TAC} after {tac} by default and detects such cases.
+
+\FAILURE
+Fails if such variables exist.
+
+\SEEALSO
+e
+
+\ENDDOC
