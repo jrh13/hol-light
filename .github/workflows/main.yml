@@ -81,8 +81,10 @@ jobs:
           ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./unit_tests.byte
-          ./unit_tests.native
+          ./UnitTests/basic_tests.byte
+          ./UnitTests/basic_tests.native
+          ./UnitTests/printer_tests.byte
+          ./UnitTests/printer_tests.native
 
   test3:
     runs-on: ubuntu-22.04
@@ -122,6 +124,8 @@ jobs:
           (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./unit_tests.byte
-          ./unit_tests.native
+          ./UnitTests/basic_tests.byte
+          ./UnitTests/basic_tests.native
+          ./UnitTests/printer_tests.byte
+          ./UnitTests/printer_tests.native
 
