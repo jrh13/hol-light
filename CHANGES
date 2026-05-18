@@ -8,6 +8,290 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 17th May 2026       Probability/clt.ml
+
+Replaced List.filteri (OCaml >= 4.14) with subtract/el for compatibility with
+older OCamls.
+
+Sat 16th May 2026       Library/grouptheory.ml, Library/symmetric_group.ml,
+
+Added the theorems ABELIAN_QUOTIENT_GROUP_DIV and
+SOLVABLE_GROUP_MONOMORPHIC_PREIMAGE, as well as slightly incompatibly
+tweaking the statement of ABELIAN_QUOTIENT_COMMUTATOR to make its
+quantifier structure more harmonious with the library.
+
+Fri 15th May 2026       Library/ringtheory.ml, Library/fieldtheory.ml, 100/transcendence.ml,
+
+Extended the ring theory library with material on squarefree elements,
+monic and reciprocal polynomials, formal (univariate) polynomial
+derivatives plus actual division and remainder functions for polynomials.
+Much of this material was adopted from the existing formalization in
+100/transcendence.ml into the main libraries, though with some notable
+differences as described below (in particular ring_squarefree). New
+definitions:
+
+        monic
+        poly_deriv
+        poly_div
+        poly_recip
+        poly_rem
+        ring_squarefree
+
+New theorems in Library/ringtheory.ml:
+
+        COEFF_0
+        COEFF_0_POLY_RECIP_EQ_0
+        COEFF_ABOVE_DEG
+        COEFF_COMPOSE
+        COEFF_POLY_DERIV
+        COEFF_POLY_LMUL
+        COEFF_POLY_MUL_ALT
+        COEFF_POLY_MUL_VAR
+        COEFF_POLY_MUL_VARPOW
+        COEFF_POLY_RECIP
+        COEFF_POLY_RMUL
+        COEFF_POLY_VAR
+        COEFF_POLY_VARPOW
+        COEFF_POLY_VARPOW_MUL
+        COEFF_POLY_VAR_MUL
+        FIELD_MONIC_ASSOCIATE
+        FIELD_MONIC_IRREDUCIBLE_ASSOCIATE
+        FUN_ONE_EQ_ONE
+        FUN_ONE_NUM_EQ
+        INTEGER_RING_POW
+        INTEGRAL_DOMAIN_PRIME_PRODUCT_DIVIDES
+        INTEGRAL_DOMAIN_PRIMES_COPRIME_OR_ASSOCIATES
+        INTEGRAL_DOMAIN_PRIMES_DIVIDES_EQ_ASSOCIATES
+        IRREDUCIBLE_IMP_POLY_DEG_NZ
+        ISOMORPHIC_RING_EQ
+        MONIC_ASSOCIATES_EQ
+        MONIC_CMUL
+        MONIC_DEG_0
+        MONIC_IMP_NONZERO
+        MONIC_IN_TRIVIAL_RING
+        MONIC_POLY_0
+        MONIC_POLY_1
+        MONIC_POLY_CONST
+        MONIC_POLY_MUL
+        MONIC_POLY_POW
+        MONIC_POLY_PRODUCT
+        MONIC_POLY_VAR
+        MONIC_SUBRING_GENERATED
+        MONOMIAL_DIVISORS_1
+        MONOMIAL_MUL_EQ_VAR
+        MONOMIAL_UNIV_1
+        MONOMIAL_VAR_DIVIDES_MUL
+        POLY_CONST_DIVIDES_CONST
+        POLY_CONST_EQ_0
+        POLY_CONST_EQ_1
+        POLY_CONST_OF_NUM
+        POLY_DEG_CMUL
+        POLY_DEG_DERIV
+        POLY_DEG_DERIV_LE
+        POLY_DEG_DIVIDES_LE
+        POLY_DEG_DIVIDES_LE_MONIC
+        POLY_DEG_DIVIDES_LE_UNIVARIATE
+        POLY_DEG_EQ_COEFF_EQ
+        POLY_DEG_GE_COEFF
+        POLY_DEG_GE_COEFF_EQ
+        POLY_DEG_LE_COEFF_EQ
+        POLY_DEG_MUL_MONIC
+        POLY_DEG_MUL_UNIVARIATE
+        POLY_DEG_RECIP
+        POLY_DEG_RECIP_LE
+        POLY_DEG_REM
+        POLY_DEG_REM_ALT
+        POLY_DERIV_0
+        POLY_DERIV_1
+        POLY_DERIV_ADD
+        POLY_DERIV_CMUL
+        POLY_DERIV_CONST
+        POLY_DERIV_HOMOMORPHIC_IMAGE
+        POLY_DERIV_IN_CARRIER
+        POLY_DERIV_MUL
+        POLY_DERIV_NEG
+        POLY_DERIV_NONZERO_CHAR0
+        POLY_DERIV_POW
+        POLY_DERIV_PRODUCT
+        POLY_DERIV_SUB
+        POLY_DERIV_SUBRING_GENERATED
+        POLY_DERIV_SUM
+        POLY_DERIV_VAR
+        POLY_DERIV_VAR_POW
+        POLY_DIV
+        POLY_DIV_REM
+        POLY_DIV_REM_SIMP
+        POLY_DIVIDES_RECIP
+        POLY_DIVIDES_RECIP_EQ
+        POLY_DIVIDES_RECIP_GALOIS
+        POLY_DIVIDES_RECIP_RECIP
+        POLY_DIVIDES_REM
+        POLY_EVALUATE_RING_SUM
+        POLY_EVAL_RECIP
+        POLY_EVAL_RING_SUM
+        POLY_EXTEND_RING_SUM
+        POLY_IN_POWSER_RING
+        POLY_IRREDUCIBLE_IMP_SEPARABLE
+        POLY_MUL_LEADING_COEFF
+        POLY_MUL_RID
+        POLY_NONCONSTANT_IRREDUCIBLE_IMP_SEPARABLE
+        POLY_RECIP_0
+        POLY_RECIP_1
+        POLY_RECIP_CONST
+        POLY_RECIP_EQ_0
+        POLY_RECIP_IN_CARRIER
+        POLY_RECIP_MUL
+        POLY_RECIP_MUL_GEN
+        POLY_RECIP_NEG
+        POLY_RECIP_RECIP
+        POLY_RECIP_RECIP_EQ
+        POLY_REM
+        POLY_REM_UNIQUE
+        POLY_ROOT_COUNT_IMP_SQUAREFREE
+        POLY_SEPARABLE_EQ_SQUAREFREE
+        POLY_SEPARABLE_IMP_SQUAREFREE
+        POLY_SQUARE_DIVIDES_DERIV
+        POLY_SQUARE_DIVIDES_DERIV_EQ
+        POLY_SQUAREFREE_IMP_SEPARABLE
+        POLY_VARPOW_RECIP_RECIP
+        POWSER_CLAUSES
+        POWSER_DERIV_IN_CARRIER
+        REPEATED_ROOT_POLY_DERIV_ZERO
+        RING_AUTOMORPHISM_I
+        RING_AUTOMORPHISM_ID
+        RING_COPRIME_DISTINCT_MONIC_IRREDUCIBLES
+        RING_COPRIME_DIVISORS
+        RING_COPRIME_HOMOMORPHIC_IMAGE
+        RING_COPRIME_LPOW
+        RING_COPRIME_PRODUCT
+        RING_COPRIME_PRODUCT_DIVIDES
+        RING_COPRIME_PRODUCT_DIVIDES_ALT
+        RING_COPRIME_PRODUCT_EQ
+        RING_COPRIME_RPOW
+        RING_COPRIME_UNIT
+        RING_DIVIDES_ALT
+        RING_DIVIDES_MUL_EQ
+        RING_DIVIDES_PRODUCTS
+        RING_IRREDUCIBLE_IMP_NONTRIVIAL_RING
+        RING_IRREDUCIBLE_IMP_SQUAREFREE
+        RING_IRREDUCIBLE_NEG
+        RING_IRREDUCIBLE_POLY_CONST
+        RING_IRREDUCIBLE_POLY_RECIP
+        RING_IRREDUCIBLE_POLY_RECIP_EQ
+        RING_IRREDUCIBLE_POLY_VAR
+        RING_IRREDUCIBLES_COPRIME_OR_ASSOCIATES
+        RING_OF_NUM_POLY_RING
+        RING_OF_NUM_POWSER_RING
+        RING_POLYNOMIAL_DIV
+        RING_POLYNOMIAL_POLY_DERIV
+        RING_POLYNOMIAL_POWERSERIES_COEFF
+        RING_POLYNOMIAL_RECIP
+        RING_POLYNOMIAL_REM
+        RING_POWERSERIES_POLY_DERIV
+        RING_POWERSERIES_RECIP
+        RING_PRIME_DIVIDES_POW
+        RING_PRIME_IMP_NONTRIVIAL_RING
+        RING_PRIME_IMP_SQUAREFREE
+        RING_PRIME_MUL_DIVIDES
+        RING_PRIME_MUL_DIVIDES_EQ
+        RING_PRIME_NEG
+        RING_PRIME_POLY_RECIP
+        RING_PRIME_POLY_RECIP_EQ
+        RING_PRIME_POLY_VAR
+        RING_PRIME_PRODUCT_DIVIDES
+        RING_SQUAREFREE_0
+        RING_SQUAREFREE_1
+        RING_SQUAREFREE_ALT
+        RING_SQUAREFREE_ASSOCIATES
+        RING_SQUAREFREE_COPRIME
+        RING_SQUAREFREE_COPRIME_DIVISORS
+        RING_SQUAREFREE_DECOMPOSITION
+        RING_SQUAREFREE_DIVIDES
+        RING_SQUAREFREE_DIVIDES_SQUARE
+        RING_SQUAREFREE_DIVISOR
+        RING_SQUAREFREE_DIVPOW
+        RING_SQUAREFREE_DIVPOW_EQ
+        RING_SQUAREFREE_GCD
+        RING_SQUAREFREE_IMP_NONZERO
+        RING_SQUAREFREE_IMP_NO_PRIME_SQUARE
+        RING_SQUAREFREE_IN_CARRIER
+        RING_SQUAREFREE_MUL_EQ
+        RING_SQUAREFREE_MUL_IMP
+        RING_SQUAREFREE_POW
+        RING_SQUAREFREE_PRIME_DIVISOR_EQ
+        RING_SQUAREFREE_PRIME_EQ
+        RING_SQUAREFREE_PRODUCT
+        RING_SUM_CONST
+        RING_UNIT_IMP_SQUAREFREE
+        RING_UNIT_POLY_RECIP
+        RING_UNIT_POLY_RECIP_EQ
+        RING_UNIT_POLY_RING_1
+        RING_UNIT_POLY_VAR
+        TRIVIAL_RING_POLY_0
+        TRIVIAL_RING_POWSER_0
+
+New theorems in Library/fieldtheory.ml:
+
+        ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
+        ALGEBRAICALLY_CLOSED_FIELD_SPLITS
+        COPRIME_POLY_NO_COMMON_ROOT
+        COPRIME_POLY_NO_COMMON_ROOT_I
+        FIELD_EXTENSION_TRANS_I
+        IRREDUCIBLE_ALGEBRAICALLY_CLOSED_FIELD
+        POLY_SQUAREFREE_EXPLICIT_EQ
+        POLY_SQUAREFREE_ROOT_COUNT
+        POLY_SQUAREFREE_ROOT_COUNT_EQ
+        POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT
+
+Changed theorems:
+
+        ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS  [strengthened, old = _ALT]
+        COEFF_POLY_CONST_MUL           [renamed to COEFF_POLY_LMUL]
+        COEFF_POLY_MUL_CONST           [renamed to COEFF_POLY_RMUL]
+        POLY_MUL_VAR_COEFF_UNIVARIATE  [removed, see COEFF_POLY_VAR_MUL]
+        POLY_VAR_DIVIDES_UNIVARIATE    [==> became <=>, lost hyps]
+        RING_PRIME_POLY_CONST          [==> became <=>, lost hyps]
+        RING_PRIME_POLY_RING_MONO      [lost integral_domain hyp]
+        RING_PRIME_POLY_VAR_UNIVARIATE [==> became <=>]
+
+Incompatible changes to existing theorem statements:
+
+  RING_PRIME_POLY_CONST (ringtheory.ml): strengthened from
+    integral_domain r /\ ring_prime r p ==> ring_prime ... (poly_const ...)
+    to the unconditional equivalence
+    ring_prime (poly_ring r s) (poly_const r p) <=> ring_prime r p
+
+  RING_PRIME_POLY_VAR_UNIVARIATE (ringtheory.ml): strengthened from
+    integral_domain r ==> ring_prime (poly_ring r (:1)) (poly_var r one)
+    to the equivalence
+    ring_prime (poly_ring r (:1)) (poly_var r one) <=> integral_domain r
+
+  RING_PRIME_POLY_RING_MONO (ringtheory.ml): lost integral_domain r
+    hypothesis (primality in a sub-polynomial-ring now unconditionally
+    lifts to the larger polynomial ring).
+
+  POLY_VAR_DIVIDES_UNIVARIATE (ringtheory.ml): strengthened from
+    integral_domain r /\ f IN carrier ==> (x divides f <=> f(0) = 0)
+    to the unconditional equivalence
+    ring_divides ... (poly_var r one) p <=>
+      ring_polynomial r p /\ coeff 0 p = ring_0 r
+
+  COEFF_POLY_CONST_MUL renamed to COEFF_POLY_LMUL (same statement).
+  COEFF_POLY_MUL_CONST renamed to COEFF_POLY_RMUL (same statement).
+  POLY_MUL_VAR_COEFF_UNIVARIATE removed, subsumed by COEFF_POLY_VAR_MUL.
+
+  ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS (fieldtheory.ml): hypothesis
+    strengthened from ~(poly_deg k p = 0) to ~(p = poly_0 k). The old
+    statement (with the degree condition) is preserved as
+    ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT.
+
+  ring_squarefree (100/transcendence.ml): definition changed from
+    "a | b^2 ==> a | b" to "no non-unit has its square dividing a".
+    Some downstream theorems in that file have gained hypotheses:
+    ring_squarefree_if_prime now requires integral_domain r;
+    ring_squarefree_if_product_coprime_primes(_indexed) now require
+    UFD r.
+
 Mon 27th Apr 2026       Probability/*
 
 Substantially extended the probability theory library with new results,

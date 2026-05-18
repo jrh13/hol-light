@@ -10126,8 +10126,8 @@ let INTEGRABLE_CLT_IID = prove
   REPEAT GEN_TAC THEN
   DISCH_THEN(fun th ->
     let ths = CONJUNCTS th in
-    MAP_EVERY ASSUME_TAC (List.filteri (fun i _ -> i <> 6) ths) THEN
-    LABEL_TAC "dist_eq" (List.nth ths 6)) THEN
+    MAP_EVERY ASSUME_TAC (subtract ths [el 6 ths]) THEN
+    LABEL_TAC "dist_eq" (el 6 ths)) THEN
   SUBGOAL_THEN `!i t. char_fn_re (p:A prob_space) ((X:num->A->real) i) t =
     char_fn_re p (X 0) t /\ char_fn_im p (X i) t = char_fn_im p (X 0) t`
     ASSUME_TAC THENL

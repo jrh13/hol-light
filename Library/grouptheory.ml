@@ -15672,14 +15672,13 @@ let SOLVABLE_GROUP_ALT = prove
 (* We formalize this as: commutators land in the normal subgroup.  *)
 
 let ABELIAN_QUOTIENT_COMMUTATOR = prove
- (`!G (n:A->bool).
+ (`!G (n:A->bool) x y.
      n normal_subgroup_of G /\
-     abelian_group(quotient_group G n)
-     ==> !x y. x IN group_carrier G /\ y IN group_carrier G
-               ==> group_mul G (group_inv G x)
-                     (group_mul G (group_inv G y)
-                       (group_mul G x y)) IN n`,
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
+     abelian_group(quotient_group G n) /\
+     x IN group_carrier G /\ y IN group_carrier G
+     ==> group_mul G (group_inv G x)
+           (group_mul G (group_inv G y)
+             (group_mul G x y)) IN n`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   SUBGOAL_THEN `(n:A->bool) subgroup_of G` ASSUME_TAC THENL
    [ASM_MESON_TAC[normal_subgroup_of]; ALL_TAC] THEN
@@ -16020,6 +16019,24 @@ let COMMUTATOR_IMP_ABELIAN_QUOTIENT = prove
   FIRST_X_ASSUM(MP_TAC o SPECL [`group_inv G (x:A)`; `group_inv G (y:A)`]) THEN
   ASM_SIMP_TAC[GROUP_INV; GROUP_INV_INV]);;
 
+let ABELIAN_QUOTIENT_GROUP_DIV = prove
+ (`!G (n:A->bool).
+     n normal_subgroup_of G /\
+     (!x y. x IN group_carrier G /\ y IN group_carrier G
+            ==> group_div G (group_mul G x y) (group_mul G y x) IN n)
+     ==> abelian_group(quotient_group G n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `(n:A->bool) subgroup_of G` ASSUME_TAC THENL
+   [ASM_MESON_TAC[normal_subgroup_of]; ALL_TAC] THEN
+  REWRITE_TAC[abelian_group] THEN
+  ASM_SIMP_TAC[QUOTIENT_GROUP; IMP_CONJ; RIGHT_FORALL_IMP_THM;
+               FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  X_GEN_TAC `y:A` THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[GROUP_SETMUL_RIGHT_COSET] THEN
+  ASM_SIMP_TAC[RIGHT_COSET_EQ; GROUP_MUL] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
+
 (* Subgroups of solvable groups are solvable.                               *)
 (* Proof: intersect the solvability chain with the subgroup. The commutator *)
 (* and conjugation conditions transfer because subgroups are closed under   *)
@@ -16177,6 +16194,18 @@ let SOLVABLE_GROUP_SUBGROUP = prove
       STRIP_ASSUME_TAC THENL
      [ASM_MESON_TAC[IN_SUBGROUP_INV]; ALL_TAC] THEN
     REPEAT(MATCH_MP_TAC IN_SUBGROUP_MUL THEN ASM_REWRITE_TAC[])]);;
+
+let SOLVABLE_GROUP_MONOMORPHIC_PREIMAGE = prove
+ (`!(G:A group) (H:B group) (f:A->B).
+     group_monomorphism(G,H) f /\ solvable_group H ==> solvable_group G`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`G:A group`; `subgroup_generated H (group_image(G,H) (f:A->B))`]
+   ISOMORPHIC_GROUP_SOLVABILITY) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[isomorphic_group; GROUP_ISOMORPHISM_ONTO_IMAGE];
+    DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC SOLVABLE_GROUP_SUBGROUP THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC SUBGROUP_GROUP_IMAGE THEN
+    ASM_MESON_TAC[group_monomorphism]]);;
 
 (* "Three for the price of two": G is solvable iff N and G/N are both      *)
 (* solvable (backward direction; forward is SOLVABLE_GROUP_SUBGROUP +      *)

@@ -156,14 +156,11 @@ let CHAIN_STEP_THREE_CYCLES_GEN = prove
     MP_TAC(ISPECL [`a:A`; `b:A`; `c:A`; `d:A`] CARD_LE_4) THEN
     ASM_ARITH_TAC;
     ALL_TAC] THEN
-  MP_TAC(ISPECL [`H:(A->A) group`; `n:(A->A)->bool`]
+  MP_TAC(ISPECL [`H:(A->A) group`; `n:(A->A)->bool`;
+                `three_cycle d a (c:A)`; `three_cycle c e (b:A)`]
     ABELIAN_QUOTIENT_COMMUTATOR) THEN
-  ANTS_TAC THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
-  DISCH_THEN(MP_TAC o SPECL
-    [`three_cycle d a (c:A)`; `three_cycle c e (b:A)`]) THEN
   ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
-  ASM_REWRITE_TAC[] THEN
-  DISCH_TAC THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
   SUBGOAL_THEN `three_cycle a b (c:A) =
     inverse(three_cycle d a c) o
     (inverse(three_cycle c e b) o
@@ -710,8 +707,8 @@ let TRANSPOSITION_PCYCLE_GENERATES = prove
       ALL_TAC] THEN
     SUBGOAL_THEN `swap(x':A,y') =
       group_mul (symmetric_group (s:A->bool))
-        (swap(a,x')) 
-        (group_mul (symmetric_group s) (swap(a,y')) (swap(a:A,x')))` 
+        (swap(a,x'))
+        (group_mul (symmetric_group s) (swap(a,y')) (swap(a:A,x')))`
     SUBST1_TAC THENL
      [REWRITE_TAC[SYMMETRIC_GROUP] THEN
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC SWAP_TRIPLE_ALT THEN
@@ -731,7 +728,7 @@ let TRANSPOSITION_PCYCLE_GENERATES = prove
   DISCH_THEN(X_CHOOSE_THEN `m:num` STRIP_ASSUME_TAC) THEN
   SUBGOAL_THEN `0 < m` ASSUME_TAC THENL
    [ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[LT_NZ] THEN
-    UNDISCH_TAC 
+    UNDISCH_TAC
      `group_pow (symmetric_group (s:A->bool)) (sigma:A->A) m a = b` THEN
     ASM_REWRITE_TAC[group_pow; SYMMETRIC_GROUP; I_THM] THEN ASM_MESON_TAC[];
     ALL_TAC] THEN
@@ -765,7 +762,7 @@ let TRANSPOSITION_PCYCLE_GENERATES = prove
   DISCH_THEN(X_CHOOSE_THEN `n:num` STRIP_ASSUME_TAC) THEN
   SUBGOAL_THEN `0 < n` ASSUME_TAC THENL
    [ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[LT_NZ] THEN
-    UNDISCH_TAC 
+    UNDISCH_TAC
      `group_pow (symmetric_group (s:A->bool)) (tau:A->A) n a = c` THEN
     ASM_REWRITE_TAC[group_pow; SYMMETRIC_GROUP; I_THM] THEN ASM_MESON_TAC[];
     ALL_TAC] THEN
@@ -783,7 +780,7 @@ let TRANSPOSITION_PCYCLE_GENERATES = prove
    [(* Base: n = 1, tau^1(a) = tau(a) = b, swap(a,b) IN h *)
     ASM_REWRITE_TAC[ONE; group_pow; SYMMETRIC_GROUP; o_THM; I_THM];
     ALL_TAC] THEN
-  SUBGOAL_THEN 
+  SUBGOAL_THEN
    `swap(a:A, group_pow (symmetric_group (s:A->bool)) (tau:A->A) k a) IN h`
   ASSUME_TAC THENL
    [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC; ALL_TAC] THEN
@@ -793,7 +790,7 @@ let TRANSPOSITION_PCYCLE_GENERATES = prove
      tau(group_pow (symmetric_group s) tau k a)`
     SUBST1_TAC THENL
    [REWRITE_TAC[group_pow; SYMMETRIC_GROUP; o_THM]; ALL_TAC] THEN
-  ABBREV_TAC 
+  ABBREV_TAC
     `x0 = group_pow (symmetric_group (s:A->bool)) (tau:A->A) k (a:A)` THEN
   (* x0 IN s *)
   SUBGOAL_THEN `(x0:A) IN s` ASSUME_TAC THENL
@@ -880,8 +877,8 @@ let TRANSPOSITION_PCYCLE_GENERATES = prove
   (* swap(a, tau(x0)) = swap(a,x0) o swap(x0,tau x0) o swap(a,x0) *)
   SUBGOAL_THEN `swap(a:A, (tau:A->A) x0) =
     group_mul (symmetric_group (s:A->bool))
-      (swap(a,x0)) 
-      (group_mul (symmetric_group s) (swap(x0, tau x0)) (swap(a:A,x0)))` 
+      (swap(a,x0))
+      (group_mul (symmetric_group s) (swap(x0, tau x0)) (swap(a:A,x0)))`
   SUBST1_TAC THENL
    [REWRITE_TAC[SYMMETRIC_GROUP] THEN
     CONV_TAC SYM_CONV THEN MATCH_MP_TAC SWAP_TRIPLE THEN
