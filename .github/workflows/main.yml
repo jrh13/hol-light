@@ -23,8 +23,13 @@ jobs:
       - name: Install dependency
         run: |
           sudo apt update && sudo apt install -y opam
-          opam init --disable-sandboxing --compiler=4.06.0
-          opam repository add archive git+https://github.com/ocaml/opam-repository-archive
+          # Old OCaml versions live in the opam archive repo, so add it as a
+          # default repository before creating the switch.
+          opam init -n --disable-sandboxing --bare
+          opam repository add archive --set-default \
+            git+https://github.com/ocaml/opam-repository-archive
+          opam switch create 4.06 ocaml-base-compiler.4.06.0
+          eval $(opam env --switch=4.06 --set-switch)
           opam pin -y add camlp5 7.10
           opam install -y num ledit camlp-streams ocamlfind
 
@@ -81,8 +86,10 @@ jobs:
           ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./unit_tests.byte
-          ./unit_tests.native
+          ./UnitTests/basic_tests.byte
+          ./UnitTests/basic_tests.native
+          ./UnitTests/printer_tests.byte
+          ./UnitTests/printer_tests.native
 
   test3:
     runs-on: ubuntu-22.04
@@ -122,6 +129,8 @@ jobs:
           (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./unit_tests.byte
-          ./unit_tests.native
+          ./UnitTests/basic_tests.byte
+          ./UnitTests/basic_tests.native
+          ./UnitTests/printer_tests.byte
+          ./UnitTests/printer_tests.native
 

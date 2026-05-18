@@ -23,8 +23,11 @@ hol.sh
 hol.sosa
 hol.sosa.ckpt
 hol_lib_inlined.ml
-unit_tests_inlined.ml
-unit_tests.byte
-unit_tests.native
+UnitTests/basic_tests_inlined.ml
+UnitTests/basic_tests.byte
+UnitTests/basic_tests.native
+UnitTests/printer_tests_inlined.ml
+UnitTests/printer_tests.byte
+UnitTests/printer_tests.native
 hol-*.ckpt
 __pycache__/

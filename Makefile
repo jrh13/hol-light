@@ -140,20 +140,40 @@ hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml
 	fi
 
 # If HOLLIGHT_USE_MODULE is set, add hol_lib.cmo to dependency of hol.sh
-# Also, build unit_tests using OCaml bytecode compiler as well as OCaml native compiler.
+# Also, build the test suites in UnitTests/ using both OCaml bytecode compiler
+# and OCaml native compiler. Native builds go via `hol.sh compile/link`;
+# bytecode builds invoke ocamlfind directly because hol.sh has no byte mode.
 
 ifeq ($(HOLLIGHT_USE_MODULE),1)
 hol.sh: hol_lib.cmo
-unit_tests_inlined.ml: unit_tests.ml inline_load.ml ; \
-        HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml unit_tests.ml unit_tests_inlined.ml
-unit_tests.byte: unit_tests_inlined.ml hol_lib.cmo inline_load.ml hol.sh ; \
-        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
-        -I . bignum.cmo hol_loader.cmo hol_lib.cmo unit_tests_inlined.ml -o unit_tests.byte
-unit_tests.native: unit_tests_inlined.ml hol_lib.cmx inline_load.ml hol.sh ; \
-        ocamlfind ocamlopt -package zarith -linkpkg -pp "`./hol.sh -pp`" \
-        -I . bignum.cmx hol_loader.cmx hol_lib.cmx unit_tests_inlined.ml -o unit_tests.native
 
-default: hol_lib.cma hol_lib.cmxa unit_tests.byte unit_tests.native
+# UnitTests/basic_tests.ml: general HOL Light correctness checks.
+UnitTests/basic_tests_inlined.ml: UnitTests/basic_tests.ml inline_load.ml hol.sh ; \
+        ./hol.sh inline-load UnitTests/basic_tests.ml UnitTests/basic_tests_inlined.ml
+UnitTests/basic_tests.byte: UnitTests/basic_tests_inlined.ml hol_lib.cmo hol.sh ; \
+        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
+        UnitTests/basic_tests_inlined.ml -o UnitTests/basic_tests.byte
+UnitTests/basic_tests.native: UnitTests/basic_tests_inlined.cmx hol_lib.cmxa hol.sh ; \
+        ./hol.sh link UnitTests/basic_tests_inlined.cmx -o UnitTests/basic_tests.native
+UnitTests/basic_tests_inlined.cmx: UnitTests/basic_tests_inlined.ml hol_lib.cmxa hol.sh ; \
+        ./hol.sh compile UnitTests/basic_tests_inlined.ml
+
+# UnitTests/printer_tests.ml: pp_print_term output verification.
+UnitTests/printer_tests_inlined.ml: UnitTests/printer_tests.ml inline_load.ml hol.sh ; \
+        ./hol.sh inline-load UnitTests/printer_tests.ml UnitTests/printer_tests_inlined.ml
+UnitTests/printer_tests.byte: UnitTests/printer_tests_inlined.ml hol_lib.cmo hol.sh ; \
+        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
+        UnitTests/printer_tests_inlined.ml -o UnitTests/printer_tests.byte
+UnitTests/printer_tests.native: UnitTests/printer_tests_inlined.cmx hol_lib.cmxa hol.sh ; \
+        ./hol.sh link UnitTests/printer_tests_inlined.cmx -o UnitTests/printer_tests.native
+UnitTests/printer_tests_inlined.cmx: UnitTests/printer_tests_inlined.ml hol_lib.cmxa hol.sh ; \
+        ./hol.sh compile UnitTests/printer_tests_inlined.ml
+
+default: hol_lib.cma hol_lib.cmxa \
+         UnitTests/basic_tests.byte UnitTests/basic_tests.native \
+         UnitTests/printer_tests.byte UnitTests/printer_tests.native
 endif
 
 # Build a standalone hol image called "hol" (needs Linux and DMTCP)
@@ -251,7 +271,10 @@ clean:; \
          update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
          hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
          hol_loader.c* hol_loader.o \
-         unit_tests_inlined.* unit_tests.native unit_tests.byte \
+         UnitTests/basic_tests_inlined.* \
+         UnitTests/basic_tests.byte UnitTests/basic_tests.native \
+         UnitTests/printer_tests_inlined.* \
+         UnitTests/printer_tests.byte UnitTests/printer_tests.native \
          ocaml-hol hol.sh hol hol.ckpt \
          hol.multivariate hol.multivariate.ckpt \
          hol.sosa hol.sosa.ckpt \
