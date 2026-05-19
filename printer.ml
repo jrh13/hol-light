@@ -338,223 +338,269 @@ let pp_print_term,pp_print_colored_term =
   let print_colored_term (use_color:bool) fmt =
     let color_switch pp =
       if use_color then pp else pp_print_string in
+
+    (* ----- Phase A: shape-based handlers (run before strip_comb). Each
+       prints on success or raises Failure to fall through. ----- *)
+
+    let try_user_printers tm =
+      if use_color then
+        try try_user_color_printer fmt tm
+        with _ -> try_user_printer fmt tm
+      else
+        try_user_printer fmt tm in
+
+    let print_numeral tm =
+      pp_print_string fmt (string_of_num(dest_numeral tm)) in
+
     let rec print_term prec tm =
-      try
-        if use_color then
-          try try_user_color_printer fmt tm
-          with _ -> try_user_printer fmt tm
-        else
-          try_user_printer fmt tm
-      with Failure _ ->
-      try pp_print_string fmt (string_of_num(dest_numeral tm))
-      with Failure _ ->
-      try (let tms = dest_list tm in
-           try if fst(dest_type(hd(snd(dest_type(type_of tm))))) <> "char"
-               then fail() else
-               let ccs = map (String.make 1 o Char.chr o code_of_term) tms in
-               let s = "\"" ^ String.escaped (implode ccs) ^ "\"" in
-               pp_print_string fmt s
-           with Failure _ ->
-               pp_open_box fmt 0; pp_print_string fmt "[";
-               pp_open_box fmt 0; print_term_sequence true ";" 0 tms;
-               pp_close_box fmt (); pp_print_string fmt "]";
-               pp_close_box fmt ())
-      with Failure _ ->
+      try try_user_printers tm with Failure _ ->
+      try print_numeral tm with Failure _ ->
+      try print_string_or_list tm with Failure _ ->
       if is_gabs tm then print_binder prec tm else
       let hop,args = strip_comb tm in
-      let s0 = name_of hop
-      and ty0 = type_of hop in
-      let s = reverse_interface (s0,ty0) in
-      try if s = "EMPTY" && is_const tm && args = [] then
-          pp_print_string fmt "{}" else fail()
-      with Failure _ ->
-      try if s = "UNIV" && !typify_universal_set && is_const tm && args = []
-          then
-            let ty = fst(dest_fun_ty(type_of tm)) in
-            (pp_print_string fmt "(:";
-             pp_print_type fmt ty;
-             pp_print_string fmt ")")
-          else fail()
-      with Failure _ ->
-      try if s <> "INSERT" then fail() else
-          let mems,oth = splitlist (dest_binary "INSERT") tm in
-          if is_const oth && fst(dest_const oth) = "EMPTY" then
-            (pp_open_box fmt 0; pp_print_string fmt "{"; pp_open_box fmt 0;
-             print_term_sequence true "," 14 mems;
-             pp_close_box fmt (); pp_print_string fmt "}"; pp_close_box fmt ())
-          else fail()
-      with Failure _ ->
-      try if not (s = "GSPEC") then fail() else
-          let evs,bod = strip_exists(body(rand tm)) in
-          let bod1,fabs = dest_comb bod in
-          let bod2,babs = dest_comb bod1 in
-          let c = rator bod2 in
-          if fst(dest_const c) <> "SETSPEC" then fail() else
-          pp_print_string fmt "{";
-          print_term 0 fabs;
-          pp_print_string fmt " | ";
-          (let fvs = frees fabs and bvs = frees babs in
-           if not(!print_unambiguous_comprehensions) &&
-              set_eq evs
-               (if (length fvs <= 1 || bvs = []) then fvs
-                else intersect fvs bvs)
-           then ()
-           else (print_term_sequence false "," 14 evs;
-                 pp_print_string fmt " | "));
-          print_term 0 babs;
-          pp_print_string fmt "}"
-      with Failure _ ->
-      try let eqs,bod = dest_let tm in
-          (if prec = 0 then pp_open_hvbox fmt 0
-           else (pp_open_hvbox fmt 1; pp_print_string fmt "(");
-           color_switch pp_print_colored_resword fmt "let ";
-           print_term 0 (mk_eq(hd eqs));
-           do_list (fun (v,t) ->
-               pp_print_break fmt 1 0;
-               color_switch pp_print_colored_resword fmt "and ";
-               print_term 0 (mk_eq(v,t)))
-             (tl eqs);
-           color_switch pp_print_colored_resword fmt " in";
-           pp_print_break fmt 1 0;
-           print_term 0 bod;
-           if prec = 0 then () else pp_print_string fmt ")";
-           pp_close_box fmt ())
-      with Failure _ -> try
-        if s <> "DECIMAL" then fail() else
-        let n_num = dest_numeral (hd args)
-        and n_den = dest_numeral (hd(tl args)) in
-        if not(powerof10 n_den) then fail() else
-        let s_num = string_of_num(quo_num n_num n_den) in
-        let s_den = implode(tl(explode(string_of_num
-                        (n_den +/ (mod_num n_num n_den))))) in
-        pp_print_string fmt
-         ("#"^s_num^(if n_den =/ num 1 then "" else ".")^s_den)
-      with Failure _ -> try
-        if s <> "_MATCH" || length args <> 2 then failwith "" else
-        let cls = dest_clauses(hd(tl args)) in
-        (if prec = 0 then () else pp_print_string fmt "(";
-         pp_open_hvbox fmt 0;
-         color_switch pp_print_colored_resword fmt "match ";
-         print_term 0 (hd args);
-         color_switch pp_print_colored_resword fmt " with";
-         pp_print_break fmt 1 2;
-         print_clauses cls;
-         pp_close_box fmt ();
-         if prec = 0 then () else pp_print_string fmt ")")
-      with Failure _ -> try
-        if s <> "_FUNCTION" || length args <> 1 then failwith "" else
-        let cls = dest_clauses(hd args) in
-        (if prec = 0 then () else pp_print_string fmt "(";
-         pp_open_hvbox fmt 0;
-         color_switch pp_print_colored_resword fmt "function";
-         pp_print_break fmt 1 2;
-         print_clauses cls;
-         pp_close_box fmt ();
-         if prec = 0 then () else pp_print_string fmt ")")
-      with Failure _ ->
-      if s = "COND" && length args = 3 then
-        ((if prec = 0 then () else pp_print_string fmt "(");
-         pp_open_hvbox fmt (-1);
-         (let ccls,ecl = splitlist pdest_cond tm in
-          if length ccls <= 4 then
-           (color_switch pp_print_colored_resword fmt "if ";
-            print_term 0 (hd args);
-            pp_print_break fmt 0 0;
-            color_switch pp_print_colored_resword fmt " then ";
-            print_term 0 (hd(tl args));
-            pp_print_break fmt 0 0;
-            color_switch pp_print_colored_resword fmt " else ";
-            print_term 0 (hd(tl(tl args)))
-           )
-          else
-           (color_switch pp_print_colored_resword fmt "if ";
-            print_term 0 (fst(hd ccls));
-            color_switch pp_print_colored_resword fmt " then ";
-            print_term 0 (snd(hd ccls));
-            pp_print_break fmt 0 0;
-            do_list (fun (i,t) ->
-              color_switch pp_print_colored_resword fmt " else if ";
-              print_term 0 i;
-              color_switch pp_print_colored_resword fmt " then ";
-              print_term 0 t;
-              pp_print_break fmt 0 0) (tl ccls);
-            color_switch pp_print_colored_resword fmt " else ";
-            print_term 0 ecl));
-         pp_close_box fmt ();
-         (if prec = 0 then () else pp_print_string fmt ")"))
-      else if is_prefix s && length args = 1 then
-        (if prec = 1000 then pp_print_string fmt "(" else ();
-         color_switch pp_print_colored_prefix fmt s;
-         (if isalnum s ||
-           s = "--" &&
-           length args = 1 &&
-           (try let l,r = dest_comb(hd args) in
-                let s0 = name_of l and ty0 = type_of l in
-                reverse_interface (s0,ty0) = "--" ||
-                mem (fst(dest_const l)) ["real_of_num"; "int_of_num"]
-            with Failure _ -> false) ||
-           s = "~" && length args = 1 && is_neg(hd args)
-          then pp_print_string fmt " " else ());
-         print_term 999 (hd args);
-         if prec = 1000 then pp_print_string fmt ")" else ())
-      else if parses_as_binder s && length args = 1 && is_gabs (hd args) then
-        print_binder prec tm
-      else if can get_infix_status s && length args = 2 then
-        let bargs =
-          if ARIGHT s then
-            let tms,tmt = splitlist (DEST_BINARY hop) tm in tms@[tmt]
-          else
-            let tmt,tms = rev_splitlist (DEST_BINARY hop) tm in tmt::tms in
-        let newprec = fst(get_infix_status s) in
-        (if newprec <= prec then
-          (pp_open_hvbox fmt 1; pp_print_string fmt "(")
-         else pp_open_hvbox fmt 0;
-         print_term newprec (hd bargs);
-         do_list (fun x -> if mem s (!unspaced_binops) then ()
-                           else if mem s (!prebroken_binops)
-                           then pp_print_break fmt 1 0
-                           else pp_print_string fmt " ";
-                           color_switch pp_print_colored_infix fmt s;
-                           if mem s (!unspaced_binops)
-                           then pp_print_break fmt 0 0
-                           else if mem s (!prebroken_binops)
-                           then pp_print_string fmt " "
-                           else pp_print_break fmt 1 0;
-                           print_term newprec x) (tl bargs);
-         if newprec <= prec then pp_print_string fmt ")" else ();
-         pp_close_box fmt ())
-      else if (is_const hop || is_var hop) && args = [] then
-        let s' = if parses_as_binder s || can get_infix_status s || is_prefix s
-                 then "("^s^")" else s in
-        let rec has_invented_typevar (ty:hol_type): bool =
-          if is_vartype ty then (dest_vartype ty).[0] = '?'
-          else List.exists has_invented_typevar (snd (dest_type ty)) in
-        if !print_types_of_subterms = 2 ||
-           (!print_types_of_subterms = 1 && has_invented_typevar (type_of hop))
-        then
-          (pp_open_box fmt 0;
-          pp_print_string fmt "(";
-          (if (is_const hop) then color_switch pp_print_colored_const fmt s'
-           else pp_print_string fmt s');
-          pp_print_string fmt ":";
-          (if use_color then pp_print_colored_type else pp_print_type)
-            fmt (type_of hop);
-          pp_print_string fmt ")";
-          pp_close_box fmt ())
-        else
-          (if (is_const hop) then color_switch pp_print_colored_const fmt s'
-           else pp_print_string fmt s')
+      let s = reverse_interface (name_of hop, type_of hop) in
+      (* ----- Phase B: name-keyed handlers. ----- *)
+      try print_empty_set s tm args with Failure _ ->
+      try print_universal_set s tm args with Failure _ ->
+      try print_finite_set s tm with Failure _ ->
+      try print_set_comprehension s tm with Failure _ ->
+      try print_let_term s prec tm with Failure _ ->
+      try print_decimal s args with Failure _ ->
+      try print_match s prec args with Failure _ ->
+      try print_function s prec args with Failure _ ->
+      try print_cond s prec tm args with Failure _ ->
+      (* ----- Phase C: parser-status-based handlers. ----- *)
+      try print_prefix_app s prec args with Failure _ ->
+      try print_binder_app s prec tm args with Failure _ ->
+      try print_infix_app s prec tm hop args with Failure _ ->
+      (* ----- Phase D: leaf or generic application. ----- *)
+      if (is_const hop || is_var hop) && args = [] then
+        print_atom hop s
       else
-        let l,r = dest_comb tm in
-        (pp_open_hvbox fmt 0;
-         if prec = 1000 then pp_print_string fmt "(" else ();
-         print_term 999 l;
-         (if try mem (fst(dest_const l)) ["real_of_num"; "int_of_num"]
-             with Failure _ -> false
-          then () else pp_print_space fmt ());
-         print_term 1000 r;
-         if prec = 1000 then pp_print_string fmt ")" else ();
-         pp_close_box fmt ())
+        print_generic_app prec tm
+
+    and print_string_or_list tm =
+      let tms = dest_list tm in
+      try if fst(dest_type(hd(snd(dest_type(type_of tm))))) <> "char"
+          then fail() else
+          let ccs = map (String.make 1 o Char.chr o code_of_term) tms in
+          let s = "\"" ^ String.escaped (implode ccs) ^ "\"" in
+          pp_print_string fmt s
+      with Failure _ ->
+          pp_open_box fmt 0; pp_print_string fmt "[";
+          pp_open_box fmt 0; print_term_sequence true ";" 0 tms;
+          pp_close_box fmt (); pp_print_string fmt "]";
+          pp_close_box fmt ()
+
+    and print_empty_set s tm args =
+      if s = "EMPTY" && is_const tm && args = [] then
+        pp_print_string fmt "{}"
+      else fail()
+
+    and print_universal_set s tm args =
+      if s = "UNIV" && !typify_universal_set && is_const tm && args = [] then
+        let ty = fst(dest_fun_ty(type_of tm)) in
+        (pp_print_string fmt "(:";
+         pp_print_type fmt ty;
+         pp_print_string fmt ")")
+      else fail()
+
+    and print_finite_set s tm =
+      if s <> "INSERT" then fail() else
+      let mems,oth = splitlist (dest_binary "INSERT") tm in
+      if is_const oth && fst(dest_const oth) = "EMPTY" then
+        (pp_open_box fmt 0; pp_print_string fmt "{"; pp_open_box fmt 0;
+         print_term_sequence true "," 14 mems;
+         pp_close_box fmt (); pp_print_string fmt "}"; pp_close_box fmt ())
+      else fail()
+
+    and print_set_comprehension s tm =
+      if s <> "GSPEC" then fail() else
+      let evs,bod = strip_exists(body(rand tm)) in
+      let bod1,fabs = dest_comb bod in
+      let bod2,babs = dest_comb bod1 in
+      let c = rator bod2 in
+      if fst(dest_const c) <> "SETSPEC" then fail() else
+      pp_print_string fmt "{";
+      print_term 0 fabs;
+      pp_print_string fmt " | ";
+      (let fvs = frees fabs and bvs = frees babs in
+       if not(!print_unambiguous_comprehensions) &&
+          set_eq evs
+           (if (length fvs <= 1 || bvs = []) then fvs
+            else intersect fvs bvs)
+       then ()
+       else (print_term_sequence false "," 14 evs;
+             pp_print_string fmt " | "));
+      print_term 0 babs;
+      pp_print_string fmt "}"
+
+    and print_let_term s prec tm =
+      if s <> "LET" then fail() else
+      let eqs,bod = dest_let tm in
+      (if prec = 0 then pp_open_hvbox fmt 0
+       else (pp_open_hvbox fmt 1; pp_print_string fmt "(");
+       color_switch pp_print_colored_resword fmt "let ";
+       print_term 0 (mk_eq(hd eqs));
+       do_list (fun (v,t) ->
+           pp_print_break fmt 1 0;
+           color_switch pp_print_colored_resword fmt "and ";
+           print_term 0 (mk_eq(v,t)))
+         (tl eqs);
+       color_switch pp_print_colored_resword fmt " in";
+       pp_print_break fmt 1 0;
+       print_term 0 bod;
+       if prec = 0 then () else pp_print_string fmt ")";
+       pp_close_box fmt ())
+
+    and print_decimal s args =
+      if s <> "DECIMAL" then fail() else
+      let n_num = dest_numeral (hd args)
+      and n_den = dest_numeral (hd(tl args)) in
+      if not(powerof10 n_den) then fail() else
+      let s_num = string_of_num(quo_num n_num n_den) in
+      let s_den = implode(tl(explode(string_of_num
+                      (n_den +/ (mod_num n_num n_den))))) in
+      pp_print_string fmt
+       ("#"^s_num^(if n_den =/ num 1 then "" else ".")^s_den)
+
+    and print_match s prec args =
+      if s <> "_MATCH" || length args <> 2 then fail() else
+      let cls = dest_clauses(hd(tl args)) in
+      (if prec = 0 then () else pp_print_string fmt "(";
+       pp_open_hvbox fmt 0;
+       color_switch pp_print_colored_resword fmt "match ";
+       print_term 0 (hd args);
+       color_switch pp_print_colored_resword fmt " with";
+       pp_print_break fmt 1 2;
+       print_clauses cls;
+       pp_close_box fmt ();
+       if prec = 0 then () else pp_print_string fmt ")")
+
+    and print_function s prec args =
+      if s <> "_FUNCTION" || length args <> 1 then fail() else
+      let cls = dest_clauses(hd args) in
+      (if prec = 0 then () else pp_print_string fmt "(";
+       pp_open_hvbox fmt 0;
+       color_switch pp_print_colored_resword fmt "function";
+       pp_print_break fmt 1 2;
+       print_clauses cls;
+       pp_close_box fmt ();
+       if prec = 0 then () else pp_print_string fmt ")")
+
+    and print_cond s prec tm args =
+      if s <> "COND" || length args <> 3 then fail() else
+      ((if prec = 0 then () else pp_print_string fmt "(");
+       pp_open_hvbox fmt (-1);
+       (let ccls,ecl = splitlist pdest_cond tm in
+        if length ccls <= 4 then
+         (color_switch pp_print_colored_resword fmt "if ";
+          print_term 0 (hd args);
+          pp_print_break fmt 0 0;
+          color_switch pp_print_colored_resword fmt " then ";
+          print_term 0 (hd(tl args));
+          pp_print_break fmt 0 0;
+          color_switch pp_print_colored_resword fmt " else ";
+          print_term 0 (hd(tl(tl args)))
+         )
+        else
+         (color_switch pp_print_colored_resword fmt "if ";
+          print_term 0 (fst(hd ccls));
+          color_switch pp_print_colored_resword fmt " then ";
+          print_term 0 (snd(hd ccls));
+          pp_print_break fmt 0 0;
+          do_list (fun (i,t) ->
+            color_switch pp_print_colored_resword fmt " else if ";
+            print_term 0 i;
+            color_switch pp_print_colored_resword fmt " then ";
+            print_term 0 t;
+            pp_print_break fmt 0 0) (tl ccls);
+          color_switch pp_print_colored_resword fmt " else ";
+          print_term 0 ecl));
+       pp_close_box fmt ();
+       (if prec = 0 then () else pp_print_string fmt ")"))
+
+    and print_prefix_app s prec args =
+      if not (is_prefix s && length args = 1) then fail() else
+      (if prec = 1000 then pp_print_string fmt "(" else ();
+       color_switch pp_print_colored_prefix fmt s;
+       (if isalnum s ||
+         s = "--" &&
+         length args = 1 &&
+         (try let l,_ = dest_comb(hd args) in
+              let s0 = name_of l and ty0 = type_of l in
+              reverse_interface (s0,ty0) = "--" ||
+              mem (fst(dest_const l)) ["real_of_num"; "int_of_num"]
+          with Failure _ -> false) ||
+         s = "~" && length args = 1 && is_neg(hd args)
+        then pp_print_string fmt " " else ());
+       print_term 999 (hd args);
+       if prec = 1000 then pp_print_string fmt ")" else ())
+
+    and print_binder_app s prec tm args =
+      if not (parses_as_binder s && length args = 1 && is_gabs (hd args))
+      then fail() else
+      print_binder prec tm
+
+    and print_infix_app s prec tm hop args =
+      if length args <> 2 || not (can get_infix_status s) then fail() else
+      let bargs =
+        if ARIGHT s then
+          let tms,tmt = splitlist (DEST_BINARY hop) tm in tms@[tmt]
+        else
+          let tmt,tms = rev_splitlist (DEST_BINARY hop) tm in tmt::tms in
+      let newprec = fst(get_infix_status s) in
+      (if newprec <= prec then
+        (pp_open_hvbox fmt 1; pp_print_string fmt "(")
+       else pp_open_hvbox fmt 0;
+       print_term newprec (hd bargs);
+       do_list (fun x -> if mem s (!unspaced_binops) then ()
+                         else if mem s (!prebroken_binops)
+                         then pp_print_break fmt 1 0
+                         else pp_print_string fmt " ";
+                         color_switch pp_print_colored_infix fmt s;
+                         if mem s (!unspaced_binops)
+                         then pp_print_break fmt 0 0
+                         else if mem s (!prebroken_binops)
+                         then pp_print_string fmt " "
+                         else pp_print_break fmt 1 0;
+                         print_term newprec x) (tl bargs);
+       if newprec <= prec then pp_print_string fmt ")" else ();
+       pp_close_box fmt ())
+
+    and print_atom hop s =
+      let s' = if parses_as_binder s || can get_infix_status s || is_prefix s
+               then "("^s^")" else s in
+      let rec has_invented_typevar (ty:hol_type): bool =
+        if is_vartype ty then (dest_vartype ty).[0] = '?'
+        else List.exists has_invented_typevar (snd (dest_type ty)) in
+      if !print_types_of_subterms = 2 ||
+         (!print_types_of_subterms = 1 && has_invented_typevar (type_of hop))
+      then
+        (pp_open_box fmt 0;
+        pp_print_string fmt "(";
+        (if (is_const hop) then color_switch pp_print_colored_const fmt s'
+         else pp_print_string fmt s');
+        pp_print_string fmt ":";
+        (if use_color then pp_print_colored_type else pp_print_type)
+          fmt (type_of hop);
+        pp_print_string fmt ")";
+        pp_close_box fmt ())
+      else
+        (if (is_const hop) then color_switch pp_print_colored_const fmt s'
+         else pp_print_string fmt s')
+
+    and print_generic_app prec tm =
+      let l,r = dest_comb tm in
+      (pp_open_hvbox fmt 0;
+       if prec = 1000 then pp_print_string fmt "(" else ();
+       print_term 999 l;
+       (if try mem (fst(dest_const l)) ["real_of_num"; "int_of_num"]
+           with Failure _ -> false
+        then () else pp_print_space fmt ());
+       print_term 1000 r;
+       if prec = 1000 then pp_print_string fmt ")" else ();
+       pp_close_box fmt ())
 
     and print_term_sequence break sep prec tms =
       if tms = [] then () else

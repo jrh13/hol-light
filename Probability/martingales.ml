@@ -4,8 +4,8 @@
 (*                                                                           *)
 (* Follows Williams "Probability with Martingales" Chapters 8-10.            *)
 (* Includes sub-sigma-algebras, conditional expectation for simple RVs,      *)
-(* filtrations, martingale definitions, Doob's optional stopping theorem     *)
-(* (Fair Games Theorem), submartingale inequalities, and Doob's maximal      *)
+(* filtrations, simple_martingale definitions, Doob's optional stopping theorem     *)
+(* (Fair Games Theorem), simple_submartingale inequalities, and Doob's maximal      *)
 (* inequality (both bounded and general versions).                           *)
 (* ========================================================================= *)
 
@@ -140,9 +140,9 @@ let natural_filtration = new_definition
    sigma_generated (prob_carrier p)
      (UNIONS (IMAGE (\k. {{x | x IN prob_carrier p /\ X k x <= v} | v IN (:real)}) (0..n)))`;;
 
-(* A martingale w.r.t. filtration FF *)
-let martingale = new_definition
-  `martingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+(* A simple_martingale w.r.t. filtration FF *)
+let simple_martingale = new_definition
+  `simple_martingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
    filtration p FF /\
    simple_adapted p FF X /\
    (!n. simple_rv p (X n)) /\
@@ -150,9 +150,9 @@ let martingale = new_definition
      ==> simple_expectation p (\x. X (SUC n) x * indicator_fn a x) =
          simple_expectation p (\x. X n x * indicator_fn a x))`;;
 
-(* A submartingale w.r.t. filtration FF *)
-let submartingale = new_definition
-  `submartingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+(* A simple_submartingale w.r.t. filtration FF *)
+let simple_submartingale = new_definition
+  `simple_submartingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
    filtration p FF /\
    simple_adapted p FF X /\
    (!n. simple_rv p (X n)) /\
@@ -160,9 +160,9 @@ let submartingale = new_definition
      ==> simple_expectation p (\x. X n x * indicator_fn a x) <=
          simple_expectation p (\x. X (SUC n) x * indicator_fn a x))`;;
 
-(* A supermartingale w.r.t. filtration FF *)
-let supermartingale = new_definition
-  `supermartingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+(* A simple_supermartingale w.r.t. filtration FF *)
+let simple_supermartingale = new_definition
+  `simple_supermartingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
    filtration p FF /\
    simple_adapted p FF X /\
    (!n. simple_rv p (X n)) /\
@@ -170,27 +170,27 @@ let supermartingale = new_definition
      ==> simple_expectation p (\x. X (SUC n) x * indicator_fn a x) <=
          simple_expectation p (\x. X n x * indicator_fn a x))`;;
 
-(* Every martingale is both a sub- and super-martingale *)
-let MARTINGALE_IMP_SUBMARTINGALE = prove
+(* Every simple_martingale is both a sub- and super-simple_martingale *)
+let SIMPLE_MARTINGALE_IMP_SUBMARTINGALE = prove
  (`!p:A prob_space FF X.
-     martingale p FF X ==> submartingale p FF X`,
-  REWRITE_TAC[martingale; submartingale] THEN
+     simple_martingale p FF X ==> simple_submartingale p FF X`,
+  REWRITE_TAC[simple_martingale; simple_submartingale] THEN
   MESON_TAC[REAL_LE_REFL]);;
 
-let MARTINGALE_IMP_SUPERMARTINGALE = prove
+let SIMPLE_MARTINGALE_IMP_SUPERMARTINGALE = prove
  (`!p:A prob_space FF X.
-     martingale p FF X ==> supermartingale p FF X`,
-  REWRITE_TAC[martingale; supermartingale] THEN
+     simple_martingale p FF X ==> simple_supermartingale p FF X`,
+  REWRITE_TAC[simple_martingale; simple_supermartingale] THEN
   MESON_TAC[REAL_LE_REFL]);;
 
-(* X is a martingale iff it is both sub- and super-martingale *)
-let MARTINGALE_SUB_SUPER = prove
+(* X is a simple_martingale iff it is both sub- and super-simple_martingale *)
+let SIMPLE_MARTINGALE_SUB_SUPER = prove
  (`!p:A prob_space FF X.
-     martingale p FF X <=>
-     submartingale p FF X /\ supermartingale p FF X`,
+     simple_martingale p FF X <=>
+     simple_submartingale p FF X /\ simple_supermartingale p FF X`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
-  [MESON_TAC[MARTINGALE_IMP_SUBMARTINGALE; MARTINGALE_IMP_SUPERMARTINGALE];
-   REWRITE_TAC[submartingale; supermartingale; martingale] THEN
+  [MESON_TAC[SIMPLE_MARTINGALE_IMP_SUBMARTINGALE; SIMPLE_MARTINGALE_IMP_SUPERMARTINGALE];
+   REWRITE_TAC[simple_submartingale; simple_supermartingale; simple_martingale] THEN
    MESON_TAC[REAL_LE_ANTISYM]]);;
 
 
@@ -199,12 +199,12 @@ let FILTRATION_MONO = prove
      filtration p FF /\ m <= n ==> FF m SUBSET FF n`,
   SIMP_TAC[filtration]);;
 
-(* Constant sequence is a martingale *)
-let MARTINGALE_CONST = prove
+(* Constant sequence is a simple_martingale *)
+let SIMPLE_MARTINGALE_CONST = prove
  (`!p:A prob_space FF c.
      filtration p FF
-     ==> martingale p FF (\n x. c)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[martingale] THEN
+     ==> simple_martingale p FF (\n x. c)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[simple_martingale] THEN
   TRY BETA_TAC THEN
   ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
   [REWRITE_TAC[simple_adapted; adapted] THEN
@@ -229,11 +229,11 @@ let bounded_stopping_time = new_definition
    (!x. x IN prob_carrier p ==> tau x <= N)`;;
 
 (* E[X_n] = E[X_0] for martingales *)
-let MARTINGALE_EXPECTATION_CONST = prove
+let SIMPLE_MARTINGALE_EXPECTATION_CONST = prove
  (`!p:A prob_space FF X.
-     martingale p FF X
+     simple_martingale p FF X
      ==> !n. simple_expectation p (X n) = simple_expectation p (X 0)`,
-  REWRITE_TAC[martingale] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+  REWRITE_TAC[simple_martingale] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
   INDUCT_TAC THEN REWRITE_TAC[] THEN
   SUBGOAL_THEN
     `simple_expectation p ((X:num->A->real) (SUC n)) =
@@ -244,11 +244,11 @@ let MARTINGALE_EXPECTATION_CONST = prove
   ASM_SIMP_TAC[]);;
 
 (* E[X_n] <= E[X_{n+1}] for submartingales *)
-let SUBMARTINGALE_EXPECTATION_MONO = prove
+let SIMPLE_SUBMARTINGALE_EXPECTATION_MONO = prove
  (`!p:A prob_space FF X.
-     submartingale p FF X
+     simple_submartingale p FF X
      ==> !n. simple_expectation p (X n) <= simple_expectation p (X (SUC n))`,
-  REWRITE_TAC[submartingale] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+  REWRITE_TAC[simple_submartingale] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
   GEN_TAC THEN
   ONCE_REWRITE_TAC[GSYM SIMPLE_EXPECTATION_MUL_INDICATOR_CARRIER] THEN
   SUBGOAL_THEN `prob_carrier (p:A prob_space) IN FF (n:num)` ASSUME_TAC THENL
@@ -256,11 +256,11 @@ let SUBMARTINGALE_EXPECTATION_MONO = prove
   ASM_SIMP_TAC[]);;
 
 (* E[X_{n+1}] <= E[X_n] for supermartingales *)
-let SUPERMARTINGALE_EXPECTATION_MONO = prove
+let SIMPLE_SUPERMARTINGALE_EXPECTATION_MONO = prove
  (`!p:A prob_space FF X.
-     supermartingale p FF X
+     simple_supermartingale p FF X
      ==> !n. simple_expectation p (X (SUC n)) <= simple_expectation p (X n)`,
-  REWRITE_TAC[supermartingale] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+  REWRITE_TAC[simple_supermartingale] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
   GEN_TAC THEN
   ONCE_REWRITE_TAC[GSYM SIMPLE_EXPECTATION_MUL_INDICATOR_CARRIER] THEN
   SUBGOAL_THEN `prob_carrier (p:A prob_space) IN FF (n:num)` ASSUME_TAC THENL
@@ -268,9 +268,9 @@ let SUPERMARTINGALE_EXPECTATION_MONO = prove
   ASM_SIMP_TAC[]);;
 
 (* E[X_0] <= E[X_n] for submartingales (by induction) *)
-let SUBMARTINGALE_EXPECTATION_INCREASING = prove
+let SIMPLE_SUBMARTINGALE_EXPECTATION_INCREASING = prove
  (`!p:A prob_space FF X.
-     submartingale p FF X
+     simple_submartingale p FF X
      ==> !m n. m <= n ==> simple_expectation p (X m) <= simple_expectation p (X n)`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `?k. n = m + k:num` CHOOSE_TAC THENL
@@ -283,14 +283,14 @@ let SUBMARTINGALE_EXPECTATION_INCREASING = prove
    EXISTS_TAC `simple_expectation p ((X:num->A->real) (m + j))` THEN
    CONJ_TAC THENL
    [ASM_REWRITE_TAC[];
-    MP_TAC (SPEC `m + j:num` (MATCH_MP SUBMARTINGALE_EXPECTATION_MONO
-      (ASSUME `submartingale (p:A prob_space) FF (X:num->A->real)`))) THEN
+    MP_TAC (SPEC `m + j:num` (MATCH_MP SIMPLE_SUBMARTINGALE_EXPECTATION_MONO
+      (ASSUME `simple_submartingale (p:A prob_space) FF (X:num->A->real)`))) THEN
     SIMP_TAC[]]]);;
 
 (* E[X_n] <= E[X_0] for supermartingales (by induction) *)
-let SUPERMARTINGALE_EXPECTATION_DECREASING = prove
+let SIMPLE_SUPERMARTINGALE_EXPECTATION_DECREASING = prove
  (`!p:A prob_space FF X.
-     supermartingale p FF X
+     simple_supermartingale p FF X
      ==> !m n. m <= n ==> simple_expectation p (X n) <= simple_expectation p (X m)`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `?k. n = m + k:num` CHOOSE_TAC THENL
@@ -302,8 +302,8 @@ let SUPERMARTINGALE_EXPECTATION_DECREASING = prove
    MATCH_MP_TAC REAL_LE_TRANS THEN
    EXISTS_TAC `simple_expectation p ((X:num->A->real) (m + j))` THEN
    CONJ_TAC THENL
-   [MP_TAC (SPEC `m + j:num` (MATCH_MP SUPERMARTINGALE_EXPECTATION_MONO
-      (ASSUME `supermartingale (p:A prob_space) FF (X:num->A->real)`))) THEN
+   [MP_TAC (SPEC `m + j:num` (MATCH_MP SIMPLE_SUPERMARTINGALE_EXPECTATION_MONO
+      (ASSUME `simple_supermartingale (p:A prob_space) FF (X:num->A->real)`))) THEN
     SIMP_TAC[];
     ASM_REWRITE_TAC[]]]);;
 
@@ -316,17 +316,17 @@ let SUPERMARTINGALE_EXPECTATION_DECREASING = prove
    E[Y * 1_A] = E[X * 1_A].
    We define it constructively for simple RVs. *)
 
-(* First: a key property - martingale condition restated *)
-let MARTINGALE_COND_EXP = prove
+(* First: a key property - simple_martingale condition restated *)
+let SIMPLE_MARTINGALE_COND_EXP = prove
  (`!p:A prob_space FF X.
-     martingale p FF X
+     simple_martingale p FF X
      ==> !n a. a IN FF n
          ==> simple_expectation p (\x. X (SUC n) x * indicator_fn a x) =
              simple_expectation p (\x. X n x * indicator_fn a x)`,
-  REWRITE_TAC[martingale] THEN MESON_TAC[]);;
+  REWRITE_TAC[simple_martingale] THEN MESON_TAC[]);;
 
-(* Martingale transform: if X is a martingale and H is predictable & bounded,
-   then (H . X)_n = sum_{i=0}^{n-1} H_i * (X_{i+1} - X_i) is a martingale.
+(* Martingale transform: if X is a simple_martingale and H is predictable & bounded,
+   then (H . X)_n = sum_{i=0}^{n-1} H_i * (X_{i+1} - X_i) is a simple_martingale.
    For simple setup, we define the transform directly. *)
 
 (* Martingale transform definition *)
@@ -350,14 +350,14 @@ let stopped_process = new_definition
 (* Doob's Optional Stopping Theorem (bounded case)                           *)
 (* ========================================================================= *)
 
-(* Key theorem: For a martingale X and bounded stopping times sigma <= tau <= N,
+(* Key theorem: For a simple_martingale X and bounded stopping times sigma <= tau <= N,
    E[X_tau] = E[X_sigma] = E[X_0].
    The simplest case: E[X_{tau /\ n}] = E[X_0] for all n.
 
    Proof approach: X^tau_n = X_0 + sum_{i=0}^{n-1} 1_{tau > i} * (X_{i+1} - X_i)
    The indicator 1_{tau > i} is FF_i-measurable (since {tau > i} = Omega \ {tau <= i}
    and {tau <= i} IN FF_i by the stopping time property).
-   So X^tau is a martingale transform, and E[X^tau_n] = E[X_0]. *)
+   So X^tau is a simple_martingale transform, and E[X^tau_n] = E[X_0]. *)
 
 (* First: indicator of {tau > n} is FF_n-measurable *)
 let STOPPING_TIME_INDICATOR_PREDICTABLE = prove
@@ -374,10 +374,7 @@ let STOPPING_TIME_INDICATOR_PREDICTABLE = prove
   [MATCH_MP_TAC SUB_SIGMA_ALGEBRA_COMPL THEN
    ASM_REWRITE_TAC[];
    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-   REWRITE_TAC[EXTENSION; IN_DIFF; IN_ELIM_THM] THEN
-   X_GEN_TAC `y:A` THEN
-   ASM_CASES_TAC `(y:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN
-   ARITH_TAC]);;
+   SET_TAC[NOT_LE; GT]]);;
 
 (* Base case for stopped process *)
 let STOPPED_PROCESS_ZERO = prove
@@ -484,25 +481,25 @@ let SIMPLE_RV_STOPPED_PROCESS = prove
 
 (* Doob's Optional Stopping Theorem (bounded case),
    also known as the "Fair Games Theorem" (Williams, Ch.10):
-   For a martingale X and bounded stopping time tau,
+   For a simple_martingale X and bounded stopping time tau,
    E[X^tau_n] = E[X_0] for all n. *)
-let DOOB_OPTIONAL_STOPPING_BOUNDED = prove
+let SIMPLE_DOOB_OPTIONAL_STOPPING_BOUNDED = prove
  (`!p:A prob_space FF X tau N.
-     martingale p FF X /\ bounded_stopping_time p FF tau N
+     simple_martingale p FF X /\ bounded_stopping_time p FF tau N
      ==> !n. simple_expectation p (stopped_process X tau n) =
              simple_expectation p (X 0)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
-  (* Extract key properties from martingale *)
+  (* Extract key properties from simple_martingale *)
   SUBGOAL_THEN `filtration (p:A prob_space) (FF:num->(A->bool)->bool)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_martingale]; ALL_TAC] THEN
   SUBGOAL_THEN `!n. simple_rv (p:A prob_space) ((X:num->A->real) n)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_martingale]; ALL_TAC] THEN
   SUBGOAL_THEN
     `!n a. a IN (FF:num->(A->bool)->bool) n
      ==> simple_expectation (p:A prob_space)
            (\x. (X:num->A->real) (SUC n) x * indicator_fn a x) =
          simple_expectation p (\x. X n x * indicator_fn a x)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_martingale]; ALL_TAC] THEN
   SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
   [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
   INDUCT_TAC THENL
@@ -515,7 +512,7 @@ let DOOB_OPTIONAL_STOPPING_BOUNDED = prove
       (FF:num->(A->bool)->bool) n`
      ASSUME_TAC THENL
    [ASM_SIMP_TAC[STOPPING_TIME_INDICATOR_PREDICTABLE]; ALL_TAC] THEN
-   (* Apply the martingale property: E[X_{n+1} * 1_{tau>n}] = E[X_n * 1_{tau>n}] *)
+   (* Apply the simple_martingale property: E[X_{n+1} * 1_{tau>n}] = E[X_n * 1_{tau>n}] *)
    SUBGOAL_THEN
      `simple_expectation (p:A prob_space)
        (\x. (X:num->A->real) (SUC n) x *
@@ -525,7 +522,7 @@ let DOOB_OPTIONAL_STOPPING_BOUNDED = prove
      ASSUME_TAC THENL [ASM_SIMP_TAC[]; ALL_TAC] THEN
    (* Show (X_{n+1} - X_n) * 1_{tau>n} has zero expectation.
       Uses: (a - b) * c = a * c - b * c pointwise, E[SUB] = E[] - E[],
-      and martingale property for {tau > n} IN FF n. *)
+      and simple_martingale property for {tau > n} IN FF n. *)
    SUBGOAL_THEN
      `simple_expectation (p:A prob_space) (\x. (X (SUC n) x - X n x) *
         indicator_fn {y | y IN prob_carrier p /\ (tau:A->num) y > n} x) = &0`
@@ -627,18 +624,18 @@ let DOOB_OPTIONAL_STOPPING_BOUNDED = prove
 
 
 (* Submartingale optional stopping: lower bound.
-   For a submartingale, E[X_0] <= E[X^tau_n] for all n. *)
-let SUBMARTINGALE_OPTIONAL_STOPPING_GE = prove
+   For a simple_submartingale, E[X_0] <= E[X^tau_n] for all n. *)
+let SIMPLE_SUBMARTINGALE_OPTIONAL_STOPPING_GE = prove
  (`!p:A prob_space FF X tau N.
-     submartingale p FF X /\ bounded_stopping_time p FF tau N
+     simple_submartingale p FF X /\ bounded_stopping_time p FF tau N
      ==> !n. simple_expectation p (X 0) <=
              simple_expectation p (stopped_process X tau n)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
-  (* Extract key properties from submartingale *)
+  (* Extract key properties from simple_submartingale *)
   SUBGOAL_THEN `filtration (p:A prob_space) (FF:num->(A->bool)->bool)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `!n. simple_rv (p:A prob_space) ((X:num->A->real) n)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
   [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
   INDUCT_TAC THENL
@@ -696,7 +693,7 @@ let SUBMARTINGALE_OPTIONAL_STOPPING_GE = prove
       SIMP_TAC[]];
      (* Step 2: Show E[increment] >= 0, i.e. &0 <= E[(X_{n+1}-X_n)*1_{tau>n}] *)
      MATCH_MP_TAC(REAL_ARITH `&0 <= c ==> a <= a + c`) THEN
-     (* Prove E[increment] >= 0 using submartingale property *)
+     (* Prove E[increment] >= 0 using simple_submartingale property *)
      (* Step A: Rewrite (a-b)*c as a*c - b*c pointwise *)
      SUBGOAL_THEN
        `simple_expectation (p:A prob_space)
@@ -750,28 +747,28 @@ let SUBMARTINGALE_OPTIONAL_STOPPING_GE = prove
         (FF:num->(A->bool)->bool) n`
        ASSUME_TAC THENL
      [ASM_SIMP_TAC[STOPPING_TIME_INDICATOR_PREDICTABLE]; ALL_TAC] THEN
-     (* Extract one-step submartingale inequality and apply *)
+     (* Extract one-step simple_submartingale inequality and apply *)
      SUBGOAL_THEN
        `!n' (a:A->bool). a IN (FF:num->(A->bool)->bool) n' ==>
         simple_expectation (p:A prob_space)
           (\x. (X:num->A->real) n' x * indicator_fn a x) <=
         simple_expectation p (\x. X (SUC n') x * indicator_fn a x)`
        ASSUME_TAC THENL
-     [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+     [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]]]]);;
 (* Supermartingale optional stopping: upper bound.
-   For a supermartingale, E[X^tau_n] <= E[X_0] for all n. *)
-let SUPERMARTINGALE_OPTIONAL_STOPPING_LE = prove
+   For a simple_supermartingale, E[X^tau_n] <= E[X_0] for all n. *)
+let SIMPLE_SUPERMARTINGALE_OPTIONAL_STOPPING_LE = prove
  (`!p:A prob_space FF X tau N.
-     supermartingale p FF X /\ bounded_stopping_time p FF tau N
+     simple_supermartingale p FF X /\ bounded_stopping_time p FF tau N
      ==> !n. simple_expectation p (stopped_process X tau n) <=
              simple_expectation p (X 0)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
-  (* Extract key properties from supermartingale *)
+  (* Extract key properties from simple_supermartingale *)
   SUBGOAL_THEN `filtration (p:A prob_space) (FF:num->(A->bool)->bool)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_supermartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `!n. simple_rv (p:A prob_space) ((X:num->A->real) n)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_supermartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
   [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
   INDUCT_TAC THENL
@@ -885,7 +882,7 @@ let SUPERMARTINGALE_OPTIONAL_STOPPING_LE = prove
           (\x. (X:num->A->real) (SUC n') x * indicator_fn a x) <=
         simple_expectation p (\x. X n' x * indicator_fn a x)`
        ASSUME_TAC THENL
-     [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+     [ASM_MESON_TAC[simple_supermartingale]; ALL_TAC] THEN
      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]];
     (* IH: E[X^tau_n] <= E[X_0] *)
     ASM_REWRITE_TAC[]]]);;
@@ -1051,19 +1048,19 @@ let SIMPLE_ADAPTED_STOPPED_PROCESS = prove
    DISCH_THEN(MP_TAC o SPEC `n:num`) THEN
    REWRITE_TAC[simple_rv] THEN MESON_TAC[]]);;
 
-(* Stopped process of a submartingale is a submartingale *)
-let SUBMARTINGALE_STOPPED_PROCESS = prove
+(* Stopped process of a simple_submartingale is a simple_submartingale *)
+let SIMPLE_SUBMARTINGALE_STOPPED_PROCESS = prove
  (`!p:A prob_space FF X tau N.
-     submartingale p FF X /\ bounded_stopping_time p FF tau N
-     ==> submartingale p FF (stopped_process X tau)`,
+     simple_submartingale p FF X /\ bounded_stopping_time p FF tau N
+     ==> simple_submartingale p FF (stopped_process X tau)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   (* Extract key properties *)
   SUBGOAL_THEN `filtration (p:A prob_space) (FF:num->(A->bool)->bool)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `simple_adapted (p:A prob_space) FF (X:num->A->real)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `!n. simple_rv (p:A prob_space) ((X:num->A->real) n)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)`
     ASSUME_TAC THENL [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
   SUBGOAL_THEN `simple_adapted (p:A prob_space) FF
@@ -1075,7 +1072,7 @@ let SUBMARTINGALE_STOPPED_PROCESS = prove
   [MATCH_MP_TAC SIMPLE_RV_STOPPED_PROCESS THEN
    EXISTS_TAC `FF:num->(A->bool)->bool` THEN ASM_REWRITE_TAC[];
    ALL_TAC] THEN
-  REWRITE_TAC[submartingale] THEN
+  REWRITE_TAC[simple_submartingale] THEN
   ASM_REWRITE_TAC[] THEN
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   (* Need: E[X^tau_n * 1_a] <= E[X^tau_{SUC n} * 1_a] for a IN FF n *)
@@ -1191,28 +1188,28 @@ let SUBMARTINGALE_STOPPED_PROCESS = prove
     SUBST1_TAC THENL
   [MATCH_MP_TAC SIMPLE_EXPECTATION_SUB THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
   REWRITE_TAC[REAL_SUB_LE] THEN
-  (* Apply the submartingale property to B IN FF n *)
+  (* Apply the simple_submartingale property to B IN FF n *)
   SUBGOAL_THEN
     `!n' (s:A->bool). s IN (FF:num->(A->bool)->bool) n' ==>
      simple_expectation (p:A prob_space)
        (\x. (X:num->A->real) n' x * indicator_fn s x) <=
      simple_expectation p (\x. X (SUC n') x * indicator_fn s x)`
     ASSUME_TAC THENL
-  [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+  [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
 
-(* Stopped process of a supermartingale is a supermartingale *)
-let SUPERMARTINGALE_STOPPED_PROCESS = prove
+(* Stopped process of a simple_supermartingale is a simple_supermartingale *)
+let SIMPLE_SUPERMARTINGALE_STOPPED_PROCESS = prove
  (`!p:A prob_space FF X tau N.
-     supermartingale p FF X /\ bounded_stopping_time p FF tau N
-     ==> supermartingale p FF (stopped_process X tau)`,
+     simple_supermartingale p FF X /\ bounded_stopping_time p FF tau N
+     ==> simple_supermartingale p FF (stopped_process X tau)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   SUBGOAL_THEN `filtration (p:A prob_space) (FF:num->(A->bool)->bool)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_supermartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `simple_adapted (p:A prob_space) FF (X:num->A->real)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_supermartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `!n. simple_rv (p:A prob_space) ((X:num->A->real) n)`
-    ASSUME_TAC THENL [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+    ASSUME_TAC THENL [ASM_MESON_TAC[simple_supermartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)`
     ASSUME_TAC THENL [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
   SUBGOAL_THEN `simple_adapted (p:A prob_space) FF
@@ -1224,7 +1221,7 @@ let SUPERMARTINGALE_STOPPED_PROCESS = prove
   [MATCH_MP_TAC SIMPLE_RV_STOPPED_PROCESS THEN
    EXISTS_TAC `FF:num->(A->bool)->bool` THEN ASM_REWRITE_TAC[];
    ALL_TAC] THEN
-  REWRITE_TAC[supermartingale] THEN
+  REWRITE_TAC[simple_supermartingale] THEN
   ASM_REWRITE_TAC[] THEN
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   SUBGOAL_THEN
@@ -1289,7 +1286,7 @@ let SUPERMARTINGALE_STOPPED_PROCESS = prove
       EXISTS_TAC `(FF:num->(A->bool)->bool) n` THEN ASM_REWRITE_TAC[]]];
     SIMP_TAC[]];
    ALL_TAC] THEN
-  (* For supermartingale: need E[(X(SUC n) - X n) * 1_B] <= 0 *)
+  (* For simple_supermartingale: need E[(X(SUC n) - X n) * 1_B] <= 0 *)
   MATCH_MP_TAC(REAL_ARITH `c <= &0 ==> a + c <= a`) THEN
   SUBGOAL_THEN
     `simple_expectation (p:A prob_space)
@@ -1337,28 +1334,28 @@ let SUPERMARTINGALE_STOPPED_PROCESS = prove
        (\x. (X:num->A->real) (SUC n') x * indicator_fn s x) <=
      simple_expectation p (\x. X n' x * indicator_fn s x)`
     ASSUME_TAC THENL
-  [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+  [ASM_MESON_TAC[simple_supermartingale]; ALL_TAC] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
 
-(* Stopped process of a martingale is a martingale *)
-let MARTINGALE_STOPPED_PROCESS = prove
+(* Stopped process of a simple_martingale is a simple_martingale *)
+let SIMPLE_MARTINGALE_STOPPED_PROCESS = prove
  (`!p:A prob_space FF X tau N.
-     martingale p FF X /\ bounded_stopping_time p FF tau N
-     ==> martingale p FF (stopped_process X tau)`,
+     simple_martingale p FF X /\ bounded_stopping_time p FF tau N
+     ==> simple_martingale p FF (stopped_process X tau)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
-  REWRITE_TAC[MARTINGALE_SUB_SUPER] THEN CONJ_TAC THENL
-  [MATCH_MP_TAC SUBMARTINGALE_STOPPED_PROCESS THEN
+  REWRITE_TAC[SIMPLE_MARTINGALE_SUB_SUPER] THEN CONJ_TAC THENL
+  [MATCH_MP_TAC SIMPLE_SUBMARTINGALE_STOPPED_PROCESS THEN
    EXISTS_TAC `N:num` THEN ASM_REWRITE_TAC[] THEN
-   ASM_MESON_TAC[MARTINGALE_IMP_SUBMARTINGALE];
-   MATCH_MP_TAC SUPERMARTINGALE_STOPPED_PROCESS THEN
+   ASM_MESON_TAC[SIMPLE_MARTINGALE_IMP_SUBMARTINGALE];
+   MATCH_MP_TAC SIMPLE_SUPERMARTINGALE_STOPPED_PROCESS THEN
    EXISTS_TAC `N:num` THEN ASM_REWRITE_TAC[] THEN
-   ASM_MESON_TAC[MARTINGALE_IMP_SUPERMARTINGALE]]);;
+   ASM_MESON_TAC[SIMPLE_MARTINGALE_IMP_SUPERMARTINGALE]]);;
 
-(* Localized submartingale increasing: E[X_m * 1_a] <= E[X_n * 1_a]
+(* Localized simple_submartingale increasing: E[X_m * 1_a] <= E[X_n * 1_a]
    for a IN FF m and m <= n *)
-let SUBMARTINGALE_LOCALIZED_INCREASING = prove
+let SIMPLE_SUBMARTINGALE_LOCALIZED_INCREASING = prove
  (`!p:A prob_space FF X m n a.
-     submartingale p FF X /\ a IN FF m /\ m <= n
+     simple_submartingale p FF X /\ a IN FF m /\ m <= n
      ==> simple_expectation p (\x. X m x * indicator_fn a x) <=
          simple_expectation p (\x. X n x * indicator_fn a x)`,
   REPEAT STRIP_TAC THEN
@@ -1374,13 +1371,13 @@ let SUBMARTINGALE_LOCALIZED_INCREASING = prove
    CONJ_TAC THENL
    [ASM_REWRITE_TAC[];
     (* Need: E[X(m+j) * 1_a] <= E[X(SUC(m+j)) * 1_a] *)
-    (* From submartingale: need a IN FF (m+j) *)
+    (* From simple_submartingale: need a IN FF (m+j) *)
     SUBGOAL_THEN `(a:A->bool) IN (FF:num->(A->bool)->bool) (m + j)`
       (fun th -> MP_TAC th) THENL
     [SUBGOAL_THEN `(FF:num->(A->bool)->bool) m SUBSET FF (m + j)`
        MP_TAC THENL
-     [UNDISCH_TAC `submartingale (p:A prob_space) FF (X:num->A->real)` THEN
-      REWRITE_TAC[submartingale; filtration] THEN
+     [UNDISCH_TAC `simple_submartingale (p:A prob_space) FF (X:num->A->real)` THEN
+      REWRITE_TAC[simple_submartingale; filtration] THEN
       DISCH_THEN(MP_TAC o CONJUNCT1) THEN
       DISCH_THEN(MP_TAC o CONJUNCT2) THEN
       DISCH_THEN(MP_TAC o SPECL [`m:num`; `m + j:num`]) THEN
@@ -1389,8 +1386,8 @@ let SUBMARTINGALE_LOCALIZED_INCREASING = prove
      REWRITE_TAC[SUBSET] THEN MESON_TAC[];
      ALL_TAC] THEN
     DISCH_TAC THEN
-    UNDISCH_TAC `submartingale (p:A prob_space) FF (X:num->A->real)` THEN
-    REWRITE_TAC[submartingale] THEN
+    UNDISCH_TAC `simple_submartingale (p:A prob_space) FF (X:num->A->real)` THEN
+    REWRITE_TAC[simple_submartingale] THEN
     DISCH_THEN(MP_TAC o last o CONJUNCTS) THEN
     DISCH_THEN(MP_TAC o SPECL [`m + j:num`; `a:A->bool`]) THEN
     ASM_REWRITE_TAC[]]]);;
@@ -1422,10 +1419,7 @@ let MEASURABLE_WRT_GE = prove
     SUBST1_TAC THENL
   [SUBGOAL_THEN `UNIONS (G:(A->bool)->bool) = prob_carrier p` SUBST1_TAC THENL
    [ASM_MESON_TAC[sub_sigma_algebra]; ALL_TAC] THEN
-   REWRITE_TAC[EXTENSION; IN_DIFF; IN_ELIM_THM] THEN
-   X_GEN_TAC `z:A` THEN
-   ASM_CASES_TAC `(z:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN
-   REAL_ARITH_TAC;
+   SET_TAC[REAL_ARITH `!x c:real. x >= c <=> ~(x < c)`];
    ALL_TAC] THEN
   MATCH_MP_TAC SIGMA_ALGEBRA_COMPL THEN
   CONJ_TAC THENL [ASM_MESON_TAC[sub_sigma_algebra]; ALL_TAC] THEN
@@ -1497,9 +1491,9 @@ let INDICATOR_FN_DISJOINT_UNION = prove
 
 (* Doob's maximal inequality - strong form *)
 (* c * P(max_{k<=n} X_k >= c) <= E[X_n * 1_{max_{k<=n} X_k >= c}] *)
-let DOOB_MAXIMAL_INEQUALITY_STRONG = prove
+let SIMPLE_DOOB_MAXIMAL_INEQUALITY_STRONG = prove
  (`!p:A prob_space FF X c n.
-     submartingale p FF X /\ &0 < c /\
+     simple_submartingale p FF X /\ &0 < c /\
      (!m x. x IN prob_carrier p ==> &0 <= X m x)
      ==> c * prob p {x | x IN prob_carrier p /\ running_max X n x >= c} <=
          simple_expectation p
@@ -1508,12 +1502,12 @@ let DOOB_MAXIMAL_INEQUALITY_STRONG = prove
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   SUBGOAL_THEN `filtration (p:A prob_space) FF` ASSUME_TAC THENL
-  [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+  [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   SUBGOAL_THEN `adapted (p:A prob_space) FF X` ASSUME_TAC THENL
-  [ASM_MESON_TAC[submartingale; simple_adapted]; ALL_TAC] THEN
+  [ASM_MESON_TAC[simple_submartingale; simple_adapted]; ALL_TAC] THEN
   SUBGOAL_THEN `!n. simple_rv (p:A prob_space) ((X:num->A->real) n)`
     ASSUME_TAC THENL
-  [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+  [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
   INDUCT_TAC THENL
   [REWRITE_TAC[running_max] THEN
    SUBGOAL_THEN
@@ -1629,7 +1623,7 @@ let DOOB_MAXIMAL_INEQUALITY_STRONG = prove
        simple_expectation p
          (\x. X (SUC n) x * indicator_fn A_n x)`
       ASSUME_TAC THENL
-    [MATCH_MP_TAC SUBMARTINGALE_LOCALIZED_INCREASING THEN
+    [MATCH_MP_TAC SIMPLE_SUBMARTINGALE_LOCALIZED_INCREASING THEN
      EXISTS_TAC `(FF:num->(A->bool)->bool)` THEN
      ASM_REWRITE_TAC[ARITH_RULE `n <= SUC n`];
      ALL_TAC] THEN
@@ -1690,7 +1684,7 @@ let DOOB_MAXIMAL_INEQUALITY_STRONG = prove
 (* Doob's maximal inequality *)
 let DOOB_MAXIMAL_INEQUALITY = prove
  (`!p:A prob_space FF X c n.
-     submartingale p FF X /\ &0 < c /\
+     simple_submartingale p FF X /\ &0 < c /\
      (!m x. x IN prob_carrier p ==> &0 <= X m x)
      ==> c * prob p {x | x IN prob_carrier p /\ running_max X n x >= c}
          <= simple_expectation p (X n)`,
@@ -1700,13 +1694,13 @@ let DOOB_MAXIMAL_INEQUALITY = prove
     (\x. X n x * indicator_fn
            {y | y IN prob_carrier p /\ running_max X n y >= c} x)` THEN
   CONJ_TAC THENL
-  [MATCH_MP_TAC DOOB_MAXIMAL_INEQUALITY_STRONG THEN
+  [MATCH_MP_TAC SIMPLE_DOOB_MAXIMAL_INEQUALITY_STRONG THEN
    EXISTS_TAC `(FF:num->(A->bool)->bool)` THEN ASM_REWRITE_TAC[];
    (* E[X n * 1_A] <= E[X n] since X n >= 0 and 1_A <= 1 *)
    MATCH_MP_TAC SIMPLE_EXPECTATION_MONO THEN
    SUBGOAL_THEN `!n. simple_rv (p:A prob_space) ((X:num->A->real) n)`
      ASSUME_TAC THENL
-   [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+   [ASM_MESON_TAC[simple_submartingale]; ALL_TAC] THEN
    CONJ_TAC THENL
    [MATCH_MP_TAC SIMPLE_RV_MUL THEN REWRITE_TAC[ETA_AX] THEN
     CONJ_TAC THENL
@@ -1717,8 +1711,8 @@ let DOOB_MAXIMAL_INEQUALITY = prove
         (FF:num->(A->bool)->bool) n`
        MP_TAC THENL
      [MATCH_MP_TAC RUNNING_MAX_EXCEEDS_IN_FILTRATION THEN
-      ASM_MESON_TAC[submartingale; simple_adapted];
-      ASM_MESON_TAC[submartingale; simple_adapted; filtration;
+      ASM_MESON_TAC[simple_submartingale; simple_adapted];
+      ASM_MESON_TAC[simple_submartingale; simple_adapted; filtration;
                     sub_sigma_algebra; SUBSET]]]; ALL_TAC] THEN
    CONJ_TAC THENL [REWRITE_TAC[ETA_AX] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
    X_GEN_TAC `y:A` THEN DISCH_TAC THEN BETA_TAC THEN
@@ -1734,14 +1728,14 @@ let DOOB_MAXIMAL_INEQUALITY = prove
 (* ------------------------------------------------------------------------- *)
 
 (* Fair Games Theorem (Doob Optional Stopping) with general expectation *)
-let DOOB_OPTIONAL_STOPPING_GENERAL = prove
+let SIMPLE_DOOB_OPTIONAL_STOPPING = prove
  (`!p:A prob_space FF X tau N.
-    martingale p FF X /\ bounded_stopping_time p FF tau N
+    simple_martingale p FF X /\ bounded_stopping_time p FF tau N
     ==> !n. expectation p (stopped_process X tau n) = expectation p (X 0)`,
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`p:A prob_space`; `FF:num->(A->bool)->bool`;
                  `X:num->A->real`; `tau:A->num`; `N:num`]
-    DOOB_OPTIONAL_STOPPING_BOUNDED) THEN
+    SIMPLE_DOOB_OPTIONAL_STOPPING_BOUNDED) THEN
   ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `n:num`) THEN
   SUBGOAL_THEN `simple_rv (p:A prob_space) (stopped_process X tau n) /\
                 simple_rv p (X 0)` STRIP_ASSUME_TAC THENL
@@ -1751,19 +1745,19 @@ let DOOB_OPTIONAL_STOPPING_GENERAL = prove
      SIMPLE_RV_STOPPED_PROCESS) THEN
     ANTS_TAC THENL
     [CONJ_TAC THENL
-     [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+     [ASM_MESON_TAC[simple_martingale]; ALL_TAC] THEN
      CONJ_TAC THENL
      [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
-     ASM_MESON_TAC[martingale];
+     ASM_MESON_TAC[simple_martingale];
      SIMP_TAC[]];
-    ASM_MESON_TAC[martingale]];
+    ASM_MESON_TAC[simple_martingale]];
    ALL_TAC] THEN
   ASM_SIMP_TAC[GSYM EXPECTATION_SIMPLE_AGREE]);;
 
 (* Doob Maximal Inequality with general expectation *)
 let DOOB_MAXIMAL_INEQUALITY_GENERAL = prove
  (`!p:A prob_space FF X c n.
-    submartingale p FF X /\
+    simple_submartingale p FF X /\
     &0 < c /\
     (!m x. x IN prob_carrier p ==> &0 <= X m x)
     ==> c * prob p {x | x IN prob_carrier p /\ running_max X n x >= c} <=
@@ -1772,6 +1766,967 @@ let DOOB_MAXIMAL_INEQUALITY_GENERAL = prove
   SUBGOAL_THEN `expectation (p:A prob_space) ((X:num->A->real) n) =
                 simple_expectation p (X n)` SUBST1_TAC THENL
   [MATCH_MP_TAC EXPECTATION_SIMPLE_AGREE THEN
-   ASM_MESON_TAC[submartingale];
+   ASM_MESON_TAC[simple_submartingale];
    MATCH_MP_TAC DOOB_MAXIMAL_INEQUALITY THEN
    EXISTS_TAC `FF:num->(A->bool)->bool` THEN ASM_REWRITE_TAC[]]);;
+
+(* ================================================================== *)
+(* Wald's Equation: E[S_tau] = mu * E[SUC(tau)]                       *)
+(* For bounded stopping times with i.i.d.-like conditional mean       *)
+(* ================================================================== *)
+
+(* {tau > n} is in FF n *)
+let STOPPING_TIME_GT_IN_FF = prove
+ (`!p:A prob_space FF (tau:A->num) n.
+     filtration p FF /\ stopping_time p FF tau
+     ==> {x | x IN prob_carrier p /\ tau x > n} IN FF n`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `sub_sigma_algebra (p:A prob_space) ((FF:num->(A->bool)->bool) n)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[filtration]; ALL_TAC] THEN
+  SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ (tau:A->num) x <= n} IN (FF:num->(A->bool)->bool) n` ASSUME_TAC THENL
+  [ASM_MESON_TAC[stopping_time]; ALL_TAC] THEN
+  SUBGOAL_THEN `UNIONS ((FF:num->(A->bool)->bool) n) DIFF {x:A | x IN prob_carrier p /\ (tau:A->num) x <= n} IN FF n` MP_TAC THENL
+  [ASM_MESON_TAC[sub_sigma_algebra; sigma_algebra]; ALL_TAC] THEN
+  SUBGOAL_THEN `UNIONS ((FF:num->(A->bool)->bool) n) = prob_carrier (p:A prob_space)` SUBST1_TAC THENL
+  [ASM_MESON_TAC[sub_sigma_algebra]; ALL_TAC] THEN
+  MATCH_MP_TAC(TAUT `a = b ==> a ==> b`) THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  SET_TAC[NOT_LE; GT]);;
+
+(* Transfer simple_rv via equality on carrier *)
+let SIMPLE_RV_EQ_ON_CARRIER = prove
+ (`!p:A prob_space f g.
+     simple_rv p g /\ (!x. x IN prob_carrier p ==> f x = g x)
+     ==> simple_rv p f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[simple_rv] THEN CONJ_TAC THENL
+  [REWRITE_TAC[random_variable] THEN X_GEN_TAC `v:real` THEN
+   SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ f x <= v} = {x | x IN prob_carrier p /\ g x <= v}` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[];
+    ASM_MESON_TAC[simple_rv; random_variable]];
+   SUBGOAL_THEN `{f x:real | x:A IN prob_carrier p} = {g x | x IN prob_carrier p}` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN EXISTS_TAC `x':A` THEN ASM_MESON_TAC[];
+    ASM_MESON_TAC[simple_rv]]]);;
+
+(* Pointwise identity: sum up to random index = sum with indicators *)
+let SUM_RANDOM_INDEX = prove
+ (`!f (tau:B->num) M (x:B).
+     tau x <= M
+     ==> sum(0..tau x) (\i. f i) =
+         sum(0..M) (\i. f i * (if i <= tau x then &1 else &0))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `0..M = (0..(tau (x:B))) UNION (((tau x) + 1)..M)` SUBST1_TAC THENL
+  [REWRITE_TAC[EXTENSION; IN_UNION; IN_NUMSEG] THEN X_GEN_TAC `i:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `DISJOINT (0..tau (x:B)) ((tau x + 1)..M)` ASSUME_TAC THENL
+  [REWRITE_TAC[DISJOINT; EXTENSION; IN_INTER; IN_NUMSEG; NOT_IN_EMPTY] THEN X_GEN_TAC `i:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  ASM_SIMP_TAC[SUM_UNION; FINITE_NUMSEG] THEN
+  SUBGOAL_THEN `sum (0..tau (x:B)) (\i. f i * (if i <= tau x then &1 else &0)) = sum (0..tau x) (\i. f i)` SUBST1_TAC THENL
+  [MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN BETA_TAC THEN
+   SUBGOAL_THEN `x':num <= tau (x:B)` (fun th -> REWRITE_TAC[th; REAL_MUL_RID]) THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `sum ((tau (x:B) + 1)..M) (\i. f i * (if i <= tau x then &1 else &0)) = &0` SUBST1_TAC THENL
+  [MATCH_MP_TAC SUM_EQ_0 THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN BETA_TAC THEN
+   SUBGOAL_THEN `~(x':num <= tau (x:B))` (fun th -> REWRITE_TAC[th; REAL_MUL_RZERO]) THEN ASM_ARITH_TAC;
+   REAL_ARITH_TAC]);;
+
+(* {i <= tau} is in prob_events *)
+let STOPPING_TIME_GE_EVENT = prove
+ (`!p:A prob_space FF (tau:A->num) i.
+     filtration p FF /\ stopping_time p FF tau
+     ==> {x | x IN prob_carrier p /\ i <= tau x} IN prob_events p`,
+  GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THENL
+  [STRIP_TAC THEN
+   SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ 0 <= tau x} = prob_carrier p` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_ELIM_THM; LE_0]; ALL_TAC] THEN REWRITE_TAC[PROB_CARRIER_IN_EVENTS];
+   STRIP_TAC THEN
+   SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ SUC i <= tau x} = {x | x IN prob_carrier p /\ tau x > i}` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+    ASM_CASES_TAC `(x:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN REWRITE_TAC[GT] THEN ARITH_TAC; ALL_TAC] THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `FF:num->(A->bool)->bool`; `tau:A->num`; `i:num`] STOPPING_TIME_GT_IN_FF) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ASM_MESON_TAC[filtration; sub_sigma_algebra; SUBSET]]);;
+
+(* {SUC n <= tau} is in FF n *)
+let STOPPING_TIME_SUC_GE_IN_FF = prove
+ (`!p:A prob_space FF (tau:A->num) n.
+     filtration p FF /\ stopping_time p FF tau
+     ==> {x | x IN prob_carrier p /\ SUC n <= tau x} IN FF n`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ SUC n <= tau x} = {x | x IN prob_carrier p /\ tau x > n}` SUBST1_TAC THENL
+  [REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+   ASM_CASES_TAC `(x:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN REWRITE_TAC[GT] THEN ARITH_TAC;
+   MATCH_MP_TAC STOPPING_TIME_GT_IN_FF THEN ASM_REWRITE_TAC[]]);;
+
+(* E[X_i * 1_{i<=tau}] = mu * P(i <= tau) *)
+let WALD_TERM_EXPECTATION = prove
+ (`!p:A prob_space FF (X:num->A->real) (tau:A->num) (M:num) (mu:real) i.
+     filtration p FF /\
+     (!n. n <= M ==> simple_rv p (X n)) /\
+     (!n. n <= M ==> simple_expectation p (X n) = mu) /\
+     (!n. n <= M ==> !a. a IN FF n ==>
+       simple_expectation p (\x. X (SUC n) x * indicator_fn a x) = mu * prob p a) /\
+     bounded_stopping_time p FF tau M /\
+     i <= M
+     ==> simple_expectation p
+           (\x. X i x * indicator_fn {y | y IN prob_carrier p /\ i <= tau y} x) =
+         mu * prob p {y | y IN prob_carrier p /\ i <= tau y}`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
+  ASM_CASES_TAC `?n. i = SUC n` THENL
+  [FIRST_X_ASSUM(X_CHOOSE_TAC `n:num`) THEN ASM_REWRITE_TAC[] THEN
+   SUBGOAL_THEN `n:num <= M` ASSUME_TAC THENL
+   [UNDISCH_TAC `(i:num) <= M` THEN ASM_REWRITE_TAC[] THEN ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `{y:A | y IN prob_carrier p /\ SUC n <= (tau:A->num) y} IN (FF:num->(A->bool)->bool) n` ASSUME_TAC THENL
+   [MATCH_MP_TAC STOPPING_TIME_SUC_GE_IN_FF THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   ASM_MESON_TAC[];
+   SUBGOAL_THEN `i = 0` SUBST_ALL_TAC THENL [ASM_MESON_TAC[num_CASES]; ALL_TAC] THEN
+   SUBGOAL_THEN `!x:A. x IN prob_carrier p ==>
+     (X:num->A->real) 0 x * indicator_fn {y | y IN prob_carrier p /\ 0 <= (tau:A->num) y} x = X 0 x` ASSUME_TAC THENL
+   [X_GEN_TAC `x:A` THEN DISCH_TAC THEN REWRITE_TAC[indicator_fn; IN_ELIM_THM; LE_0] THEN
+    ASM_REWRITE_TAC[REAL_MUL_RID]; ALL_TAC] THEN
+   SUBGOAL_THEN `simple_expectation (p:A prob_space) (\x. (X:num->A->real) 0 x *
+     indicator_fn {y | y IN prob_carrier p /\ 0 <= tau y} x) = simple_expectation p (X 0)` SUBST1_TAC THENL
+   [MATCH_MP_TAC SIMPLE_EXPECTATION_EXT THEN ASM_SIMP_TAC[ETA_AX]; ALL_TAC] THEN
+   SUBGOAL_THEN `prob (p:A prob_space) {y | y IN prob_carrier p /\ 0 <= (tau:A->num) y} = &1` SUBST1_TAC THENL
+   [SUBGOAL_THEN `{y:A | y IN prob_carrier p /\ 0 <= (tau:A->num) y} = prob_carrier p` SUBST1_TAC THENL
+    [REWRITE_TAC[EXTENSION; IN_ELIM_THM; LE_0]; ALL_TAC] THEN REWRITE_TAC[PROB_SPACE]; ALL_TAC] THEN
+   REWRITE_TAC[REAL_MUL_RID; ETA_AX] THEN ASM_MESON_TAC[LE_0]]);;
+
+(* Sum of indicators = SUC(tau) *)
+let INDICATOR_SUM_STOPPING_TIME = prove
+ (`!p:A prob_space (tau:A->num) M x.
+     x IN prob_carrier p /\ tau x <= M
+     ==> sum(0..M) (\i. indicator_fn {y | y IN prob_carrier p /\ i <= tau y} x) = &(SUC(tau x))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `0..M = (0..tau (x:A)) UNION ((tau x + 1)..M)` SUBST1_TAC THENL
+  [REWRITE_TAC[EXTENSION; IN_UNION; IN_NUMSEG] THEN X_GEN_TAC `i:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `DISJOINT (0..tau (x:A)) ((tau x + 1)..M)` ASSUME_TAC THENL
+  [REWRITE_TAC[DISJOINT; EXTENSION; IN_INTER; IN_NUMSEG; NOT_IN_EMPTY] THEN X_GEN_TAC `i:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  ASM_SIMP_TAC[SUM_UNION; FINITE_NUMSEG] THEN
+  SUBGOAL_THEN `sum (0..tau (x:A)) (\i. indicator_fn {y:A | y IN prob_carrier p /\ i <= (tau:A->num) y} x) = sum (0..tau x) (\i. &1)` SUBST1_TAC THENL
+  [MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+   REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+   ASM_CASES_TAC `(x:A) IN prob_carrier p` THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+   ASM_REWRITE_TAC[] THEN
+   COND_CASES_TAC THEN REWRITE_TAC[] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `sum ((tau (x:A) + 1)..M) (\i. indicator_fn {y:A | y IN prob_carrier p /\ i <= (tau:A->num) y} x) = &0` SUBST1_TAC THENL
+  [MATCH_MP_TAC SUM_EQ_0 THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+   REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+   COND_CASES_TAC THEN REWRITE_TAC[] THEN
+   FIRST_X_ASSUM(MP_TAC o CONJUNCT2) THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[REAL_ADD_RID; SUM_CONST_NUMSEG; SUB_0] THEN
+  REWRITE_TAC[REAL_MUL_RID; GSYM REAL_OF_NUM_SUC] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN REAL_ARITH_TAC);;
+
+(* Wald's Equation *)
+let WALD_EQUATION = prove
+ (`!p:A prob_space FF (X:num->A->real) (tau:A->num) (M:num) (mu:real).
+     filtration p FF /\
+     (!n. n <= M ==> simple_rv p (X n)) /\
+     (!n. n <= M ==> simple_expectation p (X n) = mu) /\
+     (!n. n <= M ==> !a. a IN FF n ==>
+       simple_expectation p (\x. X (SUC n) x * indicator_fn a x) =
+       mu * prob p a) /\
+     bounded_stopping_time p FF tau M
+     ==> simple_expectation p (\x. sum(0..tau x) (\i. X i x)) =
+         mu * simple_expectation p (\x. &(SUC(tau x)))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num) /\ (!x. x IN prob_carrier p ==> tau x <= M)` STRIP_ASSUME_TAC THENL
+  [UNDISCH_TAC `bounded_stopping_time (p:A prob_space) FF (tau:A->num) M` THEN REWRITE_TAC[bounded_stopping_time]; ALL_TAC] THEN
+  SUBGOAL_THEN `!i. {y:A | y IN prob_carrier p /\ i <= (tau:A->num) y} IN prob_events p` ASSUME_TAC THENL
+  [GEN_TAC THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `FF:num->(A->bool)->bool`; `tau:A->num`; `i:num`] STOPPING_TIME_GE_EVENT) THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `!i. i <= M ==> simple_rv (p:A prob_space) (\x. (X:num->A->real) i x * indicator_fn {y | y IN prob_carrier p /\ i <= (tau:A->num) y} x)` ASSUME_TAC THENL
+  [REPEAT STRIP_TAC THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `(X:num->A->real) i`; `indicator_fn {y:A | y IN prob_carrier p /\ i <= (tau:A->num) y}`] SIMPLE_RV_MUL) THEN
+   REWRITE_TAC[ETA_AX] THEN DISCH_THEN MATCH_MP_TAC THEN
+   CONJ_TAC THENL [ASM_SIMP_TAC[]; MATCH_MP_TAC SIMPLE_RV_INDICATOR THEN ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+  SUBGOAL_THEN `!x:A. x IN prob_carrier p ==>
+    sum(0..tau x) (\i. (X:num->A->real) i x) =
+    sum(0..M) (\i. X i x * indicator_fn {y | y IN prob_carrier p /\ i <= (tau:A->num) y} x)` ASSUME_TAC THENL
+  [X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+   SUBGOAL_THEN `(tau:A->num) x <= M` ASSUME_TAC THENL [ASM_SIMP_TAC[]; ALL_TAC] THEN
+   MP_TAC(ISPECL [`\i. (X:num->A->real) i x`; `tau:A->num`; `M:num`; `x:A`] SUM_RANDOM_INDEX) THEN
+   ASM_REWRITE_TAC[] THEN
+   DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+   MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN
+   REPEAT STRIP_TAC THEN BETA_TAC THEN AP_TERM_TAC THEN
+   REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  (* Rewrite LHS *)
+  SUBGOAL_THEN `simple_expectation (p:A prob_space) (\x. sum(0..tau x) (\i. (X:num->A->real) i x)) =
+    simple_expectation p (\x. sum(0..M) (\i. X i x * indicator_fn {y | y IN prob_carrier p /\ i <= (tau:A->num) y} x))` SUBST1_TAC THENL
+  [MATCH_MP_TAC SIMPLE_EXPECTATION_EXT THEN ASM_SIMP_TAC[]; ALL_TAC] THEN
+  (* Apply linearity of expectation *)
+  SUBGOAL_THEN `simple_expectation (p:A prob_space) (\x. sum(0..M) (\i. (X:num->A->real) i x * indicator_fn {y | y IN prob_carrier p /\ i <= (tau:A->num) y} x)) =
+    sum(0..M) (\i. simple_expectation p (\x. X i x * indicator_fn {y | y IN prob_carrier p /\ i <= tau y} x))` SUBST1_TAC THENL
+  [MP_TAC(ISPECL [`p:A prob_space`;
+     `\i (x:A). (X:num->A->real) i x * indicator_fn {y | y IN prob_carrier p /\ i <= (tau:A->num) y} x`;
+     `M:num`] SIMPLE_EXPECTATION_SUM_NUMSEG) THEN
+   REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  (* Apply WALD_TERM_EXPECTATION to each term *)
+  SUBGOAL_THEN `!i. i <= M ==> simple_expectation (p:A prob_space)
+    (\x. (X:num->A->real) i x * indicator_fn {y | y IN prob_carrier p /\ i <= (tau:A->num) y} x) =
+    mu * prob p {y | y IN prob_carrier p /\ i <= tau y}` ASSUME_TAC THENL
+  [REPEAT STRIP_TAC THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `FF:num->(A->bool)->bool`; `X:num->A->real`; `tau:A->num`; `M:num`; `mu:real`; `i:num`] WALD_TERM_EXPECTATION) THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  (* Rewrite each term *)
+  SUBGOAL_THEN `sum(0..M) (\i. simple_expectation (p:A prob_space) (\x. (X:num->A->real) i x * indicator_fn {y | y IN prob_carrier p /\ i <= (tau:A->num) y} x)) =
+    sum(0..M) (\i. mu * prob p {y | y IN prob_carrier p /\ i <= tau y})` SUBST1_TAC THENL
+  [MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN BETA_TAC THEN ASM_SIMP_TAC[]; ALL_TAC] THEN
+  (* Factor out mu *)
+  REWRITE_TAC[SUM_LMUL] THEN AP_TERM_TAC THEN
+  (* Rewrite prob as expectation of indicator *)
+  SUBGOAL_THEN `sum(0..M) (\i. prob (p:A prob_space) {y | y IN prob_carrier p /\ i <= (tau:A->num) y}) =
+    sum(0..M) (\i. simple_expectation p (indicator_fn {y | y IN prob_carrier p /\ i <= tau y}))` SUBST1_TAC THENL
+  [MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+   BETA_TAC THEN CONV_TAC SYM_CONV THEN
+   MATCH_MP_TAC SIMPLE_EXPECTATION_INDICATOR THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  (* Use linearity in reverse: sum of E[ind_i] = E[sum of ind_i] *)
+  CONV_TAC SYM_CONV THEN
+  SUBGOAL_THEN `simple_expectation (p:A prob_space) (\x. &(SUC((tau:A->num) x))) =
+    simple_expectation p (\x. sum(0..M) (\i. indicator_fn {y | y IN prob_carrier p /\ i <= tau y} x))` SUBST1_TAC THENL
+  [MATCH_MP_TAC SIMPLE_EXPECTATION_EXT THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+   CONV_TAC SYM_CONV THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `tau:A->num`; `M:num`; `x:A`] INDICATOR_SUM_STOPPING_TIME) THEN
+   ASM_SIMP_TAC[]; ALL_TAC] THEN
+  (* Apply linearity *)
+  MP_TAC(ISPECL [`p:A prob_space`;
+    `\i (x:A). indicator_fn {y:A | y IN prob_carrier p /\ i <= (tau:A->num) y} x`;
+    `M:num`] SIMPLE_EXPECTATION_SUM_NUMSEG) THEN
+  REWRITE_TAC[] THEN ANTS_TAC THENL
+  [REPEAT STRIP_TAC THEN MATCH_MP_TAC SIMPLE_RV_EQ_ON_CARRIER THEN
+   EXISTS_TAC `indicator_fn {y:A | y IN prob_carrier p /\ i <= (tau:A->num) y}` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC SIMPLE_RV_INDICATOR THEN ASM_REWRITE_TAC[];
+    GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[]]; ALL_TAC] THEN
+  REWRITE_TAC[ETA_AX]);;
+
+(* ========================================================================= *)
+(* BACKWARD (REVERSED) SIMPLE_MARTINGALES                                           *)
+(* A backward simple_martingale uses a decreasing filtration FF_n >= FF_{n+1}       *)
+(* with E[X_n | FF_{n+1}] = X_{n+1}.                                        *)
+(* ========================================================================= *)
+
+let decreasing_filtration = new_definition
+  `decreasing_filtration (p:A prob_space) (FF:num->(A->bool)->bool) <=>
+   (!n. sub_sigma_algebra p (FF n)) /\
+   (!m n. m <= n ==> FF n SUBSET FF m)`;;
+
+let simple_backward_martingale = new_definition
+  `simple_backward_martingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+   decreasing_filtration p FF /\
+   simple_adapted p FF X /\
+   (!n. simple_rv p (X n)) /\
+   (!n a. a IN FF (SUC n) ==>
+     simple_expectation p (\x. X n x * indicator_fn a x) =
+     simple_expectation p (\x. X (SUC n) x * indicator_fn a x))`;;
+
+(* ========================================================================= *)
+(* GENERAL (INTEGRABLE) MARTINGALE DEFINITIONS                                *)
+(* These use integrable + expectation instead of simple_rv + simple_expectation *)
+(* Every simple_martingale is a martingale (bridge lemmas below).              *)
+(* ========================================================================= *)
+
+let martingale = new_definition
+  `martingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+   filtration p FF /\
+   adapted p FF X /\
+   (!n. integrable p (X n)) /\
+   (!n a. a IN FF n
+     ==> expectation p (\x. X (SUC n) x * indicator_fn a x) =
+         expectation p (\x. X n x * indicator_fn a x))`;;
+
+let submartingale = new_definition
+  `submartingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+   filtration p FF /\
+   adapted p FF X /\
+   (!n. integrable p (X n)) /\
+   (!n a. a IN FF n
+     ==> expectation p (\x. X n x * indicator_fn a x) <=
+         expectation p (\x. X (SUC n) x * indicator_fn a x))`;;
+
+let supermartingale = new_definition
+  `supermartingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+   filtration p FF /\
+   adapted p FF X /\
+   (!n. integrable p (X n)) /\
+   (!n a. a IN FF n
+     ==> expectation p (\x. X (SUC n) x * indicator_fn a x) <=
+         expectation p (\x. X n x * indicator_fn a x))`;;
+
+let backward_martingale = new_definition
+  `backward_martingale (p:A prob_space) (FF:num->(A->bool)->bool) (X:num->A->real) <=>
+   decreasing_filtration p FF /\
+   adapted p FF X /\
+   (!n. integrable p (X n)) /\
+   (!n a. a IN FF (SUC n) ==>
+     expectation p (\x. X n x * indicator_fn a x) =
+     expectation p (\x. X (SUC n) x * indicator_fn a x))`;;
+
+(* --- Infrastructure lemma --- *)
+
+let EXPECTATION_CARRIER_INDICATOR = prove
+ (`!p:A prob_space f. integrable p f
+   ==> expectation p (\x. f x * indicator_fn (prob_carrier p) x) =
+       expectation p f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[expectation] THEN
+  SUBGOAL_THEN `nn_expectation (p:A prob_space)
+    (\x. max (f x * indicator_fn (prob_carrier p) x) (&0)) =
+    nn_expectation p (\x. max (f x) (&0))` SUBST1_TAC THENL
+  [MATCH_MP_TAC NN_EXPECTATION_EXT THEN GEN_TAC THEN DISCH_TAC THEN
+   REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+   ASM_REWRITE_TAC[REAL_MUL_RID]; ALL_TAC] THEN
+  SUBGOAL_THEN `nn_expectation (p:A prob_space)
+    (\x. max (--(f x * indicator_fn (prob_carrier p) x)) (&0)) =
+    nn_expectation p (\x. max (--f x) (&0))` SUBST1_TAC THENL
+  [MATCH_MP_TAC NN_EXPECTATION_EXT THEN GEN_TAC THEN DISCH_TAC THEN
+   REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+   ASM_REWRITE_TAC[REAL_MUL_RID]; REWRITE_TAC[]]);;
+
+(* --- Bridge lemmas: simple => general --- *)
+
+let SIMPLE_IMP_MARTINGALE = prove
+ (`!p:A prob_space FF X. simple_martingale p FF X ==> martingale p FF X`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[simple_martingale; martingale; simple_adapted] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SIMPLE THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(a:A->bool) IN prob_events p` ASSUME_TAC THENL
+  [MATCH_MP_TAC SUB_SIGMA_ALGEBRA_IN_EVENTS THEN
+   EXISTS_TAC `(FF:num->(A->bool)->bool) n` THEN ASM_REWRITE_TAC[] THEN
+   UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+   REWRITE_TAC[filtration] THEN MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `simple_rv (p:A prob_space)
+    (\x. (X:num->A->real) (SUC n) x * indicator_fn (a:A->bool) x) /\
+    simple_rv p (\x. X n x * indicator_fn a x)` STRIP_ASSUME_TAC THENL
+  [CONJ_TAC THEN MATCH_MP_TAC SIMPLE_RV_MUL THEN
+   REWRITE_TAC[ETA_AX] THEN ASM_SIMP_TAC[SIMPLE_RV_INDICATOR];
+   ASM_SIMP_TAC[EXPECTATION_SIMPLE_AGREE]]);;
+
+let SIMPLE_IMP_SUBMARTINGALE = prove
+ (`!p:A prob_space FF X. simple_submartingale p FF X ==> submartingale p FF X`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[simple_submartingale; submartingale; simple_adapted] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SIMPLE THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(a:A->bool) IN prob_events p` ASSUME_TAC THENL
+  [MATCH_MP_TAC SUB_SIGMA_ALGEBRA_IN_EVENTS THEN
+   EXISTS_TAC `(FF:num->(A->bool)->bool) n` THEN ASM_REWRITE_TAC[] THEN
+   UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+   REWRITE_TAC[filtration] THEN MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `simple_rv (p:A prob_space)
+    (\x. (X:num->A->real) (SUC n) x * indicator_fn (a:A->bool) x) /\
+    simple_rv p (\x. X n x * indicator_fn a x)` STRIP_ASSUME_TAC THENL
+  [CONJ_TAC THEN MATCH_MP_TAC SIMPLE_RV_MUL THEN
+   REWRITE_TAC[ETA_AX] THEN ASM_SIMP_TAC[SIMPLE_RV_INDICATOR];
+   ASM_SIMP_TAC[EXPECTATION_SIMPLE_AGREE]]);;
+
+let SIMPLE_IMP_SUPERMARTINGALE = prove
+ (`!p:A prob_space FF X. simple_supermartingale p FF X ==> supermartingale p FF X`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[simple_supermartingale; supermartingale; simple_adapted] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SIMPLE THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(a:A->bool) IN prob_events p` ASSUME_TAC THENL
+  [MATCH_MP_TAC SUB_SIGMA_ALGEBRA_IN_EVENTS THEN
+   EXISTS_TAC `(FF:num->(A->bool)->bool) n` THEN ASM_REWRITE_TAC[] THEN
+   UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+   REWRITE_TAC[filtration] THEN MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `simple_rv (p:A prob_space)
+    (\x. (X:num->A->real) (SUC n) x * indicator_fn (a:A->bool) x) /\
+    simple_rv p (\x. X n x * indicator_fn a x)` STRIP_ASSUME_TAC THENL
+  [CONJ_TAC THEN MATCH_MP_TAC SIMPLE_RV_MUL THEN
+   REWRITE_TAC[ETA_AX] THEN ASM_SIMP_TAC[SIMPLE_RV_INDICATOR];
+   ASM_SIMP_TAC[EXPECTATION_SIMPLE_AGREE]]);;
+
+let SIMPLE_IMP_BACKWARD_MARTINGALE = prove
+ (`!p:A prob_space FF X.
+     simple_backward_martingale p FF X ==> backward_martingale p FF X`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[simple_backward_martingale; backward_martingale; simple_adapted] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SIMPLE THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(a:A->bool) IN prob_events p` ASSUME_TAC THENL
+  [MATCH_MP_TAC SUB_SIGMA_ALGEBRA_IN_EVENTS THEN
+   EXISTS_TAC `(FF:num->(A->bool)->bool) (SUC n)` THEN ASM_REWRITE_TAC[] THEN
+   UNDISCH_TAC `decreasing_filtration (p:A prob_space) FF` THEN
+   REWRITE_TAC[decreasing_filtration] THEN MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `simple_rv (p:A prob_space)
+    (\x. (X:num->A->real) (SUC n) x * indicator_fn (a:A->bool) x) /\
+    simple_rv p (\x. X n x * indicator_fn a x)` STRIP_ASSUME_TAC THENL
+  [CONJ_TAC THEN MATCH_MP_TAC SIMPLE_RV_MUL THEN
+   REWRITE_TAC[ETA_AX] THEN ASM_SIMP_TAC[SIMPLE_RV_INDICATOR];
+   ASM_SIMP_TAC[EXPECTATION_SIMPLE_AGREE]]);;
+
+(* --- Structural relationships --- *)
+
+let MARTINGALE_IMP_SUBMARTINGALE = prove
+ (`!p:A prob_space FF X.
+     martingale p FF X ==> submartingale p FF X`,
+  REWRITE_TAC[martingale; submartingale] THEN
+  MESON_TAC[REAL_LE_REFL]);;
+
+let MARTINGALE_IMP_SUPERMARTINGALE = prove
+ (`!p:A prob_space FF X.
+     martingale p FF X ==> supermartingale p FF X`,
+  REWRITE_TAC[martingale; supermartingale] THEN
+  MESON_TAC[REAL_LE_REFL]);;
+
+let MARTINGALE_SUB_SUPER = prove
+ (`!p:A prob_space FF X.
+     martingale p FF X <=>
+     submartingale p FF X /\ supermartingale p FF X`,
+  REWRITE_TAC[martingale; submartingale; supermartingale] THEN
+  MESON_TAC[REAL_LE_ANTISYM; REAL_LE_REFL]);;
+
+(* --- Expectation monotonicity/constancy --- *)
+
+let SUBMARTINGALE_EXPECTATION_MONO = prove
+ (`!p:A prob_space FF X. submartingale p FF X
+     ==> !n. expectation p (X n) <= expectation p (X (SUC n))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[submartingale] THEN STRIP_TAC THEN
+  GEN_TAC THEN
+  SUBGOAL_THEN `prob_carrier (p:A prob_space) IN FF (n:num)` ASSUME_TAC THENL
+  [UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+   REWRITE_TAC[filtration; sub_sigma_algebra; sigma_algebra] THEN
+   MESON_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `prob_carrier (p:A prob_space)`]) THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `expectation (p:A prob_space)
+    (\x. (X:num->A->real) n x * indicator_fn (prob_carrier p) x) =
+    expectation p (X n)` SUBST1_TAC THENL
+  [REWRITE_TAC[ETA_AX] THEN MATCH_MP_TAC EXPECTATION_CARRIER_INDICATOR THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `expectation (p:A prob_space)
+    (\x. (X:num->A->real) (SUC n) x * indicator_fn (prob_carrier p) x) =
+    expectation p (X (SUC n))` SUBST1_TAC THENL
+  [REWRITE_TAC[ETA_AX] THEN MATCH_MP_TAC EXPECTATION_CARRIER_INDICATOR THEN
+   ASM_REWRITE_TAC[]; REAL_ARITH_TAC]);;
+
+let SUBMARTINGALE_EXPECTATION_INCREASING = prove
+ (`!p:A prob_space FF X. submartingale p FF X
+     ==> !m n. m <= n ==> expectation p (X m) <= expectation p (X n)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP SUBMARTINGALE_EXPECTATION_MONO) THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `?k. n = m + k:num` (CHOOSE_THEN SUBST_ALL_TAC) THENL
+  [EXISTS_TAC `n - m:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  UNDISCH_TAC `m:num <= m + k` THEN DISCH_THEN(K ALL_TAC) THEN
+  SPEC_TAC(`k:num`,`k:num`) THEN INDUCT_TAC THENL
+  [REWRITE_TAC[ADD_CLAUSES; REAL_LE_REFL];
+   REWRITE_TAC[ADD_CLAUSES] THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `expectation (p:A prob_space) ((X:num->A->real) (m + k))` THEN
+   ASM_MESON_TAC[]]);;
+
+let SUPERMARTINGALE_EXPECTATION_MONO = prove
+ (`!p:A prob_space FF X. supermartingale p FF X
+     ==> !n. expectation p (X (SUC n)) <= expectation p (X n)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[supermartingale] THEN STRIP_TAC THEN
+  GEN_TAC THEN
+  SUBGOAL_THEN `prob_carrier (p:A prob_space) IN FF (n:num)` ASSUME_TAC THENL
+  [UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+   REWRITE_TAC[filtration; sub_sigma_algebra; sigma_algebra] THEN
+   MESON_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `prob_carrier (p:A prob_space)`]) THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `expectation (p:A prob_space)
+    (\x. (X:num->A->real) n x * indicator_fn (prob_carrier p) x) =
+    expectation p (X n)` SUBST1_TAC THENL
+  [REWRITE_TAC[ETA_AX] THEN MATCH_MP_TAC EXPECTATION_CARRIER_INDICATOR THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `expectation (p:A prob_space)
+    (\x. (X:num->A->real) (SUC n) x * indicator_fn (prob_carrier p) x) =
+    expectation p (X (SUC n))` SUBST1_TAC THENL
+  [REWRITE_TAC[ETA_AX] THEN MATCH_MP_TAC EXPECTATION_CARRIER_INDICATOR THEN
+   ASM_REWRITE_TAC[]; REAL_ARITH_TAC]);;
+
+let SUPERMARTINGALE_EXPECTATION_DECREASING = prove
+ (`!p:A prob_space FF X. supermartingale p FF X
+     ==> !m n. m <= n ==> expectation p (X n) <= expectation p (X m)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP SUPERMARTINGALE_EXPECTATION_MONO) THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `?k. n = m + k:num` (CHOOSE_THEN SUBST_ALL_TAC) THENL
+  [EXISTS_TAC `n - m:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  UNDISCH_TAC `m:num <= m + k` THEN DISCH_THEN(K ALL_TAC) THEN
+  SPEC_TAC(`k:num`,`k:num`) THEN INDUCT_TAC THENL
+  [REWRITE_TAC[ADD_CLAUSES; REAL_LE_REFL];
+   REWRITE_TAC[ADD_CLAUSES] THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `expectation (p:A prob_space) ((X:num->A->real) (m + k))` THEN
+   ASM_MESON_TAC[]]);;
+
+let MARTINGALE_EXPECTATION_CONST = prove
+ (`!p:A prob_space FF X. martingale p FF X
+     ==> !m n. expectation p (X m) = expectation p (X n)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MARTINGALE_IMP_SUBMARTINGALE) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP SUBMARTINGALE_EXPECTATION_INCREASING) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MARTINGALE_IMP_SUPERMARTINGALE) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP SUPERMARTINGALE_EXPECTATION_DECREASING) THEN
+  DISCH_TAC THEN DISCH_TAC THEN
+  DISJ_CASES_TAC(SPECL [`m:num`; `n:num`] LE_CASES) THEN
+  REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN ASM_MESON_TAC[]);;
+
+(* --- Constant process is a martingale --- *)
+
+let MARTINGALE_CONST = prove
+ (`!p:A prob_space FF c. filtration p FF
+     ==> martingale p FF (\n x. c)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SIMPLE_IMP_MARTINGALE THEN
+  ASM_SIMP_TAC[SIMPLE_MARTINGALE_CONST]);;
+
+(* ================================================================== *)
+(* Optional stopping theorems for general martingales                 *)
+(* ================================================================== *)
+
+(* EXPECTATION_EXT: defined in expectation.ml *)
+
+(* --- Measurability of stopped process --- *)
+
+let RANDOM_VARIABLE_STOPPED_PROCESS = prove
+ (`!p:A prob_space FF X tau n.
+    adapted p FF X /\ filtration p FF /\ stopping_time p FF tau
+    ==> random_variable p (stopped_process X tau n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SPEC_TAC(`n:num`, `n:num`) THEN INDUCT_TAC THENL
+  [REWRITE_TAC[random_variable; stopped_process; MIN; LE_0] THEN
+   GEN_TAC THEN
+   UNDISCH_TAC `adapted (p:A prob_space) FF (X:num->A->real)` THEN
+   REWRITE_TAC[adapted; measurable_wrt] THEN
+   DISCH_THEN(MP_TAC o SPEC `0`) THEN
+   DISCH_THEN(MP_TAC o SPEC `a:real`) THEN
+   UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+   REWRITE_TAC[filtration; sub_sigma_algebra] THEN SET_TAC[];
+   REWRITE_TAC[random_variable] THEN X_GEN_TAC `v:real` THEN
+   SUBGOAL_THEN
+     `{x:A | x IN prob_carrier p /\ stopped_process (X:num->A->real) (tau:A->num) (SUC n) x <= v} =
+      ({x | x IN prob_carrier p /\ tau x > n} INTER
+       {x | x IN prob_carrier p /\ X (SUC n) x <= v}) UNION
+      ({x | x IN prob_carrier p /\ tau x <= n} INTER
+       {x | x IN prob_carrier p /\ stopped_process X tau n x <= v})`
+     SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_INTER; IN_UNION] THEN
+    X_GEN_TAC `x:A` THEN
+    ASM_CASES_TAC `(x:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[stopped_process] THEN
+    ASM_CASES_TAC `(tau:A->num) x > n` THENL
+    [ASM_REWRITE_TAC[] THEN
+     SUBGOAL_THEN `MIN (SUC n) ((tau:A->num) x) = SUC n` SUBST1_TAC THENL
+     [REWRITE_TAC[MIN] THEN ASM_ARITH_TAC; ASM_ARITH_TAC];
+     ASM_REWRITE_TAC[] THEN
+     SUBGOAL_THEN `MIN (SUC n) ((tau:A->num) x) = tau x` SUBST1_TAC THENL
+     [REWRITE_TAC[MIN] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+     SUBGOAL_THEN `MIN n ((tau:A->num) x) = tau x` SUBST1_TAC THENL
+     [REWRITE_TAC[MIN] THEN ASM_ARITH_TAC; ASM_ARITH_TAC]];
+    ALL_TAC] THEN
+   MATCH_MP_TAC PROB_UNION_IN_EVENTS THEN CONJ_TAC THEN
+   MATCH_MP_TAC PROB_INTER_IN_EVENTS THEN CONJ_TAC THENL
+   [MP_TAC(ISPECL [`p:A prob_space`; `FF:num->(A->bool)->bool`; `tau:A->num`; `n:num`]
+      STOPPING_TIME_GT_IN_FF) THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+    ASM_MESON_TAC[filtration; sub_sigma_algebra; SUBSET];
+    UNDISCH_TAC `adapted (p:A prob_space) FF (X:num->A->real)` THEN
+    REWRITE_TAC[adapted; measurable_wrt] THEN
+    DISCH_THEN(MP_TAC o SPEC `SUC n`) THEN DISCH_THEN(MP_TAC o SPEC `v:real`) THEN
+    UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+    REWRITE_TAC[filtration; sub_sigma_algebra] THEN SET_TAC[];
+    UNDISCH_TAC `stopping_time (p:A prob_space) FF tau` THEN
+    REWRITE_TAC[stopping_time] THEN DISCH_THEN(MP_TAC o SPEC `n:num`) THEN
+    UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+    REWRITE_TAC[filtration; sub_sigma_algebra] THEN SET_TAC[];
+    UNDISCH_TAC `random_variable (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) n)` THEN
+    REWRITE_TAC[random_variable] THEN DISCH_THEN(MP_TAC o SPEC `v:real`) THEN
+    REWRITE_TAC[]]]);;
+
+(* --- Integrability of stopped process --- *)
+
+let INTEGRABLE_STOPPED_PROCESS = prove
+ (`!p:A prob_space FF X tau N n.
+    adapted p FF X /\ filtration p FF /\
+    bounded_stopping_time p FF tau N /\
+    (!k. integrable p (X k))
+    ==> integrable p (stopped_process X tau n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
+  SPEC_TAC(`n:num`, `n:num`) THEN INDUCT_TAC THENL
+  [SUBGOAL_THEN `stopped_process (X:num->A->real) (tau:A->num) 0 = X 0`
+     SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; STOPPED_PROCESS_ZERO]; ASM_REWRITE_TAC[]];
+   MATCH_MP_TAC INTEGRABLE_DOMINATED THEN
+   EXISTS_TAC `\x:A. abs((X:num->A->real) (SUC n) x) + abs(stopped_process X (tau:A->num) n x)` THEN
+   REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC RANDOM_VARIABLE_STOPPED_PROCESS THEN
+    EXISTS_TAC `FF:num->(A->bool)->bool` THEN ASM_REWRITE_TAC[];
+    MATCH_MP_TAC INTEGRABLE_ADD THEN CONJ_TAC THEN
+    MATCH_MP_TAC INTEGRABLE_ABS THEN REWRITE_TAC[ETA_AX] THEN ASM_REWRITE_TAC[];
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    REWRITE_TAC[stopped_process] THEN
+    ASM_CASES_TAC `(tau:A->num) x > n` THENL
+    [SUBGOAL_THEN `MIN (SUC n) ((tau:A->num) x) = SUC n` SUBST1_TAC THENL
+     [REWRITE_TAC[MIN] THEN ASM_ARITH_TAC; REAL_ARITH_TAC];
+     SUBGOAL_THEN `MIN (SUC n) ((tau:A->num) x) = tau x` SUBST1_TAC THENL
+     [REWRITE_TAC[MIN] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+     SUBGOAL_THEN `MIN n ((tau:A->num) x) = tau x` SUBST1_TAC THENL
+     [REWRITE_TAC[MIN] THEN ASM_ARITH_TAC; REAL_ARITH_TAC]]]]);;
+
+(* --- Doob Optional Stopping Theorem (martingale) --- *)
+
+let DOOB_OPTIONAL_STOPPING = prove
+ (`!p:A prob_space FF X tau N.
+    martingale p FF X /\ bounded_stopping_time p FF tau N
+    ==> !n. expectation p (stopped_process X tau n) = expectation p (X 0)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `filtration (p:A prob_space) FF` ASSUME_TAC THENL
+  [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `adapted (p:A prob_space) FF (X:num->A->real)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `!k. integrable (p:A prob_space) ((X:num->A->real) k)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
+  SUBGOAL_THEN `!n a. a IN (FF:num->(A->bool)->bool) n
+    ==> expectation (p:A prob_space) (\x. (X:num->A->real) (SUC n) x * indicator_fn a x) =
+        expectation p (\x. X n x * indicator_fn a x)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[martingale]; ALL_TAC] THEN
+  INDUCT_TAC THENL
+  [AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM; STOPPED_PROCESS_ZERO];
+   ASM_REWRITE_TAC[] THEN
+   ABBREV_TAC `A = {x:A | x IN prob_carrier p /\ (tau:A->num) x > n}` THEN
+   SUBGOAL_THEN `(A:A->bool) IN (FF:num->(A->bool)->bool) n` ASSUME_TAC THENL
+   [EXPAND_TAC "A" THEN ASM_SIMP_TAC[STOPPING_TIME_GT_IN_FF]; ALL_TAC] THEN
+   SUBGOAL_THEN `(A:A->bool) IN prob_events (p:A prob_space)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[filtration; sub_sigma_algebra; SUBSET]; ALL_TAC] THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (\x. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x)` ASSUME_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_MUL_INDICATOR_FN THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC INTEGRABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) n)` ASSUME_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_STOPPED_PROCESS THEN
+    MAP_EVERY EXISTS_TAC [`FF:num->(A->bool)->bool`; `N:num`] THEN
+    ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   SUBGOAL_THEN
+     `expectation (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) (SUC n)) =
+      expectation p (\x. stopped_process X tau n x + ((X (SUC n) x - X n x) * indicator_fn (A:A->bool) x))`
+     SUBST1_TAC THENL
+   [MATCH_MP_TAC EXPECTATION_EXT THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    BETA_TAC THEN
+    MP_TAC(SPECL [`(X:num->A->real)`; `(tau:A->num)`; `n:num`; `x:A`]
+      STOPPED_PROCESS_INCREMENT) THEN
+    EXPAND_TAC "A" THEN REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+    ASM_REWRITE_TAC[] THEN COND_CASES_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   MP_TAC(BETA_RULE(ISPECL [`p:A prob_space`;
+     `stopped_process (X:num->A->real) (tau:A->num) n`;
+     `\x:A. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x`]
+     EXPECTATION_ADD)) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+   SUBGOAL_THEN
+     `expectation (p:A prob_space) (\x. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x) = &0`
+     (fun th -> REWRITE_TAC[th] THEN REAL_ARITH_TAC) THEN
+   SUBGOAL_THEN
+     `(\x:A. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x) =
+      (\x. X (SUC n) x * indicator_fn A x - X n x * indicator_fn A x)`
+     SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (\x. (X:num->A->real) (SUC n) x * indicator_fn (A:A->bool) x) /\
+                 integrable p (\x. X n x * indicator_fn A x)` STRIP_ASSUME_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_MUL_INDICATOR_FN THEN
+    ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+   ASM_SIMP_TAC[EXPECTATION_SUB] THEN REAL_ARITH_TAC]);;
+
+(* --- Submartingale optional stopping (general) --- *)
+
+let SUBMARTINGALE_OPTIONAL_STOPPING_GE = prove
+ (`!p:A prob_space FF X tau N.
+    submartingale p FF X /\ bounded_stopping_time p FF tau N
+    ==> !n. expectation p (X 0) <= expectation p (stopped_process X tau n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `filtration (p:A prob_space) FF` ASSUME_TAC THENL
+  [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `adapted (p:A prob_space) FF (X:num->A->real)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `!k. integrable (p:A prob_space) ((X:num->A->real) k)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
+  SUBGOAL_THEN `!n a. a IN (FF:num->(A->bool)->bool) n
+    ==> expectation (p:A prob_space) (\x. (X:num->A->real) n x * indicator_fn a x) <=
+        expectation p (\x. X (SUC n) x * indicator_fn a x)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[submartingale]; ALL_TAC] THEN
+  INDUCT_TAC THENL
+  [SUBGOAL_THEN `stopped_process (X:num->A->real) (tau:A->num) 0 = X 0` SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; STOPPED_PROCESS_ZERO]; REAL_ARITH_TAC];
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `expectation (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) n)` THEN
+   ASM_REWRITE_TAC[] THEN
+   ABBREV_TAC `A = {x:A | x IN prob_carrier p /\ (tau:A->num) x > n}` THEN
+   SUBGOAL_THEN `(A:A->bool) IN (FF:num->(A->bool)->bool) n` ASSUME_TAC THENL
+   [EXPAND_TAC "A" THEN ASM_SIMP_TAC[STOPPING_TIME_GT_IN_FF]; ALL_TAC] THEN
+   SUBGOAL_THEN `(A:A->bool) IN prob_events (p:A prob_space)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[filtration; sub_sigma_algebra; SUBSET]; ALL_TAC] THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (\x. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x)` ASSUME_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_MUL_INDICATOR_FN THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC INTEGRABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) n)` ASSUME_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_STOPPED_PROCESS THEN
+    MAP_EVERY EXISTS_TAC [`FF:num->(A->bool)->bool`; `N:num`] THEN
+    ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   SUBGOAL_THEN
+     `expectation (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) (SUC n)) =
+      expectation p (\x. stopped_process X tau n x + ((X (SUC n) x - X n x) * indicator_fn (A:A->bool) x))`
+     SUBST1_TAC THENL
+   [MATCH_MP_TAC EXPECTATION_EXT THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    BETA_TAC THEN
+    MP_TAC(SPECL [`(X:num->A->real)`; `(tau:A->num)`; `n:num`; `x:A`]
+      STOPPED_PROCESS_INCREMENT) THEN
+    EXPAND_TAC "A" THEN REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+    ASM_REWRITE_TAC[] THEN COND_CASES_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   MP_TAC(BETA_RULE(ISPECL [`p:A prob_space`;
+     `stopped_process (X:num->A->real) (tau:A->num) n`;
+     `\x:A. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x`]
+     EXPECTATION_ADD)) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+   FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `A:A->bool`]) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (\x. (X:num->A->real) (SUC n) x * indicator_fn (A:A->bool) x) /\
+                 integrable p (\x. X n x * indicator_fn A x)` STRIP_ASSUME_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_MUL_INDICATOR_FN THEN
+    ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+   SUBGOAL_THEN
+     `expectation (p:A prob_space) (\x. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x) =
+      expectation p (\x. X (SUC n) x * indicator_fn A x) -
+      expectation p (\x. X n x * indicator_fn A x)` SUBST1_TAC THENL
+   [SUBGOAL_THEN
+      `(\x:A. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x) =
+       (\x. X (SUC n) x * indicator_fn A x - X n x * indicator_fn A x)`
+      SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+    ASM_SIMP_TAC[EXPECTATION_SUB];
+    ASM_REAL_ARITH_TAC]]);;
+
+(* --- Supermartingale optional stopping (general) --- *)
+
+let SUPERMARTINGALE_OPTIONAL_STOPPING_LE = prove
+ (`!p:A prob_space FF X tau N.
+    supermartingale p FF X /\ bounded_stopping_time p FF tau N
+    ==> !n. expectation p (stopped_process X tau n) <= expectation p (X 0)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `filtration (p:A prob_space) FF` ASSUME_TAC THENL
+  [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `adapted (p:A prob_space) FF (X:num->A->real)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `!k. integrable (p:A prob_space) ((X:num->A->real) k)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+  SUBGOAL_THEN `stopping_time (p:A prob_space) FF (tau:A->num)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[bounded_stopping_time]; ALL_TAC] THEN
+  SUBGOAL_THEN `!n a. a IN (FF:num->(A->bool)->bool) n
+    ==> expectation (p:A prob_space) (\x. (X:num->A->real) (SUC n) x * indicator_fn a x) <=
+        expectation p (\x. X n x * indicator_fn a x)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[supermartingale]; ALL_TAC] THEN
+  INDUCT_TAC THENL
+  [SUBGOAL_THEN `stopped_process (X:num->A->real) (tau:A->num) 0 = X 0` SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; STOPPED_PROCESS_ZERO]; REAL_ARITH_TAC];
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `expectation (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) n)` THEN
+   ASM_REWRITE_TAC[] THEN
+   ABBREV_TAC `A = {x:A | x IN prob_carrier p /\ (tau:A->num) x > n}` THEN
+   SUBGOAL_THEN `(A:A->bool) IN (FF:num->(A->bool)->bool) n` ASSUME_TAC THENL
+   [EXPAND_TAC "A" THEN ASM_SIMP_TAC[STOPPING_TIME_GT_IN_FF]; ALL_TAC] THEN
+   SUBGOAL_THEN `(A:A->bool) IN prob_events (p:A prob_space)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[filtration; sub_sigma_algebra; SUBSET]; ALL_TAC] THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (\x. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x)` ASSUME_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_MUL_INDICATOR_FN THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC INTEGRABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) n)` ASSUME_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_STOPPED_PROCESS THEN
+    MAP_EVERY EXISTS_TAC [`FF:num->(A->bool)->bool`; `N:num`] THEN
+    ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   SUBGOAL_THEN
+     `expectation (p:A prob_space) (stopped_process (X:num->A->real) (tau:A->num) (SUC n)) =
+      expectation p (\x. stopped_process X tau n x + ((X (SUC n) x - X n x) * indicator_fn (A:A->bool) x))`
+     SUBST1_TAC THENL
+   [MATCH_MP_TAC EXPECTATION_EXT THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    BETA_TAC THEN
+    MP_TAC(SPECL [`(X:num->A->real)`; `(tau:A->num)`; `n:num`; `x:A`]
+      STOPPED_PROCESS_INCREMENT) THEN
+    EXPAND_TAC "A" THEN REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+    ASM_REWRITE_TAC[] THEN COND_CASES_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   MP_TAC(BETA_RULE(ISPECL [`p:A prob_space`;
+     `stopped_process (X:num->A->real) (tau:A->num) n`;
+     `\x:A. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x`]
+     EXPECTATION_ADD)) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+   FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `A:A->bool`]) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+   SUBGOAL_THEN `integrable (p:A prob_space) (\x. (X:num->A->real) (SUC n) x * indicator_fn (A:A->bool) x) /\
+                 integrable p (\x. X n x * indicator_fn A x)` STRIP_ASSUME_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_MUL_INDICATOR_FN THEN
+    ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+   SUBGOAL_THEN
+     `expectation (p:A prob_space) (\x. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x) =
+      expectation p (\x. X (SUC n) x * indicator_fn A x) -
+      expectation p (\x. X n x * indicator_fn A x)` SUBST1_TAC THENL
+   [SUBGOAL_THEN
+      `(\x:A. ((X:num->A->real) (SUC n) x - X n x) * indicator_fn (A:A->bool) x) =
+       (\x. X (SUC n) x * indicator_fn A x - X n x * indicator_fn A x)`
+      SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+    ASM_SIMP_TAC[EXPECTATION_SUB];
+    ASM_REAL_ARITH_TAC]]);;
+
+(* --- Bridge: simple_submartingale => submartingale optional stopping --- *)
+
+let SIMPLE_SUBMARTINGALE_OPTIONAL_STOPPING_GE_GENERAL = prove
+ (`!p:A prob_space FF X tau N.
+    simple_submartingale p FF X /\ bounded_stopping_time p FF tau N
+    ==> !n. expectation p (X 0) <= expectation p (stopped_process X tau n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN GEN_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[RIGHT_IMP_FORALL_THM; IMP_IMP]
+    SUBMARTINGALE_OPTIONAL_STOPPING_GE) THEN
+  MAP_EVERY EXISTS_TAC [`FF:num->(A->bool)->bool`; `N:num`] THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC SIMPLE_IMP_SUBMARTINGALE THEN ASM_REWRITE_TAC[]);;
+
+(* --- Bridge: simple_supermartingale => supermartingale optional stopping --- *)
+
+let SIMPLE_SUPERMARTINGALE_OPTIONAL_STOPPING_LE_GENERAL = prove
+ (`!p:A prob_space FF X tau N.
+    simple_supermartingale p FF X /\ bounded_stopping_time p FF tau N
+    ==> !n. expectation p (stopped_process X tau n) <= expectation p (X 0)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN GEN_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[RIGHT_IMP_FORALL_THM; IMP_IMP]
+    SUPERMARTINGALE_OPTIONAL_STOPPING_LE) THEN
+  MAP_EVERY EXISTS_TAC [`FF:num->(A->bool)->bool`; `N:num`] THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC SIMPLE_IMP_SUPERMARTINGALE THEN ASM_REWRITE_TAC[]);;
+
+(* ================================================================== *)
+(* Conditional expectation tower property                             *)
+(* ================================================================== *)
+
+(* Multi-step simple_martingale property: for a IN FF m and m <= n,
+   E[X_n * 1_a] = E[X_m * 1_a]. This is the integral form of
+   E[X_n | FF_m] = X_m (a.e.). *)
+
+let MARTINGALE_TOWER = prove
+ (`!p:A prob_space FF X. martingale p FF X
+    ==> !m n a. m <= n /\ a IN FF m
+      ==> expectation p (\x. X n x * indicator_fn a x) =
+          expectation p (\x. X m x * indicator_fn a x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[martingale] THEN STRIP_TAC THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?k. n = m + k:num` (CHOOSE_THEN SUBST_ALL_TAC) THENL
+  [EXISTS_TAC `n - m:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  UNDISCH_TAC `m:num <= m + k` THEN DISCH_THEN(K ALL_TAC) THEN
+  SPEC_TAC(`k:num`,`k:num`) THEN INDUCT_TAC THENL
+  [REWRITE_TAC[ADD_CLAUSES];
+   REWRITE_TAC[ADD_CLAUSES] THEN
+   SUBGOAL_THEN `(a:A->bool) IN (FF:num->(A->bool)->bool) (m + k)` ASSUME_TAC THENL
+   [UNDISCH_TAC `(a:A->bool) IN (FF:num->(A->bool)->bool) m` THEN
+    UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+    REWRITE_TAC[filtration] THEN
+    DISCH_THEN(MP_TAC o CONJUNCT2) THEN
+    DISCH_THEN(MP_TAC o SPECL [`m:num`; `m + k:num`]) THEN
+    REWRITE_TAC[LE_ADD] THEN SET_TAC[];
+    ASM_MESON_TAC[]]]);;
+
+(* Multi-step simple_submartingale property *)
+
+let SUBMARTINGALE_TOWER = prove
+ (`!p:A prob_space FF X. submartingale p FF X
+    ==> !m n a. m <= n /\ a IN FF m
+      ==> expectation p (\x. X m x * indicator_fn a x) <=
+          expectation p (\x. X n x * indicator_fn a x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[submartingale] THEN STRIP_TAC THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?k. n = m + k:num` (CHOOSE_THEN SUBST_ALL_TAC) THENL
+  [EXISTS_TAC `n - m:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  UNDISCH_TAC `m:num <= m + k` THEN DISCH_THEN(K ALL_TAC) THEN
+  SPEC_TAC(`k:num`,`k:num`) THEN INDUCT_TAC THENL
+  [REWRITE_TAC[ADD_CLAUSES; REAL_LE_REFL];
+   REWRITE_TAC[ADD_CLAUSES] THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `expectation (p:A prob_space) (\x. (X:num->A->real) (m + k) x * indicator_fn (a:A->bool) x)` THEN
+   ASM_REWRITE_TAC[] THEN
+   SUBGOAL_THEN `(a:A->bool) IN (FF:num->(A->bool)->bool) (m + k)` ASSUME_TAC THENL
+   [UNDISCH_TAC `(a:A->bool) IN (FF:num->(A->bool)->bool) m` THEN
+    UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+    REWRITE_TAC[filtration] THEN
+    DISCH_THEN(MP_TAC o CONJUNCT2) THEN
+    DISCH_THEN(MP_TAC o SPECL [`m:num`; `m + k:num`]) THEN
+    REWRITE_TAC[LE_ADD] THEN SET_TAC[];
+    ASM_MESON_TAC[]]]);;
+
+(* Multi-step simple_supermartingale property *)
+
+let SUPERMARTINGALE_TOWER = prove
+ (`!p:A prob_space FF X. supermartingale p FF X
+    ==> !m n a. m <= n /\ a IN FF m
+      ==> expectation p (\x. X n x * indicator_fn a x) <=
+          expectation p (\x. X m x * indicator_fn a x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[supermartingale] THEN STRIP_TAC THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?k. n = m + k:num` (CHOOSE_THEN SUBST_ALL_TAC) THENL
+  [EXISTS_TAC `n - m:num` THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  UNDISCH_TAC `m:num <= m + k` THEN DISCH_THEN(K ALL_TAC) THEN
+  SPEC_TAC(`k:num`,`k:num`) THEN INDUCT_TAC THENL
+  [REWRITE_TAC[ADD_CLAUSES; REAL_LE_REFL];
+   REWRITE_TAC[ADD_CLAUSES] THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `expectation (p:A prob_space) (\x. (X:num->A->real) (m + k) x * indicator_fn (a:A->bool) x)` THEN
+   ASM_REWRITE_TAC[] THEN
+   SUBGOAL_THEN `(a:A->bool) IN (FF:num->(A->bool)->bool) (m + k)` ASSUME_TAC THENL
+   [UNDISCH_TAC `(a:A->bool) IN (FF:num->(A->bool)->bool) m` THEN
+    UNDISCH_TAC `filtration (p:A prob_space) FF` THEN
+    REWRITE_TAC[filtration] THEN
+    DISCH_THEN(MP_TAC o CONJUNCT2) THEN
+    DISCH_THEN(MP_TAC o SPECL [`m:num`; `m + k:num`]) THEN
+    REWRITE_TAC[LE_ADD] THEN SET_TAC[];
+    ASM_MESON_TAC[]]]);;
+
+(* Tower property without m <= n restriction *)
+
+let MARTINGALE_TOWER_EQ = prove
+ (`!p:A prob_space FF X. martingale p FF X
+    ==> !m n a. a IN FF (MIN m n)
+      ==> expectation p (\x. X n x * indicator_fn a x) =
+          expectation p (\x. X m x * indicator_fn a x)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MARTINGALE_TOWER) THEN
+  DISCH_TAC THEN
+  DISJ_CASES_TAC(SPECL [`m:num`; `n:num`] LE_CASES) THENL
+  [SUBGOAL_THEN `MIN m n = m` SUBST_ALL_TAC THENL
+   [ASM_ARITH_TAC; ALL_TAC] THEN
+   FIRST_X_ASSUM(MP_TAC o SPECL [`m:num`; `n:num`; `a:A->bool`]) THEN
+   ASM_REWRITE_TAC[];
+   SUBGOAL_THEN `MIN m n = n` SUBST_ALL_TAC THENL
+   [ASM_ARITH_TAC; ALL_TAC] THEN
+   CONV_TAC SYM_CONV THEN
+   FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `m:num`; `a:A->bool`]) THEN
+   ASM_REWRITE_TAC[]]);;
+
+(* Characterization: martingale iff tower property holds *)
+
+let MARTINGALE_CHARACTERIZATION = prove
+ (`!p:A prob_space FF X.
+    martingale p FF X <=>
+    filtration p FF /\ adapted p FF X /\ (!n. integrable p (X n)) /\
+    (!m n a. m <= n /\ a IN FF m
+      ==> expectation p (\x. X n x * indicator_fn a x) =
+          expectation p (\x. X m x * indicator_fn a x))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [DISCH_TAC THEN
+   FIRST_ASSUM(STRIP_ASSUME_TAC o REWRITE_RULE[martingale]) THEN
+   ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC MARTINGALE_TOWER THEN ASM_REWRITE_TAC[];
+   REWRITE_TAC[martingale] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+   REPEAT STRIP_TAC THEN
+   FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `SUC n`; `a:A->bool`]) THEN
+   ASM_REWRITE_TAC[LE; LE_REFL]]);;

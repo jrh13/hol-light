@@ -2042,17 +2042,7 @@ let ring_sum_const = prove(`
   ring_sum r S (\s:X. c)
   = ring_mul r (ring_of_num r (CARD S)) c
 `,
-  GEN_TAC THEN GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    rw[RING_SUM_CLAUSES;CARD_CLAUSES;RING_OF_NUM_0] THEN
-    qed[RING_MUL_LZERO]
-  ;
-    set_fact `!s:X. s IN S ==> s IN x INSERT S` THEN
-    set_fact `(x:X) IN x INSERT S` THEN
-    simp[RING_SUM_CLAUSES;CARD_CLAUSES;ring_of_num] THEN
-    RING_TAC
-  ]
+  qed[RING_SUM_CONST]
 );;
 
 let ring_product_const = prove(`
@@ -2061,15 +2051,7 @@ let ring_product_const = prove(`
   c IN ring_carrier r ==>
   ring_product r S (\s:X. c) = ring_pow r c (CARD S)
 `,
-  GEN_TAC THEN GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    rw[RING_PRODUCT_CLAUSES;CARD_CLAUSES;RING_POW_0]
-  ;
-    set_fact `!s:X. s IN S ==> s IN x INSERT S` THEN
-    set_fact `(x:X) IN x INSERT S` THEN
-    simp[RING_PRODUCT_CLAUSES;CARD_CLAUSES;ring_pow]
-  ]
+  qed[RING_PRODUCT_CONST]
 );;
 
 let ring_of_num_injective_lemma = prove(`
@@ -2377,30 +2359,6 @@ let ring_coprime_1 = prove(`
   qed[RING_1;RING_UNIT_DIVIDES]
 );;
 
-let ring_coprime_product_waterfall = prove(`
-  !(r:R ring) f:X->R a.
-  (UFD r \/ integral_domain r /\ bezout_ring r) ==>
-  a IN ring_carrier r ==>
-  !S.
-  FINITE S ==>
-  (!s. s IN S ==> ring_coprime r (a,f s)) ==>
-  ring_coprime r (a,ring_product r S f)
-`,
-  intro_gendisch THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    simp[RING_PRODUCT_CLAUSES] THEN
-    qed[ring_coprime_1]
-  ;
-    have `x:X IN x INSERT S` [IN_INSERT] THEN
-    have `f(x:X):R IN ring_carrier r` [SUBSET;ring_coprime] THEN
-    simp[RING_PRODUCT_CLAUSES] THEN
-    have `!s:X. s IN S ==> s IN x INSERT S` [IN_INSERT] THEN
-    have `ring_coprime r (a,ring_product r S (f:X->R))` [] THEN
-    qed[RING_COPRIME_RMUL;RING_PRODUCT;ring_coprime]
-  ]
-);;
-
 let ring_coprime_product = prove(`
   !(r:R ring) f:X->R a S.
   (UFD r \/ integral_domain r /\ bezout_ring r) ==>
@@ -2409,42 +2367,7 @@ let ring_coprime_product = prove(`
   (!s. s IN S ==> ring_coprime r (a,f s)) ==>
   ring_coprime r (a,ring_product r S f)
 `,
-  simp[ring_coprime_product_waterfall]
-);;
-
-let ring_product_divides_if_coprime_waterfall = prove(`
-  !(r:R ring) f:X->R a.
-  (UFD r \/ integral_domain r /\ bezout_ring r) ==>
-  a IN ring_carrier r ==>
-  !S.
-  FINITE S ==>
-  (!s t. s IN S ==> t IN S ==> ~(s = t) ==> ring_coprime r (f s,f t)) ==>
-  (!s. s IN S ==> ring_divides r (f s) a) ==>
-  ring_divides r (ring_product r S f) a
-`,
-  intro_gendisch THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    simp[RING_PRODUCT_CLAUSES] THEN
-    qed[RING_DIVIDES_1]
-  ;
-    have `x:X IN x INSERT S` [IN_INSERT] THEN
-    have `f(x:X):R IN ring_carrier r` [SUBSET;ring_divides] THEN
-    simp[RING_PRODUCT_CLAUSES] THEN
-    have `!s:X. s IN S ==> s IN x INSERT S` [IN_INSERT] THEN
-    have `ring_divides r (ring_product r S (f:X->R)) a` [] THEN
-    subgoal `ring_coprime r (f x,ring_product r S (f:X->R))` THENL [
-      specialize_assuming[
-        `r:R ring`;
-        `f:X->R`;
-        `f(x:X):R`;
-        `S:X->bool`
-      ]ring_coprime_product THEN
-      qed[]
-    ; pass
-    ] THEN
-    qed[RING_DIVIDES_MUL]
-  ]
+  simp[RING_COPRIME_PRODUCT]
 );;
 
 (* compare product_coprime_primes_divides below *)
@@ -2457,7 +2380,10 @@ let ring_product_divides_if_coprime = prove(`
   (!s t. s IN S ==> t IN S ==> ~(s = t) ==> ring_coprime r (f s,f t)) ==>
   ring_divides r (ring_product r S f) a
 `,
-  simp[ring_product_divides_if_coprime_waterfall]
+intro_gendisch THEN
+W(MP_TAC o PART_MATCH (lhand o rand) RING_COPRIME_PRODUCT_DIVIDES o snd) THEN
+rw[pairwise] THEN
+qed[RING_DIVIDES_IN_CARRIER]
 );;
 
 let ring_coprime_lpow = prove(`
@@ -2918,87 +2844,15 @@ let ring_product_o_v2 = prove(`
 
 (* ===== squarefree elements of rings *)
 
-(* XXX: maybe should include a IN ring_carrier r *)
-(* XXX: maybe should exclude 0, or exclude non-injective *)
-let ring_squarefree = new_definition `
-  ring_squarefree(r:R ring) a
-  <=>
-  (!b. b IN ring_carrier r ==>
-   ring_divides r a (ring_mul r b b) ==>
-   ring_divides r a b
-  )
-`;;
-
-let not_squarefree_if_divisible_by_square = prove(`
-  !(r:R ring) a b.
-  integral_domain r ==>
-  ~(a = ring_0 r) ==>
-  b IN ring_carrier r ==>
-  ~(ring_unit r b) ==>
-  ring_divides r (ring_mul r b b) a ==>
-  ~(ring_squarefree r a)
-`,
-  intro THEN
-  have `a IN ring_carrier(r:R ring)` [ring_divides] THEN
-  have `b IN ring_carrier(r:R ring)` [ring_unit] THEN
-  choose `q:R` `q IN ring_carrier(r:R ring) /\ a = ring_mul r (ring_mul r b b) q` [ring_divides] THEN
-  have `q IN ring_carrier(r:R ring)` [] THEN
-  have `a = ring_mul(r:R ring) (ring_mul r b b) q` [] THEN
-  recall(RING_RULE `a = ring_mul(r:R ring) (ring_mul r b b) q ==> ring_mul r (ring_mul r b q) (ring_mul r b q) = ring_mul r a q`) THEN
-  have `ring_divides(r:R ring) a (ring_mul r (ring_mul r b q) (ring_mul r b q))` [ring_divides;RING_MUL] THEN
-  have `ring_divides(r:R ring) a (ring_mul r b q)` [ring_squarefree;RING_MUL] THEN
-  choose `u:R` `u IN ring_carrier(r:R ring) /\ ring_mul r b q = ring_mul r a u` [ring_divides] THEN
-  have `u IN ring_carrier(r:R ring)` [] THEN
-  have `ring_mul(r:R ring) b q = ring_mul r a u` [] THEN
-  recall(RING_RULE `a = ring_mul(r:R ring) (ring_mul r b b) q /\ ring_mul r b q = ring_mul r a u ==> ring_mul r a (ring_1 r) = ring_mul r a (ring_mul r b u)`) THEN
-  have `ring_1(r:R ring) = ring_mul r b u` [INTEGRAL_DOMAIN_MUL_LCANCEL;RING_1;RING_MUL] THEN
-  qed[ring_unit]
-);;
-
-let product_coprime_primes_divides_waterfall = prove(`
-  !(r:R ring).
-  !P.
-  FINITE P ==>
-  P SUBSET ring_carrier r ==>
-  !b.
-  b IN ring_carrier r ==>
-  (!p. p IN P ==> ring_prime r p) ==>
-  (!p q. p IN P ==> q IN P ==> ring_divides r p q ==> p = q) ==>
-  (!p. p IN P ==> ring_divides r p b) ==>
-  ring_divides r (ring_product r P I) b
-`,
-  GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    simp[RING_PRODUCT_CLAUSES] THEN
-    qed[RING_DIVIDES_1]
-  ;
-    have `(x:R) IN x INSERT P` [IN_INSERT] THEN
-    have `(x:R) IN ring_carrier r` [SUBSET] THEN
-    have `I (x:R) = x` [I_THM] THEN
-    have `I (x:R) IN ring_carrier r` [] THEN
-    have `ring_product(r:R ring) (x INSERT P) I = ring_mul r x (ring_product r P I)` [RING_PRODUCT_CLAUSES] THEN
-    simp[RING_PRODUCT_CLAUSES] THEN
-    have `ring_divides r (x:R) b` [] THEN
-    choose `c:R` `c IN ring_carrier r /\ (b:R) = ring_mul r x c` [ring_divides] THEN
-    subgoal `!q:R. q IN P ==> ring_divides r q c` THENL [
-      intro THEN
-      have `q:R IN x INSERT P` [IN_INSERT] THEN
-      have `q:R IN ring_carrier r` [SUBSET] THEN
-      have `ring_divides r (q:R) b` [] THEN
-      have `ring_divides r (q:R) (ring_mul r x c)` [] THEN
-      have `~(ring_divides r (q:R) x)` [] THEN
-      qed[ring_prime]
-    ; pass
-    ] THEN
-    have `!q:R. q IN P ==> ring_prime r q` [IN_INSERT] THEN
-    have `!p q:R. p IN P ==> q IN P ==> ring_divides r p q ==> p = q` [IN_INSERT] THEN
-    have `P SUBSET (P:R->bool)` [SUBSET_REFL] THEN
-    have `P SUBSET ring_carrier(r:R ring)` [SUBSET_INSERT;SUBSET_TRANS] THEN
-    have `c:R IN ring_carrier r` [] THEN
-    specialize[`c:R`](UNDISCH(know `P SUBSET ring_carrier(r:R ring) ==> (!b. b IN ring_carrier r ==> (!p. p IN P ==> ring_prime r p) ==> (!p q. p IN P ==> q IN P ==> ring_divides r p q ==> p = q) ==> (!p. p IN P ==> ring_divides r p b) ==> ring_divides r (ring_product r P I) b)`)) THEN
-    qed[RING_DIVIDES_REFL;RING_DIVIDES_MUL2]
-  ]
+let not_squarefree_if_divisible_by_square = prove
+ (`!(r:R ring) a b.
+     integral_domain r ==>
+     ~(a = ring_0 r) ==>
+     b IN ring_carrier r ==>
+     ~(ring_unit r b) ==>
+     ring_divides r (ring_mul r b b) a ==>
+     ~(ring_squarefree r a)`,
+  qed[ring_squarefree; RING_POW_2; ring_divides]
 );;
 
 let product_coprime_primes_divides = prove(`
@@ -3012,81 +2866,48 @@ let product_coprime_primes_divides = prove(`
   ring_divides r (ring_product r P I) b
 `,
   intro THEN
-  ASSUME_TAC(ISPECL[`b:R`](UNDISCH_ALL(ISPECL[`r:R ring`;`P:R->bool`]product_coprime_primes_divides_waterfall))) THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) RING_PRIME_PRODUCT_DIVIDES o snd) THEN
+  rw[pairwise; I_THM] THEN
   qed[]
 );;
 
-let ring_squarefree_if_product_coprime_primes = prove(`
-  !(r:R ring) P.
-  P SUBSET ring_carrier r ==>
-  FINITE P ==>
-  (!p. p IN P ==> ring_prime r p) ==>
-  (!p q. p IN P ==> q IN P ==> ring_divides r p q ==> p = q) ==>
-  ring_squarefree r (ring_product r P I)
-`,
-  rw[ring_squarefree] THEN
+(* ring_squarefree_if_product_coprime_primes: now needs UFD hypothesis *)
+let ring_squarefree_if_product_coprime_primes_indexed = prove
+ (`!(r:R ring) S (f:X->R).
+     UFD r ==>
+     FINITE S ==>
+     (!s. s IN S ==> f s IN ring_carrier r) ==>
+     (!s. s IN S ==> ring_prime r (f s)) ==>
+     (!s t. s IN S ==> t IN S ==> ring_divides r (f s) (f t) ==> s = t) ==>
+     ring_squarefree r (ring_product r S f)`,
   intro THEN
-  subgoal `!p:R. p IN P ==> ring_divides r p (ring_product r P I)` THENL [
-    intro THEN
-    have `(p:R) IN ring_carrier r` [SUBSET] THEN
-    have `I (p:R) = p` [I_THM] THEN
-    have `I (p:R) IN ring_carrier r` [] THEN
-    have `ring_product(r:R ring) {p} I = p` [RING_PRODUCT_SING] THEN
-    have `FINITE {p:R}` [FINITE_SING] THEN
-    have `{p:R} SUBSET P` [SUBSET;IN_SING] THEN
-    qed[RING_DIVIDES_PRODUCT_SUBSET]
-  ; pass
-  ] THEN
-  have `!p:R. p IN P ==> ring_divides r p (ring_mul r b b)` [RING_DIVIDES_TRANS;RING_MUL] THEN
-  have `!p:R. p IN P ==> ring_divides r p b` [ring_prime] THEN
-  specialize[`r:R ring`;`P:R->bool`;`b:R`]product_coprime_primes_divides THEN
-  qed[]
+  have `~(ring_product r S (f:X->R) = ring_0 r)`
+   [INTEGRAL_DOMAIN_PRODUCT_EQ_0; ring_prime; UFD;
+    INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING] THEN
+  simp[RING_SQUAREFREE_PRODUCT; pairwise] THEN
+  qed[INTEGRAL_DOMAIN_PRIME_COPRIME_EQ; RING_PRIME_IMP_SQUAREFREE; UFD]
 );;
 
-let ring_squarefree_if_product_coprime_primes_indexed = prove(`
-  !(r:R ring) S (f:X->R).
-  FINITE S ==>
-  (!s:X. s IN S ==> f s IN ring_carrier r) ==>
-  (!s:X. s IN S ==> ring_prime r (f s)) ==>
-  (!s t. s IN S ==> t IN S ==> ring_divides r (f s) (f t) ==> s = t) ==>
-  ring_squarefree r (ring_product r S f)
-`,
+let ring_squarefree_if_product_coprime_primes = prove
+ (`!(r:R ring) P.
+     UFD r ==>
+     P SUBSET ring_carrier r ==>
+     FINITE P ==>
+     (!p. p IN P ==> ring_prime r p) ==>
+     (!p q. p IN P ==> q IN P ==> ring_divides r p q ==> p = q) ==>
+     ring_squarefree r (ring_product r P I)`,
   intro THEN
-  def `P:R->bool` `IMAGE (f:X->R) S` THEN
-  have `FINITE (P:R->bool)` [FINITE_IMAGE] THEN
-  havetac `(P:R->bool) SUBSET ring_carrier r`
-    (rw[SUBSET;EXTENSION] THEN qed[IN_IMAGE]) THEN
-  havetac `!p:R. p IN P ==> ring_prime r p`
-    (rw[SUBSET;EXTENSION] THEN qed[IN_IMAGE]) THEN
-  havetac `!p q:R. p IN P ==> q IN P ==> ring_divides r p q ==> p = q`
-    (rw[SUBSET;EXTENSION] THEN qed[IN_IMAGE]) THEN
-  specialize[`r:R ring`;`P:R->bool`]ring_squarefree_if_product_coprime_primes THEN
-  have `!s t:X. s IN S ==> t IN S ==> f s = f t:R ==> s = t` [RING_DIVIDES_REFL] THEN
-  specialize[`r:R ring`;`f:X->R`;`I:R->R`;`S:X->bool`]RING_PRODUCT_IMAGE THEN
-  qed[I_O_ID]
+  MATCH_MP_TAC(REWRITE_RULE[IMP_IMP]
+   ring_squarefree_if_product_coprime_primes_indexed) THEN
+  qed[I_THM; RING_PRIME_IN_CARRIER]
 );;
 
-let ring_squarefree_if_unit = prove(`
-  !(r:R ring) p.
-  ring_unit r p ==> ring_squarefree r p
-`,
-  rw[ring_squarefree] THEN
-  qed[RING_UNIT_DIVIDES_ANY]
-);;
+let ring_squarefree_if_unit = RING_UNIT_IMP_SQUAREFREE;;
 
-let ring_squarefree_if_prime = prove(`
-  !(r:R ring) p.
-  ring_prime r p ==> ring_squarefree r p
-`,
-  intro THEN
-  have `p:R IN ring_carrier r` [ring_prime] THEN
-  have `{p:R} SUBSET ring_carrier r` [SUBSET;IN_SING] THEN
-  have `FINITE {p:R}` [FINITE_SING] THEN
-  have `!q:R. q IN {p} ==> ring_prime r q` [IN_SING] THEN
-  have `!q x:R. q IN {p} ==> x IN {p} ==> ring_divides r q x ==> q = x` [IN_SING] THEN
-  specialize[`r:R ring`;`{p:R}`]ring_squarefree_if_product_coprime_primes THEN
-  qed[RING_PRODUCT_SING;I_THM]
-);;
+let ring_squarefree_if_prime = prove
+ (`!(r:R ring) p.
+     integral_domain r ==> ring_prime r p ==> ring_squarefree r p`,
+  MESON_TAC[RING_PRIME_IMP_SQUAREFREE]);;
 
 let ring_coprime_if_unit = prove(`
   !(r:R ring) a b.
@@ -3104,21 +2925,7 @@ let ring_product_divides_factor_by_factor = prove(`
   (!s:X. s IN S ==> ring_divides r (f s) (g s)) ==>
   ring_divides r (ring_product r S f) (ring_product r S g)
 `,
-  GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  simp[RING_PRODUCT_CLAUSES] THEN
-  intro THENL [
-    qed[RING_DIVIDES_1;RING_1]
-  ;
-    set_fact `!s:X. s IN S ==> s IN x INSERT S` THEN
-    set_fact `(x:X) IN x INSERT S` THEN
-    have `!s:X. s IN S ==> f s IN ring_carrier(r:R ring)` [ring_divides] THEN
-    have `!s:X. s IN S ==> g s IN ring_carrier(r:R ring)` [ring_divides] THEN
-    have `f(x:X) IN ring_carrier(r:R ring)` [ring_divides] THEN
-    have `g(x:X) IN ring_carrier(r:R ring)` [ring_divides] THEN
-    have `ring_divides (r:R ring) (f(x:X)) (g(x:X))` [] THEN
-    qed[RING_DIVIDES_MUL2]
-  ]
+  qed[RING_DIVIDES_PRODUCTS]
 );;
 
 let ring_sum_delta_delta = prove(`
@@ -3271,15 +3078,12 @@ let prime_divides_prime_and = prove(`
   qed[RING_DIVIDES_TRANS]
 );;
 
-let ring_squarefree_associates = prove(`
-  !(r:R ring) f g.
-  ring_associates r f g ==>
-  ring_squarefree r f ==>
-  ring_squarefree r g
-`,
-  rw[ring_squarefree] THEN
-  qed[RING_ASSOCIATES_DIVIDES;RING_ASSOCIATES_REFL;RING_MUL]
-);;
+let ring_squarefree_associates = prove
+ (`!(r:R ring) f g.
+     ring_associates r f g ==>
+     ring_squarefree r f ==>
+     ring_squarefree r g`,
+  MESON_TAC[RING_SQUAREFREE_ASSOCIATES]);;
 
 (* ===== power series and polynomials *)
 
@@ -4311,18 +4115,16 @@ let x_monomial_factorizations_set = prove(`
 
 (* ===== coeff d p = coefficient of x^d in p *)
 
-let coeff = new_definition `
-  coeff (d:num) (p:(1->num)->R)
-  = p(x_monomial d)
-`;;
+let coeff_x_monomial = prove
+ (`!d (p:(1->num)->R). coeff d p = p(x_monomial d)`,
+  REWRITE_TAC[coeff; x_monomial]);;
 
 let eq_coeff = prove(`
   !(r:R ring) (p:(1->num)->R) q.
   (!d. coeff d p = coeff d q)
   ==> p = q
 `,
-  rw[coeff] THEN
-  qed[x_monomial_surjective;EQ_EXT]
+  qed[FUN_EQ_COEFF]
 );;
 
 let coeff_series_in_ring = prove(`
@@ -4330,27 +4132,14 @@ let coeff_series_in_ring = prove(`
   ring_powerseries r p <=>
   !d. coeff d p IN ring_carrier(r)
 `,
-  intro THEN
-  splitiff THENL [
-    rw[coeff] THEN
-    qed[ring_powerseries]
-  ;
-    intro THEN
-    rw[IN_ELIM_THM] THEN
-    rw[ring_powerseries] THEN
-    intro THENL [
-      qed[x_monomial_surjective;coeff]
-    ;
-      qed[FINITE_MONOMIAL_VARS_1;INFINITE]
-    ]
-  ]
+  REWRITE_TAC[RING_POWERSERIES_COEFF]
 );;
 
 let coeff_series_from_coeffs = prove(`
   !(r:R ring) (f:num->R) d.
   coeff d (series_from_coeffs f) = f d
 `,
-  rw[coeff;series_from_coeffs;x_monomial]
+  rw[coeff_x_monomial;series_from_coeffs;x_monomial]
 );;
 
 let series_from_coeffs_coeff = prove(`
@@ -4410,10 +4199,7 @@ let poly_coeff = prove(`
        /\ FINITE {d | ~(coeff d p = ring_0 r)}
       )
 `,
-  intro THEN
-  have `series_from_coeffs (\d. coeff d p:R) = p` [series_from_coeffs_coeff] THEN
-  specialize[`r:R ring`;`\d. coeff d p:R`]poly_series_from_coeffs THEN
-  qed[]
+  REWRITE_TAC[RING_POLYNOMIAL_COEFF]
 );;
 
 let ring_polynomial_subring_if_coeffs = prove(`
@@ -4422,14 +4208,7 @@ let ring_polynomial_subring_if_coeffs = prove(`
   (!d. coeff d p IN ring_carrier(subring_generated r G)) ==>
   ring_polynomial(subring_generated r G) p
 `,
-  rw[poly_coeff] THEN
-  REPEAT GEN_TAC THEN DISCH_TAC THEN
-  subgoal `{d | ~(coeff d p = ring_0 (subring_generated r G))} = {d | ~(coeff d p = ring_0(r:R ring))}` THENL [
-    rw[EXTENSION;IN_ELIM_THM] THEN
-    qed[SUBRING_GENERATED]
-  ; pass
-  ] THEN
-  qed[]
+  qed[RING_POLYNOMIAL_SUBRING_COEFF]
 );;
 
 let coeff_series_carrier_in_ring = prove(`
@@ -4446,7 +4225,7 @@ let coeff_poly_in_ring = prove(`
   ring_polynomial r p ==>
   coeff d p IN ring_carrier(r)
 `,
-  qed[ring_polynomial;coeff_series_in_ring]
+  qed[COEFF_IN_CARRIER_ALT]
 );;
 
 let coeff_poly_carrier_in_ring = prove(`
@@ -4462,8 +4241,7 @@ let coeff_poly_const = prove(`
   coeff d (poly_const r c)
   = if d = 0 then c else ring_0 r
 `,
-  rw[coeff;x_monomial;poly_const;monomial_1] THEN
-  qed[]
+  REWRITE_TAC[COEFF_POLY_CONST]
 );;
 
 let coeff_poly_0 = prove(`
@@ -4471,8 +4249,7 @@ let coeff_poly_0 = prove(`
   coeff d (poly_0 r)
   = ring_0 r
 `,
-  rw[poly_0;coeff_poly_const] THEN
-  qed[]
+  REWRITE_TAC[COEFF_POLY_0]
 );;
 
 let coeff_poly_1 = prove(`
@@ -4480,7 +4257,7 @@ let coeff_poly_1 = prove(`
   coeff d (poly_1 r)
   = if d = 0 then ring_1 r else ring_0 r
 `,
-  rw[poly_1;coeff_poly_const]
+  REWRITE_TAC[COEFF_POLY_1]
 );;
 
 let coeff_poly_neg = prove(`
@@ -4488,7 +4265,7 @@ let coeff_poly_neg = prove(`
   coeff d (poly_neg r p)
   = ring_neg r (coeff d p)
 `,
-  rw[coeff;poly_neg]
+  REWRITE_TAC[COEFF_POLY_NEG]
 );;
 
 let coeff_poly_add = prove(`
@@ -4496,7 +4273,7 @@ let coeff_poly_add = prove(`
   coeff d (poly_add r p q)
   = ring_add r (coeff d p) (coeff d q)
 `,
-  rw[coeff;poly_add]
+  REWRITE_TAC[COEFF_POLY_ADD]
 );;
 
 let coeff_series_add = prove(`
@@ -4512,7 +4289,7 @@ let coeff_poly_sub = prove(`
   coeff d (poly_sub r p q)
   = ring_sub r (coeff d p) (coeff d q)
 `,
-  rw[coeff;poly_sub]
+  REWRITE_TAC[COEFF_POLY_SUB]
 );;
 
 let coeff_poly_mul_lemma = prove(`
@@ -4531,7 +4308,7 @@ let coeff_poly_mul = prove(`
   coeff d (poly_mul r p q)
   = ring_sum r {a,b | a+b = d} (\(a,b). ring_mul r (coeff a p) (coeff b q))
 `,
-  rw[poly_mul;coeff] THEN
+  rw[poly_mul;coeff_x_monomial] THEN
   intro THEN
   rw[x_monomial_factorizations_set] THEN
   rw[ring_sum_image_x_monomial_pair] THEN
@@ -4543,14 +4320,7 @@ let coeff_poly_mul_oneindex = prove(`
   coeff d (poly_mul r p q)
   = ring_sum(r) (0..d) (\a. ring_mul r (coeff a p) (coeff (d-a) q))
 `,
-  intro THEN
-  rw[coeff_poly_mul] THEN
-  def `f:num->(num#num)` `\a:num. a,d-a` THEN
-  have `!a b:num. (f:num->num#num) a = f b ==> a = b` [FST] THEN
-  have `ring_sum r (IMAGE (f:num->num#num) (0..d)) (\(a,b). ring_mul r (coeff a p) (coeff b q)) = ring_sum(r:R ring) (0..d) ((\(a,b). ring_mul r (coeff a p) (coeff b q)) o f)` [RING_SUM_IMAGE] THEN
-  have `IMAGE (f:num->num#num) (0..d) = {a,b | a + b = d}` [image_numseg_antidiagonal] THEN
-  ASSUME_TAC(prove(`(\(a,b). ring_mul(r:R ring) (coeff a p) (coeff b q)) o (\a. a,d-a) = (\a. ring_mul r (coeff a p) (coeff (d-a) q))`,rw[FUN_EQ_THM;o_THM])) THEN
-  qed[]
+  REWRITE_TAC[COEFF_POLY_MUL]
 );;
 
 (* XXX: use this to prove coeff_poly_const_times *)
@@ -4571,15 +4341,7 @@ let coeff_poly_const_times = prove(`
   coeff d (poly_mul r (poly_const r c) p)
   = ring_mul r c (coeff d p)
 `,
-  rw[coeff_poly_mul_oneindex] THEN
-  simp[coeff_poly_const] THEN
-  simp[prove(`ring_powerseries r p ==> ring_mul (r:R ring) (if a:num = 0 then c else ring_0 r) (coeff (d - a) p) = if a = 0 then ring_mul r c (coeff (d - a) p) else ring_0 r`,qed[RING_MUL_LZERO;coeff_series_in_ring])] THEN
-  rw[RING_SUM_DELTA] THEN
-  intro THEN
-  set_fact_using `0 IN (0..d)` [NUMSEG_LE;ARITH_RULE `0 <= d:num`] THEN
-  have `coeff(d - 0) p IN ring_carrier(r:R ring)` [coeff_series_in_ring] THEN
-  have `ring_mul(r:R ring) c (coeff(d - 0) p) IN ring_carrier r` [RING_MUL] THEN
-  qed[ARITH_RULE `d - 0 = d:num`]
+  qed[COEFF_POLY_LMUL]
 );;
 
 let coeff_times_poly_const = prove(`
@@ -4589,7 +4351,7 @@ let coeff_times_poly_const = prove(`
   coeff d (poly_mul r p (poly_const r c))
   = ring_mul r c (coeff d p)
 `,
-  qed[RING_POWERSERIES_CONST;POLY_MUL_SYM;coeff_poly_const_times]
+  qed[COEFF_POLY_RMUL; RING_MUL_SYM; COEFF_IN_CARRIER]
 );;
 
 let polynomial_if_coeff = prove(`
@@ -4598,21 +4360,7 @@ let polynomial_if_coeff = prove(`
   (!d. ~(coeff d p = ring_0 r) ==> d <= n) ==>
   ring_polynomial r p
 `,
-  intro THEN
-  rw[ring_polynomial] THEN
-  simp[] THEN
-  subgoal `{d | ~(coeff d p = ring_0(r:R ring))} SUBSET {d:num | d <= n}` THENL [
-    rw[SUBSET;IN_ELIM_THM] THEN
-    qed[]
-  ;
-    pass
-  ] THEN
-  have `FINITE {d | ~(coeff d p = ring_0(r:R ring))}` [FINITE_SUBSET;FINITE_NUMSEG_LE] THEN
-  set_fact_using `{d | ~(coeff d p = ring_0(r:R ring))} = {d | ~(p(x_monomial d) = ring_0(r:R ring))}` [coeff] THEN
-  have `FINITE {d | ~(p(x_monomial d) = ring_0(r:R ring))}` [] THEN
-  recall x_monomial_surjective THEN
-  specialize[`x_monomial`;`\m:1->num. ~(p m = ring_0(r:R ring))`]surjective_finite THEN
-  qed[]
+  qed[RING_POLYNOMIAL_COEFF_BOUND]
 );;
 
 let deg_le_coeff = prove(`
@@ -4621,13 +4369,7 @@ let deg_le_coeff = prove(`
   (!d. ~(coeff d p = ring_0 r) ==> d <= n) ==>
   poly_deg r p <= n
 `,
-  intro THEN
-  sufficesby POLY_DEG_LE THEN
-  have `ring_polynomial(r:R ring) (p:(1->num)->R)` [polynomial_if_coeff] THEN
-  simp[] THEN
-  intro THEN
-  choose `d:num` `x_monomial d = m` [x_monomial_surjective] THEN
-  qed[x_monomial_deg;coeff]
+  qed[POLY_DEG_LE_COEFF]
 );;
 
 let deg_coeff = prove(`
@@ -4637,17 +4379,7 @@ let deg_coeff = prove(`
   ~(coeff n p = ring_0 r) ==>
   poly_deg r p = n
 `,
-  intro THEN
-  have `ring_polynomial(r:R ring) (p:(1->num)->R)` [polynomial_if_coeff] THEN
-  simp[POLY_DEG_EQ] THEN
-  intro THENL [
-    choose `d:num` `x_monomial d = m` [x_monomial_surjective] THEN
-    qed[x_monomial_deg;coeff]
-  ;
-    DISJ2_TAC THEN
-    witness `x_monomial n` THEN
-    qed[x_monomial_deg;coeff]
-  ]
+  qed[POLY_DEG_EQ_COEFF]
 );;
 
 let topcoeff_nonzero = prove(`
@@ -4655,16 +4387,7 @@ let topcoeff_nonzero = prove(`
   ring_polynomial r p ==>
   (p = poly_0 r <=> coeff (poly_deg r p) p = ring_0 r)
 `,
-  intro THEN
-  splitiff THENL [
-    qed[coeff_poly_0]
-  ;
-    rw[coeff;x_monomial] THEN
-    intro THEN
-    have `p IN ring_carrier(poly_ring(r:R ring) (:1))` [x_poly_use;x_poly] THEN
-    have `p = ring_0(poly_ring(r:R ring) (:1))` [POLY_TOP_NONZERO] THEN
-    qed[x_poly_use;x_poly]
-  ]
+  qed[POLY_TOP_EQ_0]
 );;
 
 let coeff_deg_le = prove(`
@@ -4674,10 +4397,7 @@ let coeff_deg_le = prove(`
   ~(coeff d p = ring_0 r) ==>
   d <= n
 `,
-  intro THEN
-  have `~(p(x_monomial d) = ring_0(r:R ring))` [coeff] THEN
-  have `monomial_deg(x_monomial d) <= n` [POLY_DEG_LE_EQ] THEN
-  qed[x_monomial_deg]
+  qed[COEFF_NONZERO_LE]
 );;
 
 let coeff_le_deg = prove(`
@@ -4686,9 +4406,7 @@ let coeff_le_deg = prove(`
   ~(coeff d p = ring_0 r) ==>
   d <= poly_deg r p
 `,
-  intro THEN
-  num_linear_fact `poly_deg(r:R ring) (p:(1->num)->R) <= poly_deg r p` THEN
-  qed[coeff_deg_le]
+  qed[COEFF_NONZERO_LE_DEG]
 );;
 
 let finite_coeff = prove(`
@@ -4696,11 +4414,7 @@ let finite_coeff = prove(`
   ring_polynomial r p ==>
   FINITE {d | ~(coeff d p = ring_0 r)}
 `,
-  intro THEN
-  specialize[`poly_deg r (p:(1->num)->R)`]FINITE_NUMSEG_LE THEN
-  have `!d. ~(coeff d p = ring_0 r) ==> d <= poly_deg (r:R ring) p` [coeff_le_deg] THEN
-  set_fact `(!d. ~(coeff d p = ring_0 r) ==> d <= poly_deg (r:R ring) p) ==> {d | ~(coeff d p = ring_0 r)} SUBSET {d | d <= poly_deg (r:R ring) p}` THEN
-  qed[FINITE_SUBSET]
+  qed[FINITE_COEFF_SUPPORT]
 );;
 
 let poly_if_coeff = prove(`
@@ -4709,24 +4423,7 @@ let poly_if_coeff = prove(`
   (!d. n <= d ==> coeff d p = ring_0 r) ==>
   ring_polynomial r p
 `,
-  intro THEN
-  rw[ring_polynomial] THEN
-  subgoal `{m | ~(p m = ring_0(r:R ring))} SUBSET IMAGE x_monomial (0..n)` THENL [
-    rw[SUBSET;IN_IMAGE;IN_ELIM_THM] THEN
-    intro THEN
-    choose `d:num` `x_monomial d = x` [x_monomial_surjective] THEN
-    witness `d:num` THEN
-    case `n <= d:num` THENL [
-      have `p(x_monomial d) = ring_0(r:R ring)` [coeff] THEN
-      qed[]
-    ; pass
-    ] THEN
-    num_linear_fact `~(n <= d:num) ==> d <= n` THEN
-    have `d IN 0..n` [IN_NUMSEG_0] THEN
-    qed[]
-  ; pass
-  ] THEN
-  qed[FINITE_IMAGE;FINITE_SUBSET;FINITE_NUMSEG]
+  qed[RING_POLYNOMIAL_COEFF_ZERO_FROM]
 );;
 
 let deg_coeff_from_le = prove(`
@@ -4736,10 +4433,7 @@ let deg_coeff_from_le = prove(`
   ~(coeff n p = ring_0 r) ==>
   poly_deg r p = n
 `,
-  intro THEN
-  have `!d. ~(coeff d p = ring_0(r:R ring)) ==> d <= n` [coeff_le_deg;LE_TRANS] THEN
-  have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-  qed[deg_coeff]
+  qed[POLY_DEG_EQ_COEFF_FROM_LE]
 );;
 
 let poly_eval_expand_coeff = prove(`
@@ -4751,15 +4445,7 @@ let poly_eval_expand_coeff = prove(`
   = ring_sum r (0..n)
       (\d. ring_mul r (coeff d p) (ring_pow r x d))
 `,
-  intro THEN
-  set_fact `ring_polynomial r p ==> p IN {q | ring_polynomial(r:R ring) (q:(1->num)->R)}` THEN
-  have `(p:(1->num)->R) IN ring_carrier(x_poly r)` [x_poly_carrier] THEN
-  have `(p:(1->num)->R) IN ring_carrier(poly_ring r (:1))` [x_poly] THEN
-  simp[POLY_EVAL_EXPAND] THEN
-  simp[ring_sum_numseg_le_expand] THEN
-  sufficesby RING_SUM_EQ THEN
-  simp[GSYM coeff;GSYM x_monomial] THEN
-  qed[RING_POW;RING_MUL_LZERO;coeff_le_deg]
+  qed[POLY_EVAL_COEFF]
 );;
 
 let deg_mul_const_le = prove(`
@@ -4947,7 +4633,7 @@ let coeff_const_x_pow = prove(`
   coeff e (const_x_pow r c d)
   = if e = d then c else ring_0 r
 `,
-  rw[const_x_pow;coeff;x_monomial]
+  rw[const_x_pow;coeff_x_monomial;x_monomial]
 );;
 
 let coeff_const_x_pow_times = prove(`
@@ -5431,7 +5117,7 @@ let coeff_infinite_geometric_series = prove(`
   coeff e (infinite_geometric_series r c)
   = ring_pow r c e
 `,
-  rw[infinite_geometric_series;coeff;x_monomial]
+  rw[infinite_geometric_series;coeff_x_monomial;x_monomial]
 );;
 
 (* (1-cx) sum c^n x^n = 1 *)
@@ -5870,47 +5556,33 @@ let x_derivative = new_definition `
           (p (x_monomial_shift m)))
 `;;
 
+let X_DERIVATIVE_EQ_POLY_DERIV = prove(`
+  !(r:R ring) p. x_derivative r p = poly_deriv r p`,
+  rw[x_derivative; poly_deriv; COEFF; ADD1; x_monomial_shift] THEN
+  once_rw[one] THEN
+  qed[]
+);;
+
 let x_derivative_series = prove(`
   !(r:R ring) p.
   ring_powerseries r p ==>
   ring_powerseries r (x_derivative r p)
 `,
-  rw[ring_powerseries;x_derivative] THEN
-  qed[RING_OF_NUM;RING_MUL;FINITE_MONOMIAL_VARS_1;INFINITE]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; RING_POWERSERIES_POLY_DERIV]);;
 
 let x_derivative_polynomial = prove(`
   !(r:R ring) p.
   ring_polynomial r p ==>
   ring_polynomial r (x_derivative r p)
 `,
-  rw[ring_polynomial] THEN
-  intro THENL [
-    qed[x_derivative_series]
-  ;
-    rw[x_derivative] THEN
-    have `!m. ~(ring_mul(r:R ring) (ring_of_num r (m one + 1)) (p (x_monomial_shift m)) = ring_0 r) ==> ~(p (x_monomial_shift m) = ring_0 r)` [RING_MUL_RZERO;RING_OF_NUM] THEN
-    set_fact `(!m. ~(ring_mul(r:R ring) (ring_of_num r (m one + 1)) (p (x_monomial_shift m)) = ring_0 r) ==> ~(p (x_monomial_shift m) = ring_0 r)) ==> {m | ~(ring_mul(r:R ring) (ring_of_num r (m one + 1)) (p (x_monomial_shift m)) = ring_0 r)} SUBSET {m | ~(p (x_monomial_shift m) = ring_0 r)}` THEN
-    have `{m | ~(ring_mul(r:R ring) (ring_of_num r (m one + 1)) (p (x_monomial_shift m)) = ring_0 r)} SUBSET {m | ~(p (x_monomial_shift m) = ring_0 r)}` [] THEN
-    specialize_assuming[`x_monomial_shift`;`{m:1->num | ~(p m = ring_0(r:R ring))}`]FINITE_IMAGE_INJ THEN
-    have `FINITE {m | x_monomial_shift m IN {m | ~(p m = ring_0(r:R ring))}}` [x_monomial_shift_injective] THEN
-    set_fact `{m | x_monomial_shift m IN {m | ~(p m = ring_0(r:R ring))}} = {m | ~(p (x_monomial_shift m) = ring_0(r:R ring))}` THEN
-    have `FINITE {m | ~(p (x_monomial_shift m) = ring_0(r:R ring))}` [] THEN
-    qed[FINITE_SUBSET]
-  ]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; RING_POLYNOMIAL_POLY_DERIV]);;
 
 let coeff_x_derivative = prove(`
   !(r:R ring) p d.
   coeff d (x_derivative r p)
   = ring_mul r (ring_of_num r (d+1)) (coeff (d+1) p)
 `,
-  intro THEN
-  rw[x_derivative;coeff] THEN
-  have `x_monomial_shift (x_monomial d) = x_monomial (d+1)` [x_monomial_shift_eq_x_monomial] THEN
-  simp[] THEN
-  rw[x_monomial]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; GSYM ADD1; COEFF_POLY_DERIV]);;
 
 let x_derivative_add_series = prove(`
   !(r:R ring) p q.
@@ -5919,13 +5591,7 @@ let x_derivative_add_series = prove(`
   x_derivative r (poly_add r p q)
   = poly_add r (x_derivative r p) (x_derivative r q)
 `,
-  intro THEN
-  have `!m:1->num. p m IN ring_carrier(r:R ring)` [ring_powerseries] THEN
-  have `!m:1->num. q m IN ring_carrier(r:R ring)` [ring_powerseries] THEN
-  rw[x_derivative;poly_add] THEN
-  once_rw[FUN_EQ_THM] THEN
-  simp[RING_ADD_LDISTRIB;RING_OF_NUM]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_ADD]);;
 
 let x_derivative_neg_series = prove(`
   !(r:R ring) p.
@@ -5933,12 +5599,7 @@ let x_derivative_neg_series = prove(`
   x_derivative r (poly_neg r p)
   = poly_neg r (x_derivative r p)
 `,
-  intro THEN
-  have `!m:1->num. p m IN ring_carrier(r:R ring)` [ring_powerseries] THEN
-  rw[x_derivative;poly_neg] THEN
-  once_rw[FUN_EQ_THM] THEN
-  simp[RING_MUL_RNEG;RING_OF_NUM]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_NEG]);;
 
 let x_derivative_sub_series = prove(`
   !(r:R ring) p q.
@@ -5947,32 +5608,26 @@ let x_derivative_sub_series = prove(`
   x_derivative r (poly_sub r p q)
   = poly_sub r (x_derivative r p) (x_derivative r q)
 `,
-  rw[POLY_SUB] THEN
-  qed[RING_POWERSERIES_NEG;x_derivative_add_series;x_derivative_neg_series]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_SUB]);;
 
 let x_derivative_poly_const = prove(`
   !(r:R ring) c.
   x_derivative r (poly_const r c) = poly_0 r
 `,
-  rw[x_derivative;poly_0;poly_const;x_monomial_shift_is_not_monomial_1;COND_ID] THEN
-  once_rw[FUN_EQ_THM] THEN
-  qed[FUN_EQ_THM;RING_OF_NUM;RING_MUL_RZERO]
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_CONST]
 );;
 
 let x_derivative_poly_0 = prove(`
   !(r:R ring).
   x_derivative r (poly_0 r) = poly_0 r
 `,
-  qed[poly_0;x_derivative_poly_const]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_0]);;
 
 let x_derivative_poly_1 = prove(`
   !(r:R ring).
   x_derivative r (poly_1 r) = poly_0 r
 `,
-  qed[poly_1;x_derivative_poly_const]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_1]);;
 
 let x_derivative_poly_const_mul_series = prove(`
   !(r:R ring) c p.
@@ -5981,17 +5636,7 @@ let x_derivative_poly_const_mul_series = prove(`
   x_derivative r (poly_mul r (poly_const r c) p)
   = poly_mul r (poly_const r c) (x_derivative r p)
 `,
-  intro THEN
-  sufficesby eq_coeff THEN
-  intro THEN
-  rw[coeff_x_derivative] THEN
-  have `ring_powerseries(r:R ring) (x_derivative r p)` [x_derivative_series] THEN
-  simp[coeff_poly_const_times] THEN
-  rw[coeff_x_derivative] THEN
-  have `coeff (d+1) p IN ring_carrier(r:R ring)` [coeff_series_in_ring] THEN
-  have `ring_of_num r (d+1) IN ring_carrier(r:R ring)` [RING_OF_NUM] THEN
-  RING_TAC
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_CMUL]);;
 
 let x_derivative_const_x_pow = prove(`
   !(r:R ring) e.
@@ -6030,45 +5675,6 @@ let x_derivative_x_pow = prove(`
   qed[x_derivative_const_x_pow;RING_MUL_RID;RING_OF_NUM]
 );;
 
-let coeff_x_derivative_poly_mul = prove(`
-  !(r:R ring) p q d.
-  ring_powerseries r p ==>
-  ring_powerseries r q ==>
-  coeff d (x_derivative r (poly_mul r p q))
-  = ring_add r
-      (coeff d (poly_mul r (x_derivative r p) q))
-      (coeff d (poly_mul r p (x_derivative r q)))
-`,
-  rw[coeff_x_derivative;coeff_poly_mul_oneindex] THEN
-  intro THEN
-  have `!i. coeff i p IN ring_carrier(r:R ring)` [coeff_series_in_ring] THEN
-  have `!i. coeff i q IN ring_carrier(r:R ring)` [coeff_series_in_ring] THEN
-  have `ring_0(r:R ring) = ring_mul r (ring_mul r (ring_of_num r 0) (coeff 0 p)) (coeff ((d + 1) - 0) q)` [RING_OF_NUM_0;RING_MUL_LZERO] THEN
-  specialize[`r:R ring`;`\a. ring_mul(r:R ring) (ring_mul r (ring_of_num r a) (coeff a p)) (coeff ((d+1)-a) q)`;`d:num`](GSYM ring_sum_shift1) THEN
-  specialize[`0`;`d+1`]FINITE_NUMSEG THEN
-  have `ring_of_num(r:R ring) (d+1) IN ring_carrier r` [RING_OF_NUM] THEN
-  have `!a. a IN (0..d+1) ==> ring_mul r (coeff a p) (coeff ((d + 1) - a) q) IN ring_carrier(r:R ring)` [RING_MUL] THEN
-  set_fact_using `!a:num. a IN (0..d) ==> a <= d` [NUMSEG_LE] THEN
-  num_linear_fact `!a:num. a <= d ==> d - a = (d+1)-(a+1)` THEN
-  have `!a:num. a IN (0..d) ==> d - a = (d+1)-(a+1)` [] THEN
-  specialize[`r:R ring`;`\a. ring_mul (r:R ring) (coeff a p) (coeff ((d+1)-a) q)`;`ring_of_num(r:R ring) (d+1)`;`0..d+1`](GSYM RING_SUM_LMUL) THEN
-  num_linear_fact `!a:num. a <= d ==> d-a+1 = (d+1)-a` THEN
-  have `!a:num. a IN (0..d) ==> d-a+1 = (d+1)-a` [] THEN
-  have `ring_of_num r ((d+1)-(d+1)) = ring_0(r:R ring)` [RING_OF_NUM_0;ARITH_RULE `(d+1)-(d+1)=0`] THEN
-  have `ring_0(r:R ring) = ring_mul r (coeff (d+1) p) (ring_mul r (ring_of_num r ((d+1)-(d+1))) (coeff ((d+1)-(d+1)) q))` [RING_OF_NUM;RING_MUL_LZERO;RING_MUL_RZERO] THEN
-  specialize[`r:R ring`;`\a. ring_mul(r:R ring) (coeff a p) (ring_mul r (ring_of_num r ((d+1)-a)) (coeff ((d+1)-a) q))`;`d:num`](GSYM ring_sum_insert_top) THEN
-  simp[] THEN
-  have `!a. ring_mul r (ring_mul r (ring_of_num r a) (coeff a p)) (coeff ((d + 1) - a) q) IN ring_carrier(r:R ring)` [RING_OF_NUM;RING_MUL] THEN
-  have `!a. ring_mul r (coeff a p) (ring_mul r (ring_of_num r ((d + 1) - a)) (coeff ((d + 1) - a) q)) IN ring_carrier(r:R ring)` [RING_OF_NUM;RING_MUL] THEN
-  simp[GSYM RING_SUM_ADD] THEN
-  have `!a. ring_add(r:R ring) (ring_mul r (ring_mul r (ring_of_num r a) (coeff a p)) (coeff ((d+1)-a) q)) (ring_mul r (coeff a p) (ring_mul r (ring_of_num r ((d+1)-a)) (coeff ((d+1)-a) q))) = ring_mul r (ring_add r (ring_of_num r a) (ring_of_num r ((d+1)-a))) (ring_mul r (coeff a p) (coeff ((d+1)-a) q))` [RING_RULE `ring_add(r:R ring) (ring_mul r (ring_mul r (ring_of_num r a) (coeff a p)) (coeff ((d+1)-a) q)) (ring_mul r (coeff a p) (ring_mul r (ring_of_num r ((d+1)-a)) (coeff ((d+1)-a) q))) = ring_mul r (ring_add r (ring_of_num r a) (ring_of_num r ((d+1)-a))) (ring_mul r (coeff a p) (coeff ((d+1)-a) q))`] THEN
-  simp[GSYM RING_OF_NUM_ADD] THEN
-  num_linear_fact `!a. a <= d + 1 ==> a + (d+1) - a = d+1` THEN
-  set_fact_using `!a. a IN (0..d+1) ==> a <= d+1` [NUMSEG_LE] THEN
-  have `!a. a IN (0..d+1) ==> a+(d+1)-a = d+1` [NUMSEG_LE] THEN
-  simp[]
-);;
-
 let x_derivative_mul = prove(`
   !(r:R ring) p q.
   ring_powerseries r p ==>
@@ -6078,12 +5684,7 @@ let x_derivative_mul = prove(`
       (poly_mul r (x_derivative r p) q)
       (poly_mul r p (x_derivative r q))
 `,
-  intro THEN
-  sufficesby eq_coeff THEN
-  intro THEN
-  simp[coeff_x_derivative_poly_mul] THEN
-  rw[coeff_poly_add]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_MUL]);;
 
 let x_derivative_mul_const = prove(`
   !(r:R ring) c q.
@@ -6092,16 +5693,7 @@ let x_derivative_mul_const = prove(`
   x_derivative r (poly_mul r (poly_const r c) q)
   = poly_mul r (poly_const r c) (x_derivative r q)
 `,
-  intro THEN
-  have `ring_powerseries(r:R ring) ((poly_const r c):(1->num)->R)` [RING_POWERSERIES_CONST] THEN
-  have `ring_powerseries(r:R ring) (x_derivative r q)` [x_derivative_series] THEN
-  have `ring_powerseries(r:R ring) (poly_mul r (poly_const r c) (x_derivative r q))` [RING_POWERSERIES_MUL] THEN
-  simp[x_derivative_mul] THEN
-  simp[x_derivative_poly_const] THEN
-  simp[POLY_MUL_0;RING_MUL_LZERO] THEN
-  simp[POWSER_MUL_0] THEN
-  qed[POLY_ADD_LZERO]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_CMUL]);;
 
 let x_derivative_x_minus_const = prove(`
   !(r:R ring) c.
@@ -6149,13 +5741,7 @@ let x_derivative_subring = prove(`
   x_derivative (subring_generated r G) p
   = x_derivative r p
 `,
-  intro THEN
-  sufficesby eq_coeff THEN
-  intro THEN
-  rw[coeff_x_derivative] THEN
-  rw[SUBRING_GENERATED] THEN
-  rw[RING_OF_NUM_SUBRING_GENERATED]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_SUBRING_GENERATED]);;
 
 (* basically: derivative of sp/sq is derivative of p/q *)
 let x_derivative_ratio_scaling = prove(`
@@ -6369,17 +5955,7 @@ let x_derivative_sum = prove(`
   x_derivative r (poly_sum r S p)
   = poly_sum r S (\s. x_derivative r (p s))
 `,
-  intro THEN
-  sufficesby eq_coeff THEN
-  intro THEN
-  have `!s:X. s IN S ==> ring_powerseries(r:R ring) (x_derivative r (p s))` [x_derivative_series] THEN
-  simp[coeff_poly_sum] THEN
-  rw[coeff_x_derivative] THEN
-  simp[coeff_poly_sum] THEN
-  have `ring_of_num(r:R ring) (d+1) IN ring_carrier r` [RING_OF_NUM] THEN
-  have `!s:X. s IN S ==> coeff (d+1) (p s) IN ring_carrier(r:R ring)` [coeff_series_in_ring] THEN
-  simp[RING_SUM_LMUL]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; poly_sum; x_series; POLY_DERIV_SUM]);;
 
 let poly_deg_sum_le = prove(`
   !(r:R ring) (p:X->(1->num)->R) n S.
@@ -6732,30 +6308,8 @@ let x_derivative_product = prove(`
              (x_derivative r (p s))
              (poly_product r (S DELETE s) p))
 `,
-  GEN_TAC THEN GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    rw[poly_product_empty;poly_sum_empty] THEN
-    rw[x_derivative_poly_1]
-  ;
-    set_fact `(x:X) IN x INSERT S` THEN
-    set_fact `!s:X. s IN S ==> s IN x INSERT S` THEN
-    set_fact `~(x IN S) ==> ((x:X) INSERT S) DELETE x = S` THEN
-    have `((x:X) INSERT S) DELETE x = S` [] THEN
-    have `ring_powerseries(r:R ring) (x_derivative r (p(x:X)))` [x_derivative_series] THEN
-    have `ring_powerseries(r:R ring) (poly_product r (S:X->bool) p)` [poly_product_series] THEN
-    have `ring_powerseries(r:R ring) (poly_mul r (x_derivative r (p(x:X))) (poly_product r (S:X->bool) p))` [RING_POWERSERIES_MUL] THEN
-    simp[poly_product_insert;poly_sum_insert] THEN
-    simp[x_derivative_mul] THEN
-    set_fact `!s:X. s IN S ==> ~(x IN S) ==> (x INSERT S) DELETE s = x INSERT (S DELETE s)` THEN
-    have `!s:X. s IN S ==> ring_powerseries (r:R ring) ((p:X->(1->num)->R) s)` [IN_INSERT] THEN
-    have `!s:X. FINITE(S DELETE s)` [FINITE_DELETE] THEN
-    have `!s:X. s IN S ==> ring_powerseries(r:R ring) ((\s. x_derivative r (p s)) s)` [x_derivative_series] THEN
-    have `ring_powerseries(r:R ring) (p(x:X):(1->num)->R)` [] THEN
-    specialize_assuming[`r:R ring`;`S:X->bool`;`\s:X. x_derivative(r:R ring) (p s)`;`p:X->(1->num)->R`;`x:X`]poly_mul_sum_mul_delete THEN
-    qed[]
-  ]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; poly_sum; poly_product;
+       x_series; POLY_DERIV_PRODUCT]);;
 
 let poly_product_const = prove(`
   !(r:R ring) (p:(1->num)->R) S.
@@ -6795,35 +6349,7 @@ let x_derivative_pow = prove(`
     )
   )
 `,
-  intro THEN
-  case `n = 0` THENL [
-    simp[poly_pow_0;RING_OF_NUM_0] THEN
-    rw[poly_1;x_derivative_poly_const] THEN
-    rw[GSYM poly_0] THEN
-    qed[POWSER_MUL_0;x_derivative_series;poly_pow_series;RING_POWERSERIES_MUL]
-  ; pass
-  ] THEN
-  simp[poly_pow_is_product] THEN
-  have `FINITE (1..n)` [FINITE_NUMSEG] THEN
-  have `!i. i IN 1..n ==> ring_powerseries r (p:(1->num)->R)` [] THEN
-  specialize[`r:R ring`;`\i:num. p:(1->num)->R`;`1..n`]x_derivative_product THEN
-  subgoal `poly_sum(r:R ring) (1..n) (\s. poly_mul r (x_derivative r p) (poly_product r ((1..n) DELETE s) (\i. p))) = poly_sum r (1..n) (\s. poly_mul r (x_derivative r p) (poly_pow r p (n-1)))` THENL [
-    sufficesby poly_sum_eq THEN
-    intro THEN
-    rw[BETA_THM] THEN
-    have `CARD(1..n) = n` [CARD_NUMSEG_1] THEN
-    have `CARD((1..n) DELETE s) = CARD(1..n) - 1` [CARD_DELETE] THEN
-    have `CARD((1..n) DELETE s) = n - 1` [] THEN
-    have `FINITE((1..n) DELETE s)` [FINITE_DELETE] THEN
-    simp[poly_product_const]
-  ; pass
-  ] THEN
-  simp[poly_product_const;FINITE_NUMSEG;CARD_NUMSEG_1] THEN
-  have `ring_powerseries(r:R ring) (poly_mul r (x_derivative r p) (poly_pow r p (n - 1)))` [RING_POWERSERIES_MUL;x_derivative_series;poly_pow_series] THEN
-  specialize[`r:R ring`;`poly_mul(r:R ring) (x_derivative r p) (poly_pow r p (n - 1))`;`1..n`]poly_sum_const THEN
-  have `CARD(1..n) = n` [CARD_NUMSEG_1] THEN
-  qed[]
-);;
+  simp[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DERIV_POW]);;
 
 let eval_poly_product = prove(`
   !(r:R ring) p:(X->(1->num)->R) z S.
@@ -7409,11 +6935,6 @@ let monic_vanishing_at_image = prove(`
 
 (* ===== monic polynomials *)
 
-let monic = new_definition `
-  monic (r:R ring) (p:(1->num)->R)
-  <=> coeff (poly_deg r p) p = ring_1 r
-`;;
-
 let monic_zero_ring = prove(`
   !(r:R ring) p.
   ring_1 r = ring_0 r ==>
@@ -7432,16 +6953,13 @@ let monic_poly_0 = prove(`
   !(r:R ring).
   monic r (poly_0 r) <=> ring_1 r = ring_0 r
 `,
-  rw[monic;POLY_DEG_0;coeff_poly_0] THEN
-  qed[]
-);;
+  rw[MONIC_POLY_0; TRIVIAL_RING_10]);;
 
 let monic_poly_1 = prove(`
   !(r:R ring).
   monic r (poly_1 r)
 `,
-  rw[monic;POLY_DEG_1;coeff_poly_1]
-);;
+  rw[MONIC_POLY_1]);;
 
 let poly_1_if_monic_deg_0 = prove(`
   !(r:R ring) p.
@@ -7450,12 +6968,7 @@ let poly_1_if_monic_deg_0 = prove(`
   monic r p ==>
   p = poly_1 r
 `,
-  intro THEN
-  choose `c:R` `c IN ring_carrier r /\ p = poly_const r c:(1->num)->R` [POLY_DEG_EQ_0] THEN
-  have `coeff 0 p = c:R` [coeff_poly_const] THEN
-  have `coeff 0 p = ring_1(r:R ring)` [monic] THEN
-  qed[poly_1]
-);;
+  qed[MONIC_DEG_0]);;
 
 let monic_x_pow = prove(`
   !(r:R ring) n.
@@ -7484,43 +6997,6 @@ let monic_x_minus_const = prove(`
   ]
 );;
 
-let topcoeff_monic_poly_mul = prove(`
-  !(r:R ring) p q.
-  ring_polynomial r p ==>
-  ring_polynomial r q ==>
-  monic r p ==>
-  monic r q ==>
-  coeff (poly_deg r p + poly_deg r q) (poly_mul r p q)
-  = ring_1 r
-`,
-  rw[monic] THEN
-  intro THEN
-  rw[coeff_poly_mul_oneindex] THEN
-  subgoal `ring_sum(r:R ring) (0..poly_deg r p + poly_deg r q) (\a. ring_mul r (coeff a p) (coeff ((poly_deg r p + poly_deg r q) - a) q)) = ring_sum r (0..poly_deg r p + poly_deg r q) (\a. if a = poly_deg r p then ring_mul r (coeff a p) (coeff ((poly_deg r p + poly_deg r q) - a) q) else ring_0 r)` THENL [
-    sufficesby RING_SUM_EQ THEN
-    intro THEN
-    simp[] THEN
-    case `a = poly_deg r (p:(1->num)->R)` THENL [
-      simp[]
-    ; pass
-    ] THEN
-    simp[] THEN
-    case `a < poly_deg r (p:(1->num)->R)` THENL [
-      num_linear_fact `a < poly_deg r (p:(1->num)->R) ==> ~((poly_deg r p + poly_deg r (q:(1->num)->R)) - a <= poly_deg r q)` THEN
-      num_linear_fact `poly_deg r (q:(1->num)->R) <= poly_deg r q` THEN
-      have `coeff ((poly_deg r (p:(1->num)->R) + poly_deg r (q:(1->num)->R)) - a) q = ring_0 r` [coeff_deg_le] THEN
-      qed[RING_MUL_RZERO;coeff_poly_in_ring]
-    ;
-      num_linear_fact `~(a = poly_deg r (p:(1->num)->R)) /\ ~(a < poly_deg r p) ==> ~(a <= poly_deg r p)` THEN
-      num_linear_fact `poly_deg r (p:(1->num)->R) <= poly_deg r p` THEN
-      have `coeff a (p:(1->num)->R) = ring_0 r` [coeff_deg_le] THEN
-      qed[RING_MUL_LZERO;coeff_poly_in_ring]
-    ]
-  ; pass
-  ] THEN
-  have `poly_deg r (p:(1->num)->R) IN 0..poly_deg r p + poly_deg r (q:(1->num)->R)` [IN_NUMSEG_0;ARITH_RULE `poly_deg r (p:(1->num)->R) <= poly_deg r p + poly_deg r (q:(1->num)->R)`] THEN
-  simp[RING_SUM_DELTA;RING_MUL_LID;RING_1;RING_MUL;coeff_poly_in_ring;ARITH_RULE `(poly_deg r (p:(1->num)->R) + poly_deg r (q:(1->num)->R)) - poly_deg r p = poly_deg r q`]
-);;
 
 let deg_monic_poly_mul = prove(`
   !(r:R ring) p q.
@@ -7530,21 +7006,7 @@ let deg_monic_poly_mul = prove(`
   monic r q ==>
   poly_deg r (poly_mul r p q) = poly_deg r p + poly_deg r q
 `,
-  intro THEN
-  case `ring_1(r:R ring) = ring_0 r` THENL [
-    have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-    have `ring_powerseries r (q:(1->num)->R)` [ring_polynomial] THEN
-    have `ring_powerseries r (poly_mul r (p:(1->num)->R) (q:(1->num)->R))` [RING_POWERSERIES_MUL] THEN
-    simp[deg_zero_ring] THEN
-    qed[ARITH_RULE `0+0 = 0`]
-  ; pass
-  ] THEN
-  have `ring_polynomial r (poly_mul r (p:(1->num)->R) (q:(1->num)->R))` [RING_POLYNOMIAL_MUL] THEN
-  have `poly_deg r (poly_mul r p q) <= poly_deg r (p:(1->num)->R) + poly_deg r (q:(1->num)->R)` [POLY_DEG_MUL_LE] THEN
-  have `coeff (poly_deg r (p:(1->num)->R) + poly_deg r (q:(1->num)->R)) (poly_mul r p q) = ring_1 r` [topcoeff_monic_poly_mul] THEN
-  have `~(coeff (poly_deg r (p:(1->num)->R) + poly_deg r (q:(1->num)->R)) (poly_mul r p q) = ring_0 r)` [] THEN
-  qed[deg_coeff_from_le]
-);;
+  qed[POLY_DEG_MUL_MONIC]);;
 
 let monic_poly_mul = prove(`
   !(r:R ring) p q.
@@ -7554,11 +7016,7 @@ let monic_poly_mul = prove(`
   monic r q ==>
   monic r (poly_mul r p q)
 `,
-  intro THEN
-  have `poly_deg r (poly_mul r (p:(1->num)->R) (q:(1->num)->R)) = poly_deg r p + poly_deg r q` [deg_monic_poly_mul] THEN
-  simp[monic] THEN
-  qed[topcoeff_monic_poly_mul]
-);;
+  qed[MONIC_POLY_MUL]);;
 
 let monic_poly_product = prove(`
   !(r:R ring) p (S:X->bool).
@@ -7567,24 +7025,11 @@ let monic_poly_product = prove(`
   (!s. s IN S ==> monic r (p s)) ==>
   monic r (poly_product r S p)
 `,
-  GEN_TAC THEN GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    rw[poly_product_empty] THEN
-    qed[monic_poly_1]
-  ;
-    set_fact `(x:X) IN x INSERT S` THEN
-    set_fact `!s:X. s IN S ==> s IN x INSERT S` THEN
-    have `!s:X. s IN S ==> ring_polynomial r (p(s:X):(1->num)->R)` [] THEN
-    have `ring_powerseries r (p(x:X):(1->num)->R)` [ring_polynomial] THEN
-    have `ring_polynomial r (p(x:X):(1->num)->R)` [] THEN
-    have `ring_polynomial (r:R ring) (poly_product r (S:X->bool) p)` [poly_product_poly] THEN
-    have `monic (r:R ring) (poly_product r (S:X->bool) p)` [] THEN
-    have `monic r (p(x:X):(1->num)->R)` [] THEN
-    simp[poly_product_insert] THEN
-    qed[monic_poly_mul]
-  ]
-);;
+  intro THEN
+  SUBGOAL_THEN `poly_product (r:R ring) (S:X->bool) p =
+    ring_product(x_poly r) S p` SUBST1_TAC THENL
+  [qed[poly_product_ring_product_x_poly]; pass] THEN
+  rw[x_poly] THEN qed[MONIC_POLY_PRODUCT]);;
 
 let monic_vanishing_at_monic = prove(`
   !(r:R ring) S:X->bool c.
@@ -7604,8 +7049,7 @@ let monic_subring = prove(`
   monic (subring_generated r G) p
   <=> monic r p
 `,
-  rw[monic;SUBRING_GENERATED;POLY_DEG_SUBRING_GENERATED]
-);;
+  rw[MONIC_SUBRING_GENERATED]);;
 
 (* ===== r[x] when r is a field *)
 
@@ -7644,7 +7088,7 @@ let squarefree_if_irreducible_over_field = prove(`
   ring_irreducible(x_poly r) p ==>
   ring_squarefree(x_poly r) p
 `,
-  qed[prime_iff_irreducible_over_field;ring_squarefree_if_prime]
+  qed[RING_IRREDUCIBLE_IMP_SQUAREFREE]
 );;
 
 let x_poly_field_monic_associate = prove(`
@@ -7656,29 +7100,7 @@ let x_poly_field_monic_associate = prove(`
        monic r q /\
        ring_associates(x_poly r) p q)
 `,
-  intro THEN
-  def `n:num` `poly_deg r (p:(1->num)->R)` THEN
-  def `pn:R` `coeff n (p:(1->num)->R)` THEN
-  have `pn IN ring_carrier(r:R ring)` [coeff_poly_in_ring] THEN
-  have `~(pn = ring_0(r:R ring))` [topcoeff_nonzero] THEN
-  have `ring_unit(r:R ring) pn` [FIELD_UNIT] THEN
-  have `ring_inv(r:R ring) pn IN ring_carrier r` [RING_INV] THEN
-  have `ring_mul(r:R ring) pn (ring_inv r pn) = ring_1 r` [ring_div_refl;ring_div] THEN
-  have `ring_mul(r:R ring) (ring_inv r pn) pn = ring_1 r` [RING_MUL_SYM] THEN
-  def `q:(1->num)->R` `poly_mul r (p:(1->num)->R) (poly_const r (ring_inv r pn))` THEN
-  have `poly_deg r (q:(1->num)->R) = poly_deg r (p:(1->num)->R)` [deg_mul_const_const_1] THEN
-  witness `q:(1->num)->R` THEN
-  rw[monic] THEN
-  have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-  have `ring_polynomial r (q:(1->num)->R)` [RING_POLYNOMIAL_MUL;RING_POLYNOMIAL_CONST] THEN
-  have `ring_powerseries r (q:(1->num)->R)` [ring_polynomial] THEN
-  specialize[`r:R ring`;`ring_inv(r:R ring) pn`;`p:(1->num)->R`;`poly_deg r (p:(1->num)->R)`]coeff_times_poly_const THEN
-  have `coeff (poly_deg r (p:(1->num)->R)) (q:(1->num)->R) = ring_1 r` [coeff_times_poly_const] THEN
-  have `coeff (poly_deg r (q:(1->num)->R)) (q:(1->num)->R) = ring_1 r` [] THEN
-  rw[x_poly] THEN
-  have `ring_unit(r:R ring) (ring_inv r pn)` [RING_UNIT_INV] THEN
-  qed[associates_if_mul_unit_const;x_poly]
-);;
+  rw[x_poly] THEN qed[FIELD_MONIC_ASSOCIATE]);;
 
 let mul_unit_const_if_associates = prove(`
   !(r:R ring) (p:(V->num)->R) q.
@@ -7703,130 +7125,20 @@ let monic_associates = prove(`
   ring_associates(x_poly r) p q ==>
   p = q
 `,
-  intro THEN
-  choose `c:R` `ring_unit(r:R ring) c /\ q = poly_mul r p (poly_const r c:(1->num)->R)` [mul_unit_const_if_associates;x_poly] THEN
-  have `integral_domain(x_poly(r:R ring))` [integral_domain_x_poly_field] THEN
-  have `p IN ring_carrier(x_poly(r:R ring))` [INTEGRAL_DOMAIN_ASSOCIATES] THEN
-  have `q IN ring_carrier(x_poly(r:R ring))` [INTEGRAL_DOMAIN_ASSOCIATES] THEN
-  have `ring_polynomial r (p:(1->num)->R)` [x_poly_use] THEN
-  have `ring_polynomial r (q:(1->num)->R)` [x_poly_use] THEN
-  have `ring_unit(r:R ring) c` [] THEN
-  specialize[`r:R ring`;`p:(1->num)->R`;`c:R`]deg_mul_unit_const THEN
-  have `poly_deg r (q:(1->num)->R) = poly_deg r (p:(1->num)->R)` [deg_mul_unit_const;x_poly_use] THEN
-  have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-  have `c IN ring_carrier(r:R ring)` [ring_unit] THEN
-  specialize[`r:R ring`;`c:R`;`p:(1->num)->R`;`poly_deg r (p:(1->num)->R)`]coeff_times_poly_const THEN
-  have `coeff (poly_deg r (p:(1->num)->R)) p = ring_1 r` [monic] THEN
-  have `coeff (poly_deg r (p:(1->num)->R)) q = ring_1 r` [monic] THEN
-  have `ring_1 r = ring_mul r c (ring_1(r:R ring))` [] THEN
-  have `c = ring_1(r:R ring)` [RING_MUL_RID] THEN
-  have `poly_const r c = ring_1 (x_poly(r:R ring))` [poly_1;x_poly_use] THEN
-  qed[RING_MUL_RID;x_poly_use]
-);;
+  rw[x_poly] THEN
+  qed[MONIC_ASSOCIATES_EQ; FIELD_IMP_INTEGRAL_DOMAIN;
+      RING_ASSOCIATES_IN_CARRIER; IN_POLY_RING_CARRIER; POLY_RING]);;
 
-let no_square_divisor_if_coprime_derivative_lemma1 = prove(`
-  !(r:R ring) q (u:(V->num)->R).
-  ring_polynomial r q ==>
-  ring_polynomial r u ==>
-  poly_mul r (poly_mul r q q) u
-  = poly_mul r q (poly_mul r q u)
-`,
-  intro THEN
-  have `ring_powerseries(r:R ring) (q:(V->num)->R)` [ring_polynomial] THEN
-  have `ring_powerseries(r:R ring) (u:(V->num)->R)` [ring_polynomial] THEN
-  qed[POLY_MUL_ASSOC]
-);;
-
-let no_square_divisor_if_coprime_derivative_lemma2 = prove(`
-  !(r:R ring) q u.
-  ring_polynomial r q ==>
-  ring_polynomial r u ==>
-     poly_add r
-     (poly_mul r
-      (poly_add r (poly_mul r (x_derivative r q) q)
-      (poly_mul r q (x_derivative r q)))
-     u)
-     (poly_mul r (poly_mul r q q) (x_derivative r u)) =
-     poly_mul r q
-     (poly_add r
-      (poly_mul r (poly_add r (x_derivative r q) (x_derivative r q)) u)
-     (poly_mul r q (x_derivative r u)))
-`,
-  intro THEN
-  have `ring_polynomial(r:R ring) (x_derivative r q)` [x_derivative_polynomial] THEN
-  have `ring_polynomial(r:R ring) (x_derivative r u)` [x_derivative_polynomial] THEN
-  have `q IN ring_carrier(x_poly(r:R ring))` [x_poly_use] THEN
-  have `u IN ring_carrier(x_poly(r:R ring))` [x_poly_use] THEN
-  have `x_derivative r q IN ring_carrier(x_poly(r:R ring))` [x_poly_use] THEN
-  have `x_derivative r u IN ring_carrier(x_poly(r:R ring))` [x_poly_use] THEN
-  rw[x_poly_use] THEN
-  specialize[
-    `x_poly(r:R ring)`;`q:(1->num)->R`
-    ;`x_derivative r q:(1->num)->R`
-    ;`u:(1->num)->R`
-    ;`x_derivative r u:(1->num)->R`]
-  (GENL[`r:R ring`;`q:R`;`Q:R`;`u:R`;`U:R`](
-    RING_RULE `ring_add(r:R ring) (ring_mul r (ring_add r (ring_mul r Q q) (ring_mul r q Q)) u) (ring_mul r (ring_mul r q q) U) = ring_mul r q (ring_add r (ring_mul r (ring_add r Q Q) u) (ring_mul r q U))`
-  )) THEN
-  qed[]
-);;
-
-let no_square_divisor_if_coprime_derivative = prove(`
-  !(r:R ring) p q.
-  field r ==>
-  ring_polynomial r q ==>
-  ring_coprime(x_poly r) (p,x_derivative r p) ==>
-  ring_divides(x_poly r) (poly_mul r q q) p ==>
-  ring_unit(x_poly r) q
-`,
-  intro THEN
-  choose `u:(1->num)->R` `u IN ring_carrier(x_poly r) /\ p:(1->num)->R = ring_mul(x_poly r) (poly_mul r q q) u` [ring_divides] THEN
-  have `p:(1->num)->R = poly_mul r (poly_mul r q q) u` [x_poly_use] THEN
-  have `(p:(1->num)->R) IN ring_carrier(x_poly r)` [ring_coprime] THEN
-  have `ring_polynomial r (p:(1->num)->R)` [x_poly_use] THEN
-  have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-  have `ring_powerseries r (q:(1->num)->R)` [ring_polynomial] THEN
-  specialize[`r:R ring`;`q:(1->num)->R`;`q:(1->num)->R`]x_derivative_mul THEN
-  have `ring_polynomial r (u:(1->num)->R)` [x_poly_use] THEN
-  have `ring_powerseries r (u:(1->num)->R)` [ring_polynomial] THEN
-  have `ring_powerseries r (poly_mul r q (q:(1->num)->R))` [RING_POWERSERIES_MUL] THEN
-  specialize[`r:R ring`;`poly_mul r q (q:(1->num)->R)`;`u:(1->num)->R`]x_derivative_mul THEN
-  have `x_derivative(r:R ring) p = poly_add r (poly_mul r (poly_add r (poly_mul r (x_derivative r q) q) (poly_mul r q (x_derivative r q))) u) (poly_mul r (poly_mul r q q) (x_derivative r u))` [] THEN
-  have `x_derivative(r:R ring) p = poly_mul r q (poly_add r (poly_mul r (poly_add r (x_derivative r q) (x_derivative r q)) u) (poly_mul r q (x_derivative r u)))` [no_square_divisor_if_coprime_derivative_lemma2] THEN
-  have `ring_polynomial r (x_derivative r (p:(1->num)->R))` [x_derivative_polynomial] THEN
-  have `ring_polynomial r (x_derivative r (q:(1->num)->R))` [x_derivative_polynomial] THEN
-  have `ring_polynomial r (x_derivative r (u:(1->num)->R))` [x_derivative_polynomial] THEN
-  have `ring_polynomial r (poly_add r (x_derivative r (q:(1->num)->R)) (x_derivative r q))` [RING_POLYNOMIAL_ADD] THEN
-  have `ring_polynomial r (poly_mul r (poly_add r (x_derivative r (q:(1->num)->R)) (x_derivative r q)) u)` [RING_POLYNOMIAL_MUL] THEN
-  have `ring_polynomial r (poly_mul r (q:(1->num)->R) (x_derivative r u))` [RING_POLYNOMIAL_MUL] THEN
-  have `ring_polynomial r (poly_add r (poly_mul r (poly_add r (x_derivative r (q:(1->num)->R)) (x_derivative r q)) u) (poly_mul r q (x_derivative r u)))` [RING_POLYNOMIAL_ADD] THEN
-  have `poly_add r (poly_mul r (poly_add r (x_derivative r (q:(1->num)->R)) (x_derivative r q)) u) (poly_mul r q (x_derivative r u)) IN ring_carrier(x_poly r)` [x_poly_use] THEN
-  have `(q:(1->num)->R) IN ring_carrier(x_poly r)` [x_poly_use] THEN
-  have `(p:(1->num)->R) IN ring_carrier(x_poly r)` [x_poly_use] THEN
-  have `x_derivative r (p:(1->num)->R) IN ring_carrier(x_poly r)` [x_poly_use] THEN
-  subgoal `ring_divides(x_poly(r:R ring)) q (x_derivative r p)` THENL [
-    rw[ring_divides] THEN
-    intro THENL [qed[]; qed[]; pass] THEN
-    witness `poly_add r (poly_mul r (poly_add r (x_derivative r (q:(1->num)->R)) (x_derivative r q)) u) (poly_mul r q (x_derivative r u))` THEN
-    intro THENL [
-      qed[]
-    ;
-      rw[GSYM x_poly_use] THEN
-      qed[]
-    ]
-  ; pass
-  ] THEN
-  subgoal `ring_divides(x_poly(r:R ring)) q p` THENL [
-    rw[ring_divides] THEN
-    intro THENL [qed[]; qed[]; pass] THEN
-    witness `poly_mul r q u:(1->num)->R` THEN
-    have `ring_polynomial r (poly_mul r q u:(1->num)->R)` [RING_POLYNOMIAL_MUL] THEN
-    have `(poly_mul r q u:(1->num)->R) IN ring_carrier(x_poly r)` [x_poly_use] THEN
-    have `p:(1->num)->R = poly_mul r q (poly_mul r q u)` [no_square_divisor_if_coprime_derivative_lemma1] THEN
-    qed[x_poly_use]
-  ; pass
-  ] THEN
-  qed[ring_coprime]
+let no_square_divisor_if_coprime_derivative = prove
+ (`!(r:R ring) p q.
+     field r ==>
+     ring_polynomial r q ==>
+     ring_coprime(x_poly r) (p,x_derivative r p) ==>
+     ring_divides(x_poly r) (poly_mul r q q) p ==>
+     ring_unit(x_poly r) q`,
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  qed[ring_squarefree; RING_POW_2; POLY_RING_CLAUSES;
+      RING_POLYNOMIAL; POLY_SEPARABLE_IMP_SQUAREFREE]
 );;
 
 let nonzero_if_coprime_derivative = prove(`
@@ -7835,16 +7147,9 @@ let nonzero_if_coprime_derivative = prove(`
   ring_coprime(x_poly r) (p,x_derivative r p) ==>
   ~(p = poly_0 r)
 `,
-  intro THEN
-  have `PID (x_poly(r:R ring))` [PID_x_poly_field] THEN
-  have `ring_0(x_poly r):(1->num)->R = poly_0 r` [x_poly_use] THEN
-  have `p IN ring_carrier(x_poly(r:R ring))` [ring_coprime] THEN
-  have `x_derivative r p = ring_0(x_poly r):(1->num)->R` [x_derivative_poly_0] THEN
-  have `ring_gcd(x_poly r) (p,x_derivative r p) = ring_0(x_poly r):(1->num)->R` [RING_GCD_00] THEN
-  have `x_derivative r p IN ring_carrier(x_poly(r:R ring))` [ring_coprime] THEN
-  specialize[`x_poly(r:R ring)`;`p:(1->num)->R`;`x_derivative (r:R ring) p`]RING_GCD_EQ_1 THEN
-  have `ring_gcd(x_poly r) (p,x_derivative r p) = ring_1(x_poly r):(1->num)->R` [RING_GCD_EQ_1] THEN
-  qed[PID_IMP_INTEGRAL_DOMAIN;integral_domain]
+rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+qed[POLY_SEPARABLE_IMP_SQUAREFREE; RING_SQUAREFREE_IMP_NONZERO;
+    FIELD_IMP_NONTRIVIAL_RING; TRIVIAL_POLY_RING; POLY_RING]
 );;
 
 let squarefree_if_coprime_derivative = prove(`
@@ -7853,60 +7158,17 @@ let squarefree_if_coprime_derivative = prove(`
   ring_coprime(x_poly r) (p,x_derivative r p) ==>
   ring_squarefree(x_poly r) p
 `,
-  intro THEN
-  have `p IN ring_carrier(x_poly(r:R ring))` [ring_coprime] THEN
-  have `~(p = ring_0(x_poly(r:R ring)))` [nonzero_if_coprime_derivative;x_poly_use] THEN
-  proven_if `ring_unit(x_poly(r:R ring)) p` [ring_squarefree_if_unit] THEN
-  have `PID (x_poly(r:R ring))` [PID_x_poly_field] THEN
-  have `UFD (x_poly(r:R ring))` [PID_IMP_UFD] THEN
-  ASSUME_TAC(UNDISCH_ALL (ISPECL[`p:(1->num)->R`] (CONJUNCT2 (UNDISCH_ALL (fst (EQ_IMP_RULE (UNDISCH_ALL (REWRITE_RULE [IMP_CONJ] (ISPECL [`x_poly(r:R ring)`]UFD_EQ_PRIMEFACT_NONUNIT))))))))) THEN
-  choose2 `n:num` `q:num->(1->num)->R` `1 <= n /\ (!i. 1 <= i /\ i <= n ==> ring_prime(x_poly(r:R ring)) (q i)) /\ ring_product(x_poly r) (1..n) q = p` [] THEN
-  subgoal `!i j. 1 <= i /\ i <= n /\ 1 <= j /\ j <= n /\ ring_divides(x_poly(r:R ring)) (q i) (q j) /\ ~(i = j) ==> F` THENL [
-    intro THEN
-    have `FINITE (1..n)` [FINITE_NUMSEG] THEN
-    have `!i:num. i IN (1..n) ==> q i IN ring_carrier(x_poly(r:R ring))` [ring_prime;IN_NUMSEG] THEN
-    have `i IN (1..n)` [IN_NUMSEG] THEN
-    have `j IN (1..n)` [IN_NUMSEG] THEN
-    specialize[`x_poly(r:R ring)`;`1..n`;`q:num->(1->num)->R`;`i:num`;`j:num`]square_divides_product_if_factor_divides_factor THEN
-    have `ring_divides(x_poly(r:R ring)) (poly_mul r (q(i:num)) (q(i))) p` [x_poly_use] THEN
-    have `ring_polynomial r (q(i:num):(1->num)->R)` [ring_prime;x_poly_use] THEN
-    specialize[`r:R ring`;`p:(1->num)->R`;`q(i:num):(1->num)->R`]no_square_divisor_if_coprime_derivative THEN
-    qed[ring_prime]
-  ; pass
-  ] THEN
-  have `FINITE (1..n)` [FINITE_NUMSEG] THEN
-  have `!i. i IN 1..n ==> ring_prime(x_poly(r:R ring)) (q i)` [IN_NUMSEG] THEN
-  have `!i. i IN 1..n ==> q i IN ring_carrier(x_poly(r:R ring))` [ring_prime] THEN
-  have `!i j. i IN 1..n ==> j IN 1..n ==> ring_divides(x_poly(r:R ring)) (q i) (q j) ==> i = j` [IN_NUMSEG] THEN
-  specialize[`x_poly(r:R ring)`;`1..n`;`q:num->(1->num)->R`]ring_squarefree_if_product_coprime_primes_indexed THEN
-  qed[]
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  qed[POLY_SEPARABLE_IMP_SQUAREFREE]
 );;
 
-let deg_x_derivative_lemma = prove(`
-  !(r:R ring) p d.
-  ring_polynomial r p ==>
-  ~(coeff d (x_derivative r p) = ring_0(r:R ring)) ==>
-  d <= poly_deg r p - 1
-`,
-  rw[coeff_x_derivative] THEN
-  intro THEN
-  have `~(coeff (d+1) p = ring_0(r:R ring))` [RING_MUL_RZERO;RING_OF_NUM] THEN
-  have `d+1 <= poly_deg r (p:(1->num)->R)` [coeff_le_deg] THEN
-  num_linear_fact `d+1 <= poly_deg r (p:(1->num)->R) ==> d <= poly_deg r p - 1` THEN
-  qed[]
-);;
 
 let deg_x_derivative_le = prove(`
   !(r:R ring) p.
   ring_polynomial r p ==>
   poly_deg r (x_derivative r p) <= poly_deg r p - 1
 `,
-  intro THEN
-  have `!d. ~(coeff d (x_derivative r p) = ring_0(r:R ring)) ==> d <= poly_deg r p - 1` [deg_x_derivative_lemma] THEN
-  have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-  have `ring_polynomial r (x_derivative r (p:(1->num)->R))` [x_derivative_polynomial] THEN
-  qed[deg_le_coeff;ring_polynomial]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV; POLY_DEG_DERIV_LE]);;
 
 (* warning: 0 - 1 = 0 *)
 let deg_x_derivative = prove(`
@@ -7916,28 +7178,7 @@ let deg_x_derivative = prove(`
   ring_polynomial r p ==>
   poly_deg r (x_derivative r p) = poly_deg r p - 1
 `,
-  intro THEN
-  have `!d. ~(coeff d (x_derivative r p) = ring_0(r:R ring)) ==> d <= poly_deg r p - 1` [deg_x_derivative_lemma] THEN
-  case `poly_deg r (p:(1->num)->R) = 0` THENL [
-    choose `c:R` `c IN ring_carrier r /\ (p:(1->num)->R) = poly_const r c` [POLY_DEG_EQ_0] THEN
-    have `x_derivative r (p:(1->num)->R) = poly_0 r` [x_derivative_poly_const] THEN
-    qed[POLY_DEG_0;ARITH_RULE `0 - 1 = 0`]
-  ; pass
-  ] THEN
-  subgoal `~(coeff (poly_deg r p - 1) (x_derivative r p) = ring_0(r:R ring))` THENL [
-    have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-    rw[coeff_x_derivative] THEN
-    num_linear_fact `~(poly_deg r (p:(1->num)->R) - 1 + 1 = 0)` THEN
-    have `~(ring_of_num r (poly_deg r (p:(1->num)->R) - 1 + 1) = ring_0 r)` [RING_CHAR_EQ_0] THEN
-    num_linear_fact `~(poly_deg r (p:(1->num)->R) = 0) ==> poly_deg r p - 1 + 1 = poly_deg r p` THEN
-    have `~((p:(1->num)->R) = poly_0 r)` [POLY_DEG_0;x_poly_use] THEN
-    have `~(coeff (poly_deg r p - 1 + 1) (p:(1->num)->R) = ring_0 r)` [topcoeff_nonzero] THEN
-    qed[integral_domain;RING_OF_NUM;coeff_poly_in_ring]
-  ; pass
-  ] THEN
-  have `ring_polynomial r (x_derivative r (p:(1->num)->R))` [x_derivative_polynomial] THEN
-  qed[deg_coeff;ring_polynomial]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV] THEN qed[POLY_DEG_DERIV]);;
 
 let x_derivative_nonzero = prove(`
   !(r:R ring) p.
@@ -7947,27 +7188,8 @@ let x_derivative_nonzero = prove(`
   ~(poly_deg r p = 0) ==>
   ~(x_derivative r p = poly_0 r)
 `,
-  intro THEN
-  num_linear_fact `~(poly_deg r (p:(1->num)->R) = 0) ==> poly_deg r p - 1 + 1 = poly_deg r p` THEN
-  subgoal `~(coeff (poly_deg r p - 1) (x_derivative r p) = ring_0(r:R ring))` THENL [
-    have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-    rw[coeff_x_derivative] THEN
-    num_linear_fact `~(poly_deg r (p:(1->num)->R) - 1 + 1 = 0)` THEN
-    have `~(ring_of_num r (poly_deg r (p:(1->num)->R) - 1 + 1) = ring_0 r)` [RING_CHAR_EQ_0] THEN
-    have `~((p:(1->num)->R) = poly_0 r)` [POLY_DEG_0;x_poly_use] THEN
-    have `~(coeff (poly_deg r p - 1 + 1) (p:(1->num)->R) = ring_0 r)` [topcoeff_nonzero] THEN
-    qed[integral_domain;RING_OF_NUM;coeff_poly_in_ring]
-  ; pass
-  ] THEN
-  have `ring_powerseries r (p:(1->num)->R)` [ring_polynomial] THEN
-  have `coeff (poly_deg r (p:(1->num)->R) - 1) (x_derivative r p) = ring_mul r (ring_of_num r (poly_deg r p - 1 + 1)) (coeff (poly_deg r p - 1 + 1) p)` [coeff_x_derivative] THEN
-  have `coeff (poly_deg r (p:(1->num)->R) - 1) (x_derivative r p) = ring_mul r (ring_of_num r (poly_deg r p)) (coeff (poly_deg r p) p)` [coeff_x_derivative] THEN
-  have `~((p:(1->num)->R) = poly_0 r)` [POLY_DEG_0;x_poly_use] THEN
-  have `~(coeff (poly_deg r p) (p:(1->num)->R) = ring_0 r)` [topcoeff_nonzero] THEN
-  have `~(ring_of_num r (poly_deg r (p:(1->num)->R)) = ring_0 r)` [RING_CHAR_EQ_0] THEN
-  have `~(coeff (poly_deg r (p:(1->num)->R) - 1) (x_derivative r p) = ring_0 r)` [integral_domain;RING_OF_NUM;coeff_poly_in_ring] THEN
-  qed[coeff_poly_0]
-);;
+  rw[X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  qed[POLY_DERIV_NONZERO_CHAR0; ARITH_RULE `1 <= n <=> ~(n = 0)`]);;
 
 let deg_divides = prove(`
   !(r:R ring) (S:V->bool) p q.
@@ -8114,30 +7336,9 @@ let coprime_prime_derivative = prove(`
   ring_prime(x_poly r) p ==>
   ring_coprime(x_poly r) (p,x_derivative r p)
 `,
-  rw[ring_coprime] THEN
-  intro THENL [
-    qed[ring_prime]
-  ;
-    qed[ring_prime;x_poly_use;x_derivative_polynomial]
-  ;
-    have `integral_domain(x_poly(r:R ring))` [integral_domain_x_poly_field] THEN
-    have `ring_irreducible(x_poly(r:R ring)) p` [INTEGRAL_DOMAIN_PRIME_IMP_IRREDUCIBLE] THEN
-    proven_if `ring_unit (x_poly(r:R ring)) d` [] THEN
-    have `p IN ring_carrier(x_poly(r:R ring))` [ring_prime] THEN
-    have `ring_polynomial r (p:(1->num)->R)` [x_poly_use] THEN
-    have `ring_polynomial r (x_derivative r (p:(1->num)->R))` [x_derivative_polynomial] THEN
-    have `x_derivative r p IN ring_carrier(x_poly(r:R ring))` [x_poly_use] THEN
-    have `ring_associates(x_poly(r:R ring)) d p` [RING_NONUNIT_DIVIDES_IRREDUCIBLE] THEN
-    have `ring_divides(x_poly(r:R ring)) p (x_derivative r p)` [RING_ASSOCIATES_REFL;RING_ASSOCIATES_DIVIDES] THEN
-    have `integral_domain(r:R ring)` [FIELD_IMP_INTEGRAL_DOMAIN] THEN
-    have `~(poly_deg r (p:(1->num)->R) = 0)` [deg_prime] THEN
-    have `~(x_derivative r p = poly_0(r:R ring))` [x_derivative_nonzero] THEN
-    have `poly_deg r (p:(1->num)->R) <= poly_deg r (x_derivative r p)` [deg_divides;x_poly] THEN
-    have `poly_deg r (x_derivative r p) = poly_deg r (p:(1->num)->R) - 1` [deg_x_derivative] THEN
-    num_linear_fact `poly_deg r (p:(1->num)->R) <= poly_deg r (x_derivative r p) /\ poly_deg r (x_derivative r p) = poly_deg r (p:(1->num)->R) - 1 ==> poly_deg r p = 0` THEN
-    qed[]
-  ]
-);;
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  qed[POLY_IRREDUCIBLE_IMP_SEPARABLE; INTEGRAL_DOMAIN_PRIME_IMP_IRREDUCIBLE;
+      INTEGRAL_DOMAIN_POLY_RING; FIELD_IMP_INTEGRAL_DOMAIN]);;
 
 let square_divides_if_also_divides_derivative = prove(`
   !(r:R ring) p f.
@@ -8379,64 +7580,8 @@ let coprime_derivative_if_squarefree = prove(`
   ring_squarefree(x_poly r) f ==>
   ring_coprime(x_poly r) (f,x_derivative r f)
 `,
-  intro THEN
-  have `PID (x_poly(r:R ring))` [PID_x_poly_field] THEN
-  have `integral_domain(x_poly(r:R ring))` [PID_IMP_INTEGRAL_DOMAIN] THEN
-  have `f IN ring_carrier(x_poly(r:R ring))` [x_poly_use] THEN
-  have `~(f = ring_0(x_poly(r:R ring)))` [x_poly_use] THEN
-  proven_if `ring_unit(x_poly(r:R ring)) f` [ring_coprime_if_unit;x_derivative_polynomial;x_poly_use] THEN
-  have `UFD (x_poly(r:R ring))` [PID_IMP_UFD] THEN
-  ASSUME_TAC(UNDISCH_ALL (ISPECL[`f:(1->num)->R`] (CONJUNCT2 (UNDISCH_ALL (fst (EQ_IMP_RULE (UNDISCH_ALL (REWRITE_RULE [IMP_CONJ] (ISPECL [`x_poly(r:R ring)`]UFD_EQ_PRIMEFACT_NONUNIT))))))))) THEN
-  choose2 `n:num` `q:num->(1->num)->R` `1 <= n /\ (!i. 1 <= i /\ i <= n ==> ring_prime(x_poly(r:R ring)) (q i)) /\ ring_product(x_poly r) (1..n) q = f` [] THEN
-  have `FINITE (1..n)` [FINITE_NUMSEG] THEN
-  have `!i:num. i IN (1..n) ==> q i IN ring_carrier(x_poly(r:R ring))` [ring_prime;IN_NUMSEG] THEN
-  subgoal `!i j. 1 <= i /\ i <= n /\ 1 <= j /\ j <= n /\ ring_divides(x_poly(r:R ring)) (q i) (q j) /\ ~(i = j) ==> F` THENL [
-    intro THEN
-    have `i IN (1..n)` [IN_NUMSEG] THEN
-    have `j IN (1..n)` [IN_NUMSEG] THEN
-    specialize[`x_poly(r:R ring)`;`1..n`;`q:num->(1->num)->R`;`i:num`;`j:num`]square_divides_product_if_factor_divides_factor THEN
-    have `ring_divides(x_poly(r:R ring)) (poly_mul r (q(i:num)) (q(i))) f` [x_poly_use] THEN
-    have `q(i:num):(1->num)->R IN ring_carrier(x_poly r)` [] THEN
-    have `~(ring_unit(x_poly r) (q(i:num):(1->num)->R))` [ring_prime] THEN
-    have `ring_divides(x_poly r) (ring_mul(x_poly r) (q(i:num)) (q(i))) (f:(1->num)->R)` [x_poly_use] THEN
-    specialize[`x_poly(r:R ring)`;`f:(1->num)->R`;`q(i:num):(1->num)->R`]not_squarefree_if_divisible_by_square THEN
-    qed[]
-  ; pass
-  ] THEN
-  simp[UFD_COPRIME] THEN
-  intro THENL [
-    qed[x_poly_use;x_derivative_polynomial]
-  ; pass
-  ] THEN
-  have `FINITE (1..n)` [FINITE_NUMSEG] THEN
-  specialize[`x_poly(r:R ring)`;`p:(1->num)->R`;`1..n`;`q:num->(1->num)->R`]RING_PRIME_DIVIDES_PRODUCT THEN
-  choose `i:num` `i IN 1..n /\ ring_divides(x_poly(r:R ring)) p (q i)` [] THEN
-  have `i IN 1..n` [] THEN
-  have `ring_divides(x_poly(r:R ring)) p (q(i:num))` [] THEN
-  have `!i:num. i IN 1..n ==> ring_polynomial(r:R ring) (q i:(1->num)->R)` [x_poly_use] THEN
-  specialize[`r:R ring`;`q:num->(1->num)->R`;`1..n`]poly_product_ring_product_x_poly THEN
-  have `ring_divides(x_poly(r:R ring)) p (x_derivative r (poly_product r (1..n) q))` [] THEN
-  subgoal `!j:num. j IN (1..n) DELETE i ==> ring_coprime(x_poly(r:R ring)) (p,q j)` THENL [
-    intro THEN
-    have `j IN (1..n)` [IN_DELETE] THEN
-    have `q(j:num) IN ring_carrier(x_poly(r:R ring))` [] THEN
-    specialize[`x_poly(r:R ring)`;`p:(1->num)->R`;`q(j:num):(1->num)->R`]INTEGRAL_DOMAIN_PRIME_DIVIDES_OR_COPRIME THEN
-    case `ring_divides(x_poly(r:R ring)) p (q(j:num))` THENL [
-      have `1 <= i /\ i <= n` [IN_NUMSEG] THEN
-      have `1 <= j /\ j <= n` [IN_NUMSEG] THEN
-      have `~(i = j:num)` [IN_DELETE] THEN
-      have `ring_divides(x_poly(r:R ring)) (q(i:num)) (q j)` [prime_divides_prime_and;PID_IMP_UFD] THEN
-      qed[]
-    ; pass
-    ] THEN
-    qed[]
-  ; pass
-  ] THEN
-  specialize[`r:R ring`;`1..n`;`i:num`;`p:(1->num)->R`;`q:num->(1->num)->R`]divides_factor_and_derivative_product THEN
-  have `1 <= i /\ i <= n` [IN_NUMSEG] THEN
-  have `ring_prime(x_poly(r:R ring)) (q(i:num))` [] THEN
-  specialize[`r:R ring`;`q(i:num):(1->num)->R`]coprime_prime_derivative THEN
-  qed[ring_coprime;ring_prime]
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  qed[POLY_SQUAREFREE_IMP_SEPARABLE]
 );;
 
 let gcd_poly_linear_combination = prove(`
@@ -8772,7 +7917,7 @@ let coeff_x_truncreverse = prove(`
   coeff d (x_truncreverse r n p)
   = if d <= n then coeff (n - d) p else ring_0 r
 `,
-  rw[x_truncreverse;coeff;x_monomial]
+  rw[x_truncreverse;coeff_x_monomial;x_monomial]
 );;
 
 let x_truncreverse_series = prove(`
@@ -12524,6 +11669,7 @@ let QinC_monic_irreducible_complex_roots = prove(`
   intro THEN
   have `UFD(x_poly QinC_ring)` [UFD_x_poly_QinC] THEN
   have `ring_prime(x_poly QinC_ring) p` [UFD_IRREDUCIBLE_EQ_PRIME] THEN
+  have `integral_domain(x_poly QinC_ring)` [UFD_IMP_INTEGRAL_DOMAIN] THEN
   have `ring_squarefree(x_poly QinC_ring) p` [ring_squarefree_if_prime] THEN
   have `ring_squarefree(x_poly complex_ring) p` [monic_QinC_squarefree_complex_squarefree] THEN
   have `ring_polynomial complex_ring (p:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
@@ -18569,7 +17715,7 @@ let e_is_transcendental = prove(`
       have `p IN ring_carrier(x_poly complex_ring)` [x_poly_use] THEN
       have `p IN ring_carrier(poly_ring complex_ring (:1))` [x_poly] THEN
       specialize_assuming[`complex_ring`;`cexp(Cx(&1))`;`p:(1->num)->complex`]POLY_EVAL_EXPAND THEN
-      have_rw `poly_eval complex_ring p (cexp (Cx (&1))) = ring_sum complex_ring (0..d) (\i. ring_mul complex_ring (p (\v. i)) (ring_pow complex_ring (cexp (Cx (&1))) i))` [in_complex_ring] THEN
+      have_rw `poly_eval complex_ring p (cexp (Cx (&1))) = ring_sum complex_ring (0..d) (\i. ring_mul complex_ring (coeff i p) (ring_pow complex_ring (cexp (Cx (&1))) i))` [in_complex_ring] THEN
       sufficesby RING_SUM_EQ THEN
       intro THEN
       rw[BETA_THM;o_THM] THEN
@@ -18577,7 +17723,7 @@ let e_is_transcendental = prove(`
       rw[complex_root_x_minus_const;x_minus_const_QinC_eq_x_minus_const_complex] THEN
       rw[GSYM CEXP_N;COMPLEX_MUL_RID] THEN
       have `B (x_minus_const QinC_ring (Cx (&a))) = coeff a p:complex` [] THEN
-      have `B (x_minus_const QinC_ring (Cx (&a))) = p (\v:1. a):complex` [coeff;x_monomial] THEN
+      have `B (x_minus_const QinC_ring (Cx (&a))) = p (\v:1. a):complex` [coeff_x_monomial;x_monomial] THEN
       have `B (x_minus_const complex_ring (Cx (&a))) = p (\v:1. a):complex` [x_minus_const_QinC_eq_x_minus_const_complex] THEN
       qed[RING_SUM_SING;in_complex_ring]
     ; pass
@@ -24278,7 +23424,7 @@ let transcendental_if_exp_nonzero_algebraic = prove(`
     ]RING_SUM_IMAGE THEN
     rw[know `ring_sum complex_ring (IMAGE (\i. Cx (&i) * a) (0..poly_deg complex_ring f)) (\s. coeff (@i. s = Cx (&i) * a) f * cexp s) = ring_sum complex_ring (0..poly_deg complex_ring f) ((\s. coeff (@i. s = Cx (&i) * a) f * cexp s) o (\i. Cx (&i) * a))`] THEN
     rw[o_DEF] THEN
-    subgoal `ring_sum complex_ring (0..poly_deg complex_ring f) (\x. coeff (@i. Cx (&x) * a = Cx (&i) * a) f * cexp (Cx (&x) * a)) = ring_sum complex_ring (0..poly_deg complex_ring f) (\i. ring_mul complex_ring (f (\v. i)) (ring_pow complex_ring (cexp a) i))` THENL [
+    subgoal `ring_sum complex_ring (0..poly_deg complex_ring f) (\x. coeff (@i. Cx (&x) * a = Cx (&i) * a) f * cexp (Cx (&x) * a)) = ring_sum complex_ring (0..poly_deg complex_ring f) (\i. ring_mul complex_ring (coeff i f) (ring_pow complex_ring (cexp a) i))` THENL [
       sufficesby RING_SUM_EQ THEN
       rw[BETA_THM] THEN
       intro THEN
@@ -24289,7 +23435,7 @@ let transcendental_if_exp_nonzero_algebraic = prove(`
       ] THEN
       rw[know `(@i. Cx(&a')*a = Cx(&i)*a) = a'`] THEN
       rw[complex_ring_clauses;ring_pow_complex] THEN
-      rw[coeff;x_monomial;CEXP_N]
+      rw[coeff_x_monomial;x_monomial;CEXP_N]
     ; pass
     ] THEN
     qed[]

@@ -67,6 +67,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/sos \
 	Examples/ste \
 	Examples/sylvester_gallai \
+	Library/symmetric_group \
 	Examples/vitali \
 	Library/wo \
 	Library/words \
