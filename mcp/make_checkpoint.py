@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Create a DMTCP checkpoint of HOL Light.
 
+Each extra positional argument must be a single OCaml expression
+(e.g. 'needs "foo.ml"').  Expressions are wrapped in try/with to
+detect exceptions; multi-phrase inputs containing ';;' are not
+supported — place them in a file and load with needs or loadt.
+
 Examples:
     python3 mcp/make_checkpoint.py                          # base HOL Light
     python3 mcp/make_checkpoint.py --name s2n \\
@@ -17,6 +22,7 @@ import time
 
 HOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SENTINEL = "HOL_MCP_CKPT_READY"
+ERROR_SENTINEL = "HOL_MCP_LOAD_ERROR"
 
 
 def fatal(msg):
@@ -27,8 +33,11 @@ def fatal(msg):
 def parse_args():
     p = argparse.ArgumentParser(
         description="Create a DMTCP checkpoint of HOL Light.",
-        epilog="Extra positional arguments are OCaml expressions evaluated after HOL Light loads "
-               "(e.g., 'needs \"arm/proofs/base.ml\"').",
+        epilog="Extra positional arguments are single OCaml expressions evaluated "
+               "after HOL Light loads (e.g., 'needs \"arm/proofs/base.ml\"').  "
+               "Each expression is wrapped in try/with to detect exceptions.  "
+               "Multi-phrase inputs containing ';;' are not supported; place "
+               "them in a file and load with needs or loadt.",
     )
     p.add_argument("--name", default="base",
                    help="Checkpoint name (creates hol-<name>.ckpt/). Default: base")
@@ -60,21 +69,52 @@ def build_env():
     return env
 
 
-def wait_for_line(proc, marker, error_msg):
-    """Read stdout until a line contains marker. Dies on EOF."""
+def wait_for_line(proc, marker, error_msg, error_marker=None):
+    """Read stdout until a line contains marker. Dies on EOF.
+
+    If error_marker is set, treat any line containing it as a fatal
+    error from the OCaml toplevel."""
     while True:
         line = proc.stdout.readline()
         if not line:
             fatal(error_msg)
+        if error_marker and error_marker in line:
+            # Extract the exception description after the sentinel
+            detail = line.strip()
+            idx = detail.find(error_marker)
+            if idx >= 0:
+                detail = detail[idx + len(error_marker):].lstrip(":").strip()
+            fatal(f"OCaml exception: {detail}")
         if marker in line:
             return
 
 
 def send_and_wait(proc, code, error_msg):
-    """Send OCaml code and wait for sentinel."""
-    proc.stdin.write(f'{code};;\nPrintf.printf "{SENTINEL}\\n%!";;\n')
+    """Send OCaml code wrapped in try/with and wait for sentinel.
+
+    The OCaml toplevel recovers from exceptions and continues to the
+    next phrase, so a bare sentinel would appear even after a failure.
+    Wrapping in try/with catches the exception and emits an error
+    sentinel that wait_for_line detects.
+
+    Only single toplevel expressions are supported.  Multi-phrase
+    inputs containing ';;' will be rejected with a helpful message."""
+    clean = code.rstrip().rstrip(";")
+    if ";;" in clean:
+        fatal(
+            f"Expression contains ';;' (multiple toplevel phrases):\n"
+            f"  {code}\n"
+            f"Only single expressions can be error-checked.  Place composite\n"
+            f"inputs in a file and use: needs \"file.ml\""
+        )
+    proc.stdin.write(
+        f'(try ({clean}) with e -> '
+        f'Printf.printf "{ERROR_SENTINEL}:%s\\n%!" '
+        f'(Printexc.to_string e));;\n'
+        f'Printf.printf "{SENTINEL}\\n%!";;\n'
+    )
     proc.stdin.flush()
-    wait_for_line(proc, SENTINEL, error_msg)
+    wait_for_line(proc, SENTINEL, error_msg, error_marker=ERROR_SENTINEL)
 
 
 def main():
