@@ -581,6 +581,11 @@ let pp_print_term,pp_print_colored_term =
         pp_print_string fmt "(";
         (if (is_const hop) then color_switch pp_print_colored_const fmt s'
          else pp_print_string fmt s');
+        (* If s' ends in a symbolic character, juxtaposing ":" would lex as a
+           single identifier (e.g. "&:" is one Ident), so insert a space. *)
+        (if String.length s' > 0 &&
+            issymb (String.sub s' (String.length s' - 1) 1)
+         then pp_print_string fmt " " else ());
         pp_print_string fmt ":";
         (if use_color then pp_print_colored_type else pp_print_type)
           fmt (type_of hop);
