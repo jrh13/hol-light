@@ -20,7 +20,7 @@ CAMLP5_FULL_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -f1 
 
 if test ${OCAML_BINARY_VERSION} = "3.0"
 then echo "pa_j_${OCAML_VERSION}.ml"
-elif test ${CAMLP5_FULL_VERSION} = "8.04.00"
+elif test ${CAMLP5_BINARY_VERSION} = "8.04" -o ${CAMLP5_BINARY_VERSION} = "8.05"
 then
   if test ${OCAML_BINARY_VERSION} = "5.4"
   then echo "pa_j_5.4_8.04.00.ml"
