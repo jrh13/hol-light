@@ -103,11 +103,26 @@ check "infix.mul.right_assoc"
   "(x:num) * (y * z)"      "x * y * z";;
 check "infix.mul.left_grouping"
   "((x:num) * y) * z"      "(x * y) * z";;
-(* - on num: left-associative — the only num arith op that is. *)
+(* - on num: left-associative. *)
 check "infix.sub.left_assoc"
   "((x:num) - y) - z"      "x - y - z";;
 check "infix.sub.right_grouping"
   "(x:num) - (y - z)"      "x - (y - z)";;
+(* EXP on num: left-associative. *)
+check "infix.exp.left_assoc"
+  "((x:num) EXP y) EXP z"  "x EXP y EXP z";;
+check "infix.exp.right_grouping"
+  "(x:num) EXP (y EXP z)"  "x EXP (y EXP z)";;
+(* DIV on num: left-associative. *)
+check "infix.div.left_assoc"
+  "((x:num) DIV y) DIV z"  "x DIV y DIV z";;
+check "infix.div.right_grouping"
+  "(x:num) DIV (y DIV z)"  "x DIV (y DIV z)";;
+(* MOD on num: left-associative. *)
+check "infix.mod.left_assoc"
+  "((x:num) MOD y) MOD z"  "x MOD y MOD z";;
+check "infix.mod.right_grouping"
+  "(x:num) MOD (y MOD z)"  "x MOD (y MOD z)";;
 (* ==> is right-associative. *)
 check "infix.imp.right_assoc"
   "p ==> (q ==> r)"        "p ==> q ==> r";;
@@ -150,6 +165,17 @@ check "prioritize.int.add_sub"
 check "prioritize.int.mul_add"
   "(x:int) * y + z"        "x * y + z";;
 
+check "infix.int.div.left_assoc"
+  "((x:int) div y) div z"  "x div y div z";;
+check "infix.int.div.right_grouping"
+  "(x:int) div (y div z)"  "x div (y div z)";;
+check "infix.int.rem.left_assoc"
+  "((x:int) rem y) rem z"  "x rem y rem z";;
+check "infix.int.pow.left_assoc"
+  "((x:int) pow y) pow z"  "x pow y pow z";;
+check "infix.int.pow.right_grouping"
+  "(x:int) pow (y EXP z)"  "x pow (y EXP z)";;
+
 prioritize_real();;
 check "prioritize.real.add"
   "(x:real) + y + z"       "x + y + z";;
@@ -159,6 +185,17 @@ check "prioritize.real.mul_add"
   "(x:real) * y + z"       "x * y + z";;
 check "prioritize.real.div"
   "(x:real) / (y * z)"     "x / (y * z)";;
+
+check "infix.real.div.left_assoc"
+  "((x:real) / y) / z"     "x / y / z";;
+check "infix.real.div.right_grouping"
+  "(x:real) / (y / z)"     "x / (y / z)";;
+check "infix.real.pow.left_assoc"
+  "((x:real) pow y) pow z" "x pow y pow z";;
+check "infix.real.pow.right_grouping"
+  "(x:real) pow (y EXP z)" "x pow (y EXP z)";;
+check "infix.real.zpow.left_assoc"
+  "((x:real) zpow y) zpow z" "x zpow y zpow z";;
 
 (* Restore default num-priority for subsequent tests. *)
 prioritize_num();;
@@ -244,7 +281,53 @@ check "show_types.let"
   "let (x:num) = 1 in x + 2"
   "let (x:num) = 1 in (x:num) + 2";;
 
+check "show_types.real_of_num"
+  "&2"
+  "(& :num->real)2";;
+check "show_types.real_neg"
+  "-- &2"
+  "-- (& :num->real)2";;
+check "show_types.real_of_num.add"
+  "&1 + &2"
+  "(& :num->real)1 + (& :num->real)2";;
+
 print_types_of_subterms := saved_show_types;;
+
+(* ------------------------------------------------------------------------- *)
+(* Round-trip of the symbolic-head fix: parse_term o string_of_term must be  *)
+(* the identity on the printed form even with print_types_of_subterms := 2.  *)
+(* Without the space before ":", "&:" lexes as a single Ident and the        *)
+(* re-parse would fail or misinterpret the term.                             *)
+(* ------------------------------------------------------------------------- *)
+
+let check_roundtrip label tm =
+  incr total;
+  let printed =
+    let saved = !print_types_of_subterms in
+    print_types_of_subterms := 2;
+    let s = string_of_term tm in
+    print_types_of_subterms := saved; s in
+  let reparsed =
+    try parse_term printed
+    with e ->
+      incr failures;
+      Printf.printf "FAIL %s\n  printed = %s\n  parse error: %s\n"
+        label printed (Printexc.to_string e);
+      tm in
+  if not (aconv reparsed tm) then
+   (incr failures;
+    Printf.printf "FAIL %s\n  printed  = %s\n  reparsed != original\n"
+      label printed);;
+
+let real_of_num_tm = mk_const("real_of_num",[]);;
+let real_neg_tm = mk_const("real_neg",[]);;
+let real_add_tm = mk_const("real_add",[]);;
+let amp_2 = mk_comb(real_of_num_tm,mk_numeral(num 2));;
+let amp_1 = mk_comb(real_of_num_tm,mk_numeral(num 1));;
+
+check_roundtrip "roundtrip.real_of_num" amp_2;;
+check_roundtrip "roundtrip.real_neg"    (mk_comb(real_neg_tm,amp_2));;
+check_roundtrip "roundtrip.real_add"    (mk_binop real_add_tm amp_1 amp_2);;
 
 (* ------------------------------------------------------------------------- *)
 (* Summary.                                                                  *)
