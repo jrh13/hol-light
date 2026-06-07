@@ -30995,6 +30995,31 @@ let borel_RULES,borel_INDUCT,borel_CASES = new_inductive_definition
   (!s. borel s ==> borel((:real^N) DIFF s)) /\
   (!u. COUNTABLE u /\ (!s. s IN u ==> borel s) ==> borel(UNIONS u))`;;
 
+let BOREL_IN_EUCLIDEAN = prove
+ (`borel_in euclidean = borel:(real^N->bool)->bool`,
+  REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `s:real^N->bool` THEN EQ_TAC THENL
+   [SPEC_TAC(`s:real^N->bool`, `s:real^N->bool`) THEN
+    MATCH_MP_TAC borel_in_INDUCT THEN REPEAT CONJ_TAC THENL
+     [REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_EUCLIDEAN] THEN
+      DISCH_TAC THEN MATCH_MP_TAC(CONJUNCT1 borel_RULES) THEN
+      ASM_REWRITE_TAC[];
+      REPEAT GEN_TAC THEN REWRITE_TAC[TOPSPACE_EUCLIDEAN] THEN
+      DISCH_TAC THEN MATCH_MP_TAC(CONJUNCT1(CONJUNCT2 borel_RULES)) THEN
+      ASM_REWRITE_TAC[];
+      REPEAT GEN_TAC THEN STRIP_TAC THEN
+      MATCH_MP_TAC(CONJUNCT2(CONJUNCT2 borel_RULES)) THEN
+      ASM_MESON_TAC[]];
+    SPEC_TAC(`s:real^N->bool`, `s:real^N->bool`) THEN
+    MATCH_MP_TAC borel_INDUCT THEN REPEAT CONJ_TAC THENL
+     [REPEAT STRIP_TAC THEN MATCH_MP_TAC OPEN_IMP_BOREL_IN THEN
+      ASM_REWRITE_TAC[OPEN_IN_EUCLIDEAN];
+      REPEAT STRIP_TAC THEN
+      SUBGOAL_THEN `(:real^N) DIFF s = topspace euclidean DIFF s`
+      SUBST1_TAC THENL [REWRITE_TAC[TOPSPACE_EUCLIDEAN]; ALL_TAC] THEN
+      MATCH_MP_TAC BOREL_IN_COMPLEMENT THEN ASM_REWRITE_TAC[];
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC BOREL_IN_UNIONS THEN
+      ASM_MESON_TAC[]]]);;
+
 let BOREL_INDUCT_COMPACT = prove
  (`!P. (!s. compact s ==> P s) /\
        (!s. P s ==> P ((:real^N) DIFF s)) /\
@@ -35085,6 +35110,27 @@ let BOREL_MEASURABLE_RESTRICT = prove
         ==> (\x. if x IN s then f x else vec 0) borel_measurable_on (:real^M)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC BOREL_MEASURABLE_CASES THEN
   ASM_REWRITE_TAC[BOREL_MEASURABLE_CONST]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The relation with the general borel_measurable is slightly subtler        *)
+(* ------------------------------------------------------------------------- *)
+
+let BOREL_MEASURABLE_MAP_EUCLIDEAN_SUBTOPOLOGY = prove
+ (`!(f:real^M->real^N) s.
+        borel s
+        ==> (borel_measurable_map(subtopology euclidean s,euclidean) f <=>
+             f borel_measurable_on s)`,
+  REWRITE_TAC[borel_measurable_map; TOPSPACE_EUCLIDEAN; IN_UNIV] THEN
+  SIMP_TAC[GSYM BOREL_IN_EUCLIDEAN; BOREL_IN_SUBTOPOLOGY_EQ] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; SUBSET_RESTRICT] THEN
+  SIMP_TAC[BOREL_IN_EUCLIDEAN; GSYM BOREL_MEASURABLE_PREIMAGE_BOREL]);;
+
+let BOREL_MEASURABLE_MAP_EUCLIDEAN = prove
+ (`!(f:real^M->real^N).
+        borel_measurable_map(euclidean,euclidean) f <=> 
+        f borel_measurable_on (:real^M)`,
+  SIMP_TAC[GSYM BOREL_MEASURABLE_MAP_EUCLIDEAN_SUBTOPOLOGY; BOREL_UNIV] THEN
+  REWRITE_TAC[SUBTOPOLOGY_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Analytic sets.                                                            *)

@@ -8,6 +8,108 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  5th Jun 2026       Multivariate/metric.ml, Multivariate/topology.ml
+
+Added a general "Borel sets of a topological space" theory,
+complementing the existing Euclidean-specific "borel" (on real^N)
+already in topology.ml. In metric.ml, defined "borel_in top"
+inductively as the smallest family of subsets of the topspace
+containing the open sets and closed under countable union and under
+complement (relative to the topspace). Developed the basic
+sigma-algebra calculus and its behaviour under subtopologies,
+continuous maps and homeomorphisms:
+
+        borel_in_RULES
+        borel_in_INDUCT
+        borel_in_CASES
+        OPEN_IMP_BOREL_IN
+        BOREL_IN_COMPLEMENT
+        BOREL_IN_COMPLEMENT_EQ
+        BOREL_IN_UNIONS
+        BOREL_IN_SUBSET_TOPSPACE
+        BOREL_IN_TOPSPACE
+        BOREL_IN_EMPTY
+        BOREL_IN_INTERS
+        BOREL_IN_UNION
+        BOREL_IN_INTER
+        BOREL_IN_DIFF
+        CLOSED_IMP_BOREL_IN
+        FSIGMA_IMP_BOREL_IN
+        GDELTA_IMP_BOREL_IN
+        OPEN_IN_SUBTOPOLOGY_BOREL_IN
+        CLOSED_IN_SUBTOPOLOGY_BOREL_IN
+        BOREL_IN_SUBTOPOLOGY
+        BOREL_FROM_SUBTOPOLOGY
+        BOREL_IN_INTER_SUBTOPOLOGY
+        BOREL_IN_SUBTOPOLOGY_EQ
+        BOREL_IN_CONTINUOUS_MAP_PREIMAGE
+        BOREL_IN_HOMEOMORPHIC_MAP_IMAGE
+        BOREL_IN_HOMEOMORPHIC_MAPS_IMAGE_EQ
+        BOREL_IN_HOMEOMORPHIC_MAP_IMAGE_EQ
+
+Also in metric.ml, defined "borel_measurable_map (top1,top2) f"
+as a function mapping top1 into top2 where the preimage of every
+"borel_in top2" set is "borel_in top1", with the expected closure
+properties, the most non-trivial being closure under pointwise
+sequential limits, assuming a metrizable codomain:
+
+        borel_measurable_map
+        BOREL_MEASURABLE_MAP_OPEN_IN
+        BOREL_MEASURABLE_MAP_CLOSED_IN
+        BOREL_MEASURABLE_MAP_IMAGE_SUBSET_TOPSPACE
+        CONTINUOUS_IMP_BOREL_MEASURABLE_MAP
+        BOREL_MEASURABLE_MAP_ID
+        BOREL_MEASURABLE_MAP_CONST
+        BOREL_MEASURABLE_MAP_EQ
+        BOREL_MEASURABLE_MAP_COMPOSE
+        BOREL_MEASURABLE_MAP_FROM_SUBTOPOLOGY
+        BOREL_MEASURABLE_MAP_INTO_SUBTOPOLOGY
+        BOREL_MEASURABLE_MAP_LIMIT
+
+In topology.ml, connected the general notions back to the existing
+Euclidean ones. BOREL_IN_EUCLIDEAN shows "borel_in euclidean = borel",
+so all the existing real^N results about "borel" transfer to the
+general theory as the Euclidean instance, and vice versa. The
+identification for the measurable maps is a little more delicate than
+for the sets, because the existing Euclidean Borel-measurability
+predicate "f borel_measurable_on s" (topology.ml) is defined quite
+differently, as a Baire function, i.e. inductively as the closure of
+the continuous functions under pointwise sequential limits. These are
+proved equivalent but only under the assumption that the domain is a
+Borel set, including the special case of the whole of real^N.
+
+        BOREL_IN_EUCLIDEAN
+        BOREL_MEASURABLE_MAP_EUCLIDEAN
+        BOREL_MEASURABLE_MAP_EUCLIDEAN_SUBTOPOLOGY
+
+Wed  3rd Jun 2026       pa_j/chooser.sh
+
+Added an update from Matthias Kannwischer to accept camlp5 8.05
+with OCaml 5.4 - the actual pa_j_5.4_8.04.00.ml still works so it
+only needs to improve the selector.
+
+Mon  1st Jun 2026       printer.ml, UnitTests/printer_tests.ml
+
+Made a fix authored by Balaji Rao and June Lee to the printing of
+names with their type annotations under print_types_of_subterms := 2
+(or := 1 with invented type variables). This now inserts an extra
+space where needed for symbolic identifers, which otherwise might
+generate text that does not correctly parse back owing to lexical
+conventions, absorbing the colon into the name. For example `&3:int`
+now prints with a space between "&" and its type.
+
+Mon 18th May 2026       mcp/make_checkpoint.py
+
+Tweaked this script to detect failures when building the checkpoint, which can
+easily happen if checkpointing material under development. It also now rejects
+expressions containing ';;' immediately.
+
+Mon 18th May 2026       printer.ml
+
+Adopted a refactoring from June Lee of the printer, decomposing pp_print_term's
+special-form chain into separate functions. This also adds unit tests for the
+printer, now placed in a special UnitTests subdirectory.
+
 Sun 17th May 2026       Probability/clt.ml
 
 Replaced List.filteri (OCaml >= 4.14) with subtract/el for compatibility with
