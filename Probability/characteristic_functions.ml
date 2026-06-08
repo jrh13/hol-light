@@ -2974,24 +2974,8 @@ let HOEFFDING_SUM_GENERAL = prove
 (* AZUMA-HOEFFDING INEQUALITY                                                *)
 (* ========================================================================= *)
 
-(* Level sets of G-measurable functions are in G *)
-let MEASURABLE_WRT_LEVEL_SET = prove
- (`!p:A prob_space G (X:A->real) v.
-     sub_sigma_algebra p G /\ measurable_wrt p G X
-     ==> {x | x IN prob_carrier p /\ X x = v} IN G`,
-  REPEAT STRIP_TAC THEN
-  (* {X = v} = {X <= v} DIFF {X < v} *)
-  SUBGOAL_THEN
-    `{x:A | x IN prob_carrier p /\ (X:A->real) x = v} =
-     {x | x IN prob_carrier p /\ X x <= v} DIFF
-     {x | x IN prob_carrier p /\ X x < v}`
-    SUBST1_TAC THENL
-  [SET_TAC[REAL_ARITH `!x v:real. x = v <=> x <= v /\ ~(x < v)`];
-   ALL_TAC] THEN
-  MATCH_MP_TAC(ISPEC `p:A prob_space` SUB_SIGMA_ALGEBRA_DIFF) THEN
-  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-  [ASM_MESON_TAC[measurable_wrt];
-   MATCH_MP_TAC MEASURABLE_WRT_STRICT_LT THEN ASM_REWRITE_TAC[]]);;
+(* MEASURABLE_WRT_LEVEL_SET relocated to martingale_convergence.ml (used by the *)
+(* general take-out lemmas there); available here via the earlier load.        *)
 
 (* Martingale difference has zero expectation on any F_n-event *)
 let SIMPLE_MARTINGALE_DIFF_INDICATOR_ZERO = prove
@@ -6449,6 +6433,7 @@ let COND_EXP_BOUNDED_VARIATION = prove
      ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC];
     DISCH_TAC THEN ASM_REWRITE_TAC[]]]);;
 
+
 (* Key lemma: bounded differences implies bounded Doob simple_martingale increments.
    Under mutual independence and bounded differences, the cond_exp
    increments along the rv_sigma filtration are bounded by [-c_i, c_i].
@@ -6972,6 +6957,7 @@ let DOOB_DECOMPOSITION_SUPER = prove
    UNDISCH_TAC `!n x:A. x IN prob_carrier (p:A prob_space) ==> --((X:num->A->real) n x) = (M':num->A->real) n x + (A':num->A->real) n x` THEN
    DISCH_THEN(MP_TAC o SPECL [`n:num`; `x:A`]) THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC]);;
 
+
 (* ========================================================================= *)
 (* CLT COMPLETION: CONVERGENCE IN DISTRIBUTION TO STANDARD NORMAL            *)
 (* ========================================================================= *)
@@ -7009,7 +6995,7 @@ let HAS_REAL_INTEGRAL_STRETCH_UNIV = prove
 
 (* ========================================================================= *)
 (* GAUSSIAN INTEGRAL PROOF                                                   *)
-(* Proved via the H(a)+J(a)=pi/4 approach (no gamma.ml needed)  *)
+(* Proved via the H(a)+J(a)=pi/4 approach (no gamma.ml needed)               *)
 (* ========================================================================= *)
 
 
@@ -8261,6 +8247,51 @@ let COS_TAYLOR2_BOUND = prove
     REWRITE_TAC[REAL_ABS_REFL; REAL_LE_POW_2]; ALL_TAC] THEN
    MP_TAC (SPEC `h:real` REAL_LE_POW_2) THEN REAL_ARITH_TAC]);;
 
+(* SIN analog of COS_TAYLOR2_BOUND: second-order Taylor bound for sine *)
+let SIN_TAYLOR2_BOUND = prove
+ (`!x h. abs(sin(x + h) - sin x - h * cos x) <= h pow 2`,
+  REPEAT GEN_TAC THEN
+  MP_TAC (ISPECL
+    [`\(i:num) (t:real).
+       if i = 0 then sin t
+       else if i = 1 then cos t
+       else --(sin t)`;
+     `1`; `(:real)`; `&1`] REAL_TAYLOR) THEN
+  REWRITE_TAC[IS_REALINTERVAL_UNIV; IN_UNIV] THEN
+  ANTS_TAC THENL
+  [CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN `i = 0 \/ i = 1` DISJ_CASES_TAC THENL
+    [ASM_ARITH_TAC; ALL_TAC; ALL_TAC] THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV THEN
+    REWRITE_TAC[WITHINREAL_UNIV; ETA_AX] THENL
+    [REWRITE_TAC[HAS_REAL_DERIVATIVE_SIN];
+     REWRITE_TAC[HAS_REAL_DERIVATIVE_COS]];
+    GEN_TAC THEN CONV_TAC NUM_REDUCE_CONV THEN
+    REWRITE_TAC[REAL_ABS_NEG; SIN_BOUND]];
+   ALL_TAC] THEN
+  DISCH_THEN (MP_TAC o SPECL [`x:real`; `x + h:real`]) THEN
+  REWRITE_TAC[REAL_ARITH `(x + h) - x = h:real`] THEN
+  SIMP_TAC[SUM_CLAUSES_LEFT; LE_0] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN
+  REWRITE_TAC[SUM_SING_NUMSEG] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN
+  REWRITE_TAC[FACT] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  REWRITE_TAC[CONJUNCT1 real_pow; REAL_POW_1; REAL_MUL_LID; REAL_MUL_RID;
+              REAL_DIV_1; REAL_ADD_RID] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `sin(x + h) - sin x - h * cos x =
+                sin(x + h) - (sin x + cos x * h)` SUBST1_TAC THENL
+  [REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `abs h pow 2 / &2` THEN
+  CONJ_TAC THENL
+  [ASM_REWRITE_TAC[];
+   SUBGOAL_THEN `abs h pow 2 = h pow 2` SUBST1_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM REAL_ABS_POW] THEN
+    REWRITE_TAC[REAL_ABS_REFL; REAL_LE_POW_2]; ALL_TAC] THEN
+   MP_TAC (SPEC `h:real` REAL_LE_POW_2) THEN REAL_ARITH_TAC]);;
+
 (* General bound on the antiderivative *)
 let GAUSSIAN_ANTIDERIV_BOUND = prove
  (`!a b t. &0 < a
@@ -8857,6 +8888,87 @@ let GAUSSIAN_FT_SIN = prove
    ASM_MESON_TAC[HAS_REAL_INTEGRAL_UNIQUE]; ALL_TAC] THEN
   ASM_MESON_TAC[REAL_INTEGRABLE_INTEGRAL]);;
 
+(* Half-line Gaussian FT: integral over [0,infty) = half of full-line *)
+let GAUSSIAN_FT_HALFLINE = prove
+ (`!b. ((\t. exp(--(t pow 2 / &2)) * cos(b * t)) has_real_integral
+        sqrt(&2 * pi) / &2 * exp(--(b pow 2 / &2))) {t | &0 <= t}`,
+  GEN_TAC THEN
+  ABBREV_TAC `f = \t:real. exp(--(t pow 2 / &2)) * cos(b * t)` THEN
+  SUBGOAL_THEN `(f has_real_integral
+    sqrt(&2 * pi) * exp(--(b pow 2 / &2))) (:real)` ASSUME_TAC THENL
+  [MP_TAC(SPECL [`&1`; `b:real`] GAUSSIAN_FT) THEN
+   REWRITE_TAC[REAL_LT_01; REAL_MUL_LID; REAL_MUL_RID; REAL_DIV_1] THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  (* f is even: f(-t) = f(t) *)
+  SUBGOAL_THEN `!t:real. (f:real->real)(--t) = f t` ASSUME_TAC THENL
+  [EXPAND_TAC "f" THEN GEN_TAC THEN
+   REWRITE_TAC[REAL_POW_NEG; ARITH; REAL_MUL_LNEG; REAL_NEG_NEG;
+               REAL_MUL_RNEG; COS_NEG]; ALL_TAC] THEN
+  (* f integrable on (:real) *)
+  SUBGOAL_THEN `f real_integrable_on (:real)` ASSUME_TAC THENL
+  [REWRITE_TAC[real_integrable_on] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  (* f integrable on {t | 0 <= t} *)
+  SUBGOAL_THEN `f real_integrable_on {t | &0 <= t}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  (* f integrable on {t | t <= 0} *)
+  SUBGOAL_THEN `f real_integrable_on {t:real | t <= &0}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  (* By reflection: integral over {t<=0} = integral over {t>=0} *)
+  SUBGOAL_THEN `(f has_real_integral real_integral {t | &0 <= t} f)
+                {t:real | t <= &0}` ASSUME_TAC THENL
+  [MP_TAC(ISPECL [`f:real->real`;
+                   `real_integral {t:real | &0 <= t} (f:real->real)`;
+                   `{t:real | &0 <= t}`] HAS_REAL_INTEGRAL_REFLECT_GEN) THEN
+   SUBGOAL_THEN `IMAGE ((--):real->real) {t | &0 <= t} = {t:real | t <= &0}`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN GEN_TAC THEN EQ_TAC THENL
+    [STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+     DISCH_TAC THEN EXISTS_TAC `--x:real` THEN
+     ASM_REWRITE_TAC[REAL_NEG_NEG] THEN ASM_REAL_ARITH_TAC]; ALL_TAC] THEN
+   SUBGOAL_THEN `(\x. (f:real->real)(--x)) = f` (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   DISCH_THEN(fun th ->
+     MP_TAC(fst(EQ_IMP_RULE th)) THEN
+     ANTS_TAC THENL
+     [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+      MESON_TAC[]]); ALL_TAC] THEN
+  (* Combine: integral over R = 2 * integral over [0,infty) *)
+  SUBGOAL_THEN
+    `(f has_real_integral (real_integral {t | &0 <= t} f +
+                           real_integral {t | &0 <= t} f))
+     ({t:real | &0 <= t} UNION {t | t <= &0})` ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNION THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+    ASM_REWRITE_TAC[];
+    SUBGOAL_THEN `{t:real | &0 <= t} INTER {t | t <= &0} = {&0}`
+      (fun th -> REWRITE_TAC[th; REAL_NEGLIGIBLE_SING]) THEN
+    REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM; IN_SING] THEN
+    REAL_ARITH_TAC]; ALL_TAC] THEN
+  SUBGOAL_THEN `{t:real | &0 <= t} UNION {t | t <= &0} = (:real)`
+    ASSUME_TAC THENL
+  [REWRITE_TAC[EXTENSION; IN_UNION; IN_ELIM_THM; IN_UNIV] THEN
+   REAL_ARITH_TAC; ALL_TAC] THEN
+  (* By uniqueness: 2*I = full integral *)
+  SUBGOAL_THEN
+    `real_integral {t | &0 <= t} f + real_integral {t | &0 <= t} f =
+     sqrt(&2 * pi) * exp(--(b pow 2 / &2))` ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNIQUE THEN
+   EXISTS_TAC `f:real->real` THEN EXISTS_TAC `(:real)` THEN
+   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  (* I = full/2 *)
+  SUBGOAL_THEN `real_integral {t | &0 <= t} f =
+    sqrt(&2 * pi) / &2 * exp(--(b pow 2 / &2))` ASSUME_TAC THENL
+  [MATCH_MP_TAC(REAL_ARITH `x + x = y * z ==> x = y / &2 * z`) THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+  MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[]);;
+
 (* --- Phase 2: Standard Normal Distribution --- *)
 
 let std_normal_density = new_definition
@@ -9075,6 +9187,74 @@ let STD_NORMAL_DENSITY_INTEGRABLE_UPPER_HALFLINE = prove
   REWRITE_TAC[SUBSET_UNIV; STD_NORMAL_DENSITY_INTEGRABLE] THEN
   DISCH_THEN MATCH_MP_TAC THEN
   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
+
+(* CDF at zero: by symmetry of the density, Phi(0) = 1/2 *)
+let STD_NORMAL_CDF_ZERO = prove
+ (`std_normal_cdf(&0) = &1 / &2`,
+  REWRITE_TAC[std_normal_cdf] THEN
+  (* By reflection: integral over {t <= 0} = integral over {0 <= t} *)
+  SUBGOAL_THEN
+    `real_integral {t:real | t <= &0} std_normal_density =
+     real_integral {t:real | &0 <= t} std_normal_density` ASSUME_TAC THENL
+  [SUBGOAL_THEN `(std_normal_density has_real_integral
+     real_integral {t:real | &0 <= t} std_normal_density)
+     {t:real | t <= &0}` ASSUME_TAC THENL
+   [MP_TAC(ISPECL [`std_normal_density`;
+                    `real_integral {t:real | &0 <= t} std_normal_density`;
+                    `{t:real | &0 <= t}`] HAS_REAL_INTEGRAL_REFLECT_GEN) THEN
+    SUBGOAL_THEN `IMAGE ((--):real->real) {t | &0 <= t} = {t:real | t <= &0}`
+      (fun th -> REWRITE_TAC[th]) THENL
+    [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN GEN_TAC THEN EQ_TAC THENL
+     [STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+      DISCH_TAC THEN EXISTS_TAC `--x:real` THEN
+      ASM_REWRITE_TAC[REAL_NEG_NEG] THEN ASM_REAL_ARITH_TAC]; ALL_TAC] THEN
+    SUBGOAL_THEN `(\x. std_normal_density(--x)) = std_normal_density`
+      (fun th -> REWRITE_TAC[th]) THENL
+    [REWRITE_TAC[FUN_EQ_THM; STD_NORMAL_DENSITY_SYM]; ALL_TAC] THEN
+    DISCH_THEN(fun th ->
+      MP_TAC(fst(EQ_IMP_RULE th)) THEN
+      ANTS_TAC THENL
+      [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN
+       REWRITE_TAC[STD_NORMAL_DENSITY_INTEGRABLE_UPPER_HALFLINE];
+       MESON_TAC[]]); ALL_TAC] THEN
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_UNIQUE THEN
+   EXISTS_TAC `std_normal_density` THEN EXISTS_TAC `{t:real | t <= &0}` THEN
+   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN
+   MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN
+   REWRITE_TAC[SUBSET_UNIV; STD_NORMAL_DENSITY_INTEGRABLE] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  (* 2 * integral_{t<=0} = 1 from full integral = 1 *)
+  SUBGOAL_THEN
+    `real_integral {t:real | t <= &0} std_normal_density +
+     real_integral {t:real | &0 <= t} std_normal_density = &1` ASSUME_TAC THENL
+  [SUBGOAL_THEN `(std_normal_density has_real_integral
+     (real_integral {t:real | t <= &0} std_normal_density +
+      real_integral {t:real | &0 <= t} std_normal_density))
+     ({t:real | t <= &0} UNION {t | &0 <= t})` ASSUME_TAC THENL
+   [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNION THEN REPEAT CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN
+     MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+     EXISTS_TAC `(:real)` THEN
+     REWRITE_TAC[SUBSET_UNIV; STD_NORMAL_DENSITY_INTEGRABLE] THEN
+     REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+     MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN
+     REWRITE_TAC[STD_NORMAL_DENSITY_INTEGRABLE_UPPER_HALFLINE];
+     SUBGOAL_THEN `{t:real | t <= &0} INTER {t | &0 <= t} = {&0}`
+       (fun th -> REWRITE_TAC[th; REAL_NEGLIGIBLE_SING]) THEN
+     REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM; IN_SING] THEN
+     REAL_ARITH_TAC]; ALL_TAC] THEN
+   SUBGOAL_THEN `{t:real | t <= &0} UNION {t | &0 <= t} = (:real)`
+     ASSUME_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_UNION; IN_ELIM_THM; IN_UNIV] THEN
+    REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_UNIQUE THEN
+   EXISTS_TAC `std_normal_density` THEN EXISTS_TAC `(:real)` THEN
+   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[STD_NORMAL_DENSITY_INTEGRAL];
+   ALL_TAC] THEN
+  (* int_{t<=0} = int_{0<=t} and sum = 1, so int_{t<=0} = 1/2 *)
+  ASM_MESON_TAC[REAL_ARITH `a = b ==> a + b = &1 ==> a = &1 / &2`]);;
 
 (* --- Phase 3: CLT Bridge --- *)
 
@@ -9298,6 +9478,7 @@ let X2_MINUS_1_GAUSSIAN_HAS_INTEGRAL_0 = prove
      ASM_REAL_ARITH_TAC;
      MP_TAC(SPEC `a pow 2 / &4` REAL_EXP_POS_LE) THEN
      REAL_ARITH_TAC]]]);;
+
 
 (* x^2 * exp(-x^2/2) has integral sqrt(2*pi) over (:real).
    Proof: x^2*exp = (x^2-1)*exp + exp, and integral of (x^2-1)*exp = 0,
@@ -9537,6 +9718,104 @@ let CONVERGENCE_SET_IN_EVENTS = prove
   MATCH_MP_TAC LIMINF_EVENTS_IN_EVENTS THEN
   GEN_TAC THEN ASM_REWRITE_TAC[]);;
 
+(* ------------------------------------------------------------------------- *)
+(* Riesz subsequence theorem: convergence in probability implies almost-sure  *)
+(* convergence along a strictly increasing subsequence.  Uses the adaptive    *)
+(* selector and off-limsup convergence lemmas from expectation.ml, the first  *)
+(* Borel-Cantelli lemma, and measurability of the convergence set above.      *)
+(* ------------------------------------------------------------------------- *)
+
+(* Given a strictly increasing r whose successor terms approach L at a dyadic  *)
+(* rate in probability, the subsequence converges to L almost surely.          *)
+let CONVERGES_AS_FROM_RATE = prove
+ (`!p:A prob_space X L (r:num->num).
+     (!n. random_variable p (X n)) /\ random_variable p L /\
+     (!k. r k < r(SUC k)) /\
+     (!k. prob p {x:A | x IN prob_carrier p /\
+                        abs(X (r(SUC k)) x - L x) >= inv(&2 pow k)} < inv(&2 pow k))
+     ==> converges_as p (\k x. X (r k) x) L`,
+  REPEAT STRIP_TAC THEN
+  ABBREV_TAC `B = \k. {x:A | x IN prob_carrier p /\ abs((X:num->A->real) (r(SUC k)) x - L x) >= inv(&2 pow k)}` THEN
+  SUBGOAL_THEN `!k. (B:num->A->bool) k IN prob_events p` ASSUME_TAC THENL
+  [GEN_TAC THEN EXPAND_TAC "B" THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+  SUBGOAL_THEN `prob p (limsup_events (B:num->A->bool)) = &0` ASSUME_TAC THENL
+  [MATCH_MP_TAC FIRST_BOREL_CANTELLI THEN ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC REAL_SUMMABLE_COMPARISON THEN
+   EXISTS_TAC `\k:num. inv(&2 pow k)` THEN CONJ_TAC THENL
+   [REWRITE_TAC[GSYM REAL_POW_INV] THEN MATCH_MP_TAC REAL_SUMMABLE_GP THEN
+    REWRITE_TAC[REAL_ABS_INV; REAL_ABS_NUM] THEN CONV_TAC REAL_RAT_REDUCE_CONV;
+    EXISTS_TAC `0` THEN X_GEN_TAC `k:num` THEN STRIP_TAC THEN BETA_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH `&0 <= q /\ q < b ==> abs q <= b`) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC PROB_POSITIVE THEN ASM_REWRITE_TAC[];
+     EXPAND_TAC "B" THEN ASM_REWRITE_TAC[]]];
+   ALL_TAC] THEN
+  REWRITE_TAC[converges_as] THEN
+  MP_TAC(ISPECL [`p:A prob_space`; `\k:num. \x:A. (X:num->A->real) (r k) x`; `L:A->real`]
+    CONVERGENCE_SET_IN_EVENTS) THEN
+  ANTS_TAC THENL
+  [CONJ_TAC THENL
+   [GEN_TAC THEN BETA_TAC THEN ASM_REWRITE_TAC[ETA_AX]; ASM_REWRITE_TAC[]];
+   ALL_TAC] THEN
+  BETA_TAC THEN DISCH_TAC THEN
+  MATCH_MP_TAC(REAL_ARITH `&1 <= q /\ q <= &1 ==> q = &1`) THEN
+  CONJ_TAC THENL
+  [ALL_TAC;
+   MATCH_MP_TAC PROB_LE_1 THEN ASM_REWRITE_TAC[]] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `prob p (prob_carrier p DIFF limsup_events (B:num->A->bool))` THEN
+  CONJ_TAC THENL
+  [ASM_SIMP_TAC[PROB_COMPL; LIMSUP_EVENTS_IN_EVENTS] THEN ASM_REWRITE_TAC[] THEN
+   REAL_ARITH_TAC;
+   MATCH_MP_TAC PROB_MONO THEN ASM_REWRITE_TAC[] THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_DIFF_IN_EVENTS THEN
+    ASM_SIMP_TAC[PROB_CARRIER_IN_EVENTS; LIMSUP_EVENTS_IN_EVENTS];
+    ALL_TAC] THEN
+   REWRITE_TAC[SUBSET; IN_DIFF; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+   MP_TAC(ISPECL [`X:num->A->real`; `L:A->real`; `r:num->num`; `x:A`;
+                  `B:num->A->bool`; `p:A prob_space`] OFF_LIMSUP_CONVERGES) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+   GEN_TAC THEN EXPAND_TAC "B" THEN REWRITE_TAC[]]);;
+
+let CONVERGES_IN_PROB_AE_SUBSEQUENCE = prove
+ (`!p:A prob_space X L.
+     (!n. random_variable p (X n)) /\ random_variable p L /\
+     converges_in_prob p X L
+     ==> ?r:num->num. (!k. r k < r(SUC k)) /\
+                       converges_as p (\k x. X (r k) x) L`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC
+   `\k n. prob p {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - L x) >= inv(&2 pow k)} < inv(&2 pow k)`
+   ADAPTIVE_SELECTOR_DEP) THEN
+  ANTS_TAC THENL
+  [REWRITE_TAC[] THEN MAP_EVERY X_GEN_TAC [`k:num`; `m:num`] THEN
+   FIRST_ASSUM(MP_TAC o SPEC `inv(&2 pow k)` o REWRITE_RULE[converges_in_prob]) THEN
+   ANTS_TAC THENL
+   [REWRITE_TAC[REAL_LT_INV_EQ] THEN MATCH_MP_TAC REAL_POW_LT THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+   DISCH_THEN(MP_TAC o SPEC `inv(&2 pow k)`) THEN
+   ANTS_TAC THENL
+   [REWRITE_TAC[REAL_LT_INV_EQ] THEN MATCH_MP_TAC REAL_POW_LT THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   DISCH_THEN(X_CHOOSE_TAC `NN:num`) THEN
+   EXISTS_TAC `NN + m + 1` THEN CONJ_TAC THENL [ARITH_TAC; ALL_TAC] THEN
+   FIRST_X_ASSUM(MP_TAC o SPEC `NN + m + 1`) THEN
+   REWRITE_TAC[ARITH_RULE `NN <= NN + m + 1`] THEN
+   MATCH_MP_TAC(REAL_ARITH `&0 <= q ==> abs(q - &0) < e ==> q < e`) THEN
+   MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:num->num` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `r:num->num` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CONVERGES_AS_FROM_RATE THEN ASM_REWRITE_TAC[]);;
+
 (* Helper: INTERS of tail unions SUBSET complement of convergence set *)
 let INTERS_TAIL_UNIONS_SUBSET_COMPL = prove
  (`!p:A prob_space (X:num->A->real) (L:A->real) (e:real).
@@ -9749,6 +10028,44 @@ let REALLIM_SUBSEQUENCE = prove
   MP_TAC(SPEC `r:num->num` STRICTLY_INCREASING_GE) THEN
   ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `k:num`) THEN
   ASM_ARITH_TAC);;
+
+(* A subsequence of a sequence converging in probability converges in           *)
+(* probability to the same limit (the per-epsilon probabilities form a          *)
+(* convergent real sequence, so any subsequence shares the limit).              *)
+let CONVERGES_IN_PROB_SUBSEQUENCE = prove
+ (`!p:A prob_space X L (r:num->num).
+     converges_in_prob p X L /\ (!m n. m < n ==> r m < r n)
+     ==> converges_in_prob p (\k x. X (r k) x) L`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL
+    [`\n. prob p {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - L x) >= e}`;
+     `&0`; `r:num->num`] REALLIM_SUBSEQUENCE) THEN ASM_REWRITE_TAC[]);;
+
+(* Subsequence principle (forward direction): if X converges to L in            *)
+(* probability, then every subsequence has a further subsequence converging     *)
+(* to L almost surely.  A subsequence still converges in probability, and       *)
+(* Riesz extracts an almost-surely convergent sub-subsequence.                   *)
+let CONVERGES_IN_PROB_SUBSEQUENCE_PRINCIPLE = prove
+ (`!p:A prob_space X L (r:num->num).
+     (!n. random_variable p (X n)) /\ random_variable p L /\
+     converges_in_prob p X L /\ (!m n. m < n ==> r m < r n)
+     ==> ?s:num->num. (!m n. m < n ==> s m < s n) /\
+                      converges_as p (\k x. X (r(s k)) x) L`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`p:A prob_space`; `\k:num. \x:A. (X:num->A->real) (r k) x`; `L:A->real`]
+    CONVERGES_IN_PROB_AE_SUBSEQUENCE) THEN
+  ANTS_TAC THENL
+  [REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [GEN_TAC THEN REWRITE_TAC[ETA_AX] THEN ASM_REWRITE_TAC[];
+    ASM_REWRITE_TAC[];
+    MATCH_MP_TAC CONVERGES_IN_PROB_SUBSEQUENCE THEN ASM_REWRITE_TAC[]];
+   ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `s:num->num` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `s:num->num` THEN CONJ_TAC THENL
+  [REWRITE_TAC[SUBSEQUENCE_STEPWISE] THEN ASM_REWRITE_TAC[];
+   RULE_ASSUM_TAC(BETA_RULE) THEN ASM_REWRITE_TAC[]]);;
 
 (* ---- Helper lemmas for the sandwich argument ---- *)
 
@@ -13614,7 +13931,7 @@ let ABS_GE_IN_EVENTS = prove
   [SET_TAC[REAL_ARITH
      `!x M:real. abs x >= M <=> x >= M \/ x <= --M`];
    MATCH_MP_TAC PROB_UNION_IN_EVENTS THEN CONJ_TAC THENL
-   [MATCH_MP_TAC RANDOM_VARIABLE_GE THEN ASM_REWRITE_TAC[];
+   [MATCH_MP_TAC RV_PREIMAGE_GE THEN ASM_REWRITE_TAC[];
     REWRITE_TAC[ETA_AX] THEN MATCH_MP_TAC DIST_FN_IN_EVENTS THEN
     ASM_REWRITE_TAC[]]]);;
 
@@ -14744,3 +15061,2605 @@ let QUANTITATIVE_CDF_LOWER = prove
     REWRITE_TAC[REAL_SUB_SUB2];
    ALL_TAC] THEN
   ASM_REAL_ARITH_TAC);;
+
+(* ======================================================================== *)
+(* Dirichlet integral: int_0^T sin(t)/t dt = pi/2 - R(T) with |R(T)|<=1/T *)
+(* Proof via Laplace transform of sin + Fubini + arctan limit.              *)
+(* ======================================================================== *)
+
+(* Laplace transform of sin on [0,T]: int_0^T sin(t)exp(-vt) dt *)
+let LAPLACE_SIN = prove
+ (`!v TT. &0 < v /\ &0 <= TT ==>
+   ((\t. sin(t) * exp(--v * t)) has_real_integral
+    (&1 - exp(--v * TT) * (cos TT + v * sin TT)) / (&1 + v pow 2))
+   (real_interval[&0, TT])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `~(&1 + v pow 2 = &0)` ASSUME_TAC THENL
+  [MATCH_MP_TAC(REAL_ARITH `&0 < x ==> ~(x = &0)`) THEN
+   MATCH_MP_TAC REAL_LTE_ADD THEN REWRITE_TAC[REAL_LT_01; REAL_LE_POW_2];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(&1 - exp(--v * TT) * (cos TT + v * sin TT)) / (&1 + v pow 2) =
+     exp(--v * TT) * (--v * sin TT - cos TT) * inv(&1 + v pow 2) -
+     exp(--v * &0) * (--v * sin(&0) - cos(&0)) * inv(&1 + v pow 2)`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[REAL_MUL_RZERO; REAL_NEG_0; SIN_0; COS_0; REAL_EXP_0;
+               REAL_MUL_LZERO; REAL_SUB_RZERO; REAL_MUL_LID; real_div] THEN
+   REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+  ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+  REAL_DIFF_TAC THEN
+  UNDISCH_TAC `~(&1 + v pow 2 = &0)` THEN CONV_TAC REAL_FIELD);;
+
+(* Integral representation: int_0^s exp(-ut) du = (1-exp(-st))/t for t>0 *)
+let EXP_INTEGRAL_REP = prove
+ (`!s t. &0 <= s /\ &0 < t ==>
+   ((\u. exp(--u * t)) has_real_integral ((&1 - exp(--s * t)) / t))
+   (real_interval[&0, s])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `~(t = &0)` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(&1 - exp(--s * t)) / t =
+     (--inv(t)) * exp(--s * t) - (--inv(t)) * exp(--(&0) * t)`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[REAL_MUL_LZERO; REAL_NEG_0; REAL_EXP_0] THEN
+   ASM_SIMP_TAC[REAL_FIELD `~(t = &0) ==>
+     --inv t * e - --inv t * &1 = (&1 - e) / t`]; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+  ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+  SUBGOAL_THEN `exp(--x * t) = --inv(t) * (--t * exp(--x * t))` SUBST1_TAC
+  THENL
+  [ASM_SIMP_TAC[REAL_FIELD `~(t = &0) ==> --inv t * (--t * e) = e`];
+   ALL_TAC] THEN
+  MATCH_MP_TAC HAS_REAL_DERIVATIVE_LMUL_ATREAL THEN
+  REAL_DIFF_TAC THEN REAL_ARITH_TAC);;
+
+(* Integral of 1/(1+u^2) on [0,s] equals arctan(s) *)
+let INTEGRAL_INV_ONE_PLUS_SQ = prove
+ (`!s. &0 <= s ==>
+   ((\u. inv(&1 + u pow 2)) has_real_integral atn(s))
+   (real_interval[&0, s])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `atn(s) = atn(s) - atn(&0)` SUBST1_TAC THENL
+  [REWRITE_TAC[ATN_0; REAL_SUB_RZERO]; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+  ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+  REWRITE_TAC[HAS_REAL_DERIVATIVE_ATN]);;
+
+(* 2D continuity of the Fubini integrand sin(t)*exp(-u*t) *)
+let SIN_EXP_2D_CONTINUOUS = prove
+ (`(\z. lift(sin(drop(fstcart z)) * exp(--drop(sndcart z) * drop(fstcart z))))
+     continuous_on (:real^(1,1)finite_sum)`,
+  SUBGOAL_THEN
+    `(\z:real^(1,1)finite_sum. lift(sin(drop(fstcart z)) *
+       exp(--drop(sndcart z) * drop(fstcart z)))) =
+     (\z. lift(((lift(sin(drop(fstcart z))):real^1) dot
+                (lift(exp(--drop(sndcart z) * drop(fstcart z))):real^1))))`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM; DOT_1; LIFT_COMPONENT; DIMINDEX_1; ARITH];
+   ALL_TAC] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_LIFT_DOT2 THEN CONJ_TAC THENL
+  [(* sin(drop(fstcart z)) = (lift o sin o drop) o fstcart *)
+   SUBGOAL_THEN
+     `(\z:real^(1,1)finite_sum. lift(sin(drop(fstcart z)))) =
+      (lift o sin o drop) o (fstcart:real^(1,1)finite_sum->real^1)`
+     SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF]; ALL_TAC] THEN
+   MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+   [MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN REWRITE_TAC[LINEAR_FSTCART];
+    MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `(:real^1)` THEN
+    REWRITE_TAC[SUBSET_UNIV; GSYM IMAGE_LIFT_UNIV; GSYM REAL_CONTINUOUS_ON;
+                REAL_CONTINUOUS_ON_SIN]];
+   (* exp(--drop(sndcart z) * drop(fstcart z)) *)
+   SUBGOAL_THEN
+     `(\z:real^(1,1)finite_sum.
+        lift(exp(--drop(sndcart z) * drop(fstcart z)))) =
+      (lift o exp o drop) o
+      (\z:real^(1,1)finite_sum.
+        lift(--drop(sndcart z) * drop(fstcart z)))`
+     SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; LIFT_DROP]; ALL_TAC] THEN
+   MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+   [SUBGOAL_THEN
+      `(\z:real^(1,1)finite_sum.
+         lift(--drop(sndcart z) * drop(fstcart z))) =
+       (\z. --(lift((sndcart z:real^1) dot (fstcart z:real^1))))`
+      SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM; DOT_1; DIMINDEX_1; ARITH; GSYM drop;
+                 GSYM LIFT_NEG; LIFT_EQ; REAL_MUL_LNEG]; ALL_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_NEG THEN
+    MATCH_MP_TAC CONTINUOUS_ON_LIFT_DOT2 THEN CONJ_TAC THEN
+    MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN
+    REWRITE_TAC[LINEAR_SNDCART; LINEAR_FSTCART];
+    MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `(:real^1)` THEN
+    REWRITE_TAC[SUBSET_UNIV; GSYM IMAGE_LIFT_UNIV; GSYM REAL_CONTINUOUS_ON;
+                REAL_CONTINUOUS_ON_EXP]]]);;
+
+(* Fubini swap for sin(t)*exp(-u*t) on [0,TT] x [0,s] *)
+let SIN_EXP_FUBINI = prove
+ (`!s TT. &0 <= s /\ &0 <= TT ==>
+    integral (interval [lift (&0),lift TT])
+      (\t. integral (interval [lift (&0),lift s])
+             (\u. lift (sin (drop t) * exp (--drop u * drop t)))) =
+    integral (interval [lift (&0),lift s])
+      (\u. integral (interval [lift (&0),lift TT])
+             (\t. lift (sin (drop t) * exp (--drop u * drop t))))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+    [`\t u:real^1. lift(sin(drop t) * exp(--drop u * drop t))`;
+     `lift(&0):real^1`; `lift TT:real^1`; `lift(&0):real^1`; `lift s:real^1`]
+    INTEGRAL_SWAP_CONTINUOUS) THEN
+  REWRITE_TAC[BETA_THM] THEN DISCH_THEN MATCH_MP_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+  EXISTS_TAC `(:real^(1,1)finite_sum)` THEN
+  REWRITE_TAC[SUBSET_UNIV; SIN_EXP_2D_CONTINUOUS]);;
+
+(* Bridge: has_real_integral gives vector integral value *)
+let LIFT_INTEGRAL_BRIDGE = prove
+ (`!f a b y. (f has_real_integral y) (real_interval[a,b]) ==>
+    integral (interval[lift a, lift b]) (\x. lift(f(drop x))) = lift y`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [has_real_integral]) THEN
+  REWRITE_TAC[o_DEF; IMAGE_LIFT_REAL_INTERVAL; LIFT_DROP]);;
+
+(* Inner integral over u for fixed t: evaluates to sin(t)*(1-exp(-st))/t *)
+let INNER_INTEGRAL_U = prove
+ (`!s t. &0 <= s /\ &0 <= t ==>
+    integral (interval [lift (&0),lift s])
+      (\u. lift (sin t * exp (--drop u * t))) =
+    lift (sin t * (&1 - exp (--s * t)) / t)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `t = &0` THENL
+  [ASM_REWRITE_TAC[SIN_0; REAL_MUL_LZERO; REAL_EXP_0; REAL_MUL_RZERO;
+                    REAL_NEG_0; REAL_SUB_REFL; real_div; LIFT_NUM] THEN
+   REWRITE_TAC[GSYM LIFT_NUM; INTEGRAL_0];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < t` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(\u:real^1. lift (sin t * exp (--drop u * t))) =
+     (\u. sin(t) % lift(exp(--drop u * t)))`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM; GSYM LIFT_CMUL]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `integral (interval[lift(&0), lift s]) (\u:real^1. lift(exp(--drop u * t)))
+     = lift((&1 - exp(--s * t)) / t)` ASSUME_TAC THENL
+  [MATCH_MP_TAC LIFT_INTEGRAL_BRIDGE THEN
+   MATCH_MP_TAC EXP_INTEGRAL_REP THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(\u:real^1. lift(exp(--drop u * t))) integrable_on interval[lift(&0), lift s]`
+    ASSUME_TAC THENL
+  [REWRITE_TAC[integrable_on] THEN
+   EXISTS_TAC `lift((&1 - exp(--s * t)) / t)` THEN
+   MP_TAC(SPECL [`s:real`; `t:real`] EXP_INTEGRAL_REP) THEN
+   ASM_REWRITE_TAC[has_real_integral; o_DEF; IMAGE_LIFT_REAL_INTERVAL;
+                    LIFT_DROP];
+   ALL_TAC] THEN
+  ASM_SIMP_TAC[INTEGRAL_CMUL] THEN
+  REWRITE_TAC[GSYM LIFT_CMUL] THEN AP_TERM_TAC THEN ASM_REWRITE_TAC[]);;
+
+(* Inner integral over t for fixed u: evaluates Laplace transform of sin *)
+let INNER_INTEGRAL_T = prove
+ (`!u TT. &0 <= u /\ &0 <= TT ==>
+    integral (interval [lift (&0),lift TT])
+      (\t. lift (sin (drop t) * exp (--u * drop t))) =
+    lift ((&1 - exp (--u * TT) * (cos TT + u * sin TT)) / (&1 + u pow 2))`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `u = &0` THENL
+  [ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_NEG_0; REAL_EXP_0; REAL_MUL_LID;
+                    REAL_MUL_RZERO; REAL_MUL_RID; REAL_ADD_RID] THEN
+   CONV_TAC(ONCE_DEPTH_CONV REAL_RAT_REDUCE_CONV) THEN
+   REWRITE_TAC[REAL_DIV_1] THEN
+   MATCH_MP_TAC LIFT_INTEGRAL_BRIDGE THEN
+   SUBGOAL_THEN `&1 - cos TT = --cos TT - --cos(&0)` SUBST1_TAC THENL
+   [REWRITE_TAC[COS_0] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+   ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+   MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+   REAL_DIFF_TAC THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < u` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC LIFT_INTEGRAL_BRIDGE THEN
+  MATCH_MP_TAC LAPLACE_SIN THEN ASM_REWRITE_TAC[]);;
+
+(* Factoring: sin(t)*(1-exp(-st))/t = sinc(t)*(1-exp(-st)) *)
+let SINC_EXP_EQ = prove
+ (`!s t. sin(t) * (&1 - exp(--(s * t))) * inv(t) =
+         (if t = &0 then &1 else sin(t) * inv(t)) * (&1 - exp(--(s * t)))`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THENL
+  [ASM_REWRITE_TAC[SIN_0; REAL_MUL_LZERO; REAL_MUL_RZERO; REAL_NEG_0;
+                    REAL_EXP_0; REAL_SUB_REFL; REAL_MUL_LID];
+   REWRITE_TAC[REAL_MUL_AC]]);;
+
+(* Integrability of sin(t)*(1-exp(-st))/t on [0,TT] via sinc factoring *)
+let LHS_INTEGRABLE = prove
+ (`!s TT. &0 <= s /\ &0 <= TT ==>
+    (\t. sin t * (&1 - exp(--(s * t))) * inv t)
+      real_integrable_on real_interval[&0,TT]`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_INTEGRABLE_EQ THEN
+  EXISTS_TAC `\t. (if t = &0 then &1 else sin t * inv t) *
+                   (&1 - exp(--(s * t)))` THEN
+  CONJ_TAC THENL
+  [REWRITE_TAC[BETA_THM] THEN REPEAT STRIP_TAC THEN
+   REWRITE_TAC[GSYM SINC_EXP_EQ];
+   MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+   [REWRITE_TAC[GSYM real_div; SINC_CONTINUOUS];
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_SUB THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+    MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ON_LMUL THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]]]]);;
+
+(* Integrability of the RHS integrand on [0,s] *)
+let RHS_INTEGRABLE = prove
+ (`!s TT. &0 <= s /\ &0 <= TT ==>
+    (\u. (&1 - exp(--u * TT) * (cos TT + u * sin TT)) / (&1 + u pow 2))
+      real_integrable_on real_interval[&0,s]`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_DIV THEN CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_CONTINUOUS_ON_SUB THEN
+   REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+   [MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     SUBGOAL_THEN `(--) = (\x:real. --x)` SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM]; ALL_TAC] THEN
+     CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+      REWRITE_TAC[REAL_CONTINUOUS_ON_CONST]];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]];
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_ADD THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_ID; REAL_CONTINUOUS_ON_CONST]];
+   ALL_TAC] THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_CONTINUOUS_ON_ADD THEN
+   REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_POW THEN
+   REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+   REPEAT STRIP_TAC THEN
+   MP_TAC(SPEC `u:real` REAL_LE_POW_2) THEN ASM_REAL_ARITH_TAC]);;
+
+(* Main Fubini identity: int_0^T sin(t)(1-exp(-st))/t dt = int_0^s g(u) du *)
+let SINC_INTEGRAL_IDENTITY = prove
+ (`!s TT. &0 <= s /\ &0 < TT ==>
+    real_integral (real_interval[&0,TT])
+      (\t. sin t * (&1 - exp(--(s * t))) * inv t) =
+    real_integral (real_interval[&0,s])
+      (\u. (&1 - exp(--u * TT) * (cos TT + u * sin TT)) / (&1 + u pow 2))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `&0 <= TT` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `(\t. sin t * (&1 - exp(--(s * t))) * inv t)
+    real_integrable_on real_interval[&0,TT]` ASSUME_TAC THENL
+  [MATCH_MP_TAC LHS_INTEGRABLE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `(\u. (&1 - exp(--u * TT) * (cos TT + u * sin TT)) /
+    (&1 + u pow 2)) real_integrable_on real_interval[&0,s]` ASSUME_TAC THENL
+  [MATCH_MP_TAC RHS_INTEGRABLE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_INTEGRAL; IMAGE_LIFT_REAL_INTERVAL] THEN
+  REWRITE_TAC[o_DEF] THEN AP_TERM_TAC THEN
+  (* LHS_vec = Fubini_LHS *)
+  SUBGOAL_THEN
+    `integral (interval [lift (&0),lift TT])
+       (\x. lift (sin (drop x) * (&1 - exp (--(s * drop x))) * inv (drop x))) =
+     integral (interval [lift (&0),lift TT])
+       (\t. integral (interval [lift (&0),lift s])
+              (\u. lift (sin (drop t) * exp (--drop u * drop t))))`
+    SUBST1_TAC THENL
+  [MATCH_MP_TAC INTEGRAL_EQ THEN REWRITE_TAC[BETA_THM] THEN
+   X_GEN_TAC `t:real^1` THEN DISCH_TAC THEN
+   MP_TAC(SPECL [`s:real`; `drop(t:real^1)`] INNER_INTEGRAL_U) THEN
+   SUBGOAL_THEN `&0 <= s /\ &0 <= drop t` ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[] THEN
+    UNDISCH_TAC `t IN interval [lift (&0),lift TT]` THEN
+    REWRITE_TAC[IN_INTERVAL; DIMINDEX_1; FORALL_1; GSYM drop; LIFT_DROP] THEN
+    REAL_ARITH_TAC; ALL_TAC] THEN
+   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+   ASM_REWRITE_TAC[] THEN AP_TERM_TAC THEN
+   REWRITE_TAC[real_div; REAL_MUL_LNEG];
+   ALL_TAC] THEN
+  (* Fubini_LHS = Fubini_RHS *)
+  SUBGOAL_THEN
+    `integral (interval [lift (&0),lift TT])
+       (\t. integral (interval [lift (&0),lift s])
+              (\u. lift (sin (drop t) * exp (--drop u * drop t)))) =
+     integral (interval [lift (&0),lift s])
+       (\u. integral (interval [lift (&0),lift TT])
+              (\t. lift (sin (drop t) * exp (--drop u * drop t))))`
+    SUBST1_TAC THENL
+  [MP_TAC(SPECL [`s:real`; `TT:real`] SIN_EXP_FUBINI) THEN
+   ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  (* Fubini_RHS = RHS_vec *)
+  MATCH_MP_TAC INTEGRAL_EQ THEN REWRITE_TAC[BETA_THM] THEN
+  X_GEN_TAC `u:real^1` THEN DISCH_TAC THEN
+  MP_TAC(SPECL [`drop(u:real^1)`; `TT:real`] INNER_INTEGRAL_T) THEN
+  SUBGOAL_THEN `&0 <= drop u` ASSUME_TAC THENL
+  [UNDISCH_TAC `u IN interval [lift (&0),lift s]` THEN
+   REWRITE_TAC[IN_INTERVAL; DIMINDEX_1; FORALL_1; GSYM drop; LIFT_DROP] THEN
+   REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_REWRITE_TAC[]);;
+
+(* Split RHS integral: int_0^s g(u) du = atn(s) - error_term *)
+let SINC_INTEGRAL_SPLIT = prove
+ (`!s TT. &0 <= s /\ &0 <= TT ==>
+    real_integral (real_interval[&0,s])
+      (\u. (&1 - exp(--u * TT) * (cos TT + u * sin TT)) / (&1 + u pow 2)) =
+    atn(s) -
+    real_integral (real_interval[&0,s])
+      (\u. exp(--u * TT) * (cos TT + u * sin TT) / (&1 + u pow 2))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `!u. (&1 - exp(--u * TT) * (cos TT + u * sin TT)) / (&1 + u pow 2) =
+         inv(&1 + u pow 2) -
+         exp(--u * TT) * (cos TT + u * sin TT) / (&1 + u pow 2)`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [GEN_TAC THEN REWRITE_TAC[real_div; REAL_SUB_RDISTRIB; REAL_MUL_LID] THEN
+   REWRITE_TAC[GSYM REAL_MUL_ASSOC];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `(\u. inv(&1 + u pow 2)) real_integrable_on
+    real_interval[&0,s]` ASSUME_TAC THENL
+  [REWRITE_TAC[real_integrable_on] THEN EXISTS_TAC `atn(s)` THEN
+   MATCH_MP_TAC INTEGRAL_INV_ONE_PLUS_SQ THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(\u. exp(--u * TT) * (cos TT + u * sin TT) / (&1 + u pow 2))
+       real_integrable_on real_interval[&0,s]` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+   REWRITE_TAC[real_div] THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+   [MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     SUBGOAL_THEN `(--) = (\x:real. --x)` SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM]; ALL_TAC] THEN
+     CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+      REWRITE_TAC[REAL_CONTINUOUS_ON_CONST]];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]];
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_ADD THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_ID; REAL_CONTINUOUS_ON_CONST];
+     SUBGOAL_THEN `(\u:real. inv (&1 + u pow 2)) =
+       (\u. inv((\u. &1 + u pow 2) u))` SUBST1_TAC THENL
+     [REWRITE_TAC[]; ALL_TAC] THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+     X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ATREAL_WITHINREAL THEN
+     MATCH_MP_TAC REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL THEN
+     REWRITE_TAC[real_differentiable] THEN
+     EXISTS_TAC `--(&2 * u) / (&1 + u pow 2) pow 2` THEN
+     REAL_DIFF_TAC THEN CONJ_TAC THENL
+     [SUBGOAL_THEN `&0 < &1 + u pow 2` MP_TAC THENL
+      [MATCH_MP_TAC REAL_LTE_ADD THEN REWRITE_TAC[REAL_LT_01; REAL_LE_POW_2];
+       REAL_ARITH_TAC];
+      CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[REAL_POW_1] THEN
+      REAL_ARITH_TAC]]];
+   ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_INTEGRAL_SUB] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+  MATCH_MP_TAC INTEGRAL_INV_ONE_PLUS_SQ THEN ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Dirichlet integral: lim_{T->inf} int_0^T sin(t)/t dt = pi/2              *)
+(* Proved via Laplace transform + Fubini on compact rectangles:              *)
+(*   int sin(t)/t = int sin(t)(1-exp(-Tt))/t + int sin(t)exp(-Tt)/t        *)
+(*   First part = atn(T) - error_integral, second bounded by 1/T            *)
+(* ------------------------------------------------------------------------- *)
+
+let SINC_INV_INTEGRABLE = prove
+ (`!TT. &0 < TT ==>
+   (\t. sin t * inv t) real_integrable_on real_interval[&0,TT]`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`\t:real. if t = &0 then &1 else sin t / t`;
+                 `\t:real. sin t * inv t`;
+                 `{&0:real}`;
+                 `real_interval[&0,TT]`] REAL_INTEGRABLE_SPIKE) THEN
+  ANTS_TAC THENL
+  [REWRITE_TAC[REAL_NEGLIGIBLE_SING] THEN
+   X_GEN_TAC `t:real` THEN REWRITE_TAC[IN_DIFF; IN_SING] THEN
+   STRIP_TAC THEN ASM_REWRITE_TAC[real_div];
+   DISCH_THEN MATCH_MP_TAC THEN
+   MATCH_MP_TAC SINC_INTEGRABLE THEN ASM_REAL_ARITH_TAC]);;
+
+let SINC_EXP_DECAY_INTEGRABLE = prove
+ (`!TT. &0 < TT ==>
+   (\t. sin t * exp(--(TT * t)) * inv t) real_integrable_on
+   real_interval[&0,TT]`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`\t:real. (if t = &0 then &1 else sin t / t) *
+                 exp(--(TT * t))`;
+                 `\t:real. sin t * exp(--(TT * t)) * inv t`;
+                 `{&0:real}`;
+                 `real_interval[&0,TT]`] REAL_INTEGRABLE_SPIKE) THEN
+  ANTS_TAC THENL
+  [REWRITE_TAC[REAL_NEGLIGIBLE_SING] THEN
+   X_GEN_TAC `t:real` THEN REWRITE_TAC[IN_DIFF; IN_SING] THEN
+   STRIP_TAC THEN ASM_REWRITE_TAC[real_div] THEN REAL_ARITH_TAC;
+   DISCH_THEN MATCH_MP_TAC THEN
+   MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+   [REWRITE_TAC[SINC_CONTINUOUS];
+    MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_CONST; REAL_CONTINUOUS_ON_ID];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]]]]);;
+
+let SINC_DECOMPOSITION = prove
+ (`!TT. &0 < TT ==>
+   real_integral (real_interval[&0,TT]) (\t. sin t * inv t) =
+   real_integral (real_interval[&0,TT])
+     (\t. sin t * (&1 - exp(--(TT * t))) * inv t) +
+   real_integral (real_interval[&0,TT])
+     (\t. sin t * exp(--(TT * t)) * inv t)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `(\t. sin t * inv t) =
+     (\t. (sin t * (&1 - exp(--(TT * t))) * inv t) +
+          (sin t * exp(--(TT * t)) * inv t))` SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `t:real` THEN REAL_ARITH_TAC;
+   MATCH_MP_TAC REAL_INTEGRAL_ADD THEN CONJ_TAC THENL
+   [SUBGOAL_THEN
+      `(\t. sin t * (&1 - exp(--(TT * t))) * inv t) =
+       (\t. sin t * inv t - sin t * exp(--(TT * t)) * inv t)` SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `t:real` THEN REAL_ARITH_TAC;
+     MATCH_MP_TAC REAL_INTEGRABLE_SUB THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SINC_INV_INTEGRABLE THEN ASM_REWRITE_TAC[];
+      MATCH_MP_TAC SINC_EXP_DECAY_INTEGRABLE THEN ASM_REWRITE_TAC[]]];
+    MATCH_MP_TAC SINC_EXP_DECAY_INTEGRABLE THEN ASM_REWRITE_TAC[]]]);;
+
+let EXP_DECAY_INTEGRAL = prove
+ (`!TT. &0 < TT ==>
+   ((\t. exp(--(TT * t))) has_real_integral
+    inv TT * (&1 - exp(--(TT * TT)))) (real_interval[&0,TT])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `((\x. TT * exp(--(TT * x))) has_real_integral
+      (&1 - exp(--(TT * TT)))) (real_interval[&0,TT])`
+    ASSUME_TAC THENL
+  [MP_TAC(ISPECL [`\x:real. --exp(--(TT * x))`;
+                   `\x:real. TT * exp(--(TT * x))`;
+                   `&0`; `TT:real`]
+     REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS) THEN
+   ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN ANTS_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+    REAL_DIFF_TAC THEN REAL_ARITH_TAC;
+    REWRITE_TAC[REAL_MUL_RZERO; REAL_NEG_0; REAL_EXP_0] THEN
+    REWRITE_TAC[REAL_ARITH `--a - --(&1) = &1 - a`]];
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_EQ THEN
+   EXISTS_TAC `\x:real. inv TT * (TT * exp(--(TT * x)))` THEN CONJ_TAC THENL
+   [X_GEN_TAC `x:real` THEN DISCH_TAC THEN
+    REWRITE_TAC[REAL_MUL_ASSOC] THEN
+    SUBGOAL_THEN `inv TT * TT = &1` SUBST1_TAC THENL
+    [MATCH_MP_TAC REAL_MUL_LINV THEN ASM_REAL_ARITH_TAC;
+     REWRITE_TAC[REAL_MUL_LID]];
+    MATCH_MP_TAC HAS_REAL_INTEGRAL_LMUL THEN ASM_REWRITE_TAC[]]]);;
+
+let SINC_EXP_DECAY_BOUND = prove
+ (`!TT. &0 < TT ==>
+   abs(real_integral (real_interval[&0,TT])
+       (\t. sin t * exp(--(TT * t)) * inv t)) <= inv TT`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `real_integral (real_interval[&0,TT])
+    (\t. exp(--(TT * t)))` THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRAL_ABS_BOUND_INTEGRAL THEN BETA_TAC THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC SINC_EXP_DECAY_INTEGRABLE THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+    MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_CONST; REAL_CONTINUOUS_ON_ID];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]];
+    X_GEN_TAC `x:real` THEN REWRITE_TAC[IN_REAL_INTERVAL] THEN
+    STRIP_TAC THEN
+    SUBGOAL_THEN `sin x * exp(--(TT * x)) * inv x =
+                  (sin x * inv x) * exp(--(TT * x))` SUBST1_TAC THENL
+    [REAL_ARITH_TAC; ALL_TAC] THEN
+    REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_EXP] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_LID] THEN
+    MATCH_MP_TAC REAL_LE_MUL2 THEN
+    REWRITE_TAC[REAL_ABS_POS; REAL_EXP_POS_LE; REAL_LE_REFL] THEN
+    REWRITE_TAC[GSYM REAL_ABS_MUL] THEN
+    CONJ_TAC THENL [REWRITE_TAC[REAL_ABS_POS]; ALL_TAC] THEN
+    ASM_CASES_TAC `x = &0` THENL
+    [ASM_REWRITE_TAC[SIN_0; REAL_MUL_LZERO; REAL_ABS_NUM; REAL_POS];
+     MP_TAC(SPEC `x:real` SINC_BOUND) THEN ASM_REWRITE_TAC[real_div]]];
+   SUBGOAL_THEN
+     `real_integral (real_interval[&0,TT]) (\t. exp(--(TT * t))) =
+      inv TT * (&1 - exp(--(TT * TT)))` SUBST1_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+    MATCH_MP_TAC EXP_DECAY_INTEGRAL THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_RID] THEN
+   MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC;
+    MP_TAC(SPEC `(--(TT * TT)):real` REAL_EXP_POS_LE) THEN
+    REAL_ARITH_TAC]]);;
+
+let ATN_PI2_BOUND = prove
+ (`!TT. &0 < TT ==> abs(atn TT - pi / &2) <= inv TT`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC `TT:real` ATN_INV) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `atn TT - pi / &2 = --(atn(inv TT))` SUBST1_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[REAL_ABS_NEG] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs(inv TT)` THEN
+  REWRITE_TAC[ATN_ABS_LE_X] THEN
+  REWRITE_TAC[REAL_ABS_INV] THEN
+  SUBGOAL_THEN `abs TT = TT` SUBST1_TAC THENL
+  [ASM_REAL_ARITH_TAC; REWRITE_TAC[REAL_LE_REFL]]);;
+
+let ERROR_INTEGRAL_BOUND = prove
+ (`!TT. &0 < TT ==>
+   abs(real_integral (real_interval[&0,TT])
+       (\u. exp(--u * TT) * (cos TT + u * sin TT) / (&1 + u pow 2)))
+   <= &3 / &2 * inv TT`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `real_integral (real_interval[&0,TT])
+    (\u. &3 / &2 * exp(--(TT * u)))` THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRAL_ABS_BOUND_INTEGRAL THEN BETA_TAC THEN
+   SUBGOAL_THEN
+     `(\u. exp(--u * TT) * (cos TT + u * sin TT) / (&1 + u pow 2))
+      real_integrable_on real_interval[&0,TT]`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+    [MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+     CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+      SUBGOAL_THEN `(--) = (\x:real. --x)` SUBST1_TAC THENL
+      [REWRITE_TAC[FUN_EQ_THM]; ALL_TAC] THEN
+      MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+      REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]];
+     REWRITE_TAC[real_div] THEN MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_CONTINUOUS_ON_ADD THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+      MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_ID; REAL_CONTINUOUS_ON_CONST];
+      MATCH_MP_TAC REAL_CONTINUOUS_ON_INV THEN CONJ_TAC THENL
+      [MATCH_MP_TAC REAL_CONTINUOUS_ON_ADD THEN
+       REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+       MATCH_MP_TAC REAL_CONTINUOUS_ON_POW THEN
+       REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+       X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+       MP_TAC(SPEC `u:real` REAL_LE_POW_2) THEN REAL_ARITH_TAC]]];
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_CONST] THEN
+    MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_ID; REAL_CONTINUOUS_ON_CONST];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]];
+    X_GEN_TAC `u:real` THEN REWRITE_TAC[IN_REAL_INTERVAL] THEN
+    STRIP_TAC THEN
+    REWRITE_TAC[REAL_MUL_LNEG; REAL_ARITH `x * y = y * x:real`] THEN
+    REWRITE_TAC[real_div; REAL_ABS_MUL; REAL_ABS_EXP] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[REAL_EXP_POS_LE] THEN
+    REWRITE_TAC[GSYM REAL_ABS_MUL] THEN REWRITE_TAC[REAL_ABS_MUL] THEN
+    SUBGOAL_THEN `&0 < &1 + u pow 2` ASSUME_TAC THENL
+    [MP_TAC(SPEC `u:real` REAL_LE_POW_2) THEN REAL_ARITH_TAC;
+     ALL_TAC] THEN
+    SUBGOAL_THEN `abs(inv(&1 + u pow 2)) = inv(&1 + u pow 2)`
+      SUBST1_TAC THENL
+    [REWRITE_TAC[REAL_ABS_REFL] THEN MATCH_MP_TAC REAL_LE_INV THEN
+     ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC `(&1 + u) * inv(&1 + u pow 2)` THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_LE_RMUL THEN CONJ_TAC THENL
+     [ALL_TAC; MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN
+     EXISTS_TAC `abs(cos TT) + abs(u * sin TT)` THEN
+     REWRITE_TAC[REAL_ABS_TRIANGLE] THEN
+     REWRITE_TAC[REAL_ABS_MUL] THEN
+     MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL
+     [MP_TAC(SPEC `TT:real` COS_BOUND) THEN REAL_ARITH_TAC;
+      GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_RID] THEN
+      MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_ABS_POS] THEN
+      ASM_SIMP_TAC[REAL_ARITH `&0 <= u ==> abs u = u`] THEN
+      CONJ_TAC THENL [REWRITE_TAC[REAL_ABS_POS]; ALL_TAC] THEN
+      MP_TAC(SPEC `TT:real` SIN_BOUND) THEN REAL_ARITH_TAC];
+     REWRITE_TAC[GSYM real_div] THEN
+     SUBGOAL_THEN `&0 < &1 + u pow 2` ASSUME_TAC THENL
+     [MP_TAC(SPEC `u:real` REAL_LE_POW_2) THEN REAL_ARITH_TAC;
+      ALL_TAC] THEN
+     ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN
+     SUBGOAL_THEN `&3 / &2 * (&1 + u pow 2) = &3 * (&1 + u pow 2) / &2`
+       SUBST1_TAC THENL
+     [REWRITE_TAC[real_div; REAL_MUL_ASSOC]; ALL_TAC] THEN
+     SIMP_TAC[REAL_LE_RDIV_EQ; REAL_ARITH `&0 < &2`] THEN
+     MP_TAC(SPEC `u - &1 / &3` REAL_LE_POW_2) THEN
+     REWRITE_TAC[REAL_POW_2] THEN REAL_ARITH_TAC]];
+   SUBGOAL_THEN
+     `(\t. exp(--(TT * t))) real_integrable_on real_interval[&0,TT]`
+     ASSUME_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+    MATCH_MP_TAC(REWRITE_RULE[o_DEF] REAL_CONTINUOUS_ON_COMPOSE) THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+     REWRITE_TAC[REAL_CONTINUOUS_ON_ID; REAL_CONTINUOUS_ON_CONST];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_EXP]];
+    ALL_TAC] THEN
+   ASM_SIMP_TAC[REAL_INTEGRAL_LMUL] THEN
+   MATCH_MP_TAC REAL_LE_LMUL THEN
+   CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN
+     `real_integral (real_interval[&0,TT]) (\t. exp(--(TT * t))) =
+      inv TT * (&1 - exp(--(TT * TT)))` SUBST1_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+    MATCH_MP_TAC EXP_DECAY_INTEGRAL THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_RID] THEN
+   MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC;
+    MP_TAC(SPEC `(--(TT * TT)):real` REAL_EXP_POS_LE) THEN
+    REAL_ARITH_TAC]]);;
+
+let SINC_INTEGRAL_BOUND = prove
+ (`!TT. &0 < TT ==>
+   abs(real_integral (real_interval[&0,TT]) (\t. sin t * inv t) - pi / &2)
+   <= &4 * inv TT`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC `TT:real` SINC_DECOMPOSITION) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_TAC THEN
+  MP_TAC(SPECL [`TT:real`; `TT:real`] SINC_INTEGRAL_IDENTITY) THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN DISCH_TAC THEN
+  MP_TAC(SPECL [`TT:real`; `TT:real`] SINC_INTEGRAL_SPLIT) THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN DISCH_TAC THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `abs(atn TT - pi / &2) +
+   abs(real_integral (real_interval[&0,TT])
+       (\u. exp(--u * TT) * (cos TT + u * sin TT) / (&1 + u pow 2))) +
+   abs(real_integral (real_interval[&0,TT])
+       (\t. sin t * exp(--(TT * t)) * inv t))` THEN
+  CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `inv TT + &3 / &2 * inv TT + inv TT` THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL
+   [MATCH_MP_TAC ATN_PI2_BOUND THEN ASM_REWRITE_TAC[];
+    MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL
+    [MATCH_MP_TAC ERROR_INTEGRAL_BOUND THEN ASM_REWRITE_TAC[];
+     MATCH_MP_TAC SINC_EXP_DECAY_BOUND THEN ASM_REWRITE_TAC[]]];
+   SUBGOAL_THEN `&0 <= inv TT` MP_TAC THENL
+   [MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC;
+    REAL_ARITH_TAC]]);;
+
+let DIRICHLET_INTEGRAL = prove
+ (`((\TT. real_integral (real_interval[&0,TT]) (\t. sin t * inv t))
+   ---> pi / &2) at_posinfinity`,
+  REWRITE_TAC[REALLIM_AT_POSINFINITY] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `&4 * inv e + &1` THEN
+  X_GEN_TAC `TT:real` THEN REWRITE_TAC[real_ge] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `&0 < TT` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `&4 * inv e + &1` THEN
+   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+   EXISTS_TAC `&0 + &1` THEN CONJ_TAC THENL
+   [REAL_ARITH_TAC;
+    MATCH_MP_TAC REAL_LE_ADD2 THEN REWRITE_TAC[REAL_LE_REFL] THEN
+    MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+    [REAL_ARITH_TAC; MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC]];
+   ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LET_TRANS THEN
+  EXISTS_TAC `&4 * inv TT` THEN CONJ_TAC THENL
+  [MATCH_MP_TAC SINC_INTEGRAL_BOUND THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `&4 < e * TT` MP_TAC THENL
+  [MATCH_MP_TAC REAL_LTE_TRANS THEN
+   EXISTS_TAC `e * (&4 * inv e + &1)` THEN CONJ_TAC THENL
+   [SUBGOAL_THEN `e * (&4 * inv e + &1) = &4 + e` SUBST1_TAC THENL
+    [SUBGOAL_THEN `e * inv e = &1` MP_TAC THENL
+     [MATCH_MP_TAC REAL_MUL_RINV THEN ASM_REAL_ARITH_TAC;
+      REAL_ARITH_TAC];
+     ASM_REAL_ARITH_TAC];
+    MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC];
+   DISCH_TAC THEN
+   SUBGOAL_THEN `&4 * inv TT = &4 / TT` SUBST1_TAC THENL
+   [REWRITE_TAC[real_div]; ALL_TAC] THEN
+   ASM_SIMP_TAC[REAL_LT_LDIV_EQ] THEN
+   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_REWRITE_TAC[]]);;
+
+(* Bound on the Dirichlet integral tail: |int_T^B sin(t)/t dt| <= 8/T.       *)
+(* Uses SINC_INTEGRAL_BOUND on [0,B] and [0,T] with triangle inequality.     *)
+let DIRICHLET_TAIL_BOUND = prove
+ (`!TT B. &0 < TT /\ TT <= B ==>
+   abs(real_integral (real_interval[TT,B]) (\t. sin t * inv t)) <=
+   &8 * inv TT`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `&0 < B` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `(\t:real. sin t * inv t) real_integrable_on
+    real_interval[&0,B]` ASSUME_TAC THENL
+  [MATCH_MP_TAC SINC_INV_INTEGRABLE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `real_integral (real_interval[TT,B]) (\t. sin t * inv t) =
+     real_integral (real_interval[&0,B]) (\t. sin t * inv t) -
+     real_integral (real_interval[&0,TT]) (\t. sin t * inv t)`
+    SUBST1_TAC THENL
+  [CONV_TAC SYM_CONV THEN
+   MATCH_MP_TAC(REAL_ARITH `a + b:real = c ==> c - a = b`) THEN
+   MATCH_MP_TAC REAL_INTEGRAL_COMBINE THEN
+   ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `abs(real_integral (real_interval[&0,B]) (\t. sin t * inv t) -
+                  pi / &2) +
+              abs(real_integral (real_interval[&0,TT]) (\t. sin t * inv t) -
+                  pi / &2)` THEN
+  CONJ_TAC THENL
+  [REAL_ARITH_TAC;
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `&4 * inv B + &4 * inv TT` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL
+    [MATCH_MP_TAC SINC_INTEGRAL_BOUND THEN ASM_REWRITE_TAC[];
+     MATCH_MP_TAC SINC_INTEGRAL_BOUND THEN ASM_REWRITE_TAC[]];
+    SUBGOAL_THEN `&4 * inv B <= &4 * inv TT` MP_TAC THENL
+    [MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+     [REAL_ARITH_TAC;
+      MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[] THEN
+      ASM_REAL_ARITH_TAC];
+     REAL_ARITH_TAC]]]);;
+
+
+(* ------------------------------------------------------------------------- *)
+(* Fejer kernel infrastructure for Berry-Esseen smoothing bound.             *)
+(* Phase 1: sin^2(x)/x^2 integral equals pi/2 (as improper integral).       *)
+(* ------------------------------------------------------------------------- *)
+
+(* Integration by parts: int_[a,b] sin^2(x)/x^2 on intervals away from 0 *)
+let SIN_SQUARED_IBP = prove
+ (`!a b. &0 < a /\ a <= b ==>
+   ((\x. sin(x) pow 2 * inv(x pow 2)) has_real_integral
+    (sin(a) pow 2 * inv(a) - sin(b) pow 2 * inv(b) +
+     real_integral (real_interval[a,b]) (\x. sin(&2 * x) * inv(x))))
+   (real_interval[a,b])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `(\x:real. sin(&2 * x) * inv x) real_integrable_on real_interval[a,b]`
+    ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+   [SUBGOAL_THEN `(\x:real. sin(&2 * x)) = sin o (\x. &2 * x)` SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM; o_THM]; ALL_TAC] THEN
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_LMUL THEN REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+     REWRITE_TAC[REAL_CONTINUOUS_ON_SIN]];
+    SUBGOAL_THEN `(inv:real->real) = (\x. inv((\x. x) x))` SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM]; ALL_TAC] THEN
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_INV THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_ID] THEN
+    REWRITE_TAC[IN_REAL_INTERVAL] THEN
+    REPEAT STRIP_TAC THEN ASM_REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(\x:real. sin x pow 2 * inv(x pow 2)) = (\x. inv(x pow 2) * sin x pow 2)`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_INTEGRATION_BY_PARTS_SIMPLE THEN
+  EXISTS_TAC `\x:real. --(inv x)` THEN EXISTS_TAC `\x:real. sin(&2 * x)` THEN
+  BETA_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+  [X_GEN_TAC `x:real` THEN REWRITE_TAC[IN_REAL_INTERVAL] THEN STRIP_TAC THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+    MP_TAC(SPEC `x:real` HAS_REAL_DERIVATIVE_INV_BASIC) THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP HAS_REAL_DERIVATIVE_NEG) THEN
+    REWRITE_TAC[REAL_NEG_NEG];
+    MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+    SUBGOAL_THEN `sin(&2 * x) = &2 * sin x pow 1 * cos x` SUBST1_TAC THENL
+    [REWRITE_TAC[REAL_POW_1; SIN_DOUBLE] THEN REAL_ARITH_TAC;
+     MP_TAC(SPECL [`sin`; `cos x`; `x:real`; `2`]
+       HAS_REAL_DERIVATIVE_POW_ATREAL) THEN
+     REWRITE_TAC[ARITH_RULE `2 - 1 = 1`; HAS_REAL_DERIVATIVE_SIN] THEN
+     SIMP_TAC[]]];
+   SUBGOAL_THEN
+     `--inv b * sin b pow 2 - --inv a * sin a pow 2 -
+      (sin a pow 2 * inv a - sin b pow 2 * inv b +
+       real_integral (real_interval [a,b]) (\x. sin (&2 * x) * inv x)) =
+      --(real_integral (real_interval [a,b]) (\x. sin (&2 * x) * inv x))`
+     SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN
+     `(\x:real. --inv x * sin(&2 * x)) = (\x. --((\x. sin(&2 * x) * inv x) x))`
+     SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_NEG THEN
+   MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[]]);;
+
+(* Substitution: int_[a,b] sin(2x)/x = int_[2a,2b] sin(t)/t *)
+let SIN2X_INV_X_SUBSTITUTION = prove
+ (`!a b. &0 < a /\ a <= b ==>
+   ((\x. sin(&2 * x) * inv x) has_real_integral
+    real_integral (real_interval[&2 * a, &2 * b]) (\t. sin t * inv t))
+   (real_interval[a,b])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\t:real. sin t * inv t) real_integrable_on
+                real_interval[&2*a, &2*b]` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+   [REWRITE_TAC[REAL_CONTINUOUS_ON_SIN];
+    SUBGOAL_THEN `(inv:real->real) = (\x. inv((\x. x) x))` SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM]; ALL_TAC] THEN
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_INV THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_ID; IN_REAL_INTERVAL] THEN
+    REPEAT STRIP_TAC THEN ASM_REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `!x:real. sin(&2 * x) * inv x = (sin(&2 * x) * inv(&2 * x)) * &2`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [X_GEN_TAC `x:real` THEN
+   ASM_CASES_TAC `x = &0` THENL
+   [ASM_REWRITE_TAC[REAL_MUL_RZERO; REAL_INV_0; REAL_MUL_LZERO];
+    SUBGOAL_THEN `inv(&2 * x) * &2 = inv x` (fun th ->
+      REWRITE_TAC[GSYM REAL_MUL_ASSOC; th]) THEN
+    MATCH_MP_TAC(REAL_FIELD `~(x = &0) ==> inv(&2 * x) * &2 = inv x`) THEN
+    ASM_REWRITE_TAC[]];
+   ALL_TAC] THEN
+  MP_TAC(ISPECL [`\t:real. sin t * inv t`;
+    `real_integral (real_interval [&2 * a, &2 * b]) (\t:real. sin t * inv t)`;
+    `&2 * a`; `&2 * b`; `&2`; `&0`] HAS_REAL_INTEGRAL_AFFINITY) THEN
+  REWRITE_TAC[REAL_MUL_RZERO; REAL_SUB_RZERO; REAL_ABS_NUM;
+              REAL_INV_INV; REAL_ADD_RID] THEN
+  ANTS_TAC THENL
+  [CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+    REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `IMAGE (\x. inv (&2) * x) (real_interval [&2 * a, &2 * b]) =
+     real_interval[a, b]`
+    SUBST1_TAC THENL
+  [SUBGOAL_THEN `(\x:real. inv(&2) * x) = (\x. inv(&2) * x + &0)`
+    SUBST1_TAC THENL [REWRITE_TAC[FUN_EQ_THM; REAL_ADD_RID]; ALL_TAC] THEN
+   REWRITE_TAC[IMAGE_AFFINITY_REAL_INTERVAL] THEN
+   COND_CASES_TAC THENL
+   [SUBGOAL_THEN `F` (fun th -> REWRITE_TAC[th]) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [REAL_INTERVAL_EQ_EMPTY]) THEN
+    ASM_REAL_ARITH_TAC;
+    COND_CASES_TAC THENL
+    [AP_TERM_TAC THEN
+     SUBGOAL_THEN `inv(&2) * (&2 * a) + &0 = a /\
+                   inv(&2) * (&2 * b) + &0 = b`
+       (fun th -> REWRITE_TAC[th]) THEN
+     CONJ_TAC THEN CONV_TAC REAL_FIELD;
+     SUBGOAL_THEN `F` (fun th -> REWRITE_TAC[th]) THEN
+     FIRST_X_ASSUM(MP_TAC) THEN REAL_ARITH_TAC]];
+   ALL_TAC] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN
+    `real_integral (real_interval [&2 * a,&2 * b]) (\t:real. sin t * inv t) =
+     &2 * (inv(&2) * real_integral (real_interval [&2 * a,&2 * b])
+            (\t. sin t * inv t))`
+    SUBST1_TAC THENL
+  [CONV_TAC REAL_FIELD; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(\x:real. (sin(&2 * x) * inv(&2 * x)) * &2) =
+     (\x. &2 * (sin(&2 * x) * inv(&2 * x)))`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM] THEN REAL_ARITH_TAC;
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_LMUL THEN ASM_REWRITE_TAC[]]);;
+
+(* Continuity of sin^2(x)/x^2 (with removable singularity at 0) *)
+let SINC_SQUARED_CONTINUOUS = prove
+ (`!s. (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2))
+       real_continuous_on s`,
+  GEN_TAC THEN
+  SUBGOAL_THEN
+    `(\x:real. (if x = &0 then &1 else sin x / x) *
+               (if x = &0 then &1 else sin x / x))
+     real_continuous_on s`
+    MP_TAC THENL
+  [MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN
+   REWRITE_TAC[SINC_CONTINUOUS];
+   ALL_TAC] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_CONTINUOUS_ON_EQ) THEN
+  X_GEN_TAC `x:real` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `x = &0` THENL
+  [ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_REWRITE_TAC[real_div; GSYM REAL_MUL_ASSOC] THEN
+  REWRITE_TAC[REAL_POW_2; REAL_INV_MUL] THEN REAL_ARITH_TAC);;
+
+(* Pointwise bound: |sin^2(x)/x^2| <= 1 for all x *)
+let SINC_SQUARED_LE_ONE = prove
+ (`!x. abs(sin x pow 2 * inv(x pow 2)) <= &1`,
+  GEN_TAC THEN ASM_CASES_TAC `x = &0` THENL
+  [ASM_REWRITE_TAC[SIN_0; REAL_POW_ZERO; ARITH; REAL_MUL_LZERO;
+                   REAL_ABS_NUM; REAL_LE_01];
+   REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_INV; REAL_ABS_POW] THEN
+   SUBGOAL_THEN `abs(sin x) pow 2 * inv(abs x pow 2) =
+                 (abs(sin x) * inv(abs x)) pow 2` SUBST1_TAC THENL
+   [REWRITE_TAC[REAL_POW_MUL; REAL_POW_INV]; ALL_TAC] THEN
+   MATCH_MP_TAC REAL_POW_1_LE THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+    [REWRITE_TAC[REAL_ABS_POS];
+     MATCH_MP_TAC REAL_LE_INV THEN REWRITE_TAC[REAL_ABS_POS]];
+    REWRITE_TAC[GSYM real_div; REAL_ABS_DIV] THEN
+    ASM_SIMP_TAC[REAL_LE_LDIV_EQ;
+      REAL_ARITH `~(x = &0) ==> &0 < abs x`] THEN
+    REWRITE_TAC[REAL_MUL_LID; REAL_ABS_SIN_BOUND_LE]]]);;
+
+(* Pointwise bound: |sin(t)/t| <= 1 for all t *)
+let SINC_LE_ONE = prove
+ (`!t. abs(sin t * inv t) <= &1`,
+  GEN_TAC THEN ASM_CASES_TAC `t = &0` THENL
+  [ASM_REWRITE_TAC[SIN_0; REAL_MUL_LZERO; REAL_ABS_NUM; REAL_LE_01];
+   REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_INV] THEN
+   REWRITE_TAC[GSYM real_div; REAL_ABS_DIV] THEN
+   ASM_SIMP_TAC[REAL_LE_LDIV_EQ;
+     REAL_ARITH `~(t = &0) ==> &0 < abs t`] THEN
+   REWRITE_TAC[REAL_MUL_LID; REAL_ABS_SIN_BOUND_LE]]);;
+
+(* sin^2(a)/a <= a for a > 0 *)
+let SIN_SQUARED_INV_LE = prove
+ (`!a. &0 < a ==> abs(sin a pow 2 * inv a) <= a`,
+  GEN_TAC THEN DISCH_TAC THEN
+  SUBGOAL_THEN `abs(sin a pow 2 * inv a) = sin a pow 2 * inv a`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[REAL_ABS_REFL] THEN MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+   [REWRITE_TAC[REAL_LE_POW_2];
+    MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC];
+   ASM_SIMP_TAC[GSYM real_div; REAL_LE_LDIV_EQ] THEN
+   REWRITE_TAC[GSYM REAL_POW_2] THEN
+   SUBGOAL_THEN `sin a pow 2 = abs(sin a) pow 2` SUBST1_TAC THENL
+   [REWRITE_TAC[REAL_POW2_ABS]; ALL_TAC] THEN
+   SUBGOAL_THEN `a pow 2 = abs a pow 2` SUBST1_TAC THENL
+   [REWRITE_TAC[REAL_POW2_ABS]; ALL_TAC] THEN
+   MATCH_MP_TAC REAL_POW_LE2 THEN
+   REWRITE_TAC[REAL_ABS_POS; REAL_ABS_SIN_BOUND_LE]]);;
+
+(* sin(t)*inv(t) is integrable on [0,T] for T >= 0 *)
+let SINC_MUL_INTEGRABLE = prove
+ (`!TT. &0 <= TT ==>
+   (\t. sin t * inv t) real_integrable_on real_interval[&0,TT]`,
+  GEN_TAC THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`(\t. if t = &0 then &1 else sin t * inv t)`;
+                  `(\t:real. sin t * inv t)`;
+                  `{&0:real}`;
+                  `real_interval[&0,TT]`]
+    (REWRITE_RULE[IMP_CONJ] REAL_INTEGRABLE_SPIKE)) THEN
+  ANTS_TAC THENL [REWRITE_TAC[REAL_NEGLIGIBLE_SING]; ALL_TAC] THEN
+  ANTS_TAC THENL
+  [REWRITE_TAC[IN_DIFF; IN_SING] THEN REPEAT STRIP_TAC THEN
+   BETA_TAC THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+  SUBGOAL_THEN `(\t:real. if t = &0 then &1 else sin t * inv t) =
+                (\t. if t = &0 then &1 else sin t / t)` SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM; real_div]; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+  EXISTS_TAC `(:real)` THEN
+  REWRITE_TAC[SUBSET_UNIV; SINC_CONTINUOUS]);;
+
+(* sin^2(x)/x^2 is integrable on [0,T] for all T *)
+let SINC_SQUARED_INTEGRABLE = prove
+ (`!TT. (\x. sin(x) pow 2 * inv(x pow 2)) real_integrable_on
+        real_interval[&0,TT]`,
+  GEN_TAC THEN
+  ASM_CASES_TAC `TT < &0` THENL
+  [SUBGOAL_THEN `real_interval[&0,TT] = {}` SUBST1_TAC THENL
+   [REWRITE_TAC[REAL_INTERVAL_EQ_EMPTY] THEN ASM_REAL_ARITH_TAC;
+    REWRITE_TAC[REAL_INTEGRABLE_ON_EMPTY]];
+   ALL_TAC] THEN
+  MP_TAC(ISPECL [`(\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2))`;
+                  `(\x. sin x pow 2 * inv(x pow 2))`;
+                  `{&0:real}`;
+                  `real_interval[&0,TT]`]
+    (REWRITE_RULE[IMP_CONJ] REAL_INTEGRABLE_SPIKE)) THEN
+  ANTS_TAC THENL [REWRITE_TAC[REAL_NEGLIGIBLE_SING]; ALL_TAC] THEN
+  ANTS_TAC THENL
+  [REWRITE_TAC[IN_DIFF; IN_SING] THEN REPEAT STRIP_TAC THEN
+   BETA_TAC THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+  EXISTS_TAC `(:real)` THEN
+  REWRITE_TAC[SUBSET_UNIV; SINC_SQUARED_CONTINUOUS]);;
+
+(* Key identity: int_[0,T] sin^2/x^2 = -sin^2(T)/T + int_[0,2T] sin/t *)
+let SINC_SQUARED_IDENTITY = prove
+ (`!TT. &0 < TT ==>
+   real_integral (real_interval[&0,TT])
+     (\x. sin(x) pow 2 * inv(x pow 2)) =
+   --(sin(TT) pow 2 * inv(TT)) +
+   real_integral (real_interval[&0, &2 * TT]) (\t. sin t * inv t)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(REAL_ARITH `abs(a - b) = &0 ==> a = b`) THEN
+  MATCH_MP_TAC(REAL_ARITH `abs x <= &0 ==> abs x = &0`) THEN
+  MATCH_MP_TAC(prove(`(!e. &0 < e ==> abs(x:real) <= e) ==> abs x <= &0`,
+    DISCH_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `abs(x:real) / &2`) THEN
+    ASM_REAL_ARITH_TAC)) THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  ABBREV_TAC `a = min (e / &5) (TT / &2)` THEN
+  SUBGOAL_THEN `&0 < a /\ a < TT /\ a <= TT /\ &4 * a < e`
+    STRIP_ASSUME_TAC THENL
+  [EXPAND_TAC "a" THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&4 * a` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM_REAL_ARITH_TAC] THEN
+  (* Split integral [0,TT] at a *)
+  SUBGOAL_THEN
+    `real_integral (real_interval[&0,TT]) (\x. sin x pow 2 * inv(x pow 2)) =
+     real_integral (real_interval[&0,a]) (\x. sin x pow 2 * inv(x pow 2)) +
+     real_integral (real_interval[a,TT]) (\x. sin x pow 2 * inv(x pow 2))`
+    SUBST1_TAC THENL
+  [CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_INTEGRAL_COMBINE THEN
+   ASM_SIMP_TAC[REAL_LT_IMP_LE; SINC_SQUARED_INTEGRABLE];
+   ALL_TAC] THEN
+  (* Apply IBP on [a,TT] *)
+  SUBGOAL_THEN
+    `real_integral (real_interval[a,TT]) (\x. sin x pow 2 * inv(x pow 2)) =
+     sin(a) pow 2 * inv(a) - sin(TT) pow 2 * inv(TT) +
+     real_integral (real_interval[a,TT]) (\x. sin(&2 * x) * inv(x))`
+    SUBST1_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+   MATCH_MP_TAC SIN_SQUARED_IBP THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  (* Apply substitution: int_[a,T] sin(2x)/x = int_[2a,2T] sin(t)/t *)
+  SUBGOAL_THEN
+    `real_integral (real_interval[a,TT]) (\x. sin(&2 * x) * inv x) =
+     real_integral (real_interval[&2 * a, &2 * TT]) (\t. sin t * inv t)`
+    SUBST1_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+   MATCH_MP_TAC SIN2X_INV_X_SUBSTITUTION THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  (* Simplify: -sin^2(T)/T cancels with +sin^2(T)/T from RHS *)
+  SUBGOAL_THEN
+    `(real_integral (real_interval [&0,a]) (\x. sin x pow 2 * inv(x pow 2)) +
+      sin a pow 2 * inv a - sin TT pow 2 * inv TT +
+      real_integral (real_interval [&2*a,&2*TT]) (\t. sin t * inv t)) -
+     (--(sin TT pow 2 * inv TT) +
+      real_integral (real_interval [&0,&2*TT]) (\t. sin t * inv t)) =
+     real_integral (real_interval [&0,a]) (\x. sin x pow 2 * inv(x pow 2)) +
+     sin a pow 2 * inv a +
+     real_integral (real_interval [&2*a,&2*TT]) (\t. sin t * inv t) -
+     real_integral (real_interval [&0,&2*TT]) (\t. sin t * inv t)`
+    SUBST1_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+  (* Establish integrability of sin(t)/t on [0,2T] *)
+  SUBGOAL_THEN
+    `(\t:real. sin t * inv t) real_integrable_on real_interval[&0, &2 * TT]`
+    ASSUME_TAC THENL
+  [MATCH_MP_TAC SINC_MUL_INTEGRABLE THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  (* Split [0,2T] = [0,2a] + [2a,2T] *)
+  SUBGOAL_THEN
+    `real_integral (real_interval[&0, &2 * TT]) (\t. sin t * inv t) =
+     real_integral (real_interval[&0, &2 * a]) (\t. sin t * inv t) +
+     real_integral (real_interval[&2 * a, &2 * TT]) (\t. sin t * inv t)`
+    SUBST1_TAC THENL
+  [CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_INTEGRAL_COMBINE THEN
+   CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ASM_REWRITE_TAC[]];
+   ALL_TAC] THEN
+  (* Cancel integral_[2a,2T] terms *)
+  SUBGOAL_THEN
+    `real_integral (real_interval [&0,a]) (\x. sin x pow 2 * inv(x pow 2)) +
+     sin a pow 2 * inv a +
+     real_integral (real_interval [&2*a,&2*TT]) (\t. sin t * inv t) -
+     (real_integral (real_interval [&0,&2*a]) (\t. sin t * inv t) +
+      real_integral (real_interval [&2*a,&2*TT]) (\t. sin t * inv t)) =
+     real_integral (real_interval [&0,a]) (\x. sin x pow 2 * inv(x pow 2)) +
+     sin a pow 2 * inv a -
+     real_integral (real_interval [&0,&2*a]) (\t. sin t * inv t)`
+    SUBST1_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+  (* Triangle inequality: |A + B - C| <= |A| + |B| + |C| <= a + a + 2a *)
+  MATCH_MP_TAC(REAL_ARITH
+    `abs x <= a /\ abs y <= a /\ abs z <= &2 * a
+     ==> abs(x + y - z) <= &4 * a`) THEN
+  REPEAT CONJ_TAC THENL
+  [(* |integral_[0,a] sin^2/x^2| <= 1 * a *)
+   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 * (a - &0)` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC(ISPECL
+     [`\x:real. sin x pow 2 * inv(x pow 2)`;
+      `&0`; `a:real`;
+      `real_integral (real_interval[&0,a]) (\x. sin x pow 2 * inv(x pow 2))`;
+      `&1`] HAS_REAL_INTEGRAL_BOUND) THEN
+    REWRITE_TAC[REAL_POS] THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN
+     REWRITE_TAC[SINC_SQUARED_INTEGRABLE];
+     REWRITE_TAC[IN_REAL_INTERVAL] THEN REPEAT STRIP_TAC THEN
+     REWRITE_TAC[SINC_SQUARED_LE_ONE]];
+    ASM_REAL_ARITH_TAC];
+   (* |sin^2(a)/a| <= a *)
+   MATCH_MP_TAC SIN_SQUARED_INV_LE THEN ASM_REWRITE_TAC[];
+   (* |integral_[0,2a] sin(t)/t| <= 1 * 2a *)
+   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 * (&2 * a - &0)` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC(ISPECL
+     [`\t:real. sin t * inv t`;
+      `&0`; `&2 * a`;
+      `real_integral (real_interval[&0,&2*a]) (\t. sin t * inv t)`;
+      `&1`] HAS_REAL_INTEGRAL_BOUND) THEN
+    REWRITE_TAC[REAL_POS] THEN
+    ASM_SIMP_TAC[REAL_ARITH `&0 < a ==> &0 <= &2 * a`] THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN
+     MATCH_MP_TAC SINC_MUL_INTEGRABLE THEN ASM_REAL_ARITH_TAC;
+     REWRITE_TAC[IN_REAL_INTERVAL] THEN REPEAT STRIP_TAC THEN
+     REWRITE_TAC[SINC_LE_ONE]];
+    ASM_REAL_ARITH_TAC]]);;
+
+(* Quantitative bound for the sinc-squared integral *)
+let SINC_SQUARED_INTEGRAL_BOUND = prove
+ (`!TT. &0 < TT ==>
+   abs(real_integral (real_interval[&0,TT])
+       (\x. sin(x) pow 2 * inv(x pow 2)) - pi / &2)
+   <= &7 * inv TT`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC `TT:real` SINC_SQUARED_IDENTITY) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `abs(sin TT pow 2 * inv TT) +
+              abs(real_integral (real_interval[&0,&2 * TT])
+                  (\t. sin t * inv t) - pi / &2)` THEN
+  CONJ_TAC THENL
+  [REAL_ARITH_TAC;
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `&1 * inv TT + &6 * inv TT` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 * inv(abs TT)` THEN
+     CONJ_TAC THENL
+     [REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_INV] THEN
+      MATCH_MP_TAC REAL_LE_RMUL THEN CONJ_TAC THENL
+      [MP_TAC(SPECL [`sin TT`; `2`] REAL_ABS_POW) THEN
+       DISCH_THEN SUBST1_TAC THEN
+       MATCH_MP_TAC REAL_POW_1_LE THEN
+       REWRITE_TAC[REAL_ABS_POS; SIN_BOUND];
+       REWRITE_TAC[REAL_LE_INV_EQ; REAL_ABS_POS]];
+      SUBGOAL_THEN `abs TT = TT` SUBST1_TAC THENL
+      [REWRITE_TAC[REAL_ABS_REFL] THEN ASM_REAL_ARITH_TAC;
+       REAL_ARITH_TAC]];
+     MP_TAC(SPEC `&2 * TT` SINC_INTEGRAL_BOUND) THEN
+     ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+     MATCH_MP_TAC(REAL_ARITH `b <= c ==> a <= b ==> a <= c`) THEN
+     REWRITE_TAC[REAL_INV_MUL] THEN
+     MATCH_MP_TAC(REAL_ARITH
+       `&0 <= x ==> &4 * (inv(&2) * x) <= &6 * x`) THEN
+     MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC];
+    REAL_ARITH_TAC]]);;
+
+(* The sinc-squared integral converges to pi/2 *)
+let SINC_SQUARED_INTEGRAL = prove
+ (`((\TT. real_integral (real_interval[&0,TT])
+          (\x. sin(x) pow 2 * inv(x pow 2))) ---> pi / &2) at_posinfinity`,
+  REWRITE_TAC[REALLIM_AT_POSINFINITY] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `&7 * inv e + &1` THEN
+  X_GEN_TAC `TT:real` THEN REWRITE_TAC[real_ge] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `&0 < TT` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `&7 * inv e + &1` THEN
+   ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC(REAL_ARITH `&0 <= a ==> &0 < a + &1`) THEN
+   MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+   [REAL_ARITH_TAC; MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LET_TRANS THEN
+  EXISTS_TAC `&7 * inv TT` THEN CONJ_TAC THENL
+  [MATCH_MP_TAC SINC_SQUARED_INTEGRAL_BOUND THEN ASM_REWRITE_TAC[];
+   SUBGOAL_THEN `&7 < e * TT` MP_TAC THENL
+   [MATCH_MP_TAC REAL_LTE_TRANS THEN
+    EXISTS_TAC `e * (&7 * inv e + &1)` THEN CONJ_TAC THENL
+    [SUBGOAL_THEN `e * (&7 * inv e + &1) = &7 + e` SUBST1_TAC THENL
+     [SUBGOAL_THEN `e * inv e = &1` MP_TAC THENL
+      [MATCH_MP_TAC REAL_MUL_RINV THEN ASM_REAL_ARITH_TAC; REAL_ARITH_TAC];
+      ASM_REAL_ARITH_TAC];
+     MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC];
+    DISCH_TAC THEN
+    SUBGOAL_THEN `&7 * inv TT = &7 / TT` SUBST1_TAC THENL
+    [REWRITE_TAC[real_div]; ALL_TAC] THEN
+    ASM_SIMP_TAC[REAL_LT_LDIV_EQ] THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_REWRITE_TAC[]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Real-line Fejer kernel: K_T(x) = 2*sin^2(Tx/2) / (pi*T*x^2)             *)
+(* with K_T(0) = T/(2*pi). This is the Cesaro summation kernel for Fourier  *)
+(* inversion on the real line.                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let fejer_kernel_real = new_definition
+  `fejer_kernel_real TT x =
+     if x = &0 then TT / (&2 * pi)
+     else &2 * sin(TT * x / &2) pow 2 / (pi * TT * x pow 2)`;;
+
+(* Non-negativity of the Fejer kernel *)
+let FEJER_KERNEL_REAL_POS = prove
+ (`!TT x. &0 < TT ==> &0 <= fejer_kernel_real TT x`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[fejer_kernel_real] THEN
+  COND_CASES_TAC THENL
+  [MATCH_MP_TAC REAL_LE_DIV THEN
+   MP_TAC PI_POS THEN ASM_REAL_ARITH_TAC;
+   MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC REAL_LE_DIV THEN
+   REWRITE_TAC[REAL_LE_POW_2] THEN
+   MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+   [MP_TAC PI_POS THEN REAL_ARITH_TAC;
+    MATCH_MP_TAC REAL_LE_MUL THEN
+    REWRITE_TAC[REAL_LE_POW_2] THEN ASM_REAL_ARITH_TAC]]);;
+
+(* Tail bound: K_T(x) <= 2/(pi*T*x^2) for x != 0.
+   Follows from sin^2 <= 1. *)
+let FEJER_KERNEL_REAL_TAIL_BOUND = prove
+ (`!TT x. &0 < TT /\ ~(x = &0) ==>
+   fejer_kernel_real TT x <= &2 / (pi * TT * x pow 2)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[fejer_kernel_real] THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[real_div] THEN
+  MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+  [REAL_ARITH_TAC; ALL_TAC] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_LID] THEN
+  MATCH_MP_TAC REAL_LE_RMUL THEN CONJ_TAC THENL
+  [SUBGOAL_THEN `sin(TT * x * inv(&2)) pow 2 =
+                 abs(sin(TT * x * inv(&2))) pow 2` SUBST1_TAC THENL
+   [REWRITE_TAC[REAL_POW2_ABS]; ALL_TAC] THEN
+   MATCH_MP_TAC REAL_POW_1_LE THEN
+   REWRITE_TAC[REAL_ABS_POS; SIN_BOUND];
+   REWRITE_TAC[REAL_LE_INV_EQ] THEN
+   MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+   [MP_TAC PI_POS THEN ASM_REAL_ARITH_TAC;
+    MATCH_MP_TAC REAL_LE_MUL THEN
+    REWRITE_TAC[REAL_LE_POW_2] THEN ASM_REAL_ARITH_TAC]]);;
+
+(* The sinc-squared function integrates to pi over all of R *)
+let SINC_SQUARED_HAS_REAL_INTEGRAL_UNIV = prove
+ (`((\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2))
+    has_real_integral pi) (:real)`,
+  REWRITE_TAC[HAS_REAL_INTEGRAL_ALT; IN_UNIV] THEN
+  CONV_TAC(ONCE_DEPTH_CONV COND_ELIM_CONV) THEN REWRITE_TAC[] THEN
+  CONJ_TAC THENL
+  [REPEAT GEN_TAC THEN
+   MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+   EXISTS_TAC `(:real)` THEN
+   REWRITE_TAC[SUBSET_UNIV; SINC_SQUARED_CONTINUOUS];
+   ALL_TAC] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `&14 * inv e + &1` THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC(REAL_ARITH `&0 <= a ==> &0 < a + &1`) THEN
+   MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+   [REAL_ARITH_TAC; MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`a:real`; `b:real`] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `&0 < &14 * inv e + &1` ASSUME_TAC THENL
+  [MATCH_MP_TAC(REAL_ARITH `&0 <= a ==> &0 < a + &1`) THEN
+   MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL
+   [REAL_ARITH_TAC; MATCH_MP_TAC REAL_LE_INV THEN ASM_REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `a <= --(&14 * inv e + &1) /\ &14 * inv e + &1 <= b`
+    STRIP_ASSUME_TAC THENL
+  [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SUBSET_REAL_INTERVAL]) THEN
+   ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < b` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `a < &0` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `a <= b:real` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  (* Split integral at 0 *)
+  SUBGOAL_THEN
+    `real_integral (real_interval[a,b])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)) =
+     real_integral (real_interval[a,&0])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)) +
+     real_integral (real_interval[&0,b])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2))`
+    SUBST1_TAC THENL
+  [CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_INTEGRAL_COMBINE THEN
+   ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+   MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+   EXISTS_TAC `(:real)` THEN REWRITE_TAC[SUBSET_UNIV; SINC_SQUARED_CONTINUOUS];
+   ALL_TAC] THEN
+  (* Reflect the [a,0] part *)
+  SUBGOAL_THEN
+    `real_integral (real_interval[a,&0])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)) =
+     real_integral (real_interval[&0,--a])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2))`
+    SUBST1_TAC THENL
+  [MP_TAC(ISPECL
+     [`\x:real. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)`;
+      `real_interval[&0,--a]`] REAL_INTEGRAL_REFLECT_GEN) THEN
+   SIMP_TAC[] THEN
+   SUBGOAL_THEN
+     `(!x:real. (if --x = &0 then &1 else sin(--x) pow 2 * inv((--x) pow 2)) =
+                (if x = &0 then &1 else sin x pow 2 * inv(x pow 2)))`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [GEN_TAC THEN
+    SUBGOAL_THEN `(--x = &0) <=> (x = &0)` SUBST1_TAC THENL
+    [REAL_ARITH_TAC; ALL_TAC] THEN
+    COND_CASES_TAC THEN REWRITE_TAC[] THEN
+    REWRITE_TAC[SIN_NEG; REAL_POW_NEG; ARITH; REAL_NEG_NEG]; ALL_TAC] THEN
+   SUBGOAL_THEN `IMAGE (--) (real_interval[&0,--a]) = real_interval[a,&0]`
+     SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_REAL_INTERVAL] THEN
+    X_GEN_TAC `y:real` THEN EQ_TAC THENL
+    [STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+     STRIP_TAC THEN EXISTS_TAC `--y:real` THEN ASM_REAL_ARITH_TAC];
+    SIMP_TAC[]];
+   ALL_TAC] THEN
+  (* Now use spike theorem to relate to sinc_squared on [0,T] *)
+  SUBGOAL_THEN
+    `!TT. &0 < TT ==>
+     real_integral (real_interval[&0,TT])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)) =
+     real_integral (real_interval[&0,TT])
+       (\x. sin x pow 2 * inv(x pow 2))`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN DISCH_TAC THEN
+   MATCH_MP_TAC REAL_INTEGRAL_SPIKE THEN
+   EXISTS_TAC `{&0:real}` THEN REWRITE_TAC[REAL_NEGLIGIBLE_SING] THEN
+   REWRITE_TAC[IN_DIFF; IN_SING] THEN
+   REPEAT STRIP_TAC THEN BETA_TAC THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  (* Key lemma: 7 * inv(14*inv(e)+1) < e/2 *)
+  SUBGOAL_THEN `&7 * inv(&14 * inv e + &1) < e / &2` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_LTE_TRANS THEN
+   EXISTS_TAC `&7 * inv(&14 * inv e)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LT_LMUL THEN CONJ_TAC THENL
+    [REAL_ARITH_TAC;
+     MATCH_MP_TAC REAL_LT_INV2 THEN CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_LT_MUL THEN CONJ_TAC THENL
+      [REAL_ARITH_TAC; MATCH_MP_TAC REAL_LT_INV THEN ASM_REAL_ARITH_TAC];
+      REAL_ARITH_TAC]];
+    SUBGOAL_THEN `&7 * inv(&14 * inv e) = e / &2` SUBST1_TAC THENL
+    [REWRITE_TAC[REAL_INV_MUL; REAL_INV_INV] THEN
+     SUBGOAL_THEN `~(e = &0)` MP_TAC THENL
+     [ASM_REAL_ARITH_TAC; CONV_TAC REAL_FIELD];
+     REAL_ARITH_TAC]];
+   ALL_TAC] THEN
+  (* Use SINC_SQUARED_INTEGRAL_BOUND *)
+  SUBGOAL_THEN
+    `abs(real_integral (real_interval[&0,--a])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)) -
+     pi / &2) < e / &2`
+    ASSUME_TAC THENL
+  [SUBGOAL_THEN `&0 < --a` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   ASM_SIMP_TAC[] THEN
+   MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `&7 * inv(--a)` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC SINC_SQUARED_INTEGRAL_BOUND THEN ASM_REAL_ARITH_TAC;
+    MATCH_MP_TAC REAL_LET_TRANS THEN
+    EXISTS_TAC `&7 * inv(&14 * inv e + &1)` THEN
+    ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+    [REAL_ARITH_TAC;
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REAL_ARITH_TAC]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `abs(real_integral (real_interval[&0,b])
+       (\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)) -
+     pi / &2) < e / &2`
+    ASSUME_TAC THENL
+  [ASM_SIMP_TAC[] THEN
+   MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `&7 * inv b` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC SINC_SQUARED_INTEGRAL_BOUND THEN ASM_REAL_ARITH_TAC;
+    MATCH_MP_TAC REAL_LET_TRANS THEN
+    EXISTS_TAC `&7 * inv(&14 * inv e + &1)` THEN
+    ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+    [REAL_ARITH_TAC;
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REAL_ARITH_TAC]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `pi = pi / &2 + pi / &2` SUBST1_TAC THENL
+  [REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_REAL_ARITH_TAC);;
+
+(* The sinc-squared function integrates to pi/2 over the positive half-line *)
+let SINC_SQUARED_HAS_REAL_INTEGRAL_HALFLINE = prove
+ (`((\x. if x = &0 then &1 else sin x pow 2 * inv(x pow 2))
+    has_real_integral (pi / &2)) {t | &0 <= t}`,
+  ABBREV_TAC `f = \x:real. if x = &0 then &1 else sin x pow 2 * inv(x pow 2)` THEN
+  SUBGOAL_THEN `(f has_real_integral pi) (:real)` ASSUME_TAC THENL
+  [EXPAND_TAC "f" THEN REWRITE_TAC[SINC_SQUARED_HAS_REAL_INTEGRAL_UNIV]; ALL_TAC] THEN
+  SUBGOAL_THEN `!t:real. (f:real->real)(--t) = f t` ASSUME_TAC THENL
+  [EXPAND_TAC "f" THEN GEN_TAC THEN
+   ASM_CASES_TAC `t = &0` THEN ASM_REWRITE_TAC[REAL_NEG_0] THEN
+   SUBGOAL_THEN `~(--t = &0)` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; ASM_REWRITE_TAC[SIN_NEG; REAL_POW_NEG; ARITH]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `f real_integrable_on (:real)` ASSUME_TAC THENL
+  [REWRITE_TAC[real_integrable_on] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `f real_integrable_on {t | &0 <= t}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `f real_integrable_on {t:real | t <= &0}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `(f has_real_integral real_integral {t | &0 <= t} f)
+                {t:real | t <= &0}` ASSUME_TAC THENL
+  [MP_TAC(ISPECL [`f:real->real`;
+                   `real_integral {t:real | &0 <= t} (f:real->real)`;
+                   `{t:real | &0 <= t}`] HAS_REAL_INTEGRAL_REFLECT_GEN) THEN
+   SUBGOAL_THEN `IMAGE ((--):real->real) {t | &0 <= t} = {t:real | t <= &0}`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN GEN_TAC THEN EQ_TAC THENL
+    [STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+     DISCH_TAC THEN EXISTS_TAC `--x:real` THEN
+     ASM_REWRITE_TAC[REAL_NEG_NEG] THEN ASM_REAL_ARITH_TAC]; ALL_TAC] THEN
+   SUBGOAL_THEN `(\x. (f:real->real)(--x)) = f` (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   DISCH_THEN(fun th ->
+     MP_TAC(fst(EQ_IMP_RULE th)) THEN
+     ANTS_TAC THENL
+     [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+      MESON_TAC[]]);
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(f has_real_integral (real_integral {t | &0 <= t} f +
+                           real_integral {t | &0 <= t} f))
+     ({t:real | &0 <= t} UNION {t | t <= &0})` ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNION THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+    ASM_REWRITE_TAC[];
+    SUBGOAL_THEN `{t:real | &0 <= t} INTER {t | t <= &0} = {&0}`
+      (fun th -> REWRITE_TAC[th; REAL_NEGLIGIBLE_SING]) THEN
+    REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM; IN_SING] THEN
+    REAL_ARITH_TAC]; ALL_TAC] THEN
+  SUBGOAL_THEN `{t:real | &0 <= t} UNION {t | t <= &0} = (:real)`
+    ASSUME_TAC THENL
+  [REWRITE_TAC[EXTENSION; IN_UNION; IN_ELIM_THM; IN_UNIV] THEN
+   REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `real_integral {t | &0 <= t} f + real_integral {t | &0 <= t} f = pi`
+    ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNIQUE THEN
+   EXISTS_TAC `f:real->real` THEN EXISTS_TAC `(:real)` THEN
+   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `real_integral {t | &0 <= t} f = pi / &2` ASSUME_TAC THENL
+  [MATCH_MP_TAC(REAL_ARITH `x + x = y ==> x = y / &2`) THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+  MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[]);;
+
+(* (1-cos(t))/t^2 integrates to pi over all of R *)
+(* Derived from SINC_SQUARED via sin^2(x) = (1-cos(2x))/2 and substitution *)
+let ONE_MINUS_COS_HAS_REAL_INTEGRAL_UNIV = prove
+ (`((\t. if t = &0 then &1 / &2 else (&1 - cos t) * inv(t pow 2))
+    has_real_integral pi) (:real)`,
+  ABBREV_TAC `h = \t:real. if t = &0 then &1 / &2
+                            else (&1 - cos t) * inv(t pow 2)` THEN
+  ABBREV_TAC `f = \x:real. if x = &0 then &1
+                            else sin x pow 2 * inv(x pow 2)` THEN
+  SUBGOAL_THEN `(f has_real_integral pi) (:real)` ASSUME_TAC THENL
+  [EXPAND_TAC "f" THEN REWRITE_TAC[SINC_SQUARED_HAS_REAL_INTEGRAL_UNIV]; ALL_TAC] THEN
+  SUBGOAL_THEN `(\x. h(&2 * x)) = (\x. inv(&2) * (f:real->real) x)` ASSUME_TAC THENL
+  [EXPAND_TAC "h" THEN EXPAND_TAC "f" THEN REWRITE_TAC[FUN_EQ_THM] THEN
+   X_GEN_TAC `x:real` THEN REWRITE_TAC[] THEN
+   ASM_CASES_TAC `x = &0` THENL
+   [ASM_REWRITE_TAC[REAL_MUL_RZERO] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `~(&2 * x = &0)` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   ASM_REWRITE_TAC[] THEN
+   MP_TAC(SPEC `x:real` COS_DOUBLE_SIN) THEN
+   DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+   REWRITE_TAC[REAL_POW_MUL] THEN
+   UNDISCH_TAC `~(x = &0)` THEN CONV_TAC REAL_FIELD;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `((\x. h(&2 * x)) has_real_integral (pi / &2)) (:real)`
+    ASSUME_TAC THENL
+  [ASM_REWRITE_TAC[] THEN
+   SUBGOAL_THEN `pi / &2 = inv(&2) * pi` SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_LMUL THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  MP_TAC(ISPECL [`\x:real. (h:real->real)(&2 * x)`; `pi / &2`; `inv(&2)`]
+    HAS_REAL_INTEGRAL_STRETCH_UNIV) THEN
+  ANTS_TAC THENL [ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `(\x. (\x. (h:real->real) (&2 * x)) (inv (&2) * x)) = h`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `x:real` THEN BETA_TAC THEN
+   AP_TERM_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `inv(inv(&2)) * pi / &2 = pi` SUBST1_TAC THENL
+  [REWRITE_TAC[REAL_INV_INV] THEN REAL_ARITH_TAC; SIMP_TAC[]]);;
+
+(* (1-cos(t))/t^2 integrates to pi/2 over the positive half-line *)
+let ONE_MINUS_COS_HAS_REAL_INTEGRAL_HALFLINE = prove
+ (`((\t. if t = &0 then &1 / &2 else (&1 - cos t) * inv(t pow 2))
+    has_real_integral (pi / &2)) {t | &0 <= t}`,
+  ABBREV_TAC `h = \t:real. if t = &0 then &1 / &2
+                            else (&1 - cos t) * inv(t pow 2)` THEN
+  SUBGOAL_THEN `(h has_real_integral pi) (:real)` ASSUME_TAC THENL
+  [EXPAND_TAC "h" THEN REWRITE_TAC[ONE_MINUS_COS_HAS_REAL_INTEGRAL_UNIV];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `!t:real. (h:real->real)(--t) = h t` ASSUME_TAC THENL
+  [EXPAND_TAC "h" THEN GEN_TAC THEN
+   ASM_CASES_TAC `t = &0` THEN ASM_REWRITE_TAC[REAL_NEG_0] THEN
+   SUBGOAL_THEN `~(--t = &0)` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[COS_NEG; REAL_POW_NEG; ARITH]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `h real_integrable_on (:real)` ASSUME_TAC THENL
+  [REWRITE_TAC[real_integrable_on] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `h real_integrable_on {t | &0 <= t}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `h real_integrable_on {t:real | t <= &0}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `(h has_real_integral real_integral {t | &0 <= t} h)
+                {t:real | t <= &0}` ASSUME_TAC THENL
+  [MP_TAC(ISPECL [`h:real->real`;
+                   `real_integral {t:real | &0 <= t} (h:real->real)`;
+                   `{t:real | &0 <= t}`] HAS_REAL_INTEGRAL_REFLECT_GEN) THEN
+   SUBGOAL_THEN `IMAGE ((--):real->real) {t | &0 <= t} = {t:real | t <= &0}`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN GEN_TAC THEN EQ_TAC THENL
+    [STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+     DISCH_TAC THEN EXISTS_TAC `--x:real` THEN
+     ASM_REWRITE_TAC[REAL_NEG_NEG] THEN ASM_REAL_ARITH_TAC]; ALL_TAC] THEN
+   SUBGOAL_THEN `(\x. (h:real->real)(--x)) = h` (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   DISCH_THEN(fun th ->
+     MP_TAC(fst(EQ_IMP_RULE th)) THEN
+     ANTS_TAC THENL
+     [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+      MESON_TAC[]]);
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(h has_real_integral (real_integral {t | &0 <= t} h +
+                           real_integral {t | &0 <= t} h))
+     ({t:real | &0 <= t} UNION {t | t <= &0})` ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNION THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+    ASM_REWRITE_TAC[];
+    SUBGOAL_THEN `{t:real | &0 <= t} INTER {t | t <= &0} = {&0}`
+      (fun th -> REWRITE_TAC[th; REAL_NEGLIGIBLE_SING]) THEN
+    REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM; IN_SING] THEN
+    REAL_ARITH_TAC]; ALL_TAC] THEN
+  SUBGOAL_THEN `{t:real | &0 <= t} UNION {t | t <= &0} = (:real)`
+    ASSUME_TAC THENL
+  [REWRITE_TAC[EXTENSION; IN_UNION; IN_ELIM_THM; IN_UNIV] THEN
+   REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `real_integral {t | &0 <= t} h + real_integral {t | &0 <= t} h = pi`
+    ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNIQUE THEN
+   EXISTS_TAC `h:real->real` THEN EXISTS_TAC `(:real)` THEN
+   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `real_integral {t | &0 <= t} h = pi / &2` ASSUME_TAC THENL
+  [MATCH_MP_TAC(REAL_ARITH `x + x = y ==> x = y / &2`) THEN
+   ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+  MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[]);;
+
+(* Scaled version: int_[0,inf) (1-cos(c*t))/t^2 dt = pi*c/2 for c > 0 *)
+let ONE_MINUS_COS_SCALED_HAS_REAL_INTEGRAL_HALFLINE = prove
+ (`!c. &0 < c ==>
+   ((\t. if t = &0 then c pow 2 / &2 else (&1 - cos(c * t)) * inv(t pow 2))
+    has_real_integral (pi * c / &2)) {t | &0 <= t}`,
+  GEN_TAC THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`\t:real. if t = &0 then &1 / &2
+                            else (&1 - cos t) * inv(t pow 2)`;
+                  `pi:real`; `c:real`] HAS_REAL_INTEGRAL_STRETCH_UNIV) THEN
+  ANTS_TAC THENL
+  [ASM_REWRITE_TAC[ONE_MINUS_COS_HAS_REAL_INTEGRAL_UNIV]; ALL_TAC] THEN
+  SUBGOAL_THEN `(\x. (\t. if t = &0 then &1 / &2
+    else (&1 - cos t) * inv(t pow 2)) (c * x))
+    = (\x. if x = &0 then &1 / &2
+            else (&1 - cos(c * x)) * inv((c * x) pow 2))`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN BETA_TAC THEN
+   ASM_CASES_TAC `x = &0` THENL
+   [ASM_REWRITE_TAC[REAL_MUL_RZERO]; ALL_TAC] THEN
+   SUBGOAL_THEN `~(c * x = &0)` (fun th -> REWRITE_TAC[th]) THEN
+   ASM_SIMP_TAC[REAL_ENTIRE; REAL_LT_IMP_NZ]; ALL_TAC] THEN
+  DISCH_TAC THEN
+  ABBREV_TAC `f = \t:real. if t = &0 then c pow 2 / &2
+                            else (&1 - cos(c * t)) * inv(t pow 2)` THEN
+  SUBGOAL_THEN
+    `(f has_real_integral (c pow 2 * (inv c * pi))) (:real)` ASSUME_TAC THENL
+  [SUBGOAL_THEN
+     `(f:real->real) = (\t. c pow 2 * (if t = &0 then &1 / &2
+                      else (&1 - cos(c * t)) * inv((c * t) pow 2)))`
+     SUBST1_TAC THENL
+   [EXPAND_TAC "f" THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `t:real` THEN
+    ASM_CASES_TAC `t = &0` THENL
+    [ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+     ASM_REWRITE_TAC[REAL_POW_MUL; REAL_INV_MUL] THEN
+     MATCH_MP_TAC(REAL_FIELD
+       `~(c = &0) /\ ~(t = &0) ==>
+        (&1 - cos(c * t)) * inv(t pow 2) =
+        c pow 2 * ((&1 - cos(c * t)) * (inv(c pow 2) * inv(t pow 2)))`) THEN
+     ASM_REAL_ARITH_TAC];
+    MATCH_MP_TAC HAS_REAL_INTEGRAL_LMUL THEN ASM_REWRITE_TAC[]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `c pow 2 * inv c * pi = c * pi` ASSUME_TAC THENL
+  [UNDISCH_TAC `&0 < c` THEN CONV_TAC REAL_FIELD; ALL_TAC] THEN
+  SUBGOAL_THEN `(f has_real_integral (c * pi)) (:real)` ASSUME_TAC THENL
+  [ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `!t:real. (f:real->real)(--t) = f t` ASSUME_TAC THENL
+  [EXPAND_TAC "f" THEN GEN_TAC THEN
+   ASM_CASES_TAC `t = &0` THEN ASM_REWRITE_TAC[REAL_NEG_0] THEN
+   SUBGOAL_THEN `~(--t = &0)` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   ASM_REWRITE_TAC[] THEN
+   REWRITE_TAC[REAL_MUL_RNEG; COS_NEG; REAL_POW_NEG; ARITH];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `f real_integrable_on (:real)` ASSUME_TAC THENL
+  [REWRITE_TAC[real_integrable_on] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `f real_integrable_on {t | &0 <= t}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `f real_integrable_on {t:real | t <= &0}` ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRABLE_ON_SUBINTERVAL_GEN THEN
+   EXISTS_TAC `(:real)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+   REWRITE_TAC[is_realinterval; IN_ELIM_THM] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `(f has_real_integral real_integral {t | &0 <= t} f)
+                {t:real | t <= &0}` ASSUME_TAC THENL
+  [MP_TAC(ISPECL [`f:real->real`;
+                   `real_integral {t:real | &0 <= t} (f:real->real)`;
+                   `{t:real | &0 <= t}`] HAS_REAL_INTEGRAL_REFLECT_GEN) THEN
+   SUBGOAL_THEN `IMAGE ((--):real->real) {t | &0 <= t} = {t:real | t <= &0}`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN GEN_TAC THEN EQ_TAC THENL
+    [STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+     DISCH_TAC THEN EXISTS_TAC `--x:real` THEN
+     ASM_REWRITE_TAC[REAL_NEG_NEG] THEN ASM_REAL_ARITH_TAC]; ALL_TAC] THEN
+   SUBGOAL_THEN `(\x. (f:real->real)(--x)) = f` (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   DISCH_THEN(fun th ->
+     MP_TAC(fst(EQ_IMP_RULE th)) THEN
+     ANTS_TAC THENL
+     [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+      MESON_TAC[]]);
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `(f has_real_integral (real_integral {t | &0 <= t} f +
+                           real_integral {t | &0 <= t} f))
+     ({t:real | &0 <= t} UNION {t | t <= &0})` ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNION THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[];
+    ASM_REWRITE_TAC[];
+    SUBGOAL_THEN `{t:real | &0 <= t} INTER {t | t <= &0} = {&0}`
+      (fun th -> REWRITE_TAC[th; REAL_NEGLIGIBLE_SING]) THEN
+    REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM; IN_SING] THEN
+    REAL_ARITH_TAC]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `real_integral {t | &0 <= t} f + real_integral {t | &0 <= t} f = c * pi`
+    ASSUME_TAC THENL
+  [MATCH_MP_TAC HAS_REAL_INTEGRAL_UNIQUE THEN
+   EXISTS_TAC `f:real->real` THEN EXISTS_TAC `(:real)` THEN
+   ASM_REWRITE_TAC[] THEN
+   SUBGOAL_THEN `{t:real | &0 <= t} UNION {t | t <= &0} = (:real)` ASSUME_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_UNION; IN_ELIM_THM; IN_UNIV] THEN
+    REAL_ARITH_TAC; ALL_TAC] THEN
+   ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `pi * c / &2 = c * pi / &2` SUBST1_TAC THENL
+  [REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `real_integral {t | &0 <= t} (f:real->real) = c * pi / &2`
+    (fun th -> REWRITE_TAC[GSYM th]) THENL
+  [ABBREV_TAC `J = real_integral {t | &0 <= t} (f:real->real)` THEN
+   UNDISCH_TAC `J + J = c * pi` THEN REAL_ARITH_TAC;
+   MATCH_MP_TAC REAL_INTEGRABLE_INTEGRAL THEN ASM_REWRITE_TAC[]]);;
+
+(* Cosine difference integral: int_[0,inf) (cos(at)-cos(bt))/t^2 = pi*(b-a)/2 *)
+let COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE = prove
+ (`!a b. &0 < a /\ &0 < b ==>
+   ((\t. if t = &0 then (b pow 2 - a pow 2) / &2
+         else (cos(a * t) - cos(b * t)) * inv(t pow 2))
+    has_real_integral (pi * (b - a) / &2)) {t | &0 <= t}`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `(\t. if t = &0 then (b pow 2 - a pow 2) / &2
+          else (cos(a * t) - cos(b * t)) * inv(t pow 2)) =
+     (\t. (if t = &0 then b pow 2 / &2 else (&1 - cos(b * t)) * inv(t pow 2)) -
+          (if t = &0 then a pow 2 / &2 else (&1 - cos(a * t)) * inv(t pow 2)))`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `t:real` THEN
+   ASM_CASES_TAC `t = &0` THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN `pi * (b - a) / &2 = pi * b / &2 - pi * a / &2` SUBST1_TAC THENL
+  [REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC HAS_REAL_INTEGRAL_SUB THEN CONJ_TAC THEN
+  MATCH_MP_TAC ONE_MINUS_COS_SCALED_HAS_REAL_INTEGRAL_HALFLINE THEN
+  ASM_REWRITE_TAC[]);;
+
+(* Generalized cosine difference for arbitrary nonzero alpha, beta *)
+(* Uses COS_ABS to reduce to the positive case *)
+let COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE_GEN = prove
+ (`!alpha beta. ~(alpha = &0) /\ ~(beta = &0) ==>
+   ((\t. if t = &0 then (beta pow 2 - alpha pow 2) / &2
+         else (cos(alpha * t) - cos(beta * t)) * inv(t pow 2))
+    has_real_integral (pi * (abs beta - abs alpha) / &2)) {t | &0 <= t}`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HAS_REAL_INTEGRAL_SPIKE THEN
+  EXISTS_TAC `\t. if t = &0 then (abs beta pow 2 - abs alpha pow 2) / &2
+                  else (cos(abs alpha * t) - cos(abs beta * t)) * inv(t pow 2)` THEN
+  EXISTS_TAC `{}:real->bool` THEN
+  REWRITE_TAC[REAL_NEGLIGIBLE_EMPTY; IN_DIFF; NOT_IN_EMPTY] THEN CONJ_TAC THENL
+  [REWRITE_TAC[IN_ELIM_THM] THEN X_GEN_TAC `x:real` THEN DISCH_TAC THEN
+   COND_CASES_TAC THENL [REWRITE_TAC[REAL_POW2_ABS]; ALL_TAC] THEN
+   SUBGOAL_THEN `&0 < x` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   REWRITE_TAC[] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+   SUBGOAL_THEN `cos(alpha * x) = cos(abs alpha * x) /\
+                 cos(beta * x) = cos(abs beta * x)`
+     (fun th -> REWRITE_TAC[th]) THEN
+   CONJ_TAC THEN ONCE_REWRITE_TAC[GSYM COS_ABS] THEN AP_TERM_TAC THEN
+   REWRITE_TAC[REAL_ABS_MUL] THEN
+   SUBGOAL_THEN `abs x = x` (fun th -> REWRITE_TAC[th]) THEN
+   ASM_REAL_ARITH_TAC;
+   MATCH_MP_TAC COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE THEN
+   ASM_REWRITE_TAC[GSYM REAL_ABS_NZ]]);;
+
+(* Full cosine difference for a < b (covers case when a or b is zero) *)
+let COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE_FULL = prove
+ (`!a b. a < b ==>
+   ((\t. if t = &0 then (b pow 2 - a pow 2) / &2
+         else (cos(a * t) - cos(b * t)) * inv(t pow 2))
+    has_real_integral (pi * (abs b - abs a) / &2)) {t | &0 <= t}`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `a = &0` THENL
+  [ASM_REWRITE_TAC[REAL_MUL_LZERO; COS_0; REAL_ABS_NUM; REAL_SUB_LZERO;
+    REAL_POW_ZERO; ARITH_EQ; REAL_SUB_RZERO] THEN
+   SUBGOAL_THEN `&0 < b` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `abs b = b` SUBST1_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC ONE_MINUS_COS_SCALED_HAS_REAL_INTEGRAL_HALFLINE THEN
+   ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  ASM_CASES_TAC `b = &0` THENL
+  [ASM_REWRITE_TAC[REAL_MUL_LZERO; COS_0; REAL_ABS_NUM; REAL_SUB_RZERO;
+    REAL_POW_ZERO; ARITH_EQ] THEN
+   SUBGOAL_THEN `a < &0` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `abs a = --a` SUBST1_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `&0 < --a` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_SPIKE THEN
+   EXISTS_TAC `\t. --((if t = &0 then (--a) pow 2 / &2
+                       else (&1 - cos((--a) * t)) * inv(t pow 2)))` THEN
+   EXISTS_TAC `{&0}` THEN REWRITE_TAC[REAL_NEGLIGIBLE_SING] THEN CONJ_TAC THENL
+   [REWRITE_TAC[IN_DIFF; IN_ELIM_THM; IN_SING] THEN
+    X_GEN_TAC `t:real` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[REAL_MUL_LNEG; COS_NEG] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `pi * (&0 - --a) / &2 = --(pi * (--a) / &2)` SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_NEG THEN
+   MATCH_MP_TAC ONE_MINUS_COS_SCALED_HAS_REAL_INTEGRAL_HALFLINE THEN
+   ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  MATCH_MP_TAC COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE_GEN THEN
+  ASM_REWRITE_TAC[]);;
+
+(* Algebraic identity: trapezoidal function = 1/2 + abs difference / (2h) *)
+let TRAPEZOIDAL_ALG_IDENTITY = prove
+ (`!x h y. &0 < h ==>
+   max (&0) (min (&1) (&1 - (y - x) / h)) =
+   &1 / &2 + (abs(x + h - y) - abs(x - y)) / (&2 * h)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `y <= x` THENL
+  [SUBGOAL_THEN `abs(x + h - y) = x + h - y` SUBST1_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `abs(x - y) = x - y` SUBST1_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `(y - x) / h <= &0` ASSUME_TAC THENL
+   [ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `min (&1) (&1 - (y - x) / h) = &1` SUBST1_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   REWRITE_TAC[REAL_ARITH `max (&0) (&1) = &1`] THEN
+   MP_TAC(REAL_FIELD `&0 < h ==> (x + h - y - (x - y)) / (&2 * h) = &1 / &2`) THEN
+   ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+   ASM_CASES_TAC `y <= x + h` THENL
+   [SUBGOAL_THEN `abs(x + h - y) = x + h - y` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `abs(x - y) = y - x` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `(y - x) / h <= &1` ASSUME_TAC THENL
+    [ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `&0 <= (y - x) / h` ASSUME_TAC THENL
+    [MATCH_MP_TAC REAL_LE_DIV THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `min (&1) (&1 - (y - x) / h) = &1 - (y - x) / h` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `max (&0) (&1 - (y - x) / h) = &1 - (y - x) / h` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    MP_TAC(REAL_FIELD `&0 < h ==> ((x + h - y) - (y - x)) / (&2 * h) = &1 - (y - x) / h - &1 / &2`) THEN
+    ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+    SUBGOAL_THEN `abs(x + h - y) = y - x - h` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `abs(x - y) = y - x` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `&1 < (y - x) / h` ASSUME_TAC THENL
+    [ASM_SIMP_TAC[REAL_LT_RDIV_EQ] THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `min (&1) (&1 - (y - x) / h) = &1 - (y - x) / h` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `max (&0) (&1 - (y - x) / h) = &0` SUBST1_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    MP_TAC(REAL_FIELD `&0 < h ==> ((y - x - h) - (y - x)) / (&2 * h) = -- &1 / &2`) THEN
+    ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC]]);;
+
+(* Fourier identity for the trapezoidal function *)
+let TRAPEZOIDAL_FOURIER_IDENTITY = prove
+ (`!x h y. &0 < h ==>
+   max (&0) (min (&1) (&1 - (y - x) / h)) =
+   &1 / &2 + inv(pi * h) *
+   real_integral {t | &0 <= t}
+     (\t. if t = &0 then ((x + h - y) pow 2 - (x - y) pow 2) / &2
+          else (cos((x - y) * t) - cos((x + h - y) * t)) * inv(t pow 2))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `((\t. if t = &0 then ((x + h - y) pow 2 - (x - y) pow 2) / &2
+           else (cos((x - y) * t) - cos((x + h - y) * t)) * inv(t pow 2))
+     has_real_integral (pi * (abs(x + h - y) - abs(x - y)) / &2)) {t | &0 <= t}`
+    ASSUME_TAC THENL
+  [MATCH_MP_TAC COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE_FULL THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `real_integral {t | &0 <= t}
+     (\t. if t = &0 then ((x + h - y) pow 2 - (x - y) pow 2) / &2
+          else (cos((x - y) * t) - cos((x + h - y) * t)) * inv(t pow 2)) =
+     pi * (abs(x + h - y) - abs(x - y)) / &2`
+    SUBST1_TAC THENL
+  [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `~(pi = &0) /\ ~(h = &0)` STRIP_ASSUME_TAC THENL
+  [MP_TAC PI_POS THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `inv(pi * h) * pi * (abs(x + h - y) - abs(x - y)) / &2 =
+                (abs(x + h - y) - abs(x - y)) / (&2 * h)` SUBST1_TAC THENL
+  [REWRITE_TAC[real_div; REAL_INV_MUL] THEN
+   SUBGOAL_THEN `(inv pi * inv h) * pi * (abs(x + h - y) - abs(x - y)) * inv(&2) =
+                 (inv pi * pi) * (abs(x + h - y) - abs(x - y)) * inv(&2) * inv h`
+     SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   ASM_SIMP_TAC[REAL_MUL_LINV] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  ASM_SIMP_TAC[GSYM TRAPEZOIDAL_ALG_IDENTITY]);;
+
+(* Trigonometric expansion: cos((x-u)t) - cos((x+h-u)t) factors through *)
+(* cos(tu) and sin(tu), enabling connection to characteristic functions   *)
+let TRIG_COS_DIFF_EXPAND = prove
+ (`!x h u t:real.
+   cos((x - u) * t) - cos((x + h - u) * t) =
+   cos(t * u) * (cos(t * x) - cos(t * (x + h))) -
+   sin(t * u) * (sin(t * (x + h)) - sin(t * x))`,
+  REWRITE_TAC[REAL_RING `!x u t:real. (x - u) * t = t * x - t * u`;
+              REAL_RING `!x h u t:real. (x + h - u) * t = t * (x + h) - t * u`] THEN
+  REWRITE_TAC[COS_SUB] THEN REAL_ARITH_TAC);;
+
+(* Factor a sum of trig products: sum (pp*[cos*A - sin*B]*C) factors *)
+let SUM_TRIG_FACTOR = prove
+ (`!S:real->bool. FINITE S ==>
+   !(pp:real->real) a1 b1 c1 t:real.
+   sum S (\u. pp u * (cos(t * u) * a1 - sin(t * u) * b1) * c1) =
+   (sum S (\u. pp u * cos(t * u)) * a1 - sum S (\u. pp u * sin(t * u)) * b1) * c1`,
+  GEN_TAC THEN DISCH_TAC THEN REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `!u:real. (pp:real->real) u * (cos(t * u) * a1 - sin(t * u) * b1) * c1 =
+    (pp u * cos(t * u)) * (a1 * c1) - (pp u * sin(t * u)) * (b1 * c1)`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [GEN_TAC THEN CONV_TAC REAL_RING; ALL_TAC] THEN
+  MP_TAC(ISPECL [`\u:real. ((pp:real->real) u * cos(t * u)) * a1 * c1`;
+    `\u:real. ((pp:real->real) u * sin(t * u)) * b1 * c1`; `S:real->bool`] SUM_SUB) THEN
+  ASM_REWRITE_TAC[] THEN BETA_TAC THEN DISCH_THEN SUBST1_TAC THEN
+  REWRITE_TAC[SUM_RMUL] THEN REAL_ARITH_TAC);;
+
+(* Exact Fourier identity for simple RV expectation of trapezoidal function *)
+let SIMPLE_EXPECTATION_TRAPEZOIDAL_FOURIER = prove
+ (`!p:A prob_space Y x h.
+    simple_rv p Y /\ &0 < h
+    ==> simple_expectation p
+          (\a. max (&0) (min (&1) (&1 - (Y a - x) / h))) =
+        &1 / &2 +
+        inv (pi * h) *
+        real_integral {t | &0 <= t}
+          (\t. (simple_char_fn_re p Y t * (cos(t * x) - cos(t * (x + h))) -
+                simple_char_fn_im p Y t * (sin(t * (x + h)) - sin(t * x))) *
+               inv (t pow 2))`,
+ REPEAT GEN_TAC THEN STRIP_TAC THEN
+ ABBREV_TAC `S = IMAGE (Y:A->real) (prob_carrier p)` THEN
+ ABBREV_TAC `pp = (\u:real. prob p {a:A | a IN prob_carrier p /\ Y a = u})` THEN
+ SUBGOAL_THEN `FINITE (S:real->bool)` ASSUME_TAC THENL [
+   EXPAND_TAC "S" THEN REWRITE_TAC[GSYM SIMPLE_IMAGE] THEN
+   ASM_MESON_TAC[simple_rv];
+   ALL_TAC] THEN
+ SUBGOAL_THEN `sum S (pp:real->real) = &1` ASSUME_TAC THENL [
+   EXPAND_TAC "pp" THEN EXPAND_TAC "S" THEN
+   MATCH_MP_TAC SIMPLE_PROB_SUM_ONE THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+ MP_TAC(ISPECL [`p:A prob_space`; `Y:A->real`;
+   `(\y. max (&0) (min (&1) (&1 - (y - x) / h))):real->real`]
+   SIMPLE_EXPECTATION_COMPOSE_SUM) THEN
+ ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+ ASM_REWRITE_TAC[] THEN
+ SUBGOAL_THEN `(\u:real. max (&0) (min (&1) (&1 - (u - x) / h)) *
+    prob p {a:A | a IN prob_carrier p /\ Y a = u}) =
+   (\u. pp u * max (&0) (min (&1) (&1 - (u - x) / h)))`
+   SUBST1_TAC THENL [
+   EXPAND_TAC "pp" THEN REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+   REWRITE_TAC[REAL_MUL_SYM];
+   ALL_TAC] THEN
+ SUBGOAL_THEN
+   `!u:real. u IN S ==> max (&0) (min (&1) (&1 - (u - x) / h)) =
+     &1 / &2 + inv(pi * h) * real_integral {t | &0 <= t}
+       (\t. if t = &0 then ((x + h - u) pow 2 - (x - u) pow 2) / &2
+            else (cos((x - u) * t) - cos((x + h - u) * t)) * inv(t pow 2))`
+   ASSUME_TAC THENL [
+   REPEAT STRIP_TAC THEN
+   MP_TAC(SPECL [`x:real`; `h:real`; `u:real`] TRAPEZOIDAL_FOURIER_IDENTITY) THEN
+   ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+ ASM_SIMP_TAC[] THEN
+ SUBGOAL_THEN `!u:real. pp u * (&1 / &2 + inv(pi * h) * real_integral {t | &0 <= t}
+     (\t. if t = &0 then ((x + h - u) pow 2 - (x - u) pow 2) / &2
+          else (cos((x - u) * t) - cos((x + h - u) * t)) * inv(t pow 2))) =
+     pp u * &1 / &2 + pp u * (inv(pi * h) * real_integral {t | &0 <= t}
+     (\t. if t = &0 then ((x + h - u) pow 2 - (x - u) pow 2) / &2
+          else (cos((x - u) * t) - cos((x + h - u) * t)) * inv(t pow 2)))`
+     (fun th -> REWRITE_TAC[th]) THENL [
+   GEN_TAC THEN REWRITE_TAC[REAL_ADD_LDISTRIB]; ALL_TAC] THEN
+ ASM_SIMP_TAC[SUM_ADD] THEN
+ REWRITE_TAC[SUM_RMUL] THEN
+ ASM_REWRITE_TAC[REAL_ARITH `&1 * &1 / &2 = &1 / &2`] THEN
+ AP_TERM_TAC THEN
+ SUBGOAL_THEN `!u:real. pp u * (inv (pi * h) *
+     real_integral {t | &0 <= t}
+       (\t. if t = &0 then ((x + h - u) pow 2 - (x - u) pow 2) / &2
+            else (cos ((x - u) * t) - cos ((x + h - u) * t)) * inv (t pow 2))) =
+     inv(pi * h) * (pp u * real_integral {t | &0 <= t}
+       (\t. if t = &0 then ((x + h - u) pow 2 - (x - u) pow 2) / &2
+            else (cos ((x - u) * t) - cos ((x + h - u) * t)) * inv (t pow 2)))`
+     (fun th -> REWRITE_TAC[th]) THENL [
+   GEN_TAC THEN REWRITE_TAC[REAL_MUL_AC]; ALL_TAC] THEN
+ REWRITE_TAC[SUM_LMUL] THEN
+ AP_TERM_TAC THEN
+ ABBREV_TAC `V = sum S (\u:real. pp u * pi * (abs(x + h - u) - abs(x - u)) / &2)` THEN
+ SUBGOAL_THEN `sum S (\x':real. pp x' * real_integral {t | &0 <= t}
+     (\t. if t = &0 then ((x + h - x') pow 2 - (x - x') pow 2) / &2
+          else (cos((x - x') * t) - cos((x + h - x') * t)) * inv(t pow 2))) = V`
+   SUBST1_TAC THENL [
+   EXPAND_TAC "V" THEN AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+   X_GEN_TAC `u:real` THEN AP_TERM_TAC THEN
+   MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+   MATCH_MP_TAC(SPECL [`x - u:real`; `x + h - u:real`]
+     COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE_FULL) THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+ CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+ EXPAND_TAC "V" THEN
+ MATCH_MP_TAC HAS_REAL_INTEGRAL_SPIKE THEN
+ EXISTS_TAC `(\t. sum S (\u:real. pp u * (cos((x - u) * t) - cos((x + h - u) * t)) *
+   inv(t pow 2)))` THEN
+ EXISTS_TAC `{&0}` THEN
+ REPEAT CONJ_TAC THENL [
+   REWRITE_TAC[REAL_NEGLIGIBLE_SING];
+   REWRITE_TAC[IN_DIFF; IN_SING; IN_ELIM_THM] THEN
+   X_GEN_TAC `t:real` THEN STRIP_TAC THEN BETA_TAC THEN
+   CONV_TAC SYM_CONV THEN
+   SUBGOAL_THEN `!u':real. pp u' * (cos((x - u') * t) - cos((x + h - u') * t)) *
+     inv(t pow 2) =
+     pp u' * (cos(t * u') * (cos(t * x) - cos(t * (x + h))) -
+             sin(t * u') * (sin(t * (x + h)) - sin(t * x))) * inv(t pow 2)`
+     (fun th -> REWRITE_TAC[th]) THENL [
+     GEN_TAC THEN
+     SUBGOAL_THEN `cos((x - u') * t) - cos((x + h - u') * t) =
+       cos(t * u') * (cos(t * x) - cos(t * (x + h))) -
+       sin(t * u') * (sin(t * (x + h)) - sin(t * x))`
+       (fun th -> REWRITE_TAC[th]) THEN
+     MP_TAC(SPECL [`x:real`; `h:real`; `u':real`; `t:real`] TRIG_COS_DIFF_EXPAND) THEN
+     REAL_ARITH_TAC;
+     ALL_TAC] THEN
+   MP_TAC(ISPEC `S:real->bool` SUM_TRIG_FACTOR) THEN
+   ASM_REWRITE_TAC[] THEN
+   DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+   REWRITE_TAC[simple_char_fn_re; simple_char_fn_im] THEN
+   EXPAND_TAC "pp" THEN EXPAND_TAC "S" THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `Y:A->real`; `\y:real. cos(t * y)`]
+     SIMPLE_EXPECTATION_COMPOSE_SUM) THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `Y:A->real`; `\y:real. sin(t * y)`]
+     SIMPLE_EXPECTATION_COMPOSE_SUM) THEN
+   ASM_REWRITE_TAC[] THEN
+   REPEAT(DISCH_THEN(fun th -> REWRITE_TAC[th])) THEN
+   REWRITE_TAC[REAL_MUL_SYM];
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_SUM THEN ASM_REWRITE_TAC[] THEN
+   X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+   MATCH_MP_TAC HAS_REAL_INTEGRAL_SPIKE THEN
+   EXISTS_TAC `(\t. pp u * (if t = &0
+     then ((x + h - u) pow 2 - (x - u) pow 2) / &2
+     else (cos((x - u) * t) - cos((x + h - u) * t)) * inv(t pow 2))):real->real` THEN
+   EXISTS_TAC `{&0}` THEN
+   REPEAT CONJ_TAC THENL [
+     REWRITE_TAC[REAL_NEGLIGIBLE_SING];
+     REWRITE_TAC[IN_DIFF; IN_SING; IN_ELIM_THM] THEN
+     X_GEN_TAC `t:real` THEN STRIP_TAC THEN BETA_TAC THEN ASM_REWRITE_TAC[];
+     MATCH_MP_TAC HAS_REAL_INTEGRAL_LMUL THEN
+     MATCH_MP_TAC(SPECL [`x - u:real`; `x + h - u:real`]
+       COS_DIFF_HAS_REAL_INTEGRAL_HALFLINE_FULL) THEN ASM_REAL_ARITH_TAC]]);;
+
+(* Fejer kernel equals a rescaled sinc-squared *)
+let FEJER_KERNEL_REAL_EQ_SINC_SQUARED = prove
+ (`!TT x. &0 < TT ==>
+   fejer_kernel_real TT x =
+   inv(pi) * (TT / &2) *
+   (if (TT / &2) * x = &0 then &1
+    else sin((TT / &2) * x) pow 2 * inv(((TT / &2) * x) pow 2))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[fejer_kernel_real] THEN
+  SUBGOAL_THEN `~(TT / &2 = &0)` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `((TT / &2) * x = &0) <=> (x = &0)` SUBST1_TAC THENL
+  [EQ_TAC THENL
+   [ASM_SIMP_TAC[REAL_ENTIRE] THEN ASM_REAL_ARITH_TAC;
+    DISCH_TAC THEN ASM_REWRITE_TAC[REAL_MUL_RZERO]];
+   ALL_TAC] THEN
+  COND_CASES_TAC THENL
+  [SUBGOAL_THEN `~(pi = &0)` MP_TAC THENL
+   [MP_TAC PI_POS THEN REAL_ARITH_TAC; CONV_TAC REAL_FIELD];
+   REWRITE_TAC[REAL_POW_MUL; REAL_INV_MUL] THEN
+   SUBGOAL_THEN `TT * x / &2 = (TT / &2) * x` SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   SUBGOAL_THEN `~(pi = &0) /\ ~(TT = &0) /\ ~(x = &0)` MP_TAC THENL
+   [MP_TAC PI_POS THEN ASM_REAL_ARITH_TAC; CONV_TAC REAL_FIELD]]);;
+
+(* The Fejer kernel full-line integral equals 1 *)
+let FEJER_KERNEL_REAL_INTEGRAL = prove
+ (`!TT. &0 < TT ==>
+   ((\x. fejer_kernel_real TT x) has_real_integral &1) (:real)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  SUBGOAL_THEN `&0 < TT / &2` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ABBREV_TAC `m = TT / &2` THEN
+  SUBGOAL_THEN `&0 < m` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  (* Step 1: Use HAS_REAL_INTEGRAL_EQ to reduce to scaled sinc-squared *)
+  MATCH_MP_TAC HAS_REAL_INTEGRAL_EQ THEN
+  EXISTS_TAC `\x:real. inv(pi) * m *
+    (if m * x = &0 then &1
+     else sin(m * x) pow 2 * inv((m * x) pow 2))` THEN
+  CONJ_TAC THENL
+  [X_GEN_TAC `x:real` THEN REWRITE_TAC[IN_UNIV] THEN BETA_TAC THEN
+   CONV_TAC SYM_CONV THEN
+   ASM_SIMP_TAC[FEJER_KERNEL_REAL_EQ_SINC_SQUARED] THEN
+   EXPAND_TAC "m" THEN REWRITE_TAC[];
+   (* Step 2: Prove integral via stretch + scale of sinc-squared *)
+   BETA_TAC THEN
+   MP_TAC SINC_SQUARED_HAS_REAL_INTEGRAL_UNIV THEN
+   DISCH_THEN(fun th -> MP_TAC(CONJ th (ASSUME `&0 < m`))) THEN
+   DISCH_THEN(MP_TAC o MATCH_MP HAS_REAL_INTEGRAL_STRETCH_UNIV) THEN
+   DISCH_THEN(fun th ->
+     MP_TAC(SPEC `inv(pi) * m` (MATCH_MP HAS_REAL_INTEGRAL_LMUL th))) THEN
+   SUBGOAL_THEN `(inv(pi) * m) * (inv m * pi) = &1` SUBST1_TAC THENL
+   [SUBGOAL_THEN `~(pi = &0) /\ ~(m = &0)` MP_TAC THENL
+    [MP_TAC PI_POS THEN ASM_REAL_ARITH_TAC; CONV_TAC REAL_FIELD];
+    DISCH_THEN(fun th -> ACCEPT_TAC(REWRITE_RULE[GSYM REAL_MUL_ASSOC] th))]]);;
+
+(* Helper: integral of cos(tx) on [0,T] *)
+let COS_HAS_REAL_INTEGRAL = prove
+ (`!TT x. &0 < TT /\ ~(x = &0) ==>
+   ((\t. cos(t * x)) has_real_integral (sin(TT * x) * inv x))
+   (real_interval[&0, TT])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `sin(TT * x) * inv x =
+   (sin(TT * x) * inv x) - (sin(&0 * x) * inv x)` SUBST1_TAC THENL
+  [REWRITE_TAC[SIN_0; REAL_MUL_LZERO; REAL_SUB_RZERO]; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+  X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `cos(u * x) =
+    ((&1 * x) * cos(u * x)) * inv x` SUBST1_TAC THENL
+  [MATCH_MP_TAC(REAL_FIELD `~(x = &0) ==> c = ((&1 * x) * c) * inv x`) THEN
+   ASM_REWRITE_TAC[];
+   MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+   ACCEPT_TAC(SPEC `u:real` (GEN `t:real`
+     (REAL_DIFF_CONV `((\t. sin(t * x) * inv x) has_real_derivative f) (atreal t)`)))]);;
+
+(* Helper: integral of t*cos(tx) on [0,T] *)
+let T_COS_HAS_REAL_INTEGRAL = prove
+ (`!TT x. &0 < TT /\ ~(x = &0) ==>
+   ((\t. t * cos(t * x)) has_real_integral
+    (TT * sin(TT * x) * inv x + cos(TT * x) * inv(x pow 2) - inv(x pow 2)))
+   (real_interval[&0, TT])`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `TT * sin(TT * x) * inv x + cos(TT * x) * inv(x pow 2) - inv(x pow 2) =
+     (TT * sin(TT * x) * inv x + cos(TT * x) * inv(x pow 2)) -
+     (&0 * sin(&0 * x) * inv x + cos(&0 * x) * inv(x pow 2))` SUBST1_TAC THENL
+  [REWRITE_TAC[SIN_0; COS_0; REAL_MUL_LZERO; REAL_MUL_LID] THEN
+   REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+  X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `u * cos(u * x) =
+    ((u * ((&1 * x) * cos(u * x)) * inv x + &1 * sin(u * x) * inv x) +
+     ((&1 * x) * --sin(u * x)) * inv(x pow 2))` SUBST1_TAC THENL
+  [REWRITE_TAC[REAL_POW_2] THEN
+   MATCH_MP_TAC(REAL_FIELD `~(x = &0) ==>
+     u * c = ((u * ((&1 * x) * c) * inv x + &1 * s * inv x) +
+              ((&1 * x) * --s) * inv(x * x))`) THEN
+   ASM_REWRITE_TAC[];
+   MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+   ACCEPT_TAC(SPEC `u:real` (GEN `t:real`
+     (REAL_DIFF_CONV
+       `((\t. t * sin(t * x) * inv x + cos(t * x) * inv(x pow 2))
+         has_real_derivative f) (atreal t)`)))]);;
+
+(* Cosine integral representation of Fejer kernel *)
+let FEJER_KERNEL_REAL_COSINE = prove
+ (`!TT x. &0 < TT ==>
+   fejer_kernel_real TT x =
+   inv pi * real_integral (real_interval[&0,TT])
+     (\t. (&1 - t / TT) * cos(t * x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[fejer_kernel_real] THEN
+  ASM_CASES_TAC `x = &0` THENL
+  [(* Case x = 0: integral of (1-t/T)*1 = T/2, so inv(pi)*T/2 = T/(2*pi) *)
+   ASM_REWRITE_TAC[REAL_MUL_RZERO; COS_0; REAL_MUL_RID] THEN
+   SUBGOAL_THEN `real_integral (real_interval[&0,TT]) (\t:real. &1 - t / TT) =
+                 TT / &2` SUBST1_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN
+    SUBGOAL_THEN `TT / &2 = (\t:real. t - t pow 2 / (&2 * TT)) TT -
+                              (\t:real. t - t pow 2 / (&2 * TT)) (&0)` SUBST1_TAC THENL
+    [BETA_TAC THEN SUBGOAL_THEN `~(TT = &0)` MP_TAC THENL
+     [ASM_REAL_ARITH_TAC; CONV_TAC REAL_FIELD]; ALL_TAC] THEN
+    MATCH_MP_TAC REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+    X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+    MP_TAC(SPEC `u:real` (GEN `t:real`
+      (REAL_DIFF_CONV
+        `((\t. t - t pow 2 / (&2 * TT)) has_real_derivative f) (atreal t)`))) THEN
+    CONV_TAC NUM_REDUCE_CONV THEN
+    REWRITE_TAC[REAL_MUL_RID; REAL_POW_1] THEN
+    SUBGOAL_THEN `&1 - (&2 * u) / (&2 * TT) = &1 - u / TT`
+      (fun th -> REWRITE_TAC[th]) THENL
+    [SUBGOAL_THEN `~(TT = &0)` MP_TAC THENL
+     [ASM_REAL_ARITH_TAC; CONV_TAC REAL_FIELD]; ALL_TAC] THEN
+    DISCH_TAC THEN MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+    ASM_REWRITE_TAC[];
+    SUBGOAL_THEN `~(TT = &0)` MP_TAC THENL
+    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    MP_TAC PI_POS THEN CONV_TAC REAL_FIELD];
+   (* Case x != 0: use the integral computations *)
+   ASM_REWRITE_TAC[] THEN
+   (* The integral of (1-t/T)*cos(tx) = integral cos(tx) - (1/T)*integral t*cos(tx) *)
+   SUBGOAL_THEN
+     `real_integral (real_interval[&0,TT]) (\t. (&1 - t / TT) * cos(t * x)) =
+      real_integral (real_interval[&0,TT]) (\t. cos(t * x)) -
+      inv TT * real_integral (real_interval[&0,TT]) (\t. t * cos(t * x))`
+     SUBST1_TAC THENL
+   [SUBGOAL_THEN `(\t:real. (&1 - t / TT) * cos(t * x)) =
+     (\t. cos(t * x) - inv TT * (t * cos(t * x)))` SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM; real_div] THEN GEN_TAC THEN REAL_ARITH_TAC;
+     ALL_TAC] THEN
+    SUBGOAL_THEN `(\t. cos(t * x)) real_integrable_on real_interval[&0,TT] /\
+                  (\t. t * cos(t * x)) real_integrable_on real_interval[&0,TT]`
+      STRIP_ASSUME_TAC THENL
+    [CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+      GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+      MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_COS] THEN
+      MATCH_MP_TAC REAL_CONTINUOUS_ON_RMUL THEN
+      REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+      MATCH_MP_TAC REAL_INTEGRABLE_CONTINUOUS THEN
+      MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+      [REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+       GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+       MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN
+       REWRITE_TAC[REAL_CONTINUOUS_ON_COS] THEN
+       MATCH_MP_TAC REAL_CONTINUOUS_ON_RMUL THEN
+       REWRITE_TAC[REAL_CONTINUOUS_ON_ID]]];
+     ASM_SIMP_TAC[REAL_INTEGRAL_SUB; REAL_INTEGRABLE_LMUL] THEN
+     ASM_SIMP_TAC[REAL_INTEGRAL_LMUL]];
+    ALL_TAC] THEN
+   (* Now substitute the integral values *)
+   MP_TAC(SPECL [`TT:real`; `x:real`] COS_HAS_REAL_INTEGRAL) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+   MP_TAC(SPECL [`TT:real`; `x:real`] T_COS_HAS_REAL_INTEGRAL) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+   SUBGOAL_THEN `real_integral (real_interval [&0,TT]) (\t. cos (t * x)) =
+     sin(TT * x) * inv x` SUBST1_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   SUBGOAL_THEN `real_integral (real_interval [&0,TT]) (\t. t * cos (t * x)) =
+     TT * sin(TT * x) * inv x + cos(TT * x) * inv(x pow 2) - inv(x pow 2)`
+     SUBST1_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRAL_UNIQUE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   (* Simplify to (1 - cos(TT*x))/(pi*TT*x^2) *)
+   SUBGOAL_THEN `sin (TT * x) * inv x -
+     inv TT * (TT * sin (TT * x) * inv x + cos (TT * x) * inv (x pow 2) -
+               inv (x pow 2)) =
+     (&1 - cos(TT * x)) * inv(TT * x pow 2)` SUBST1_TAC THENL
+   [REWRITE_TAC[REAL_POW_2; real_div; REAL_INV_MUL] THEN
+    SUBGOAL_THEN `~(TT = &0) /\ ~(x = &0)` MP_TAC THENL
+    [ASM_REAL_ARITH_TAC; CONV_TAC REAL_FIELD]; ALL_TAC] THEN
+   (* Use 1 - cos(a) = 2*sin^2(a/2) *)
+   SUBGOAL_THEN `&1 - cos(TT * x) = &2 * sin(TT * x / &2) pow 2`
+     SUBST1_TAC THENL
+   [MP_TAC(SPEC `TT * x / &2` COS_DOUBLE_SIN) THEN
+    SUBGOAL_THEN `&2 * (TT * x / &2) = TT * x` (fun th -> REWRITE_TAC[th]) THENL
+    [REAL_ARITH_TAC; REAL_ARITH_TAC];
+    ALL_TAC] THEN
+   REWRITE_TAC[real_div; REAL_INV_MUL] THEN
+   SUBGOAL_THEN `~(pi = &0)` MP_TAC THENL
+   [MP_TAC PI_POS THEN REAL_ARITH_TAC; CONV_TAC REAL_FIELD]]);;
+
+
+(* ------------------------------------------------------------------------- *)
+(* Esseen smoothing inequality for simple RVs.                               *)
+(* Bounds |F(x) - Phi(x)| by the integral of char fn error over [0,T]       *)
+(* plus a 1/T tail term. The proof splits into a trivial case (T small,      *)
+(* where the 1/T term alone dominates) and a non-trivial case requiring      *)
+(* Fourier analysis (Beurling-Selberg majorant/minorant technique).          *)
+(* Constant 24/(pi*sqrt(2*pi)) is non-optimal but explicit.                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* Helper: the smoothing integrand is integrable on [0, TT] for simple RVs. *)
+
+(* Continuity of simple characteristic function components as functions of t. *)
+(* These follow from the finite sum representation.                          *)
+let SIMPLE_CHAR_FN_RE_CONTINUOUS = prove
+ (`!p:A prob_space Y:A->real.
+    simple_rv p Y ==>
+    (\t. simple_char_fn_re p Y t) real_continuous_on (:real)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[simple_char_fn_re] THEN
+  SUBGOAL_THEN `!t:real. simple_expectation (p:A prob_space)
+    (\x:A. cos(t * (Y:A->real) x)) =
+    sum (IMAGE Y (prob_carrier p))
+      (\u. cos(t * u) * prob p {x | x IN prob_carrier p /\ Y x = u})`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [GEN_TAC THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `Y:A->real`; `\y:real. cos(t * y)`]
+     SIMPLE_EXPECTATION_COMPOSE_SUM) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[];
+   ALL_TAC] THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_SUM THEN
+  REWRITE_TAC[] THEN CONJ_TAC THENL
+  [FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[simple_rv]) THEN
+   STRIP_TAC THEN ASM_REWRITE_TAC[IMAGE; GSYM SIMPLE_IMAGE];
+   ALL_TAC] THEN
+  X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+  [GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_CONTINUOUS_ON_RMUL THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+    REWRITE_TAC[REAL_CONTINUOUS_ON_COS]];
+   REWRITE_TAC[REAL_CONTINUOUS_ON_CONST]]);;
+
+let SIMPLE_CHAR_FN_IM_CONTINUOUS = prove
+ (`!p:A prob_space Y:A->real.
+    simple_rv p Y ==>
+    (\t. simple_char_fn_im p Y t) real_continuous_on (:real)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[simple_char_fn_im] THEN
+  SUBGOAL_THEN `!t:real. simple_expectation (p:A prob_space)
+    (\x:A. sin(t * (Y:A->real) x)) =
+    sum (IMAGE Y (prob_carrier p))
+      (\u. sin(t * u) * prob p {x | x IN prob_carrier p /\ Y x = u})`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [GEN_TAC THEN
+   MP_TAC(ISPECL [`p:A prob_space`; `Y:A->real`; `\y:real. sin(t * y)`]
+     SIMPLE_EXPECTATION_COMPOSE_SUM) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[];
+   ALL_TAC] THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_SUM THEN
+  REWRITE_TAC[] THEN CONJ_TAC THENL
+  [FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[simple_rv]) THEN
+   STRIP_TAC THEN ASM_REWRITE_TAC[IMAGE; GSYM SIMPLE_IMAGE];
+   ALL_TAC] THEN
+  X_GEN_TAC `u:real` THEN DISCH_TAC THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_MUL THEN CONJ_TAC THENL
+  [GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+   MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_CONTINUOUS_ON_RMUL THEN
+    REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+    REWRITE_TAC[REAL_CONTINUOUS_ON_SIN]];
+   REWRITE_TAC[REAL_CONTINUOUS_ON_CONST]]);;
+
+(* Measurability of the smoothing integrand on any interval [a,b].            *)
+(* The numerator is continuous (char fns are continuous for simple RVs)       *)
+(* and division by t introduces at most a negligible singularity at t=0.     *)
+let SMOOTHING_INTEGRAND_MEASURABLE = prove
+ (`!p:A prob_space Y:A->real D:real a b.
+    simple_rv p Y /\ &0 < D ==>
+    (\t. (abs(simple_char_fn_re p Y (t / D) - exp(--(t pow 2 / &2))) +
+          abs(simple_char_fn_im p Y (t / D))) / t)
+    real_measurable_on real_interval[a,b]`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC REAL_MEASURABLE_ON_DIV THEN REPEAT CONJ_TAC THENL
+  [MATCH_MP_TAC CONTINUOUS_IMP_REAL_MEASURABLE_ON_CLOSED_SUBSET THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+    EXISTS_TAC `(:real)` THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_CONTINUOUS_ON_ADD THEN CONJ_TAC THEN
+     MATCH_MP_TAC REAL_CONTINUOUS_ON_ABS THENL
+     [MATCH_MP_TAC REAL_CONTINUOUS_ON_SUB THEN CONJ_TAC THENL
+      [SUBGOAL_THEN `(\t:real. simple_char_fn_re (p:A prob_space) (Y:A->real) (t / D)) =
+         (\t. simple_char_fn_re p Y t) o (\t. t * inv D)` SUBST1_TAC THENL
+       [REWRITE_TAC[o_DEF; real_div]; ALL_TAC] THEN
+       MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+       [MATCH_MP_TAC REAL_CONTINUOUS_ON_RMUL THEN
+        REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+        MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+        EXISTS_TAC `(:real)` THEN CONJ_TAC THENL
+        [MATCH_MP_TAC SIMPLE_CHAR_FN_RE_CONTINUOUS THEN ASM_REWRITE_TAC[];
+         SET_TAC[]]];
+       GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+       MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+       [MATCH_MP_TAC REAL_CONTINUOUS_ON_NEG THEN REWRITE_TAC[real_div] THEN
+        MATCH_MP_TAC REAL_CONTINUOUS_ON_RMUL THEN
+        MATCH_MP_TAC REAL_CONTINUOUS_ON_POW THEN
+        REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+        MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+        EXISTS_TAC `(:real)` THEN
+        REWRITE_TAC[REAL_CONTINUOUS_ON_EXP] THEN SET_TAC[]]];
+      SUBGOAL_THEN `(\t:real. simple_char_fn_im (p:A prob_space) (Y:A->real) (t / D)) =
+        (\t. simple_char_fn_im p Y t) o (\t. t * inv D)` SUBST1_TAC THENL
+      [REWRITE_TAC[o_DEF; real_div]; ALL_TAC] THEN
+      MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+      [MATCH_MP_TAC REAL_CONTINUOUS_ON_RMUL THEN
+       REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+       MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN
+       EXISTS_TAC `(:real)` THEN CONJ_TAC THENL
+       [MATCH_MP_TAC SIMPLE_CHAR_FN_IM_CONTINUOUS THEN ASM_REWRITE_TAC[];
+        SET_TAC[]]]];
+     SET_TAC[]];
+    REWRITE_TAC[REAL_CLOSED_REAL_INTERVAL]];
+   MATCH_MP_TAC CONTINUOUS_IMP_REAL_MEASURABLE_ON THEN
+   REWRITE_TAC[REAL_CONTINUOUS_ON_ID];
+   SUBGOAL_THEN `{x:real | x = &0} = {&0}` SUBST1_TAC THENL
+   [SET_TAC[]; REWRITE_TAC[REAL_NEGLIGIBLE_SING]]]);;
+
+(* The integrand (|Delta_re(t)| + |Delta_im(t)|)/t has a removable          *)
+(* singularity at t=0: the numerator is O(t) near 0 by Taylor expansion     *)
+(* of cos and sin, so the ratio is bounded. Combined with measurability      *)
+(* from SMOOTHING_INTEGRAND_MEASURABLE, this gives integrability.            *)
+(* Proof: measurable (from SMOOTHING_INTEGRAND_MEASURABLE with D=1) and      *)
+(* bounded a.e. by TT*(M^2+1)/2 + M where |Y(x)| <= M on carrier.          *)
+let SMOOTHING_INTEGRAND_INTEGRABLE = prove
+ (`!p:A prob_space Y TT.
+    simple_rv p Y /\ &0 < TT
+    ==> (\t. (abs(simple_char_fn_re p Y t - exp(--(t pow 2 / &2))) +
+              abs(simple_char_fn_im p Y t)) / t)
+        real_integrable_on real_interval[&0, TT]`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?M:real. !x:A. x IN prob_carrier p ==> abs((Y:A->real) x) <= M`
+    STRIP_ASSUME_TAC THENL
+  [MP_TAC(SPECL [`p:A prob_space`; `\x:A. abs((Y:A->real) x)`]
+     SIMPLE_RV_BOUNDED) THEN
+   ASM_SIMP_TAC[SIMPLE_RV_ABS] THEN MESON_TAC[REAL_ABS_ABS];
+   ALL_TAC] THEN
+  MATCH_MP_TAC REAL_MEASURABLE_BOUNDED_AE_BY_INTEGRABLE_IMP_INTEGRABLE THEN
+  EXISTS_TAC `(\t:real. TT * (M pow 2 + &1) / &2 + M):real->real` THEN
+  EXISTS_TAC `{&0:real}` THEN
+  REPEAT CONJ_TAC THENL
+  [(* Measurability from SMOOTHING_INTEGRAND_MEASURABLE with D=1 *)
+   MP_TAC(ISPECL [`p:A prob_space`; `Y:A->real`; `&1`; `&0`; `TT:real`]
+     SMOOTHING_INTEGRAND_MEASURABLE) THEN
+   ASM_REWRITE_TAC[REAL_LT_01; REAL_DIV_1];
+   (* Constant function integrability *)
+   REWRITE_TAC[REAL_INTEGRABLE_CONST];
+   (* Negligible singleton *)
+   REWRITE_TAC[REAL_NEGLIGIBLE_SING];
+   (* Main bound: for t in (0,TT], integrand <= TT*(M^2+1)/2 + M *)
+   X_GEN_TAC `t:real` THEN REWRITE_TAC[IN_DIFF; IN_SING; IN_REAL_INTERVAL] THEN
+   BETA_TAC THEN STRIP_TAC THEN
+   SUBGOAL_THEN `&0 < t` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+   (* Simplify abs of non-negative quotient *)
+   SUBGOAL_THEN `abs((abs (simple_char_fn_re (p:A prob_space) (Y:A->real) t -
+     exp (--(t pow 2 / &2))) +
+     abs (simple_char_fn_im p Y t)) / t) =
+     (abs (simple_char_fn_re p Y t - exp (--(t pow 2 / &2))) +
+     abs (simple_char_fn_im p Y t)) / t` SUBST1_TAC THENL
+   [REWRITE_TAC[REAL_ABS_REFL] THEN MATCH_MP_TAC REAL_LE_DIV THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC(REAL_ARITH `&0 <= a /\ &0 <= b ==> &0 <= a + b`) THEN
+     REWRITE_TAC[REAL_ABS_POS]; ASM_REAL_ARITH_TAC]; ALL_TAC] THEN
+   ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN
+   (* Upper bound: char_re <= 1 *)
+   SUBGOAL_THEN `simple_char_fn_re (p:A prob_space) (Y:A->real) t <= &1`
+     ASSUME_TAC THENL
+   [REWRITE_TAC[simple_char_fn_re] THEN
+    SUBGOAL_THEN `&1 = simple_expectation (p:A prob_space) (\x:A. &1)`
+      SUBST1_TAC THENL
+    [REWRITE_TAC[SIMPLE_EXPECTATION_CONST]; ALL_TAC] THEN
+    MATCH_MP_TAC SIMPLE_EXPECTATION_MONO THEN REPEAT CONJ_TAC THENL
+    [MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN
+     MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN ASM_REWRITE_TAC[];
+     REWRITE_TAC[SIMPLE_RV_CONST];
+     GEN_TAC THEN DISCH_TAC THEN
+     MP_TAC(SPEC `t * (Y:A->real) x` COS_BOUNDS) THEN REAL_ARITH_TAC];
+    ALL_TAC] THEN
+   (* Lower bound: char_re >= 1 - t^2*M^2/2 *)
+   SUBGOAL_THEN `&1 - t pow 2 * M pow 2 / &2 <=
+     simple_char_fn_re (p:A prob_space) (Y:A->real) t` ASSUME_TAC THENL
+   [REWRITE_TAC[simple_char_fn_re] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC `simple_expectation (p:A prob_space)
+      (\x:A. &1 - (t * (Y:A->real) x) pow 2 / &2)` THEN
+    CONJ_TAC THENL
+    [(* constant <= E[1 - (tY)^2/2]: since (tY)^2 <= (tM)^2 *)
+     SUBGOAL_THEN `&1 - t pow 2 * M pow 2 / &2 =
+       simple_expectation (p:A prob_space)
+         (\x:A. &1 - t pow 2 * M pow 2 / &2)` SUBST1_TAC THENL
+     [REWRITE_TAC[SIMPLE_EXPECTATION_CONST]; ALL_TAC] THEN
+     MATCH_MP_TAC SIMPLE_EXPECTATION_MONO THEN REPEAT CONJ_TAC THENL
+     [REWRITE_TAC[SIMPLE_RV_CONST];
+      SUBGOAL_THEN `(\x:A. &1 - (t * (Y:A->real) x) pow 2 / &2) =
+        (\x. (\y:real. &1 - (t * y) pow 2 / &2) (Y x))` SUBST1_TAC THENL
+      [REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN BETA_TAC THEN REFL_TAC;
+       MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN ASM_REWRITE_TAC[]];
+      BETA_TAC THEN GEN_TAC THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN ASM_REWRITE_TAC[] THEN
+      DISCH_TAC THEN
+      SUBGOAL_THEN `(t * (Y:A->real) x) pow 2 <= t pow 2 * M pow 2` MP_TAC THENL
+      [REWRITE_TAC[REAL_POW_MUL] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+       REWRITE_TAC[REAL_LE_POW_2] THEN
+       ONCE_REWRITE_TAC[GSYM REAL_POW2_ABS] THEN
+       MATCH_MP_TAC REAL_POW_LE2 THEN ASM_REWRITE_TAC[REAL_ABS_POS] THEN
+       ASM_REAL_ARITH_TAC;
+       REWRITE_TAC[real_div] THEN REAL_ARITH_TAC]];
+     (* E[1 - (tY)^2/2] <= E[cos(tY)]: from cos(u) >= 1 - u^2/2 *)
+     MATCH_MP_TAC SIMPLE_EXPECTATION_MONO THEN REPEAT CONJ_TAC THENL
+     [SUBGOAL_THEN `(\x:A. &1 - (t * (Y:A->real) x) pow 2 / &2) =
+       (\x. (\y:real. &1 - (t * y) pow 2 / &2) (Y x))` SUBST1_TAC THENL
+      [REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN BETA_TAC THEN REFL_TAC;
+       MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN ASM_REWRITE_TAC[]];
+      MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN
+      MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN ASM_REWRITE_TAC[];
+      GEN_TAC THEN DISCH_TAC THEN
+      MP_TAC(SPEC `t * (Y:A->real) x` ONE_MINUS_COS_LE) THEN
+      REWRITE_TAC[real_div] THEN REAL_ARITH_TAC]];
+    ALL_TAC] THEN
+   (* Bound on char_im: |E[sin(tY)]| <= tM *)
+   SUBGOAL_THEN `abs(simple_char_fn_im (p:A prob_space) (Y:A->real) t)
+     <= t * M` ASSUME_TAC THENL
+   [REWRITE_TAC[simple_char_fn_im] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC `simple_expectation (p:A prob_space)
+      (\x:A. abs(sin(t * (Y:A->real) x)))` THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC SIMPLE_EXPECTATION_ABS_LE THEN
+     MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN
+     MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN ASM_REWRITE_TAC[];
+     MATCH_MP_TAC REAL_LE_TRANS THEN
+     EXISTS_TAC `simple_expectation (p:A prob_space) (\x:A. t * M)` THEN
+     CONJ_TAC THENL
+     [MATCH_MP_TAC SIMPLE_EXPECTATION_MONO THEN REPEAT CONJ_TAC THENL
+      [SUBGOAL_THEN `(\x:A. abs(sin(t * (Y:A->real) x))) =
+        (\x. (\y:real. abs(sin(t * y))) (Y x))` SUBST1_TAC THENL
+       [REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN BETA_TAC THEN REFL_TAC;
+        MATCH_MP_TAC SIMPLE_RV_REAL_COMPOSE THEN ASM_REWRITE_TAC[]];
+       REWRITE_TAC[SIMPLE_RV_CONST];
+       GEN_TAC THEN DISCH_TAC THEN
+       FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN ASM_REWRITE_TAC[] THEN
+       DISCH_TAC THEN
+       MP_TAC(SPEC `t * (Y:A->real) x` REAL_ABS_SIN_BOUND_LE) THEN
+       REWRITE_TAC[REAL_ABS_MUL] THEN
+       SUBGOAL_THEN `abs t = t` SUBST1_TAC THENL
+       [REWRITE_TAC[REAL_ABS_REFL] THEN ASM_REAL_ARITH_TAC;
+        MATCH_MP_TAC(REAL_ARITH `a <= b ==> c <= a ==> c <= b`) THEN
+        MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC]];
+      REWRITE_TAC[SIMPLE_EXPECTATION_CONST] THEN REAL_ARITH_TAC]];
+    ALL_TAC] THEN
+   (* Bounds on exp(-t^2/2) *)
+   SUBGOAL_THEN `exp(--(t pow 2 / &2)) <= &1` ASSUME_TAC THENL
+   [GEN_REWRITE_TAC RAND_CONV [GSYM REAL_EXP_0] THEN
+    REWRITE_TAC[REAL_EXP_MONO_LE] THEN
+    MATCH_MP_TAC(REAL_ARITH `&0 <= x ==> --x <= &0`) THEN
+    MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_LE_POW_2] THEN
+    REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   SUBGOAL_THEN `&1 - t pow 2 / &2 <= exp(--(t pow 2 / &2))`
+     ASSUME_TAC THENL
+   [MP_TAC(SPEC `t pow 2 / &2` ONE_MINUS_EXP_NEG_LE) THEN
+    SUBGOAL_THEN `&0 <= t pow 2 / &2` MP_TAC THENL
+    [MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_LE_POW_2] THEN
+     REAL_ARITH_TAC; REAL_ARITH_TAC];
+    ALL_TAC] THEN
+   (* Combine: |char_re - exp| <= t^2*M^2/2 + t^2/2 *)
+   SUBGOAL_THEN `abs(simple_char_fn_re (p:A prob_space) (Y:A->real) t -
+     exp(--(t pow 2 / &2))) <= t pow 2 * M pow 2 / &2 + t pow 2 / &2`
+     ASSUME_TAC THENL
+   [MP_TAC(ASSUME `&1 - t pow 2 * M pow 2 / &2 <=
+      simple_char_fn_re (p:A prob_space) (Y:A->real) t`) THEN
+    MP_TAC(ASSUME `simple_char_fn_re (p:A prob_space) (Y:A->real) t <= &1`) THEN
+    MP_TAC(ASSUME `&1 - t pow 2 / &2 <= exp(--(t pow 2 / &2))`) THEN
+    MP_TAC(ASSUME `exp(--(t pow 2 / &2)) <= &1`) THEN
+    REWRITE_TAC[real_div] THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   (* Final assembly: sum bound + algebraic step *)
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `(t pow 2 * M pow 2 / &2 + t pow 2 / &2) + t * M` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[];
+    SUBGOAL_THEN `t pow 2 * M pow 2 / &2 + t pow 2 / &2 =
+      t pow 2 * (M pow 2 + &1) / &2` SUBST1_TAC THENL
+    [REWRITE_TAC[real_div] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `t pow 2 * (M pow 2 + &1) / &2 + t * M =
+      t * (t * (M pow 2 + &1) / &2 + M)` SUBST1_TAC THENL
+    [REWRITE_TAC[REAL_POW_2; real_div] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `(TT * (M pow 2 + &1) / &2 + M) * t =
+      t * (TT * (M pow 2 + &1) / &2 + M)` SUBST1_TAC THENL
+    [REAL_ARITH_TAC; ALL_TAC] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+    [ASM_REAL_ARITH_TAC;
+     MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_LE_RMUL THEN CONJ_TAC THENL
+      [ASM_REAL_ARITH_TAC;
+       MATCH_MP_TAC REAL_LE_DIV THEN CONJ_TAC THENL
+       [MATCH_MP_TAC(REAL_ARITH `&0 <= x ==> &0 <= x + &1`) THEN
+        REWRITE_TAC[REAL_LE_POW_2]; REAL_ARITH_TAC]];
+      REAL_ARITH_TAC]]]]);;
+
+(* Helper lemmas for the smoothing inequality *)
+let COS_LIPSCHITZ = prove
+ (`!a b. abs(cos a - cos b) <= abs(a - b)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`(a + b) / &2`; `(a - b) / &2`] COS_ADD) THEN
+  MP_TAC(ISPECL [`(a + b) / &2`; `(a - b) / &2`] COS_SUB) THEN
+  SUBGOAL_THEN `(a + b) / &2 + (a - b) / &2 = a /\
+                (a + b) / &2 - (a - b) / &2 = b`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [CONV_TAC REAL_FIELD; ALL_TAC] THEN
+  REPEAT DISCH_TAC THEN
+  SUBGOAL_THEN `cos a - cos b = -- &2 * sin((a + b) / &2) * sin((a - b) / &2)`
+    SUBST1_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_NEG; REAL_ABS_NUM] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `&2 * &1 * abs((a - b) / &2)` THEN CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+   [REAL_ARITH_TAC;
+    MATCH_MP_TAC REAL_LE_MUL2 THEN
+    REWRITE_TAC[REAL_ABS_POS] THEN
+    CONJ_TAC THENL [REWRITE_TAC[SIN_BOUND]; REWRITE_TAC[REAL_ABS_SIN_BOUND_LE]]];
+   REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_NUM] THEN REAL_ARITH_TAC]);;
+
+let SIN_LIPSCHITZ = prove
+ (`!a b. abs(sin a - sin b) <= abs(a - b)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`(a + b) / &2`; `(a - b) / &2`] SIN_ADD) THEN
+  MP_TAC(ISPECL [`(a + b) / &2`; `(a - b) / &2`] SIN_SUB) THEN
+  SUBGOAL_THEN `(a + b) / &2 + (a - b) / &2 = a /\
+                (a + b) / &2 - (a - b) / &2 = b`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [CONV_TAC REAL_FIELD; ALL_TAC] THEN
+  REPEAT DISCH_TAC THEN
+  SUBGOAL_THEN `sin a - sin b = &2 * cos((a + b) / &2) * sin((a - b) / &2)`
+    SUBST1_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_NUM] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `&2 * &1 * abs((a - b) / &2)` THEN CONJ_TAC THENL
+  [MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+   [REAL_ARITH_TAC;
+    MATCH_MP_TAC REAL_LE_MUL2 THEN
+    REWRITE_TAC[REAL_ABS_POS; COS_BOUND; REAL_ABS_SIN_BOUND_LE]];
+   REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_NUM] THEN REAL_ARITH_TAC]);;

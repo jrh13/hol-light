@@ -31,5 +31,8 @@ loadt "Probability/characteristic_functions.ml";;
 (* Central Limit Theorem for integrable RVs *)
 loadt "Probability/clt.ml";;
 
+(* Ergodic theory *)
+loadt "Probability/ergodic.ml";;
+
 (* Standard discrete distributions *)
 loadt "Probability/distributions.ml";;

@@ -122,6 +122,56 @@ let SIGMA_ALGEBRA_INTERS_FINITE = prove
     ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
     ASM_SIMP_TAC[FINITE_IMAGE]]);;
 
+(* Closure under countable (non-empty) intersection: the De Morgan dual of     *)
+(* SIGMA_ALGEBRA_UNION_COUNTABLE, mirroring SIGMA_ALGEBRA_INTERS_FINITE.        *)
+let SIGMA_ALGEBRA_INTERS_COUNTABLE = prove
+  (`!(f:(A->bool)->bool) s.
+      sigma_algebra f /\ s SUBSET f /\ COUNTABLE s /\ ~(s = {})
+      ==> INTERS s IN f`,
+   REPEAT GEN_TAC THEN STRIP_TAC THEN
+   SUBGOAL_THEN
+     `INTERS s :A->bool = UNIONS f DIFF UNIONS (IMAGE (\a. UNIONS f DIFF a) s)`
+     SUBST1_TAC THENL
+   [MATCH_MP_TAC INTERS_COMPL_UNIONS THEN
+    ASM_REWRITE_TAC[] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC SIGMA_ALGEBRA_SUBSET THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+   MATCH_MP_TAC SIGMA_ALGEBRA_COMPL THEN ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC SIGMA_ALGEBRA_UNION_COUNTABLE THEN
+   ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC SIGMA_ALGEBRA_COMPL THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+    ASM_SIMP_TAC[COUNTABLE_IMAGE]]);;
+
+(* Closure under symmetric difference. *)
+let SIGMA_ALGEBRA_SYM_DIFF = prove
+  (`!(f:(A->bool)->bool) a b.
+      sigma_algebra f /\ a IN f /\ b IN f
+      ==> ((a DIFF b) UNION (b DIFF a)) IN f`,
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC SIGMA_ALGEBRA_UNION THEN
+   ASM_SIMP_TAC[SIGMA_ALGEBRA_DIFF]);;
+
+(* The Borel sets of any topology form a sigma-algebra (in the sense of this  *)
+(* development).  borel_in and its theory now live in Multivariate/metric.ml; *)
+(* this connection to our sigma_algebra predicate stays here since            *)
+(* sigma_algebra is defined above.                                            *)
+
+let BOREL_IN_SIGMA_ALGEBRA = prove
+ (`!top:A topology. sigma_algebra {s | borel_in top s}`,
+  GEN_TAC THEN REWRITE_TAC[sigma_algebra; IN_ELIM_THM] THEN
+  SUBGOAL_THEN `UNIONS {s:A->bool | borel_in top s} = topspace top`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [REWRITE_TAC[UNIONS_SUBSET; IN_ELIM_THM; BOREL_IN_SUBSET_TOPSPACE];
+    MATCH_MP_TAC(SET_RULE `(x:A->bool) IN s ==> x SUBSET UNIONS s`) THEN
+    REWRITE_TAC[IN_ELIM_THM; BOREL_IN_TOPSPACE]];
+   REWRITE_TAC[BOREL_IN_TOPSPACE; borel_in_RULES] THEN
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC BOREL_IN_UNIONS THEN
+   ASM_REWRITE_TAC[] THEN
+   RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; IN_ELIM_THM]) THEN
+   ASM_MESON_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Probability Spaces as a new type                                          *)

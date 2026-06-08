@@ -78,20 +78,6 @@ let OPEN_HALFLINE_AS_UNION = prove
 
 (* {x | X(x) < v} is an event - key for showing level sets are measurable *)
 (* Proof uses OPEN_HALFLINE_AS_UNION and countable union property *)
-let RANDOM_VARIABLE_OPEN_HALFLINE = prove
-  (`!p:A prob_space X v.
-      random_variable p X
-      ==> {x | x IN prob_carrier p /\ X x < v} IN prob_events p`,
-   REPEAT STRIP_TAC THEN
-   REWRITE_TAC[ISPECL [`X:A->real`; `v:real`; `prob_carrier (p:A prob_space)`]
-     OPEN_HALFLINE_AS_UNION] THEN
-   MATCH_MP_TAC PROB_INDEXED_UNION_IN_EVENTS THEN
-   GEN_TAC THEN
-   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [random_variable]) THEN
-   DISCH_THEN(MP_TAC o SPEC `v - inv(&n + &1)`) THEN
-   MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-   REWRITE_TAC[EXTENSION; IN_ELIM_THM]);;
-
 (* {x | X(x) = v} is an event (level set) *)
 let RANDOM_VARIABLE_LEVEL_SET = prove
   (`!p:A prob_space X v.
@@ -107,36 +93,11 @@ let RANDOM_VARIABLE_LEVEL_SET = prove
     MATCH_MP_TAC PROB_DIFF_IN_EVENTS THEN CONJ_TAC THENL
     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [random_variable]) THEN
      SIMP_TAC[];
-     MATCH_MP_TAC RANDOM_VARIABLE_OPEN_HALFLINE THEN ASM_REWRITE_TAC[]]]);;
+     MATCH_MP_TAC RV_PREIMAGE_LT THEN ASM_REWRITE_TAC[]]]);;
 
-(* {x | X(x) > v} is an event (complement of closed halfline) *)
-let RANDOM_VARIABLE_GT = prove
-  (`!p:A prob_space X v.
-      random_variable p X
-      ==> {x | x IN prob_carrier p /\ X x > v} IN prob_events p`,
-   REPEAT STRIP_TAC THEN
-   SUBGOAL_THEN
-     `{x:A | x IN prob_carrier p /\ X x > v} =
-      prob_carrier p DIFF {x | x IN prob_carrier p /\ X x <= v}`
-     SUBST1_TAC THENL
-   [SET_TAC[REAL_ARITH `!x v:real. x > v <=> ~(x <= v)`];
-    MATCH_MP_TAC PROB_COMPL_IN_EVENTS THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [random_variable]) THEN
-    SIMP_TAC[]]);;
-
-(* {x | X(x) >= v} is an event (complement of open halfline) *)
-let RANDOM_VARIABLE_GE = prove
-  (`!p:A prob_space X v.
-      random_variable p X
-      ==> {x | x IN prob_carrier p /\ X x >= v} IN prob_events p`,
-   REPEAT STRIP_TAC THEN
-   SUBGOAL_THEN
-     `{x:A | x IN prob_carrier p /\ X x >= v} =
-      prob_carrier p DIFF {x | x IN prob_carrier p /\ X x < v}`
-     SUBST1_TAC THENL
-   [SET_TAC[REAL_ARITH `!x v:real. x >= v <=> ~(x < v)`];
-    MATCH_MP_TAC PROB_COMPL_IN_EVENTS THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_OPEN_HALFLINE THEN ASM_REWRITE_TAC[]]);;
+(* The {X > v} and {X >= v} event facts are RV_PREIMAGE_GT / RV_PREIMAGE_GE   *)
+(* from random_variables.ml; the duplicate re-proofs formerly here have been  *)
+(* removed in favour of those canonical names.                                *)
 
 (* {x | a < X(x) < b} is an event (open interval) *)
 let RANDOM_VARIABLE_OPEN_INTERVAL = prove
@@ -151,8 +112,8 @@ let RANDOM_VARIABLE_OPEN_INTERVAL = prove
      SUBST1_TAC THENL
    [SET_TAC[REAL_ARITH `!x a:real. x > a <=> a < x`];
     MATCH_MP_TAC PROB_INTER_IN_EVENTS THEN CONJ_TAC THENL
-    [MATCH_MP_TAC RANDOM_VARIABLE_OPEN_HALFLINE THEN ASM_REWRITE_TAC[];
-     MATCH_MP_TAC RANDOM_VARIABLE_GT THEN ASM_REWRITE_TAC[]]]);;
+    [MATCH_MP_TAC RV_PREIMAGE_LT THEN ASM_REWRITE_TAC[];
+     MATCH_MP_TAC RV_PREIMAGE_GT THEN ASM_REWRITE_TAC[]]]);;
 
 (* {t | t < b} is real_open *)
 let REAL_OPEN_HALFSPACE_LT = prove
@@ -161,28 +122,6 @@ let REAL_OPEN_HALFSPACE_LT = prove
    X_GEN_TAC `t:real` THEN DISCH_TAC THEN
    EXISTS_TAC `b - t:real` THEN
    CONJ_TAC THENL [ASM_REAL_ARITH_TAC; GEN_TAC THEN REAL_ARITH_TAC]);;
-
-(* Continuous preimage of real_open set is real_open *)
-let REAL_CONTINUOUS_OPEN_PREIMAGE_UNIV = prove
-  (`!f U. f real_continuous_on (:real) /\ real_open U
-          ==> real_open {t | f t IN U}`,
-   REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[real_open; IN_ELIM_THM] THEN
-   X_GEN_TAC `x:real` THEN DISCH_TAC THEN
-   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [real_open]) THEN
-   DISCH_THEN(MP_TAC o SPEC `(f:real->real) x`) THEN
-   ASM_REWRITE_TAC[] THEN
-   DISCH_THEN(X_CHOOSE_THEN `eps:real` STRIP_ASSUME_TAC) THEN
-   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [real_continuous_on]) THEN
-   DISCH_THEN(MP_TAC o SPEC `x:real`) THEN
-   REWRITE_TAC[IN_UNIV] THEN
-   DISCH_THEN(MP_TAC o SPEC `eps:real`) THEN
-   ASM_REWRITE_TAC[] THEN
-   DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
-   EXISTS_TAC `d:real` THEN ASM_REWRITE_TAC[] THEN
-   X_GEN_TAC `y:real` THEN DISCH_TAC THEN
-   FIRST_X_ASSUM(MP_TAC o SPEC `y:real`) THEN
-   ASM_REWRITE_TAC[IN_UNIV] THEN DISCH_TAC THEN
-   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
 
 (* Preimage of real_open set under a random variable is an event *)
 let RANDOM_VARIABLE_PREIMAGE_OPEN = prove
@@ -253,57 +192,26 @@ let RANDOM_VARIABLE_PREIMAGE_OPEN = prove
 (* Algebra of random variables                                               *)
 (* ------------------------------------------------------------------------- *)
 
-(* Composition with a continuous function preserves random variable property *)
+(* Real continuity is exactly continuity as a map euclideanreal->euclideanreal. *)
+let CONTINUOUS_MAP_EUCLIDEANREAL = prove
+ (`!f. continuous_map (euclideanreal,euclideanreal) f <=>
+       f real_continuous_on (:real)`,
+  GEN_TAC THEN
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC; METRIC_CONTINUOUS_MAP] THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  REWRITE_TAC[real_continuous_on; IN_UNIV] THEN
+  MESON_TAC[REAL_ARITH `abs(y - x) = abs(x - y)`]);;
+
+(* Composition with a continuous function preserves random variable property. *)
+(* An instance of RANDOM_VARIABLE_CONTINUOUS_MAP_COMPOSE (random_variables.ml),*)
+(* which is in turn powered by the Borel-preimage machinery in metric.ml.      *)
 let RANDOM_VARIABLE_COMP_CONTINUOUS = prove
   (`!p:A prob_space X f.
       random_variable p X /\ f real_continuous_on (:real)
       ==> random_variable p (\x. f(X x))`,
-   REPEAT GEN_TAC THEN STRIP_TAC THEN
-   REWRITE_TAC[random_variable] THEN X_GEN_TAC `a:real` THEN
-   SUBGOAL_THEN
-     `{x:A | x IN prob_carrier p /\ (f:real->real)(X x) <= a} =
-      INTERS {{x | x IN prob_carrier p /\ f(X x) < a + inv(&n + &1)} |
-              n IN (:num)}`
-     SUBST1_TAC THENL
-   [REWRITE_TAC[EXTENSION] THEN X_GEN_TAC `z:A` THEN
-    REWRITE_TAC[INTERS_GSPEC; IN_UNIV; IN_ELIM_THM] THEN EQ_TAC THENL
-    [STRIP_TAC THEN X_GEN_TAC `n:num` THEN
-     ASM_REWRITE_TAC[] THEN
-     MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `a:real` THEN
-     ASM_REWRITE_TAC[REAL_LT_ADDR] THEN
-     MATCH_MP_TAC REAL_LT_INV THEN REAL_ARITH_TAC;
-     DISCH_TAC THEN CONJ_TAC THENL
-     [FIRST_X_ASSUM(MP_TAC o SPEC `0`) THEN
-      REWRITE_TAC[REAL_ADD_LID] THEN
-      MATCH_MP_TAC(TAUT `(p /\ q ==> r) ==> p /\ q ==> r`) THEN
-      SIMP_TAC[];
-      REWRITE_TAC[REAL_ARITH `x <= a <=> ~(a < x)`] THEN DISCH_TAC THEN
-      SUBGOAL_THEN `&0 < (f:real->real)(X(z:A)) - a` ASSUME_TAC THENL
-      [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
-      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [REAL_ARCH_INV]) THEN
-      DISCH_THEN(X_CHOOSE_THEN `k:num` STRIP_ASSUME_TAC) THEN
-      FIRST_X_ASSUM(MP_TAC o SPEC `k - 1`) THEN
-      UNDISCH_TAC `inv(&k) < (f:real->real)(X(z:A)) - a` THEN
-      UNDISCH_TAC `~(k = 0)` THEN
-      SPEC_TAC(`k:num`, `k:num`) THEN
-      INDUCT_TAC THENL [ARITH_TAC; ALL_TAC] THEN
-      REWRITE_TAC[SUC_SUB1; REAL_OF_NUM_SUC] THEN REAL_ARITH_TAC]];
-    ALL_TAC] THEN
-   MATCH_MP_TAC PROB_INDEXED_INTER_IN_EVENTS THEN
-   X_GEN_TAC `n:num` THEN
-   SUBGOAL_THEN
-     `{x:A | x IN prob_carrier p /\ (f:real->real)(X x) < a + inv(&n + &1)} =
-      {x | x IN prob_carrier p /\ X x IN {t:real | f t < a + inv(&n + &1)}}`
-     SUBST1_TAC THENL
-   [REWRITE_TAC[EXTENSION; IN_ELIM_THM]; ALL_TAC] THEN
-   MATCH_MP_TAC RANDOM_VARIABLE_PREIMAGE_OPEN THEN ASM_REWRITE_TAC[] THEN
-   SUBGOAL_THEN
-     `{t:real | (f:real->real) t < a + inv(&n + &1)} =
-      {t | f t IN {s:real | s < a + inv(&n + &1)}}`
-     SUBST1_TAC THENL
-   [REWRITE_TAC[EXTENSION; IN_ELIM_THM]; ALL_TAC] THEN
-   MATCH_MP_TAC REAL_CONTINUOUS_OPEN_PREIMAGE_UNIV THEN
-   ASM_REWRITE_TAC[REAL_OPEN_HALFSPACE_LT]);;
+   REPEAT STRIP_TAC THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_CONTINUOUS_MAP_COMPOSE THEN
+   ASM_REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEANREAL]);;
 
 (* Maximum of two random variables is a random variable *)
 let RANDOM_VARIABLE_MAX = prove
@@ -346,25 +254,11 @@ let RANDOM_VARIABLE_ABS = prove
   (`!p:A prob_space X.
       random_variable p X ==> random_variable p (\x. abs(X x))`,
    REPEAT STRIP_TAC THEN
-   REWRITE_TAC[random_variable] THEN
-   X_GEN_TAC `a:real` THEN
-   ASM_CASES_TAC `a < &0` THENL
-   [SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ abs(X x) <= a} = {}`
-      SUBST1_TAC THENL
-    [REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM] THEN
-     GEN_TAC THEN ASM_REAL_ARITH_TAC;
-     REWRITE_TAC[PROB_EMPTY_IN_EVENTS]];
-    SUBGOAL_THEN
-      `{x:A | x IN prob_carrier p /\ abs(X x) <= a} =
-       {x | x IN prob_carrier p /\ X x <= a} INTER
-       {x | x IN prob_carrier p /\ X x >= --a}`
-      SUBST1_TAC THENL
-    [SET_TAC[REAL_ARITH
-       `!x a:real. abs x <= a <=> x <= a /\ x >= --a`];
-     MATCH_MP_TAC PROB_INTER_IN_EVENTS THEN CONJ_TAC THENL
-     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [random_variable]) THEN
-      SIMP_TAC[];
-      MATCH_MP_TAC RANDOM_VARIABLE_GE THEN ASM_REWRITE_TAC[]]]]);;
+   MP_TAC(ISPECL [`p:A prob_space`; `X:A->real`; `abs:real->real`]
+     RANDOM_VARIABLE_COMP_CONTINUOUS) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+   MP_TAC(ISPECL [`\x:real. x`; `(:real)`] REAL_CONTINUOUS_ON_ABS) THEN
+   REWRITE_TAC[REAL_CONTINUOUS_ON_ID; ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Simple random variables (taking finitely many values)                     *)
@@ -468,47 +362,16 @@ let RANDOM_VARIABLE_NEG_PART = prove
    MATCH_MP_TAC RANDOM_VARIABLE_MAX THEN
    ASM_SIMP_TAC[RANDOM_VARIABLE_NEG; RANDOM_VARIABLE_CONST]);;
 
-(* Helper: x^2 <= a iff |x| <= sqrt(a) when a >= 0 *)
-let POW_2_LE_SQRT = prove
-  (`!x a. &0 <= a ==> (x pow 2 <= a <=> abs x <= sqrt a)`,
-   REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL
-   [DISCH_TAC THEN
-    MP_TAC(ISPECL [`(x:real) pow 2`; `a:real`] SQRT_MONO_LE) THEN
-    ASM_REWRITE_TAC[POW_2_SQRT_ABS];
-    DISCH_TAC THEN
-    SUBGOAL_THEN `sqrt(x pow 2) <= sqrt a` MP_TAC THENL
-    [ASM_REWRITE_TAC[POW_2_SQRT_ABS]; ALL_TAC] THEN
-    SIMP_TAC[SQRT_MONO_LE_EQ; REAL_LE_POW_2]]);;
-
 (* Square of a random variable is a random variable *)
 let RANDOM_VARIABLE_SQUARE = prove
   (`!p:A prob_space X.
       random_variable p X ==> random_variable p (\x. (X x) pow 2)`,
    REPEAT STRIP_TAC THEN
-   REWRITE_TAC[random_variable] THEN
-   X_GEN_TAC `a:real` THEN
-   ASM_CASES_TAC `a < &0` THENL
-   [SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ X x pow 2 <= a} = {}`
-      SUBST1_TAC THENL
-    [REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM] THEN
-     GEN_TAC THEN STRIP_TAC THEN
-     MP_TAC(SPEC `(X:A->real) x` REAL_LE_POW_2) THEN ASM_REAL_ARITH_TAC;
-     REWRITE_TAC[PROB_EMPTY_IN_EVENTS]];
-    SUBGOAL_THEN
-      `{x:A | x IN prob_carrier p /\ X x pow 2 <= a} =
-       {x | x IN prob_carrier p /\ X x <= sqrt a} INTER
-       {x | x IN prob_carrier p /\ X x >= --(sqrt a)}`
-      SUBST1_TAC THENL
-    [REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM] THEN
-     X_GEN_TAC `z:A` THEN
-     ASM_CASES_TAC `(z:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN
-     MP_TAC(ISPECL [`(X:A->real) z`; `a:real`] POW_2_LE_SQRT) THEN
-     ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
-     REWRITE_TAC[REAL_ABS_BOUNDS] THEN REAL_ARITH_TAC;
-     MATCH_MP_TAC PROB_INTER_IN_EVENTS THEN CONJ_TAC THENL
-     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [random_variable]) THEN
-      SIMP_TAC[];
-      MATCH_MP_TAC RANDOM_VARIABLE_GE THEN ASM_REWRITE_TAC[]]]]);;
+   MP_TAC(ISPECL [`p:A prob_space`; `X:A->real`; `\y:real. y pow 2`]
+     RANDOM_VARIABLE_COMP_CONTINUOUS) THEN
+   ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+   MP_TAC(ISPECL [`\x:real. x`; `2`; `(:real)`] REAL_CONTINUOUS_ON_POW) THEN
+   REWRITE_TAC[REAL_CONTINUOUS_ON_ID; ETA_AX]);;
 
 (* Test: prove --a / --c = a / c *)
 (* --a / --c = (--a) * inv(--c) = (--a) * (--(inv c)) = --((--a) * inv c)
@@ -549,7 +412,7 @@ let RANDOM_VARIABLE_CMUL = prove
      [REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN X_GEN_TAC `z:A` THEN
       ASM_CASES_TAC `(z:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN
       ASM_SIMP_TAC[MUL_LNEG_LE];
-      MATCH_MP_TAC RANDOM_VARIABLE_GE THEN ASM_REWRITE_TAC[]]]]);;
+      MATCH_MP_TAC RV_PREIMAGE_GE THEN ASM_REWRITE_TAC[]]]]);;
 
 
 (* Helper: inv(&n + &1) version of archimedean principle *)
@@ -658,7 +521,7 @@ let RANDOM_VARIABLE_ADD = prove
    [REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `s:A->bool` THEN
     DISCH_THEN(X_CHOOSE_THEN `r:real` (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)) THEN
     MATCH_MP_TAC PROB_INTER_IN_EVENTS THEN
-    ASM_SIMP_TAC[RANDOM_VARIABLE_OPEN_HALFLINE];
+    ASM_SIMP_TAC[RV_PREIMAGE_LT];
     REWRITE_TAC[COUNTABLE_RATIONAL_SETS]]);;
 
 (* Difference of two random variables is a random variable *)
@@ -1343,6 +1206,39 @@ let INDEP_RV_DIST_FN = prove
             distribution_fn p X a * distribution_fn p Y b`,
    REPEAT GEN_TAC THEN REWRITE_TAC[indep_rv; distribution_fn]);;
 
+(* The law (pushforward, random_variables.ml) restricted to a half-line is the *)
+(* distribution function (CDF). *)
+let DISTRIBUTION_CDF = prove
+ (`!p (X:A->real) c.
+     distribution p X {y | y <= c} = distribution_fn p X c`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[distribution; distribution_fn] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM]);;
+
+(* The joint distribution function is dominated by each marginal CDF. *)
+let JOINT_DISTRIBUTION_LE_MARGINAL_X = prove
+ (`!p (X:A->real) Y a b.
+     random_variable p X /\ random_variable p Y
+     ==> joint_distribution_fn p X Y a b <= distribution_fn p X a`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[joint_distribution_fn; distribution_fn] THEN
+  MATCH_MP_TAC PROB_MONO THEN REPEAT CONJ_TAC THENL
+  [MATCH_MP_TAC JOINT_RECTANGLE_IN_EVENTS THEN ASM_REWRITE_TAC[];
+   ASM_MESON_TAC[random_variable];
+   REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN MESON_TAC[]]);;
+
+(* Two random variables are independent iff their joint distribution function  *)
+(* factorizes into the product of the marginal distribution functions.         *)
+let INDEP_RV_JOINT_DISTRIBUTION = prove
+ (`!p (X:A->real) Y.
+     random_variable p X /\ random_variable p Y
+     ==> (indep_rv p X Y <=>
+          !a b. joint_distribution_fn p X Y a b =
+                distribution_fn p X a * distribution_fn p Y b)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[indep_rv; joint_distribution_fn; distribution_fn] THEN
+  ASM_REWRITE_TAC[] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN MESON_TAC[]);;
+
 
 (* ========================================================================= *)
 (* Generated sigma-algebra (Williams 1.1)                                    *)
@@ -1382,6 +1278,17 @@ let SIGMA_GENERATED_SUPERSET = prove
       ==> C SUBSET sigma_generated U C`,
    REPEAT STRIP_TAC THEN REWRITE_TAC[sigma_generated; SUBSET; IN_INTERS] THEN
    REWRITE_TAC[IN_ELIM_THM] THEN ASM SET_TAC[]);;
+
+(* Pointwise form of SIGMA_GENERATED_SUPERSET: a single generator is in the    *)
+(* generated sigma-algebra.                                                    *)
+let IN_SIGMA_GENERATED_GEN = prove
+  (`!U C a:A->bool.
+      (!x. x IN C ==> x SUBSET U) /\ a IN C
+      ==> a IN sigma_generated U C`,
+   REPEAT STRIP_TAC THEN
+   MP_TAC(ISPECL [`U:A->bool`; `C:(A->bool)->bool`] SIGMA_GENERATED_SUPERSET) THEN
+   ASM_REWRITE_TAC[SUBSET] THEN DISCH_THEN MATCH_MP_TAC THEN
+   ASM_REWRITE_TAC[]);;
 
 (* Clean characterization of membership in sigma_generated *)
 let SIGMA_GENERATED_MEM = prove
@@ -2519,7 +2426,7 @@ let MARKOV_INEQUALITY_SIMPLE = prove
    ABBREV_TAC `S = {x:A | x IN prob_carrier p /\ (X:A->real) x >= a}` THEN
    (* Step 1: S is a measurable event *)
    SUBGOAL_THEN `(S:A->bool) IN prob_events p` ASSUME_TAC THENL
-   [EXPAND_TAC "S" THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   [EXPAND_TAC "S" THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
     ASM_MESON_TAC[simple_rv]; ALL_TAC] THEN
    (* Step 2: E[a * 1_S] <= E[X] *)
    SUBGOAL_THEN `simple_rv (p:A prob_space) (\x:A. a * indicator_fn (S:A->bool) x)`
@@ -2873,7 +2780,7 @@ let SIMPLE_CHEBYSHEV_CONVERGENCE = prove
       abs ((X:num->A->real) n x - mu) >= e}`
      ASSUME_TAC THENL
    [MATCH_MP_TAC PROB_POSITIVE THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN
     MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
     MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
     ASM_REWRITE_TAC[ETA_AX; RANDOM_VARIABLE_CONST]; ALL_TAC] THEN
@@ -3358,7 +3265,7 @@ let BCL1_CONVERGENCE = prove
     `!k n. {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - c) >= inv(&(SUC k))}
            IN prob_events p`
     (LABEL_TAC "Hev") THENL
-  [REPEAT GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+  [REPEAT GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
    MATCH_MP_TAC RANDOM_VARIABLE_SUB_CONST THEN
    REWRITE_TAC[ETA_AX] THEN
@@ -3448,7 +3355,7 @@ let SIMPLE_SLLN_SUBSEQ = prove
   MATCH_MP_TAC(REAL_ARITH `&0 <= x /\ x <= y ==> abs x <= y`) THEN
   CONJ_TAC THENL
   [MATCH_MP_TAC PROB_POSITIVE THEN
-   MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
    MATCH_MP_TAC RANDOM_VARIABLE_SUB_CONST THEN
    SUBGOAL_THEN `simple_rv (p:A prob_space)
@@ -4004,7 +3911,7 @@ let NONNEG_SIMPLE_FN_APPROX_RV = prove
    REPEAT CONJ_TAC THENL
    [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
     REPEAT STRIP_TAC THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_OPEN_HALFLINE THEN ASM_REWRITE_TAC[];
+    MATCH_MP_TAC RV_PREIMAGE_LT THEN ASM_REWRITE_TAC[];
     MATCH_MP_TAC FINITE_IMP_COUNTABLE THEN
     MATCH_MP_TAC FINITE_IMAGE THEN
     MATCH_MP_TAC FINITE_SUBSET THEN
@@ -4313,7 +4220,7 @@ let SIMPLE_RV_GE_EVENT = prove
     SUBST1_TAC THENL
   [SET_TAC[REAL_ARITH `!x c:real. x >= c <=> ~(x < c)`];
    MATCH_MP_TAC PROB_COMPL_IN_EVENTS THEN
-   MATCH_MP_TAC RANDOM_VARIABLE_OPEN_HALFLINE THEN
+   MATCH_MP_TAC RV_PREIMAGE_LT THEN
    ASM_MESON_TAC[simple_rv]]);;
 
 (* If f >= g on event a, then E[f] >= E[g * 1_a] *)
@@ -8857,7 +8764,7 @@ let BCL1_CONVERGENCE_RV = prove
     `!k n. {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - c) >= inv(&(SUC k))}
            IN prob_events p`
     (LABEL_TAC "Hev") THENL
-  [REPEAT GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+  [REPEAT GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
    MATCH_MP_TAC RANDOM_VARIABLE_SUB_CONST THEN
    REWRITE_TAC[ETA_AX] THEN
@@ -8950,7 +8857,7 @@ let SLLN_SUBSEQ = prove
     ASSUME_TAC THENL [MATCH_MP_TAC INTEGRABLE_SUM_SQUARE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
   CONJ_TAC THENL
   [(* prob >= 0 *)
-   MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB_CONST THEN
    MATCH_MP_TAC RANDOM_VARIABLE_CMUL THEN ASM_MESON_TAC[integrable]; ALL_TAC] THEN
   ABBREV_TAC `nn = SUC(k * k)` THEN
@@ -9057,7 +8964,7 @@ let CHEBYSHEV_CONVERGENCE = prove
      abs ((X:num->A->real) n x - expectation p (X n)) >= e}`
     ASSUME_TAC THENL
   [MATCH_MP_TAC PROB_POSITIVE THEN
-   MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
    MATCH_MP_TAC RANDOM_VARIABLE_SUB_CONST THEN
    ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
@@ -9268,28 +9175,60 @@ let STRONG_LAW_OF_LARGE_NUMBERS = prove
 (* Phase 17: RV measurability for cos/sin and CLT infrastructure             *)
 (* ========================================================================= *)
 
-(* RANDOM_VARIABLE_STRICT_LT: strict inequality version of measurability *)
-let RANDOM_VARIABLE_STRICT_LT = prove
- (`!p:A prob_space X a.
-     random_variable p X
-     ==> {x | x IN prob_carrier p /\ X x < a} IN prob_events p`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `{x:A | x IN prob_carrier p /\ X x < a} =
-    prob_carrier p DIFF {x | x IN prob_carrier p /\ X x >= a}` SUBST1_TAC THENL
-  [SET_TAC[REAL_ARITH `!x a:real. x < a <=> ~(x >= a)`];
-   MATCH_MP_TAC PROB_COMPL_IN_EVENTS THEN
-   MATCH_MP_TAC RANDOM_VARIABLE_GE THEN ASM_REWRITE_TAC[]]);;
+(* The strict-inequality {X < a} event fact is RV_PREIMAGE_LT from            *)
+(* random_variables.ml; the duplicate re-proof formerly here has been removed. *)
+
+(* PROB_STRICT_INEQ_LIMIT: prob of <= events converges to prob of < event *)
+let PROB_STRICT_INEQ_LIMIT = prove
+ (`!p:A prob_space Z c.
+    random_variable p Z
+    ==> ((\n. prob p {x | x IN prob_carrier p /\ Z x <= c - &1 / &(SUC n)})
+         ---> prob p {x | x IN prob_carrier p /\ Z x < c}) sequentially`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`p:A prob_space`;
+    `\n:num. {x:A | x IN prob_carrier p /\ (Z:A->real) x <= c - &1 / &(SUC n)}`]
+    PROB_CONTINUITY_FROM_BELOW) THEN
+  BETA_TAC THEN ANTS_TAC THENL
+  [CONJ_TAC THENL
+   [GEN_TAC THEN FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [random_variable]) THEN
+    DISCH_THEN(MP_TAC o SPEC `c - &1 / &(SUC n)`) THEN REWRITE_TAC[];
+    GEN_TAC THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN GEN_TAC THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `c - &1 / &(SUC n)` THEN
+    ASM_REWRITE_TAC[] THEN REWRITE_TAC[REAL_ARITH `a - x <= a - y <=> y <= x`] THEN
+    REWRITE_TAC[real_div; REAL_MUL_LID] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+    REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN ARITH_TAC];
+   SUBGOAL_THEN
+     `UNIONS {{x:A | x IN prob_carrier p /\ (Z:A->real) x <= c - &1 / &(SUC n)} |
+              n IN (:num)} =
+      {x | x IN prob_carrier p /\ Z x < c}` (fun th -> REWRITE_TAC[th]) THEN
+   REWRITE_TAC[UNIONS_GSPEC; IN_UNIV; EXTENSION; IN_ELIM_THM] THEN
+   GEN_TAC THEN EQ_TAC THENL
+   [STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    SUBGOAL_THEN `&0 < &1 / &(SUC n)` MP_TAC THENL
+    [MATCH_MP_TAC REAL_LT_DIV THEN REWRITE_TAC[REAL_OF_NUM_LT] THEN ARITH_TAC;
+     ASM_REAL_ARITH_TAC];
+    STRIP_TAC THEN
+    MP_TAC(SPEC `c - (Z:A->real) x` REAL_ARCH_INV) THEN
+    ASM_SIMP_TAC[REAL_SUB_LT] THEN
+    DISCH_THEN(X_CHOOSE_THEN `m:num` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `m:num` THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `c - inv(&m)` THEN CONJ_TAC THENL
+    [ASM_REAL_ARITH_TAC;
+     REWRITE_TAC[REAL_ARITH `a - x <= a - y <=> y <= x`; real_div; REAL_MUL_LID] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN
+     REWRITE_TAC[REAL_OF_NUM_LE; REAL_OF_NUM_LT] THEN ASM_ARITH_TAC]]]);;
 
 (* RANDOM_VARIABLE_POW: power of a random variable is a random variable *)
 let RANDOM_VARIABLE_POW = prove
  (`!p:A prob_space X n. random_variable p X
      ==> random_variable p (\x. X x pow n)`,
-  GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THENL
-  [DISCH_TAC THEN REWRITE_TAC[real_pow] THEN
-   REWRITE_TAC[RANDOM_VARIABLE_CONST];
-   DISCH_TAC THEN REWRITE_TAC[real_pow] THEN
-   MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN
-   ASM_SIMP_TAC[]]);;
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`p:A prob_space`; `X:A->real`; `\y:real. y pow n`]
+    RANDOM_VARIABLE_COMP_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+  MP_TAC(ISPECL [`\x:real. x`; `n:num`; `(:real)`] REAL_CONTINUOUS_ON_POW) THEN
+  REWRITE_TAC[REAL_CONTINUOUS_ON_ID; ETA_AX]);;
 
 (* RANDOM_VARIABLE_SUM: finite sum of random variables *)
 let RANDOM_VARIABLE_SUM = prove
@@ -9395,7 +9334,7 @@ let RANDOM_VARIABLE_POINTWISE_LIMIT = prove
     REPEAT CONJ_TAC THENL
     [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
      X_GEN_TAC `n:num` THEN DISCH_TAC THEN BETA_TAC THEN
-     MATCH_MP_TAC RANDOM_VARIABLE_STRICT_LT THEN
+     MATCH_MP_TAC RV_PREIMAGE_LT THEN
      REWRITE_TAC[ETA_AX] THEN ASM_REWRITE_TAC[];
      MATCH_MP_TAC COUNTABLE_IMAGE THEN
      MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC `(:num)` THEN
@@ -9409,101 +9348,23 @@ let RANDOM_VARIABLE_POINTWISE_LIMIT = prove
    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_UNIV] THEN
    EXISTS_TAC `0` THEN REWRITE_TAC[]]);;
 
-(* COS_TAYLOR_CONVERGES: real Taylor series for cosine converges *)
-let COS_TAYLOR_CONVERGES = prove
- (`!x:real. ((\n. sum(0..n)
-    (\k. (-- &1) pow k * x pow (2 * k) / &(FACT(2 * k)))) ---> cos x)
-    sequentially`,
-  X_GEN_TAC `x:real` THEN
-  MP_TAC(SPEC `Cx x` CCOS_CONVERGES) THEN
-  REWRITE_TAC[sums; FROM_0; INTER_UNIV; GSYM CX_COS] THEN
-  SUBGOAL_THEN `!n. vsum(0..n) (\n. --Cx(&1) pow n * Cx x pow (2 * n) /
-    Cx(&(FACT(2 * n)))) =
-    Cx(sum(0..n) (\k. (-- &1) pow k * x pow (2 * k) / &(FACT(2 * k))))`
-    (fun th -> REWRITE_TAC[th]) THENL
-  [GEN_TAC THEN
-   REWRITE_TAC[GSYM VSUM_CX] THEN
-   MATCH_MP_TAC VSUM_EQ THEN
-   REWRITE_TAC[IN_NUMSEG] THEN
-   REPEAT STRIP_TAC THEN BETA_TAC THEN
-   REWRITE_TAC[GSYM CX_NEG; GSYM CX_POW; GSYM CX_MUL; GSYM CX_DIV];
-   REWRITE_TAC[REALLIM_COMPLEX; o_DEF]]);;
-
-(* SIN_TAYLOR_CONVERGES: real Taylor series for sine converges *)
-let SIN_TAYLOR_CONVERGES = prove
- (`!x:real. ((\n. sum(0..n)
-    (\k. (-- &1) pow k * x pow (2 * k + 1) / &(FACT(2 * k + 1)))) ---> sin x)
-    sequentially`,
-  X_GEN_TAC `x:real` THEN
-  MP_TAC(SPEC `Cx x` CSIN_CONVERGES) THEN
-  REWRITE_TAC[sums; FROM_0; INTER_UNIV; GSYM CX_SIN] THEN
-  SUBGOAL_THEN `!n. vsum(0..n) (\n. --Cx(&1) pow n * Cx x pow (2 * n + 1) /
-    Cx(&(FACT(2 * n + 1)))) =
-    Cx(sum(0..n) (\k. (-- &1) pow k * x pow (2 * k + 1) / &(FACT(2 * k + 1))))`
-    (fun th -> REWRITE_TAC[th]) THENL
-  [GEN_TAC THEN
-   REWRITE_TAC[GSYM VSUM_CX] THEN
-   MATCH_MP_TAC VSUM_EQ THEN
-   REWRITE_TAC[IN_NUMSEG] THEN
-   REPEAT STRIP_TAC THEN BETA_TAC THEN
-   REWRITE_TAC[GSYM CX_NEG; GSYM CX_POW; GSYM CX_MUL; GSYM CX_DIV];
-   REWRITE_TAC[REALLIM_COMPLEX; o_DEF]]);;
-
 (* RANDOM_VARIABLE_COS: composition with cosine preserves measurability *)
-(* Proof: Taylor partial sums are polynomials in X (hence RVs),
-   converge pointwise to cos(X), so by RANDOM_VARIABLE_POINTWISE_LIMIT *)
 let RANDOM_VARIABLE_COS = prove
  (`!p:A prob_space X. random_variable p X
      ==> random_variable p (\x. cos(X x))`,
   REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC RANDOM_VARIABLE_POINTWISE_LIMIT THEN
-  EXISTS_TAC `\n (x:A). sum(0..n)
-    (\k. (-- &1) pow k * (X x) pow (2 * k) / &(FACT(2 * k)))` THEN
-  BETA_TAC THEN CONJ_TAC THENL
-  [GEN_TAC THEN
-   SUBGOAL_THEN
-     `(\x:A. sum(0..n) (\k. (-- &1) pow k * (X:A->real) x pow (2 * k) /
-       &(FACT(2 * k)))) =
-      (\x:A. sum(0..n) (\k. ((-- &1) pow k / &(FACT(2 * k))) *
-       X x pow (2 * k)))`
-     SUBST1_TAC THENL
-   [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `a:A` THEN BETA_TAC THEN
-    MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN
-    REPEAT STRIP_TAC THEN BETA_TAC THEN
-    REWRITE_TAC[real_div; REAL_MUL_AC];
-    MATCH_MP_TAC RANDOM_VARIABLE_SUM THEN
-    GEN_TAC THEN DISCH_TAC THEN BETA_TAC THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_CMUL THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_POW THEN
-    ASM_REWRITE_TAC[]];
-   REPEAT STRIP_TAC THEN REWRITE_TAC[COS_TAYLOR_CONVERGES]]);;
+  MP_TAC(ISPECL [`p:A prob_space`; `X:A->real`; `cos:real->real`]
+    RANDOM_VARIABLE_COMP_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[REAL_CONTINUOUS_ON_COS]);;
 
 (* RANDOM_VARIABLE_SIN: composition with sine preserves measurability *)
 let RANDOM_VARIABLE_SIN = prove
  (`!p:A prob_space X. random_variable p X
      ==> random_variable p (\x. sin(X x))`,
   REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC RANDOM_VARIABLE_POINTWISE_LIMIT THEN
-  EXISTS_TAC `\n (x:A). sum(0..n)
-    (\k. (-- &1) pow k * (X x) pow (2 * k + 1) / &(FACT(2 * k + 1)))` THEN
-  BETA_TAC THEN CONJ_TAC THENL
-  [GEN_TAC THEN
-   SUBGOAL_THEN
-     `(\x:A. sum(0..n) (\k. (-- &1) pow k * (X:A->real) x pow (2 * k + 1) /
-       &(FACT(2 * k + 1)))) =
-      (\x:A. sum(0..n) (\k. ((-- &1) pow k / &(FACT(2 * k + 1))) *
-       X x pow (2 * k + 1)))`
-     SUBST1_TAC THENL
-   [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `a:A` THEN BETA_TAC THEN
-    MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN
-    REPEAT STRIP_TAC THEN BETA_TAC THEN
-    REWRITE_TAC[real_div; REAL_MUL_AC];
-    MATCH_MP_TAC RANDOM_VARIABLE_SUM THEN
-    GEN_TAC THEN DISCH_TAC THEN BETA_TAC THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_CMUL THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_POW THEN
-    ASM_REWRITE_TAC[]];
-   REPEAT STRIP_TAC THEN REWRITE_TAC[SIN_TAYLOR_CONVERGES]]);;
+  MP_TAC(ISPECL [`p:A prob_space`; `X:A->real`; `sin:real->real`]
+    RANDOM_VARIABLE_COMP_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[REAL_CONTINUOUS_ON_SIN]);;
 
 (* Integrability of cos/sin compositions (bounded RVs are integrable) *)
 let INTEGRABLE_COS_CMUL = prove
@@ -11136,6 +10997,74 @@ let INDEP_EXTENDS_TO_SIGMA = prove
     REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_MESON_TAC[SUBSET]];
    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_MESON_TAC[]]);;
 
+(* ------------------------------------------------------------------------- *)
+(* Uniqueness of measures (Williams "Probability with Martingales" 1.6).     *)
+(*                                                                           *)
+(* If a second (signed) measure mu of total mass 1 agrees with prob p on a   *)
+(* pi-system P that generates the events, then mu agrees with prob p on the  *)
+(* whole sigma-algebra sigma(P).  This is the general companion to           *)
+(* INDEP_EXTENDS_TO_SIGMA, proved by the same Dynkin pi-lambda argument: the *)
+(* sets on which mu and prob p agree form a lambda-system containing P.      *)
+(* ------------------------------------------------------------------------- *)
+
+(* The agreement set {a | mu a = prob p a} is a lambda-system.  Closure under *)
+(* complements uses total mass 1; closure under countable disjoint unions     *)
+(* uses that both measures are countably additive with equal terms.           *)
+let MEASURE_AGREE_LAMBDA_SYSTEM = prove
+ (`!p:A prob_space mu.
+     signed_measure p mu /\ mu (prob_carrier p) = &1
+     ==> lambda_system (prob_carrier p)
+           {a | a IN prob_events p /\ mu a = prob p a}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lambda_system; IN_ELIM_THM] THEN
+  REPEAT CONJ_TAC THENL
+  [REWRITE_TAC[PROB_CARRIER_IN_EVENTS];
+   ASM_MESON_TAC[PROB_SPACE];
+   X_GEN_TAC `a:A->bool` THEN STRIP_TAC THEN
+   CONJ_TAC THENL [ASM_MESON_TAC[PROB_COMPL_IN_EVENTS]; ALL_TAC] THEN
+   SUBGOAL_THEN `(a:A->bool) SUBSET prob_carrier p` ASSUME_TAC THENL
+   [ASM_MESON_TAC[PROB_EVENT_SUBSET]; ALL_TAC] THEN
+   MP_TAC(SPECL [`p:A prob_space`; `mu:(A->bool)->real`;
+                `prob_carrier (p:A prob_space)`; `a:A->bool`]
+     SIGNED_MEASURE_DIFF) THEN
+   ASM_REWRITE_TAC[PROB_CARRIER_IN_EVENTS] THEN DISCH_TAC THEN
+   ASM_SIMP_TAC[PROB_COMPL] THEN ASM_REAL_ARITH_TAC;
+   X_GEN_TAC `B:num->A->bool` THEN STRIP_TAC THEN
+   SUBGOAL_THEN `!n. (B:num->A->bool) n IN prob_events p` ASSUME_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_COUNTABLE_UNION_IN_EVENTS THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; NUM_COUNTABLE] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV] THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   MATCH_MP_TAC REAL_SERIES_UNIQUE THEN
+   MAP_EVERY EXISTS_TAC
+    [`\n. prob p ((B:num->A->bool) n)`; `from 0`] THEN
+   CONJ_TAC THENL
+   [SUBGOAL_THEN `(\n. prob p ((B:num->A->bool) n)) = (\n. mu (B n))`
+      SUBST1_TAC THENL
+    [REWRITE_TAC[FUN_EQ_THM] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [signed_measure]) THEN
+    DISCH_THEN(MATCH_MP_TAC o CONJUNCT2) THEN ASM_REWRITE_TAC[];
+    MATCH_MP_TAC PROB_COUNTABLY_ADDITIVE THEN ASM_REWRITE_TAC[]]]);;
+
+(* The uniqueness theorem itself, via Dynkin.                                 *)
+let MEASURE_UNIQUE_ON_PI_SYSTEM = prove
+ (`!p:A prob_space mu P.
+     signed_measure p mu /\ mu (prob_carrier p) = &1 /\
+     pi_system P /\ UNIONS P = prob_carrier p /\
+     P SUBSET prob_events p /\
+     (!c. c IN P ==> mu c = prob p c)
+     ==> !c. c IN sigma_generated (prob_carrier p) P ==> mu c = prob p c`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `sigma_generated (prob_carrier p) P SUBSET
+     {a:A->bool | a IN prob_events p /\ mu a = prob p a}` MP_TAC THENL
+  [MATCH_MP_TAC DYNKIN_PI_LAMBDA THEN ASM_REWRITE_TAC[] THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC MEASURE_AGREE_LAMBDA_SYSTEM THEN ASM_REWRITE_TAC[];
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_MESON_TAC[SUBSET]];
+   REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_MESON_TAC[]]);;
+
 let SIGMA_GENERATED_MONO = prove
  (`!(U:A->bool) C1 C2.
     C1 SUBSET C2 /\ (!a. a IN C2 ==> a SUBSET U)
@@ -11147,6 +11076,118 @@ let SIGMA_GENERATED_MONO = prove
   MATCH_MP_TAC SUBSET_TRANS THEN
   EXISTS_TAC `C2:(A->bool)->bool` THEN ASM_REWRITE_TAC[] THEN
   ASM_SIMP_TAC[SIGMA_GENERATED_SUPERSET]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The Borel sigma-algebra on the reals is generated by the closed half-lines *)
+(* (-inf, a] (Williams "Probability with Martingales", Ch.3).  This bridges   *)
+(* the library notion borel_in euclideanreal to the development's             *)
+(* sigma_generated, so the two "Borel" vocabularies can be used               *)
+(* interchangeably.                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let real_halflines = new_definition
+ `real_halflines = {{x:real | x <= a} | a IN (:real)}`;;
+
+let HALFLINES_SUBSET_UNIV = prove
+ (`!s. s IN real_halflines ==> s SUBSET (:real)`,
+  REWRITE_TAC[real_halflines; FORALL_IN_GSPEC; SUBSET_UNIV]);;
+
+let SIGMA_ALGEBRA_SIGMA_GENERATED_HALFLINES = prove
+ (`sigma_algebra (sigma_generated (:real) real_halflines)`,
+  MATCH_MP_TAC SIGMA_GENERATED_IS_SIGMA_ALGEBRA THEN
+  REWRITE_TAC[real_halflines; FORALL_IN_GSPEC; SUBSET_UNIV]);;
+
+let UNIONS_SIGMA_GENERATED_HALFLINES = prove
+ (`UNIONS (sigma_generated (:real) real_halflines) = (:real)`,
+  MATCH_MP_TAC SIGMA_GENERATED_CARRIER THEN
+  REWRITE_TAC[real_halflines; FORALL_IN_GSPEC; SUBSET_UNIV]);;
+
+(* Closed half-line: a generator, hence in the generated sigma-algebra. *)
+let REAL_HALFLINE_LE_IN_SIGMA = prove
+ (`!a. {x:real | x <= a} IN sigma_generated (:real) real_halflines`,
+  GEN_TAC THEN MATCH_MP_TAC IN_SIGMA_GENERATED_GEN THEN
+  REWRITE_TAC[HALFLINES_SUBSET_UNIV] THEN
+  REWRITE_TAC[real_halflines; IN_ELIM_THM] THEN
+  EXISTS_TAC `a:real` THEN REWRITE_TAC[IN_UNIV]);;
+
+(* Open half-line: a countable union of closed half-lines. *)
+let REAL_HALFLINE_LT_IN_SIGMA = prove
+ (`!b. {x:real | x < b} IN sigma_generated (:real) real_halflines`,
+  GEN_TAC THEN
+  SUBGOAL_THEN
+   `{x:real | x < b} = UNIONS {{x:real | x <= b - inv(&n + &1)} | n IN (:num)}`
+   SUBST1_TAC THENL
+  [MP_TAC(ISPECL [`\x:real. x`; `b:real`; `(:real)`] OPEN_HALFLINE_AS_UNION) THEN
+   REWRITE_TAC[IN_UNIV]; ALL_TAC] THEN
+  MATCH_MP_TAC SIGMA_ALGEBRA_UNION_COUNTABLE THEN
+  REWRITE_TAC[SIGMA_ALGEBRA_SIGMA_GENERATED_HALFLINES] THEN
+  CONJ_TAC THENL
+  [REWRITE_TAC[SUBSET; FORALL_IN_GSPEC; IN_UNIV] THEN
+   REWRITE_TAC[REAL_HALFLINE_LE_IN_SIGMA];
+   REWRITE_TAC[SIMPLE_IMAGE] THEN MATCH_MP_TAC COUNTABLE_IMAGE THEN
+   REWRITE_TAC[NUM_COUNTABLE]]);;
+
+(* Open interval = open half-line minus a closed half-line. *)
+let REAL_INTERVAL_IN_SIGMA = prove
+ (`!a b. real_interval(a,b) IN sigma_generated (:real) real_halflines`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN
+   `real_interval(a,b) = {x:real | x < b} DIFF {x:real | x <= a}`
+   SUBST1_TAC THENL
+  [REWRITE_TAC[real_interval; EXTENSION; IN_DIFF; IN_ELIM_THM] THEN
+   REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  MATCH_MP_TAC SIGMA_ALGEBRA_DIFF THEN
+  REWRITE_TAC[SIGMA_ALGEBRA_SIGMA_GENERATED_HALFLINES;
+              REAL_HALFLINE_LT_IN_SIGMA; REAL_HALFLINE_LE_IN_SIGMA]);;
+
+(* Every real-open set: a countable union of open intervals. *)
+let REAL_OPEN_IN_SIGMA = prove
+ (`!s. real_open s ==> s IN sigma_generated (:real) real_halflines`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP REAL_OPEN_COUNTABLE_UNION_REAL_INTERVAL) THEN
+  DISCH_THEN(X_CHOOSE_THEN `D:(real->bool)->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  MATCH_MP_TAC SIGMA_ALGEBRA_UNION_COUNTABLE THEN
+  ASM_REWRITE_TAC[SIGMA_ALGEBRA_SIGMA_GENERATED_HALFLINES] THEN
+  REWRITE_TAC[SUBSET] THEN X_GEN_TAC `i:real->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `i:real->bool`) THEN ASM_REWRITE_TAC[] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[REAL_INTERVAL_IN_SIGMA]);;
+
+(* The bridge itself: the two Borel sigma-algebras on the reals coincide.      *)
+let BOREL_IN_EUCLIDEANREAL_EQ_SIGMA_GENERATED = prove
+ (`{s:real->bool | borel_in euclideanreal s} =
+   sigma_generated (:real) real_halflines`,
+  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+  [REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+   MATCH_MP_TAC borel_in_INDUCT THEN REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[GSYM REAL_OPEN_IN] THEN
+    MESON_TAC[REAL_OPEN_IN_SIGMA];
+    REWRITE_TAC[TOPSPACE_EUCLIDEANREAL] THEN X_GEN_TAC `s:real->bool` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     `(:real) DIFF s =
+      UNIONS (sigma_generated (:real) real_halflines) DIFF s`
+     SUBST1_TAC THENL
+    [REWRITE_TAC[UNIONS_SIGMA_GENERATED_HALFLINES]; ALL_TAC] THEN
+    MATCH_MP_TAC SIGMA_ALGEBRA_COMPL THEN
+    ASM_REWRITE_TAC[SIGMA_ALGEBRA_SIGMA_GENERATED_HALFLINES];
+    X_GEN_TAC `u:(real->bool)->bool` THEN STRIP_TAC THEN
+    MATCH_MP_TAC SIGMA_ALGEBRA_UNION_COUNTABLE THEN
+    ASM_REWRITE_TAC[SIGMA_ALGEBRA_SIGMA_GENERATED_HALFLINES; SUBSET]];
+   MATCH_MP_TAC SIGMA_GENERATED_MINIMAL THEN REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[BOREL_IN_SIGMA_ALGEBRA];
+    REWRITE_TAC[real_halflines; SUBSET; FORALL_IN_GSPEC; IN_ELIM_THM] THEN
+    X_GEN_TAC `s:real->bool` THEN
+    DISCH_THEN(X_CHOOSE_THEN `a:real`
+      (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)) THEN
+    MATCH_MP_TAC CLOSED_IMP_BOREL_IN THEN
+    REWRITE_TAC[GSYM REAL_CLOSED_IN; REAL_CLOSED_HALFSPACE_LE];
+    MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[SUBSET_UNIV] THEN
+    MATCH_MP_TAC(SET_RULE `(x:real->bool) IN s ==> x SUBSET UNIONS s`) THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN
+    MP_TAC(ISPEC `euclideanreal` BOREL_IN_TOPSPACE) THEN
+    REWRITE_TAC[TOPSPACE_EUCLIDEANREAL]]]);;
 
 let INDEP_FIN_INTER_SIGMA_FUTURE = prove
  (`!p:A prob_space (B:num->A->bool) (S1:num->bool) N.
@@ -12550,6 +12591,206 @@ let REVERSE_FATOU_EXPECTATION = prove
   (* Final: combine *)
   ASM_REAL_ARITH_TAC);;
 
+(* RANDOM_VARIABLE_REAL_LIMSUP_DOMINATED: limsup of dominated RVs is an RV *)
+let RANDOM_VARIABLE_REAL_LIMSUP_DOMINATED = prove
+ (`!p:A prob_space X g.
+     (!n. random_variable p (X n)) /\
+     random_variable p g /\
+     (!n x. x IN prob_carrier p ==> abs(X n x) <= g x)
+     ==> random_variable p (\x. real_limsup (\n. X n x))`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC RANDOM_VARIABLE_POINTWISE_LIMIT THEN
+  EXISTS_TAC `\M x:A. real_limsup (\n. max (min ((X:num->A->real) n x) (&M)) (--(&M)))` THEN
+  REWRITE_TAC[] THEN CONJ_TAC THENL
+  [(* Each truncated limsup is a random variable *)
+   X_GEN_TAC `M:num` THEN
+   SUBGOAL_THEN `(\x:A. real_limsup (\n. max (min ((X:num->A->real) n x) (&M)) (--(&M)))) = (\x. real_limsup (\n. max (min (X n x) (&M)) (--(&M)) + &M) - &M)` SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `x:A` THEN
+    MP_TAC(ISPECL [`\n. max (min ((X:num->A->real) n x) (&M)) (--(&M)) + &M`;
+      `&0`; `&2 * &M`; `&M`] REAL_LIMSUP_SUB_CONST) THEN
+    REWRITE_TAC[REAL_ARITH `!a:real m:real. (a + m) - m = a`] THEN
+    ANTS_TAC THENL
+    [CONJ_TAC THEN GEN_TAC THEN REAL_ARITH_TAC;
+     DISCH_THEN ACCEPT_TAC];
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB_CONST THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_REAL_LIMSUP THEN
+    EXISTS_TAC `&2 * &M` THEN REPEAT CONJ_TAC THENL
+    [GEN_TAC THEN REWRITE_TAC[] THEN MATCH_MP_TAC RANDOM_VARIABLE_SHIFT THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_MAX THEN REWRITE_TAC[RANDOM_VARIABLE_CONST] THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_MIN THEN
+     ASM_REWRITE_TAC[RANDOM_VARIABLE_CONST; ETA_AX];
+     REPEAT STRIP_TAC THEN REAL_ARITH_TAC;
+     REPEAT STRIP_TAC THEN REAL_ARITH_TAC]];
+   (* Pointwise convergence: truncated limsup -> true limsup *)
+   X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+   REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+   MP_TAC(SPEC `(g:A->real) x` REAL_ARCH_SIMPLE) THEN
+   DISCH_THEN(X_CHOOSE_TAC `N:num`) THEN
+   EXISTS_TAC `N:num` THEN X_GEN_TAC `M:num` THEN DISCH_TAC THEN
+   SUBGOAL_THEN `!n:num. max (min ((X:num->A->real) n x) (&M)) (--(&M)) = X n x` (fun th -> REWRITE_TAC[th; REAL_SUB_REFL; REAL_ABS_NUM] THEN ASM_REWRITE_TAC[]) THEN
+   GEN_TAC THEN
+   MATCH_MP_TAC(REAL_ARITH `abs f <= m ==> max (min f m) (--m) = f`) THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(g:A->real) x` THEN
+   CONJ_TAC THENL
+   [ASM_SIMP_TAC[];
+    MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&N:real` THEN
+    ASM_REWRITE_TAC[REAL_OF_NUM_LE]]]);;
+
+let INTEGRABLE_IMP_RANDOM_VARIABLE = prove
+ (`!p:A prob_space (f:A->real). integrable p f ==> random_variable p f`,
+  SIMP_TAC[integrable]);;
+
+(* REVERSE_FATOU_DOMINATED: reverse Fatou under integrable domination *)
+let REVERSE_FATOU_DOMINATED = prove
+ (`!p:A prob_space X h.
+    (!n. integrable p (X n)) /\
+    integrable p h /\
+    (!n x. x IN prob_carrier p ==> abs(X n x) <= h x)
+    ==> real_limsup (\n. expectation p (X n))
+        <= expectation p (\x. real_limsup (\n. X n x))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  (* Basic bounds *)
+  SUBGOAL_THEN `!x:A. x IN prob_carrier p ==> &0 <= (h:A->real) x` ASSUME_TAC THENL
+  [GEN_TAC THEN DISCH_TAC THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs((X:num->A->real) 0 x)` THEN
+   REWRITE_TAC[REAL_ABS_POS] THEN ASM_SIMP_TAC[];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `!n x:A. x IN prob_carrier p ==> (X:num->A->real) n x <= (h:A->real) x` ASSUME_TAC THENL
+  [REPEAT STRIP_TAC THEN
+   MATCH_MP_TAC(REAL_ARITH `abs f <= b ==> f <= b`) THEN ASM_SIMP_TAC[];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `!n x:A. x IN prob_carrier p ==> --(h:A->real) x <= (X:num->A->real) n x` ASSUME_TAC THENL
+  [REPEAT STRIP_TAC THEN
+   MATCH_MP_TAC(REAL_ARITH `abs f <= b ==> --b <= f`) THEN ASM_SIMP_TAC[];
+   ALL_TAC] THEN
+  (* Integrability of h - X_n *)
+  SUBGOAL_THEN `!n:num. integrable (p:A prob_space) (\x. (h:A->real) x - (X:num->A->real) n x)` ASSUME_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  (* Apply FATOU_LEMMA_GEN to h - X_n *)
+  SUBGOAL_THEN
+    `nn_expectation (p:A prob_space) (\x. real_liminf (\n. (h:A->real) x - (X:num->A->real) n x))
+     <= real_liminf (\n. nn_expectation p (\x. h x - X n x))`
+    ASSUME_TAC THENL
+  [MP_TAC(ISPECL [`p:A prob_space`; `\n:num. \x:A. (h:A->real) x - (X:num->A->real) n x`]
+     FATOU_LEMMA_GEN) THEN
+   BETA_TAC THEN ANTS_TAC THENL
+   [ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+    [(* nonneg *)
+     REPEAT STRIP_TAC THEN ASM_SIMP_TAC[REAL_ARITH `f <= g ==> &0 <= g - f`];
+     (* liminf nonneg *)
+     REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LIMINF_LBOUND THEN
+     EXISTS_TAC `&2 * (h:A->real) x` THEN CONJ_TAC THENL
+     [GEN_TAC THEN ASM_SIMP_TAC[REAL_ARITH `f <= g ==> &0 <= g - f`];
+      GEN_TAC THEN ASM_SIMP_TAC[REAL_ARITH `--g <= f ==> g - f <= &2 * g`]];
+     (* bounded nn_expectations *)
+     EXISTS_TAC `&2 * expectation (p:A prob_space) h` THEN GEN_TAC THEN
+     SUBGOAL_THEN `nn_expectation (p:A prob_space) (\x. (h:A->real) x - (X:num->A->real) n x) = expectation p (\x. h x - X n x)` SUBST1_TAC THENL
+     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC EXPECTATION_NONNEG_EQ_NN THEN
+      ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+      ASM_SIMP_TAC[REAL_ARITH `f <= g ==> &0 <= g - f`];
+      ALL_TAC] THEN
+     MP_TAC(ISPECL [`p:A prob_space`; `h:A->real`; `(X:num->A->real) n`]
+       EXPECTATION_SUB) THEN
+     ASM_REWRITE_TAC[ETA_AX] THEN DISCH_THEN SUBST1_TAC THEN
+     MATCH_MP_TAC(REAL_ARITH `--g <= e ==> g - e <= &2 * g`) THEN
+     MATCH_MP_TAC(REAL_ARITH `&0 <= e + g ==> --g <= e`) THEN
+     SUBGOAL_THEN `expectation (p:A prob_space) ((X:num->A->real) n) + expectation p h = expectation p (\x. X n x + h x)` SUBST1_TAC THENL
+     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC EXPECTATION_ADD THEN
+      ASM_REWRITE_TAC[ETA_AX];
+      MATCH_MP_TAC EXPECTATION_POS THEN CONJ_TAC THENL
+      [MATCH_MP_TAC INTEGRABLE_ADD THEN ASM_REWRITE_TAC[ETA_AX];
+       GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[] THEN
+       MATCH_MP_TAC(REAL_ARITH `--d <= f ==> &0 <= f + d`) THEN
+       ASM_SIMP_TAC[]]]];
+    SIMP_TAC[]];
+   ALL_TAC] THEN
+  (* Convert nn_expectation(h - X_n) to E[h] - E[X_n] *)
+  SUBGOAL_THEN `!n:num. nn_expectation (p:A prob_space) (\x. (h:A->real) x - (X:num->A->real) n x) = expectation p h - expectation p (X n)` ASSUME_TAC THENL
+  [GEN_TAC THEN
+   SUBGOAL_THEN `nn_expectation (p:A prob_space) (\x. (h:A->real) x - (X:num->A->real) n x) = expectation p (\x. h x - X n x)` SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC EXPECTATION_NONNEG_EQ_NN THEN
+    ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    ASM_SIMP_TAC[REAL_ARITH `f <= g ==> &0 <= g - f`];
+    MP_TAC(ISPECL [`p:A prob_space`; `h:A->real`; `(X:num->A->real) n`]
+      EXPECTATION_SUB) THEN
+    ASM_REWRITE_TAC[ETA_AX]];
+   ALL_TAC] THEN
+  (* Expectation bounds *)
+  SUBGOAL_THEN `!n:num. expectation (p:A prob_space) ((X:num->A->real) n) <= expectation p h` ASSUME_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC EXPECTATION_MONO THEN
+   ASM_REWRITE_TAC[] THEN GEN_TAC THEN DISCH_TAC THEN ASM_SIMP_TAC[];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `!n:num. --expectation (p:A prob_space) h <= expectation p ((X:num->A->real) n)` ASSUME_TAC THENL
+  [GEN_TAC THEN
+   MATCH_MP_TAC(REAL_ARITH `&0 <= e + g ==> --g <= e`) THEN
+   SUBGOAL_THEN `expectation (p:A prob_space) ((X:num->A->real) n) + expectation p h = expectation p (\x. X n x + h x)` SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC EXPECTATION_ADD THEN
+    ASM_REWRITE_TAC[ETA_AX];
+    MATCH_MP_TAC EXPECTATION_POS THEN CONJ_TAC THENL
+    [MATCH_MP_TAC INTEGRABLE_ADD THEN ASM_REWRITE_TAC[ETA_AX];
+     GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[] THEN
+     MATCH_MP_TAC(REAL_ARITH `--d <= f ==> &0 <= f + d`) THEN ASM_SIMP_TAC[]]];
+   ALL_TAC] THEN
+  (* RHS of Fatou: liminf(E[h] - E[X_n]) = E[h] - limsup(E[X_n]) *)
+  SUBGOAL_THEN `real_liminf (\n. nn_expectation (p:A prob_space) (\x. (h:A->real) x - (X:num->A->real) n x)) = expectation p h - real_limsup (\n. expectation p (X n))` ASSUME_TAC THENL
+  [SUBGOAL_THEN `(\n. nn_expectation (p:A prob_space) (\x. (h:A->real) x - (X:num->A->real) n x)) = (\n. expectation p h - expectation p (X n))` SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN ASM_REWRITE_TAC[];
+    MATCH_MP_TAC REAL_LIMINF_CONST_MINUS THEN
+    EXISTS_TAC `--expectation (p:A prob_space) h` THEN
+    EXISTS_TAC `expectation (p:A prob_space) h` THEN
+    ASM_REWRITE_TAC[]];
+   ALL_TAC] THEN
+  (* Pointwise: liminf(h - X_n) = h - limsup(X_n) *)
+  SUBGOAL_THEN `!x:A. x IN prob_carrier p ==> real_liminf (\n. (h:A->real) x - (X:num->A->real) n x) = h x - real_limsup (\n. X n x)` ASSUME_TAC THENL
+  [GEN_TAC THEN DISCH_TAC THEN
+   MATCH_MP_TAC REAL_LIMINF_CONST_MINUS THEN
+   EXISTS_TAC `--(h:A->real) x` THEN EXISTS_TAC `(h:A->real) x` THEN
+   ASM_SIMP_TAC[];
+   ALL_TAC] THEN
+  (* nn_exp extensionality: use pointwise equality *)
+  SUBGOAL_THEN `nn_expectation (p:A prob_space) (\x. real_liminf (\n. (h:A->real) x - (X:num->A->real) n x)) = nn_expectation p (\x. h x - real_limsup (\n. X n x))` ASSUME_TAC THENL
+  [MATCH_MP_TAC NN_EXPECTATION_EXT THEN GEN_TAC THEN DISCH_TAC THEN
+   BETA_TAC THEN ASM_SIMP_TAC[];
+   ALL_TAC] THEN
+  (* Integrability of limsup(X_n) *)
+  SUBGOAL_THEN `integrable (p:A prob_space) (\x. real_limsup (\n. (X:num->A->real) n x))` ASSUME_TAC THENL
+  [MATCH_MP_TAC INTEGRABLE_DOMINATED THEN EXISTS_TAC `h:A->real` THEN
+   ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC RANDOM_VARIABLE_REAL_LIMSUP_DOMINATED THEN
+    EXISTS_TAC `h:A->real` THEN ASM_SIMP_TAC[INTEGRABLE_IMP_RANDOM_VARIABLE];
+    GEN_TAC THEN DISCH_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH
+      `&0 <= h /\ --h <= l /\ l <= h ==> abs(l) <= abs(h)`) THEN
+    ASM_SIMP_TAC[] THEN CONJ_TAC THENL
+    [MATCH_MP_TAC REAL_LE_TRANS THEN
+     EXISTS_TAC `real_liminf (\n. (X:num->A->real) n x)` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_LIMINF_LBOUND THEN
+      EXISTS_TAC `(h:A->real) x` THEN ASM_SIMP_TAC[];
+      MATCH_MP_TAC REAL_LIMINF_LE_LIMSUP THEN
+      EXISTS_TAC `--(h:A->real) x` THEN EXISTS_TAC `(h:A->real) x` THEN
+      ASM_SIMP_TAC[]];
+     MATCH_MP_TAC REAL_LIMSUP_UBOUND THEN
+     EXISTS_TAC `--(h:A->real) x` THEN ASM_SIMP_TAC[]]];
+   ALL_TAC] THEN
+  (* Convert nn_exp(h - limsup(X)) to E[h] - E[limsup(X)] *)
+  SUBGOAL_THEN `nn_expectation (p:A prob_space) (\x. (h:A->real) x - real_limsup (\n. (X:num->A->real) n x)) = expectation p h - expectation p (\x. real_limsup (\n. X n x))` ASSUME_TAC THENL
+  [SUBGOAL_THEN `nn_expectation (p:A prob_space) (\x. (h:A->real) x - real_limsup (\n. (X:num->A->real) n x)) = expectation p (\x. h x - real_limsup (\n. X n x))` SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC EXPECTATION_NONNEG_EQ_NN THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC INTEGRABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+     GEN_TAC THEN DISCH_TAC THEN BETA_TAC THEN
+     MATCH_MP_TAC(REAL_ARITH `f <= g ==> &0 <= g - f`) THEN
+     MATCH_MP_TAC REAL_LIMSUP_UBOUND THEN
+     EXISTS_TAC `--(h:A->real) x` THEN ASM_SIMP_TAC[]];
+    MP_TAC(ISPECL [`p:A prob_space`; `h:A->real`;
+      `\x:A. real_limsup (\n. (X:num->A->real) n x)`]
+      EXPECTATION_SUB) THEN
+    ASM_REWRITE_TAC[ETA_AX]];
+   ALL_TAC] THEN
+  (* Final combination *)
+  ASM_REAL_ARITH_TAC);;
+
 (* FATOU_EXPECTATION: Fatou's lemma for signed bounded random variables *)
 let FATOU_EXPECTATION = prove
  (`!p:A prob_space X A B.
@@ -12962,7 +13203,7 @@ let L2_IMP_IN_PROB = prove
    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
    X_GEN_TAC `n:num` THEN DISCH_TAC THEN
    MATCH_MP_TAC PROB_POSITIVE THEN
-   MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   MATCH_MP_TAC RV_PREIMAGE_GE THEN
    SUBGOAL_THEN `simple_rv (p:A prob_space)
      (\x:A. abs((X:num->A->real) n x - (L:A->real) x))` MP_TAC THENL
    [MATCH_MP_TAC SIMPLE_RV_ABS THEN
@@ -12999,7 +13240,7 @@ let CONVERGES_L2_IMP_IN_PROB = prove
   SUBGOAL_THEN `!n. {x:A | x IN prob_carrier p /\
     abs((X:num->A->real) n x - (L:A->real) x) >= e}
     IN prob_events p` ASSUME_TAC THENL
-  [GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+  [GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
    ASM_REWRITE_TAC[ETA_AX];
@@ -13060,6 +13301,885 @@ let CONVERGES_L2_IMP_IN_PROB = prove
    SUBGOAL_THEN `&0 = inv((e / &2) pow 2) * &0` SUBST1_TAC THENL
    [REWRITE_TAC[REAL_MUL_RZERO]; ALL_TAC] THEN
    MATCH_MP_TAC REALLIM_LMUL THEN ASM_REWRITE_TAC[]]);;
+
+(* ========================================================================= *)
+(* Algebraic properties of convergence in probability                        *)
+(* ========================================================================= *)
+
+let CONVERGES_IN_PROB_ADD = prove
+ (`!p:A prob_space X Y LX LY.
+     (!n. random_variable p (X n)) /\ random_variable p LX /\
+     (!n. random_variable p (Y n)) /\ random_variable p LY /\
+     converges_in_prob p X LX /\
+     converges_in_prob p Y LY
+     ==> converges_in_prob p (\n x. X n x + Y n x) (\x. LX x + LY x)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+    `!n. {x:A | x IN prob_carrier p /\
+      abs(((X:num->A->real) n x + (Y:num->A->real) n x) -
+          (LX x + LY x)) >= e} IN prob_events p`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   ASM_REWRITE_TAC[ETA_AX] THEN
+   CONJ_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_ADD THEN
+   ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `!n. {x:A | x IN prob_carrier p /\
+      abs((X:num->A->real) n x - LX x) >= e / &2} IN prob_events p`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `!n. {x:A | x IN prob_carrier p /\
+      abs((Y:num->A->real) n x - LY x) >= e / &2} IN prob_events p`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `!n. {x:A | x IN prob_carrier p /\
+       abs(((X:num->A->real) n x + Y n x) - (LX x + LY x)) >= e} SUBSET
+     {x | x IN prob_carrier p /\ abs(X n x - LX x) >= e / &2} UNION
+     {x | x IN prob_carrier p /\ abs(Y n x - LY x) >= e / &2}`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN
+   X_GEN_TAC `x:A` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC(REAL_ARITH
+     `abs((a + b) - (c + d)) >= e /\
+      abs((a + b) - (c + d)) <= abs(a - c) + abs(b - d)
+      ==> abs(a - c) >= e / &2 \/ abs(b - d) >= e / &2`) THEN
+   ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  MATCH_MP_TAC(ISPECL [`\n:num. &0`;
+    `\n:num. prob (p:A prob_space) {x:A | x IN prob_carrier p /\
+      abs(((X:num->A->real) n x + (Y:num->A->real) n x) -
+          (LX x + LY x)) >= e}`;
+    `\n:num. prob (p:A prob_space)
+      {x:A | x IN prob_carrier p /\
+        abs((X:num->A->real) n x - LX x) >= e / &2} +
+      prob p {x | x IN prob_carrier p /\
+        abs((Y:num->A->real) n x - LY x) >= e / &2}`;
+    `&0`] REALLIM_TRANSFORM_STRADDLE) THEN
+  BETA_TAC THEN REPEAT CONJ_TAC THENL
+  [REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC PROB_POSITIVE THEN ASM_REWRITE_TAC[];
+   REWRITE_TAC[REALLIM_CONST];
+   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `prob (p:A prob_space)
+     ({x:A | x IN prob_carrier p /\
+        abs((X:num->A->real) n x - LX x) >= e / &2} UNION
+      {x | x IN prob_carrier p /\
+        abs((Y:num->A->real) n x - LY x) >= e / &2})` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_MONO THEN ASM_REWRITE_TAC[] THEN
+    ASM_SIMP_TAC[PROB_UNION_IN_EVENTS];
+    MP_TAC(ISPECL [`p:A prob_space`;
+      `{x:A | x IN prob_carrier p /\
+        abs((X:num->A->real) n x - LX x) >= e / &2}`;
+      `{x:A | x IN prob_carrier p /\
+        abs((Y:num->A->real) n x - LY x) >= e / &2}`]
+      PROB_UNION) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH `&0 <= c ==> a + b - c <= a + b`) THEN
+    MATCH_MP_TAC PROB_POSITIVE THEN
+    ASM_SIMP_TAC[PROB_INTER_IN_EVENTS]];
+   SUBGOAL_THEN `&0 = &0 + &0` SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC REALLIM_ADD THEN CONJ_TAC THEN
+   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC]);;
+
+let CONVERGES_IN_PROB_NEG = prove
+ (`!p:A prob_space X L.
+     converges_in_prob p X L
+     ==> converges_in_prob p (\n x. --(X n x)) (\x. --(L x))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[converges_in_prob] THEN
+  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REALLIM_TRANSFORM_EVENTUALLY) THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+  REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN GEN_TAC THEN
+  REWRITE_TAC[REAL_ARITH `abs(--a - --b) = abs(a - b)`]);;
+
+let CONVERGES_IN_PROB_SUB = prove
+ (`!p:A prob_space X Y LX LY.
+     (!n. random_variable p (X n)) /\ random_variable p LX /\
+     (!n. random_variable p (Y n)) /\ random_variable p LY /\
+     converges_in_prob p X LX /\
+     converges_in_prob p Y LY
+     ==> converges_in_prob p (\n x. X n x - Y n x) (\x. LX x - LY x)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  REWRITE_TAC[real_sub] THEN
+  MATCH_MP_TAC CONVERGES_IN_PROB_ADD THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_NEG THEN
+   ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC RANDOM_VARIABLE_NEG THEN ASM_REWRITE_TAC[ETA_AX];
+   MATCH_MP_TAC CONVERGES_IN_PROB_NEG THEN ASM_REWRITE_TAC[]]);;
+
+let CONVERGES_IN_PROB_CMUL = prove
+ (`!p:A prob_space X L c.
+     (!n. random_variable p (X n)) /\ random_variable p L /\
+     converges_in_prob p X L
+     ==> converges_in_prob p (\n x. c * X n x) (\x. c * L x)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `c = &0` THENL
+  [ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_SUB_REFL; REAL_ABS_NUM] THEN
+   ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> ~(&0 >= e)`] THEN
+   REWRITE_TAC[EMPTY_GSPEC; PROB_EMPTY; REALLIM_CONST];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < abs c` ASSUME_TAC THENL
+  [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / abs c`) THEN
+  ASM_SIMP_TAC[REAL_LT_DIV] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REALLIM_TRANSFORM_EVENTUALLY) THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+  REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+  REWRITE_TAC[GSYM REAL_SUB_LDISTRIB] THEN
+  REWRITE_TAC[REAL_ABS_MUL] THEN
+  ASM_CASES_TAC `(x:A) IN prob_carrier p` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[real_ge] THEN
+  ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_ARITH `&0 < c ==> &0 < abs c`] THEN
+  REWRITE_TAC[REAL_MUL_SYM]);;
+
+let CONVERGES_IN_PROB_CONST = prove
+ (`!p:A prob_space c.
+     converges_in_prob p (\n:num x:A. c) (\x. c)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[converges_in_prob] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+    `!n:num. {x:A | x IN prob_carrier p /\ abs(c - c) >= e} = {}`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+   GEN_TAC THEN REWRITE_TAC[REAL_SUB_REFL; REAL_ABS_NUM] THEN
+   ASM_REAL_ARITH_TAC;
+   REWRITE_TAC[PROB_EMPTY; REALLIM_CONST]]);;
+
+let CONVERGES_IN_PROB_UNIQUE = prove
+ (`!p:A prob_space X L M.
+     (!n. random_variable p (X n)) /\
+     random_variable p L /\ random_variable p M /\
+     converges_in_prob p X L /\
+     converges_in_prob p X M
+     ==> !e. &0 < e ==>
+         prob p {x | x IN prob_carrier p /\
+                     abs(L x - M x) >= e} = &0`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  MATCH_MP_TAC(REAL_ARITH `&0 <= x /\ x <= &0 ==> x = &0`) THEN
+  CONJ_TAC THENL
+  [MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+  ABBREV_TAC `p0 = prob (p:A prob_space)
+    {x:A | x IN prob_carrier p /\ abs(L x - M x) >= e}` THEN
+  SUBGOAL_THEN
+    `?N1:num. !n. N1 <= n ==>
+      abs(prob (p:A prob_space) {x:A | x IN prob_carrier p /\
+        abs((X:num->A->real) n x - L x) >= e / &2} - &0) < p0 / &4`
+    (X_CHOOSE_TAC `N1:num`) THENL
+  [UNDISCH_TAC `!e. &0 < e ==>
+    ((\n. prob (p:A prob_space) {x:A | x IN prob_carrier p /\
+      abs((X:num->A->real) n x - L x) >= e}) ---> &0) sequentially` THEN
+   DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN
+   ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; ARITH] THEN
+   REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+   DISCH_THEN MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `?N2:num. !n. N2 <= n ==>
+      abs(prob (p:A prob_space) {x:A | x IN prob_carrier p /\
+        abs((X:num->A->real) n x - M x) >= e / &2} - &0) < p0 / &4`
+    (X_CHOOSE_TAC `N2:num`) THENL
+  [UNDISCH_TAC `!e. &0 < e ==>
+    ((\n. prob (p:A prob_space) {x:A | x IN prob_carrier p /\
+      abs((X:num->A->real) n x - M x) >= e}) ---> &0) sequentially` THEN
+   DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN
+   ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; ARITH] THEN
+   REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+   DISCH_THEN MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `{x:A | x IN prob_carrier p /\ abs(L x - M x) >= e} SUBSET
+     {x | x IN prob_carrier p /\
+       abs((X:num->A->real) (N1 + N2) x - L x) >= e / &2} UNION
+     {x | x IN prob_carrier p /\
+       abs(X (N1 + N2) x - M x) >= e / &2}`
+    ASSUME_TAC THENL
+  [REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN
+   X_GEN_TAC `x:A` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC(REAL_ARITH
+     `abs(l - m) >= e /\
+      abs(l - m) <= abs(xn - l) + abs(xn - m)
+      ==> abs(xn - l) >= e / &2 \/ abs(xn - m) >= e / &2`) THEN
+   ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+    `{x:A | x IN prob_carrier p /\
+       abs((X:num->A->real) (N1+N2) x - L x) >= e / &2} IN prob_events p /\
+     {x:A | x IN prob_carrier p /\
+       abs(X (N1+N2) x - M x) >= e / &2} IN prob_events p`
+    STRIP_ASSUME_TAC THENL
+  [CONJ_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  ABBREV_TAC `pL = prob (p:A prob_space)
+    {x:A | x IN prob_carrier p /\
+      abs((X:num->A->real) (N1+N2) x - L x) >= e / &2}` THEN
+  ABBREV_TAC `pM = prob (p:A prob_space)
+    {x:A | x IN prob_carrier p /\
+      abs((X:num->A->real) (N1+N2) x - M x) >= e / &2}` THEN
+  SUBGOAL_THEN `p0 <= pL + pM` ASSUME_TAC THENL
+  [EXPAND_TAC "p0" THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `prob (p:A prob_space)
+     ({x:A | x IN prob_carrier p /\
+       abs((X:num->A->real) (N1+N2) x - L x) >= e / &2} UNION
+      {x | x IN prob_carrier p /\
+       abs(X (N1+N2) x - M x) >= e / &2})` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_MONO THEN ASM_SIMP_TAC[PROB_UNION_IN_EVENTS] THEN
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+    MP_TAC(ISPECL [`p:A prob_space`;
+      `{x:A | x IN prob_carrier p /\
+        abs((X:num->A->real) (N1+N2) x - L x) >= e / &2}`;
+      `{x:A | x IN prob_carrier p /\
+        abs((X:num->A->real) (N1+N2) x - M x) >= e / &2}`]
+      PROB_UNION) THEN ASM_REWRITE_TAC[] THEN
+    EXPAND_TAC "pL" THEN EXPAND_TAC "pM" THEN
+    DISCH_THEN SUBST1_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH `&0 <= c ==> a + b - c <= a + b`) THEN
+    MATCH_MP_TAC PROB_POSITIVE THEN
+    ASM_SIMP_TAC[PROB_INTER_IN_EVENTS]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `abs(pL - &0) < p0 / &4` ASSUME_TAC THENL
+  [EXPAND_TAC "pL" THEN
+   UNDISCH_TAC `!n:num. N1 <= n ==>
+    abs(prob (p:A prob_space) {x:A | x IN prob_carrier p /\
+      abs((X:num->A->real) n x - L x) >= e / &2} - &0) < p0 / &4` THEN
+   DISCH_THEN(MP_TAC o SPEC `N1 + N2:num`) THEN
+   REWRITE_TAC[ARITH_RULE `(N1:num) <= N1 + N2`];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `abs(pM - &0) < p0 / &4` ASSUME_TAC THENL
+  [EXPAND_TAC "pM" THEN
+   UNDISCH_TAC `!n:num. N2 <= n ==>
+    abs(prob (p:A prob_space) {x:A | x IN prob_carrier p /\
+      abs((X:num->A->real) n x - M x) >= e / &2} - &0) < p0 / &4` THEN
+   DISCH_THEN(MP_TAC o SPEC `N1 + N2:num`) THEN
+   REWRITE_TAC[ARITH_RULE `(N2:num) <= N1 + N2`];
+   ALL_TAC] THEN
+  ASM_REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Convergence in probability is preserved by the 1-Lipschitz operations      *)
+(* abs, max and min.  In each case the bad event for the output is contained   *)
+(* in a union of bad events for the inputs, so its probability is squeezed     *)
+(* to 0.                                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let CONVERGES_IN_PROB_ABS = prove
+ (`!p:A prob_space X L.
+     (!n. random_variable p (X n)) /\ random_variable p L /\
+     converges_in_prob p X L
+     ==> converges_in_prob p (\n x. abs(X n x)) (\x. abs(L x))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_TAC THEN
+  MATCH_MP_TAC(ISPECL
+   [`\n:num. &0`;
+    `\n:num. prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs(abs(X n x) - abs(L x)) >= e}`;
+    `\n:num. prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - L x) >= e}`;
+    `&0`] REALLIM_TRANSFORM_STRADDLE) THEN
+  BETA_TAC THEN ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+  [REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC PROB_POSITIVE THEN
+   MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   CONJ_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN ASM_REWRITE_TAC[ETA_AX];
+   REWRITE_TAC[REALLIM_CONST];
+   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   X_GEN_TAC `n:num` THEN DISCH_TAC THEN MATCH_MP_TAC PROB_MONO THEN
+   REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+    CONJ_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN ASM_REWRITE_TAC[ETA_AX];
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MP_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH
+      `abs(abs a - abs b) <= abs(a - b)
+       ==> abs(abs a - abs b) >= e ==> abs(a - b) >= e`) THEN
+    REWRITE_TAC[REAL_ABS_SUB_ABS]]]);;
+
+let CONVERGES_IN_PROB_MAX = prove
+ (`!p:A prob_space X Y LX LY.
+     (!n. random_variable p (X n)) /\ random_variable p LX /\
+     (!n. random_variable p (Y n)) /\ random_variable p LY /\
+     converges_in_prob p X LX /\ converges_in_prob p Y LY
+     ==> converges_in_prob p (\n x. max (X n x) (Y n x))
+                               (\x. max (LX x) (LY x))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_SIMP_TAC[REAL_HALF] THEN
+  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN
+  ASM_SIMP_TAC[REAL_HALF] THEN DISCH_TAC THEN
+  MATCH_MP_TAC(ISPECL
+   [`\n:num. &0`;
+    `\n:num. prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs(max (X n x) (Y n x) - max (LX x) (LY x)) >= e}`;
+    `\n:num. prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - LX x) >= e / &2} +
+     prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - LY x) >= e / &2}`;
+    `&0`] REALLIM_TRANSFORM_STRADDLE) THEN
+  BETA_TAC THEN REPEAT CONJ_TAC THENL
+  [REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC PROB_POSITIVE THEN
+   MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   CONJ_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_MAX THEN ASM_REWRITE_TAC[ETA_AX];
+   REWRITE_TAC[REALLIM_CONST];
+   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   X_GEN_TAC `n:num` THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `prob (p:A prob_space)
+     ({x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - LX x) >= e / &2} UNION
+      {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - LY x) >= e / &2})` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_MONO THEN REPEAT CONJ_TAC THENL
+    [MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+     CONJ_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_MAX THEN ASM_REWRITE_TAC[ETA_AX];
+     MATCH_MP_TAC PROB_UNION_IN_EVENTS THEN
+     CONJ_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+     ASM_REWRITE_TAC[ETA_AX];
+     REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MP_TAC THEN
+     MATCH_MP_TAC(REAL_ARITH
+       `abs(max a b - max c d) <= abs(a - c) + abs(b - d)
+        ==> abs(max a b - max c d) >= e
+            ==> abs(a - c) >= e / &2 \/ abs(b - d) >= e / &2`) THEN
+     REWRITE_TAC[REAL_ARITH `abs(max a b - max c d) <= abs(a - c) + abs(b - d)`]];
+    MATCH_MP_TAC PROB_SUBADDITIVE THEN
+    CONJ_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+    ASM_REWRITE_TAC[ETA_AX]];
+   SUBGOAL_THEN `&0 = &0 + &0` SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC REALLIM_ADD THEN ASM_REWRITE_TAC[]]);;
+
+let CONVERGES_IN_PROB_MIN = prove
+ (`!p:A prob_space X Y LX LY.
+     (!n. random_variable p (X n)) /\ random_variable p LX /\
+     (!n. random_variable p (Y n)) /\ random_variable p LY /\
+     converges_in_prob p X LX /\ converges_in_prob p Y LY
+     ==> converges_in_prob p (\n x. min (X n x) (Y n x))
+                               (\x. min (LX x) (LY x))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_SIMP_TAC[REAL_HALF] THEN
+  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN
+  ASM_SIMP_TAC[REAL_HALF] THEN DISCH_TAC THEN
+  MATCH_MP_TAC(ISPECL
+   [`\n:num. &0`;
+    `\n:num. prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs(min (X n x) (Y n x) - min (LX x) (LY x)) >= e}`;
+    `\n:num. prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - LX x) >= e / &2} +
+     prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - LY x) >= e / &2}`;
+    `&0`] REALLIM_TRANSFORM_STRADDLE) THEN
+  BETA_TAC THEN REPEAT CONJ_TAC THENL
+  [REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC PROB_POSITIVE THEN
+   MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+   CONJ_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_MIN THEN ASM_REWRITE_TAC[ETA_AX];
+   REWRITE_TAC[REALLIM_CONST];
+   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   X_GEN_TAC `n:num` THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `prob (p:A prob_space)
+     ({x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - LX x) >= e / &2} UNION
+      {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - LY x) >= e / &2})` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_MONO THEN REPEAT CONJ_TAC THENL
+    [MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+     CONJ_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_MIN THEN ASM_REWRITE_TAC[ETA_AX];
+     MATCH_MP_TAC PROB_UNION_IN_EVENTS THEN
+     CONJ_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+     ASM_REWRITE_TAC[ETA_AX];
+     REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MP_TAC THEN
+     MATCH_MP_TAC(REAL_ARITH
+       `abs(min a b - min c d) <= abs(a - c) + abs(b - d)
+        ==> abs(min a b - min c d) >= e
+            ==> abs(a - c) >= e / &2 \/ abs(b - d) >= e / &2`) THEN
+     REWRITE_TAC[REAL_ARITH `abs(min a b - min c d) <= abs(a - c) + abs(b - d)`]];
+    MATCH_MP_TAC PROB_SUBADDITIVE THEN
+    CONJ_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+    ASM_REWRITE_TAC[ETA_AX]];
+   SUBGOAL_THEN `&0 = &0 + &0` SUBST1_TAC THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+   MATCH_MP_TAC REALLIM_ADD THEN ASM_REWRITE_TAC[]]);;
+
+(* Building blocks for the product rule on convergence in probability.        *)
+(* A single random variable has vanishing tails: the decreasing events         *)
+(* indexed by n have empty intersection.                                       *)
+let PROB_ABS_GE_TENDS_TO_ZERO = prove
+ (`!p:A prob_space Z.
+     random_variable p Z
+     ==> ((\n. prob p {x | x IN prob_carrier p /\ abs(Z x) >= &n + &1}) ---> &0)
+         sequentially`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`p:A prob_space`;
+    `\n:num. {x:A | x IN prob_carrier p /\ abs((Z:A->real) x) >= &n + &1}`]
+    PROB_CONTINUITY_FROM_ABOVE) THEN
+  BETA_TAC THEN ANTS_TAC THENL
+  [CONJ_TAC THENL
+   [GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN ASM_REWRITE_TAC[ETA_AX];
+    GEN_TAC THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM MP_TAC THEN REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
+    REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+   `INTERS {{x:A | x IN prob_carrier p /\ abs((Z:A->real) x) >= &n + &1} | n IN (:num)} =
+    ({}:A->bool)`
+   ASSUME_TAC THENL
+  [REWRITE_TAC[EXTENSION; INTERS_GSPEC; IN_ELIM_THM; NOT_IN_EMPTY; IN_UNIV] THEN
+   X_GEN_TAC `x:A` THEN REWRITE_TAC[NOT_FORALL_THM] THEN
+   ASM_CASES_TAC `(x:A) IN prob_carrier p` THENL
+   [MP_TAC(ISPEC `abs((Z:A->real) x)` REAL_ARCH_SIMPLE) THEN
+    DISCH_THEN(X_CHOOSE_TAC `n:num`) THEN EXISTS_TAC `n:num` THEN
+    ASM_REWRITE_TAC[] THEN REWRITE_TAC[real_ge] THEN ASM_REAL_ARITH_TAC;
+    EXISTS_TAC `0` THEN ASM_REWRITE_TAC[]];
+   ALL_TAC] THEN
+  ASM_REWRITE_TAC[PROB_EMPTY]);;
+
+(* Square-root split: if abs a and abs b are below sqrt e, then abs(ab) < e.   *)
+let ABS_MUL_LT_SQRT = prove
+ (`!e a b:real. &0 < e /\ abs a < sqrt e /\ abs b < sqrt e ==> abs(a * b) < e`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_ABS_MUL] THEN
+  SUBGOAL_THEN `e = sqrt e * sqrt e` SUBST1_TAC THENL
+  [ASM_SIMP_TAC[GSYM REAL_POW_2; SQRT_POW_2; REAL_LT_IMP_LE]; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LT_MUL2 THEN ASM_REWRITE_TAC[REAL_ABS_POS]);;
+
+let ABS_MUL_GE_SPLIT = prove
+ (`!e a b:real. &0 < e /\ abs(a * b) >= e ==> abs a >= sqrt e \/ abs b >= sqrt e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`e:real`; `a:real`; `b:real`] ABS_MUL_LT_SQRT) THEN
+  ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+(* The product of two sequences that converge to 0 in probability also          *)
+(* converges to 0 (split at sqrt e).                                           *)
+let CONVERGES_IN_PROB_NULL_MUL = prove
+ (`!p:A prob_space X Y.
+     (!n. random_variable p (X n)) /\ (!n. random_variable p (Y n)) /\
+     converges_in_prob p X (\x. &0) /\ converges_in_prob p Y (\x. &0)
+     ==> converges_in_prob p (\n x. X n x * Y n x) (\x. &0)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[converges_in_prob] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `sqrt e`) THEN
+  ANTS_TAC THENL [ASM_SIMP_TAC[SQRT_POS_LT]; ALL_TAC] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `sqrt e`) THEN
+  ANTS_TAC THENL [ASM_SIMP_TAC[SQRT_POS_LT]; ALL_TAC] THEN DISCH_TAC THEN
+  REWRITE_TAC[REAL_SUB_RZERO] THEN
+  MATCH_MP_TAC REALLIM_NULL_COMPARISON THEN
+  EXISTS_TAC
+   `\n:num. prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - &0) >= sqrt e} +
+     prob (p:A prob_space)
+       {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - &0) >= sqrt e}` THEN
+  CONJ_TAC THENL
+  [REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `0` THEN
+   X_GEN_TAC `n:num` THEN DISCH_TAC THEN BETA_TAC THEN
+   MATCH_MP_TAC(REAL_ARITH `&0 <= q /\ q <= b ==> abs q <= b`) THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN
+    ASM_REWRITE_TAC[ETA_AX];
+    ALL_TAC] THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `prob (p:A prob_space)
+     ({x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - &0) >= sqrt e} UNION
+      {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x - &0) >= sqrt e})` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_MONO THEN REPEAT CONJ_TAC THENL
+    [MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN ASM_REWRITE_TAC[ETA_AX];
+     MATCH_MP_TAC PROB_UNION_IN_EVENTS THEN
+     CONJ_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+     ASM_REWRITE_TAC[ETA_AX; RANDOM_VARIABLE_CONST];
+     REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[REAL_SUB_RZERO] THEN
+     MP_TAC(ISPECL [`e:real`; `(X:num->A->real) n x`; `(Y:num->A->real) n x`]
+       ABS_MUL_GE_SPLIT) THEN ASM_REWRITE_TAC[] THEN MESON_TAC[]];
+    MATCH_MP_TAC PROB_SUBADDITIVE THEN
+    CONJ_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN
+    ASM_REWRITE_TAC[ETA_AX; RANDOM_VARIABLE_CONST]];
+   MATCH_MP_TAC REALLIM_NULL_ADD THEN ASM_REWRITE_TAC[]]);;
+
+(* Product split with one factor fixed: abs(z*y) >= e forces abs z large, or   *)
+(* else abs y is at least e/(M+1).                                             *)
+let ABS_MUL_GE_SPLIT_BOUND = prove
+ (`!e z y:real n. &0 < e /\ abs(z * y) >= e
+                  ==> abs z >= &n + &1 \/ abs y >= e / (&n + &1)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `&0 < &n + &1` ASSUME_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_CASES_TAC `abs(z:real) >= &n + &1` THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  DISJ2_TAC THEN ASM_SIMP_TAC[real_ge; REAL_LE_LDIV_EQ] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs(z:real) * abs(y:real)` THEN
+  CONJ_TAC THENL
+  [REWRITE_TAC[GSYM REAL_ABS_MUL] THEN UNDISCH_TAC `abs(z * y:real) >= e` THEN
+   REAL_ARITH_TAC;
+   GEN_REWRITE_TAC (RAND_CONV) [REAL_MUL_SYM] THEN
+   MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[REAL_ABS_POS] THEN
+   UNDISCH_TAC `~(abs(z:real) >= &n + &1)` THEN REAL_ARITH_TAC]);;
+
+(* A fixed random variable times a sequence converging to 0 in probability      *)
+(* converges to 0: choose M so prob of large abs Z is small (tails vanish),    *)
+(* convergence of Y at threshold e/(M+1).                                       *)
+let CONVERGES_IN_PROB_BOUNDED_MUL = prove
+ (`!p:A prob_space Z Y.
+     random_variable p Z /\ (!n. random_variable p (Y n)) /\
+     converges_in_prob p Y (\x. &0)
+     ==> converges_in_prob p (\n x. Z x * Y n x) (\x. &0)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[converges_in_prob] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN X_GEN_TAC `eta:real` THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`p:A prob_space`; `Z:A->real`] PROB_ABS_GE_TENDS_TO_ZERO) THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+  DISCH_THEN(MP_TAC o SPEC `eta / &2`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `M:num` (MP_TAC o SPEC `M:num`)) THEN
+  REWRITE_TAC[LE_REFL; REAL_SUB_RZERO] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [converges_in_prob]) THEN
+  DISCH_THEN(MP_TAC o SPEC `e / (&M + &1)`) THEN
+  ANTS_TAC THENL
+  [MATCH_MP_TAC REAL_LT_DIV THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+  DISCH_THEN(MP_TAC o SPEC `eta / &2`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `N:num` (LABEL_TAC "Y")) THEN
+  EXISTS_TAC `N:num` THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  REMOVE_THEN "Y" (MP_TAC o SPEC `n:num`) THEN
+  ASM_REWRITE_TAC[REAL_SUB_RZERO] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `prob p {x:A | x IN prob_carrier p /\ abs((Z:A->real) x * (Y:num->A->real) n x) >= e} <=
+    prob p {x:A | x IN prob_carrier p /\ abs(Z x) >= &M + &1} +
+    prob p {x:A | x IN prob_carrier p /\ abs(Y n x) >= e / (&M + &1)}`
+   ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `prob (p:A prob_space)
+     ({x:A | x IN prob_carrier p /\ abs((Z:A->real) x) >= &M + &1} UNION
+      {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x) >= e / (&M + &1)})` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_MONO THEN REPEAT CONJ_TAC THENL
+    [MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN ASM_REWRITE_TAC[ETA_AX];
+     MATCH_MP_TAC PROB_UNION_IN_EVENTS THEN CONJ_TAC THEN
+     MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+     ASM_REWRITE_TAC[ETA_AX];
+     REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MP_TAC(ISPECL [`e:real`; `(Z:A->real) x`; `(Y:num->A->real) n x`; `M:num`]
+       ABS_MUL_GE_SPLIT_BOUND) THEN ASM_REWRITE_TAC[] THEN MESON_TAC[]];
+    MATCH_MP_TAC PROB_SUBADDITIVE THEN CONJ_TAC THEN
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+    ASM_REWRITE_TAC[ETA_AX]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+   `&0 <= prob p {x:A | x IN prob_carrier p /\ abs((Y:num->A->real) n x) >= e / (&M + &1)}`
+   ASSUME_TAC THENL
+  [MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+   `&0 <= prob p {x:A | x IN prob_carrier p /\ abs((Z:A->real) x * (Y:num->A->real) n x) >= e}`
+   ASSUME_TAC THENL
+  [MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN
+   ASM_REWRITE_TAC[ETA_AX];
+   ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REAL_ARITH
+   `q <= a + b
+    ==> &0 <= q /\ &0 <= b /\ abs a < eta / &2 /\ abs b < eta / &2
+        ==> abs q < eta`)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
+
+(* Convergence in probability of a difference to 0 is the same as convergence.  *)
+let CONVERGES_IN_PROB_DIFF_ZERO = prove
+ (`!p:A prob_space X L.
+     converges_in_prob p X L <=>
+     converges_in_prob p (\n x. X n x - L x) (\x. &0)`,
+  REWRITE_TAC[converges_in_prob; REAL_SUB_RZERO]);;
+
+(* Sum of two sequences converging to 0 in probability converges to 0.          *)
+let CONVERGES_IN_PROB_NULL_ADD = prove
+ (`!p:A prob_space X Y.
+     (!n. random_variable p (X n)) /\ (!n. random_variable p (Y n)) /\
+     converges_in_prob p X (\x. &0) /\ converges_in_prob p Y (\x. &0)
+     ==> converges_in_prob p (\n x. X n x + Y n x) (\x. &0)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`p:A prob_space`; `X:num->A->real`; `Y:num->A->real`;
+    `(\x. &0):A->real`; `(\x. &0):A->real`] CONVERGES_IN_PROB_ADD) THEN
+  ASM_REWRITE_TAC[RANDOM_VARIABLE_CONST; REAL_ADD_LID]);;
+
+(* The product rule: X_n -> X and Y_n -> Y in probability give X_n Y_n -> X Y.   *)
+(* Decompose X_n Y_n - X Y = (X_n - X)(Y_n - Y) + (Y_n - Y) X + (X_n - X) Y,     *)
+(* whose three summands vanish by NULL_MUL and BOUNDED_MUL.                     *)
+let CONVERGES_IN_PROB_MUL = prove
+ (`!p:A prob_space X Y LX LY.
+     (!n. random_variable p (X n)) /\ random_variable p LX /\
+     (!n. random_variable p (Y n)) /\ random_variable p LY /\
+     converges_in_prob p X LX /\ converges_in_prob p Y LY
+     ==> converges_in_prob p (\n x. X n x * Y n x) (\x. LX x * LY x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `converges_in_prob p
+      (\n x:A. ((X:num->A->real) n x - LX x) * ((Y:num->A->real) n x - LY x))
+      (\x. &0) /\
+    converges_in_prob p
+      (\n x:A. ((Y:num->A->real) n x - LY x) * LX x) (\x. &0) /\
+    converges_in_prob p
+      (\n x:A. ((X:num->A->real) n x - LX x) * LY x) (\x. &0)`
+   STRIP_ASSUME_TAC THENL
+  [REPEAT CONJ_TAC THENL
+   [MP_TAC(BETA_RULE(ISPECL [`p:A prob_space`;
+      `\n x:A. (X:num->A->real) n x - LX x`;
+      `\n x:A. (Y:num->A->real) n x - LY x`] CONVERGES_IN_PROB_NULL_MUL)) THEN
+    DISCH_THEN MATCH_MP_TAC THEN REPEAT CONJ_TAC THENL
+    [GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+     GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+     ASM_REWRITE_TAC[GSYM CONVERGES_IN_PROB_DIFF_ZERO];
+     ASM_REWRITE_TAC[GSYM CONVERGES_IN_PROB_DIFF_ZERO]];
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    MATCH_MP_TAC CONVERGES_IN_PROB_BOUNDED_MUL THEN ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL
+    [GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+     ASM_REWRITE_TAC[GSYM CONVERGES_IN_PROB_DIFF_ZERO]];
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    MATCH_MP_TAC CONVERGES_IN_PROB_BOUNDED_MUL THEN ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL
+    [GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+     ASM_REWRITE_TAC[GSYM CONVERGES_IN_PROB_DIFF_ZERO]]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+   `(!n. random_variable p
+          (\x:A. ((X:num->A->real) n x - LX x) * ((Y:num->A->real) n x - LY x))) /\
+    (!n. random_variable p (\x:A. ((Y:num->A->real) n x - LY x) * LX x)) /\
+    (!n. random_variable p (\x:A. ((X:num->A->real) n x - LX x) * LY x))`
+   STRIP_ASSUME_TAC THENL
+  [REWRITE_TAC[FORALL_AND_THM] THEN REPEAT CONJ_TAC THEN GEN_TAC THENL
+   [MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN CONJ_TAC THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+    MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN ASM_REWRITE_TAC[ETA_AX] THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX];
+    MATCH_MP_TAC RANDOM_VARIABLE_MUL THEN ASM_REWRITE_TAC[ETA_AX] THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX]];
+   ALL_TAC] THEN
+  GEN_REWRITE_TAC I [CONVERGES_IN_PROB_DIFF_ZERO] THEN REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+   `(\n x:A. (X:num->A->real) n x * (Y:num->A->real) n x - LX x * LY x) =
+    (\n x. ((X n x - LX x) * (Y n x - LY x)) +
+           (((Y n x - LY x) * LX x) + ((X n x - LX x) * LY x)))`
+   SUBST1_TAC THENL
+  [REWRITE_TAC[FUN_EQ_THM] THEN REPEAT GEN_TAC THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC CONVERGES_IN_PROB_NULL_ADD THEN ASM_REWRITE_TAC[] THEN
+  REPEAT CONJ_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_ADD THEN ASM_REWRITE_TAC[];
+   MATCH_MP_TAC CONVERGES_IN_PROB_NULL_ADD THEN ASM_REWRITE_TAC[]]);;
+
+(* A continuous function of a sequence converging in probability also          *)
+(* converges in probability (continuous mapping theorem for convergence in      *)
+(* probability).  Given e and eta, tightness of L fixes M so the limit lies in  *)
+(* a bounded interval with high probability; uniform continuity of g on that    *)
+(* interval supplies a modulus d; then the bad event for g(Xn) lies in the      *)
+(* union of the bad events for L being large and for Xn being far from L.       *)
+let CONVERGES_IN_PROB_CONTINUOUS_COMPOSE = prove
+ (`!p:A prob_space X L g.
+     (!n. random_variable p (X n)) /\ random_variable p L /\
+     g real_continuous_on (:real) /\
+     converges_in_prob p X L
+     ==> converges_in_prob p (\n x. g(X n x)) (\x. g(L x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[converges_in_prob] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN X_GEN_TAC `eta:real` THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`p:A prob_space`; `L:A->real`] PROB_ABS_GE_TENDS_TO_ZERO) THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+  DISCH_THEN(MP_TAC o SPEC `eta / &2`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `M:num` (MP_TAC o SPEC `M:num`)) THEN
+  REWRITE_TAC[LE_REFL; REAL_SUB_RZERO] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`g:real->real`; `real_interval[--(&M + &2), &M + &2]`]
+    REAL_COMPACT_UNIFORMLY_CONTINUOUS) THEN
+  ASM_SIMP_TAC[REAL_COMPACT_INTERVAL] THEN
+  REWRITE_TAC[real_uniformly_continuous_on; IN_REAL_INTERVAL] THEN
+  ANTS_TAC THENL
+  [MATCH_MP_TAC REAL_CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `(:real)` THEN
+   ASM_REWRITE_TAC[SUBSET_UNIV];
+   ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d0:real` STRIP_ASSUME_TAC) THEN
+  ABBREV_TAC `d = min d0 (&1)` THEN
+  SUBGOAL_THEN `&0 < d /\ d <= d0 /\ d <= &1` STRIP_ASSUME_TAC THENL
+  [EXPAND_TAC "d" THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  UNDISCH_TAC `converges_in_prob (p:A prob_space) X L` THEN
+  REWRITE_TAC[converges_in_prob] THEN
+  DISCH_THEN(MP_TAC o SPEC `d:real`) THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+  DISCH_THEN(MP_TAC o SPEC `eta / &2`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `N:num` (LABEL_TAC "X")) THEN
+  EXISTS_TAC `N:num` THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  REMOVE_THEN "X" (MP_TAC o SPEC `n:num`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN
+   `prob p {x:A | x IN prob_carrier p /\ abs(g((X:num->A->real) n x) - g((L:A->real) x)) >= e} <=
+    prob p {x:A | x IN prob_carrier p /\ abs((L:A->real) x) >= &M + &1} +
+    prob p {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - L x) >= d}`
+   ASSUME_TAC THENL
+  [MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `prob (p:A prob_space)
+     ({x:A | x IN prob_carrier p /\ abs((L:A->real) x) >= &M + &1} UNION
+      {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - L x) >= d})` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC PROB_MONO THEN REPEAT CONJ_TAC THENL
+    [MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN CONJ_TAC THEN
+     MATCH_MP_TAC RANDOM_VARIABLE_CONTINUOUS_MAP_COMPOSE THEN
+     ASM_REWRITE_TAC[ETA_AX] THEN ASM_MESON_TAC[CONTINUOUS_MAP_EUCLIDEANREAL];
+     MATCH_MP_TAC PROB_UNION_IN_EVENTS THEN CONJ_TAC THEN
+     MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THENL
+     [ASM_REWRITE_TAC[ETA_AX];
+      MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX]];
+     REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[TAUT `a \/ b <=> ~(~a /\ ~b)`] THEN
+     REWRITE_TAC[real_ge; REAL_NOT_LE] THEN STRIP_TAC THEN
+     UNDISCH_TAC `abs(g((X:num->A->real) n x) - g((L:A->real) x)) >= e` THEN
+     REWRITE_TAC[real_ge; REAL_NOT_LE] THEN
+     FIRST_X_ASSUM(MP_TAC o SPECL [`(L:A->real) x`; `(X:num->A->real) n x`]) THEN
+     ASM_REAL_ARITH_TAC];
+    MATCH_MP_TAC PROB_SUBADDITIVE THEN CONJ_TAC THEN
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN MATCH_MP_TAC RANDOM_VARIABLE_ABS THENL
+    [ASM_REWRITE_TAC[ETA_AX];
+     MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX]]];
+   ALL_TAC] THEN
+  SUBGOAL_THEN
+   `&0 <= prob p {x:A | x IN prob_carrier p /\ abs(g((X:num->A->real) n x) - g((L:A->real) x)) >= e} /\
+    &0 <= prob p {x:A | x IN prob_carrier p /\ abs((X:num->A->real) n x - L x) >= d}`
+   STRIP_ASSUME_TAC THENL
+  [CONJ_TAC THEN MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
+   MATCH_MP_TAC RANDOM_VARIABLE_ABS THENL
+   [MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN CONJ_TAC THEN
+    MATCH_MP_TAC RANDOM_VARIABLE_CONTINUOUS_MAP_COMPOSE THEN
+    ASM_REWRITE_TAC[ETA_AX] THEN ASM_MESON_TAC[CONTINUOUS_MAP_EUCLIDEANREAL];
+    MATCH_MP_TAC RANDOM_VARIABLE_SUB THEN ASM_REWRITE_TAC[ETA_AX]];
+   ALL_TAC] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[REAL_SUB_RZERO]) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REAL_ARITH
+   `q <= a + b
+    ==> &0 <= q /\ &0 <= b /\ abs a < eta / &2 /\ abs b < eta / &2
+        ==> abs q < eta`)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Two building blocks toward the Riesz subsequence theorem (convergence in   *)
+(* probability implies almost-sure convergence along a subsequence).          *)
+(* ------------------------------------------------------------------------- *)
+
+(* Adaptive selection of a strictly increasing subsequence: if for every step  *)
+(* index k and every position m there is a later index n realising property    *)
+(* Q k n, then a strictly increasing r realises Q k (r (SUC k)) at every step.  *)
+let ADAPTIVE_SELECTOR_DEP = prove
+ (`!(Q:num->num->bool). (!k m. ?n. m < n /\ Q k n)
+     ==> ?r:num->num. (!k. r k < r (SUC k)) /\ (!k. Q k (r(SUC k)))`,
+  REPEAT STRIP_TAC THEN
+  (MP_TAC o prove_recursive_functions_exist num_RECURSION)
+    `(rr 0 = 0) /\ (!k. rr(SUC k) = @n. rr k < n /\ (Q:num->num->bool) k n)` THEN
+  DISCH_THEN(X_CHOOSE_THEN `rr:num->num` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `!k:num. (rr:num->num) k < (@n. rr k < n /\ Q k n) /\ Q k (@n. rr k < n /\ Q k n)`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN CONV_TAC SELECT_CONV THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  EXISTS_TAC `rr:num->num` THEN CONJ_TAC THEN GEN_TAC THEN
+  ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `k:num`) THEN STRIP_TAC THEN ASM_REWRITE_TAC[]);;
+
+(* Off the limit-superior of the dyadic exceedance events, the selected         *)
+(* subsequence converges pointwise: if x lies in only finitely many of the      *)
+(* sets where the SUC-shifted term differs from L by at least 2 to the minus k, *)
+(* then X (r k) x tends to L x.                                                  *)
+let OFF_LIMSUP_CONVERGES = prove
+ (`!(X:num->A->real) L (r:num->num) x B (p:A prob_space).
+     (!k. B k = {y:A | y IN prob_carrier p /\
+                       abs(X (r(SUC k)) y - L y) >= inv(&2 pow k)}) /\
+     x IN prob_carrier p /\ ~(x IN limsup_events B)
+     ==> ((\k. X (r k) x) ---> L x) sequentially`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[LIMSUP_EVENTS_ALT; IN_ELIM_THM]) THEN
+  REWRITE_TAC[NOT_FORALL_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:num` MP_TAC) THEN
+  REWRITE_TAC[NOT_EXISTS_THM] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `!n:num. n >= m ==> abs((X:num->A->real) (r(SUC n)) x - L x) < inv(&2 pow n)`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN DISCH_TAC THEN
+   FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN ASM_REWRITE_TAC[] THEN
+   FIRST_ASSUM(fun th -> REWRITE_TAC[th]) THEN
+   REWRITE_TAC[IN_ELIM_THM; DE_MORGAN_THM] THEN
+   ASM_REWRITE_TAC[real_ge; REAL_NOT_LE];
+   ALL_TAC] THEN
+  REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`inv(&2)`; `e:real`] REAL_ARCH_POW_INV) THEN
+  ANTS_TAC THENL [ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `j:num` ASSUME_TAC) THEN
+  EXISTS_TAC `m + j + 1` THEN X_GEN_TAC `k:num` THEN DISCH_TAC THEN BETA_TAC THEN
+  SUBGOAL_THEN `k = SUC(k - 1)` SUBST1_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `inv(&2 pow (k - 1))` THEN
+  CONJ_TAC THENL
+  [FIRST_X_ASSUM(MP_TAC o SPEC `k - 1`) THEN
+   ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN REWRITE_TAC[];
+   REWRITE_TAC[GSYM REAL_POW_INV] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `inv(&2) pow j` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_POW_MONO_INV THEN
+    REPEAT CONJ_TAC THENL
+    [CONV_TAC REAL_RAT_REDUCE_CONV; CONV_TAC REAL_RAT_REDUCE_CONV; ASM_ARITH_TAC];
+    ASM_SIMP_TAC[REAL_LT_IMP_LE]]]);;
 
 (* ========================================================================= *)
 (* Abel summation by parts and Kronecker's lemma                             *)
@@ -14576,7 +15696,7 @@ let SLLN_GAP_CONTROL = prove
    MATCH_MP_TAC PROB_FINITE_UNION_IN_EVENTS THEN CONJ_TAC THENL
    [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
     X_GEN_TAC `nn:num` THEN STRIP_TAC THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN
     MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
     (* sum(k*k+1..nn)(X_i - mu) = sum(0..nn)(X_i - mu) - sum(0..k*k)(X_i - mu) *)
     SUBGOAL_THEN `(\x:A. sum(k * k + 1..nn) (\i. (X:num->A->real) i x - mu)) =
@@ -14611,7 +15731,7 @@ let SLLN_GAP_CONTROL = prove
     SUBGOAL_THEN `!k j. (A:num->num->A->bool) k j IN prob_events p`
       (LABEL_TAC "Aev") THENL
     [REPEAT GEN_TAC THEN EXPAND_TAC "A" THEN
-     MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+     MATCH_MP_TAC RV_PREIMAGE_GE THEN
      MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
      MP_TAC(BETA_RULE(ISPECL [`p:A prob_space`;
        `\(i:num) (x:A). (X:num->A->real) (k * k + 1 + i) x - mu`;
@@ -15104,7 +16224,7 @@ let SLLN_SUBSEQ_BOUNDED = prove
   SUBGOAL_THEN `integrable (p:A prob_space) (\x:A. (sum(0..k * k) (\i. (X:num->A->real) i x)) pow 2)`
     ASSUME_TAC THENL [MATCH_MP_TAC INTEGRABLE_SUM_SQUARE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
   CONJ_TAC THENL
-  [MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+  [MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
    MATCH_MP_TAC RANDOM_VARIABLE_CMUL THEN ASM_MESON_TAC[integrable]; ALL_TAC] THEN
   ABBREV_TAC `nn = SUC(k * k)` THEN
@@ -15239,7 +16359,7 @@ let SLLN_GAP_CONTROL_BOUNDED = prove
    MATCH_MP_TAC PROB_FINITE_UNION_IN_EVENTS THEN CONJ_TAC THENL
    [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
     X_GEN_TAC `nn:num` THEN STRIP_TAC THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN
     MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
     SUBGOAL_THEN `(\x:A. sum(k * k + 1..nn) (\i. (X:num->A->real) i x)) =
       (\x. sum(0..nn) (\i. X i x) - sum(0..k * k) (\i. X i x))`
@@ -15267,7 +16387,7 @@ let SLLN_GAP_CONTROL_BOUNDED = prove
     SUBGOAL_THEN `!k j. (A:num->num->A->bool) k j IN prob_events p`
       (LABEL_TAC "Aev") THENL
     [REPEAT GEN_TAC THEN EXPAND_TAC "A" THEN
-     MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+     MATCH_MP_TAC RV_PREIMAGE_GE THEN
      MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
      MP_TAC(BETA_RULE(ISPECL [`p:A prob_space`;
        `\(i:num) (x:A). (X:num->A->real) (k * k + 1 + i) x`;
@@ -15960,7 +17080,7 @@ let SLLN_SUBSEQ_DYADIC = prove
    MATCH_MP_TAC INTEGRABLE_CMUL THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
   CONJ_TAC THENL
   [(* prob >= 0 *)
-   MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_CMUL THEN
    MP_TAC(ISPECL [`p:A prob_space`; `X:num->A->real`; `nn - 1`]
      INTEGRABLE_SUM) THEN
@@ -16037,7 +17157,7 @@ let FIRST_CROSSING_EVENTS_MEASURABLE = prove
       [ASM_MESON_TAC[]; ASM_MESON_TAC[LT]]];
      MATCH_MP_TAC PROB_INTER_IN_EVENTS THEN CONJ_TAC THENL
      [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
-      MATCH_MP_TAC RANDOM_VARIABLE_STRICT_LT THEN
+      MATCH_MP_TAC RV_PREIMAGE_LT THEN
       MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
       MATCH_MP_TAC RANDOM_VARIABLE_SUM THEN
       REPEAT STRIP_TAC THEN
@@ -16059,7 +17179,7 @@ let FIRST_CROSSING_EVENTS_MEASURABLE = prove
   MATCH_MP_TAC PROB_INTER_IN_EVENTS THEN CONJ_TAC THENL
   [USE_THEN "Hforall" (MP_TAC o SPEC `k:num`) THEN
    REWRITE_TAC[LE_REFL];
-   MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
    MATCH_MP_TAC RANDOM_VARIABLE_SUM THEN
    REPEAT STRIP_TAC THEN
@@ -16109,11 +17229,6 @@ let FIRST_CROSSING_EVENTS_UNION = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `j:num`) THEN
   ASM_REWRITE_TAC[DE_MORGAN_THM] THEN
   REWRITE_TAC[real_ge; REAL_NOT_LE] THEN ASM_ARITH_TAC);;
-
-(* Integrable implies random variable *)
-let INTEGRABLE_IMP_RANDOM_VARIABLE = prove
- (`!p:A prob_space (f:A->real). integrable p f ==> random_variable p f`,
-  SIMP_TAC[integrable]);;
 
 (* Helper: integrable f and a measurable ==> integrable (\x. f x * 1_a x) *)
 let INTEGRABLE_MUL_INDICATOR_FN = prove
@@ -16638,7 +17753,7 @@ let SLLN_GAP_DYADIC = prove
    MATCH_MP_TAC PROB_FINITE_UNION_IN_EVENTS THEN CONJ_TAC THENL
    [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
     X_GEN_TAC `nn:num` THEN STRIP_TAC THEN
-    MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+    MATCH_MP_TAC RV_PREIMAGE_GE THEN
     MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN
     SUBGOAL_THEN `1 <= 2 EXP j` ASSUME_TAC THENL
     [REWRITE_TAC[ARITH_RULE `1 <= n <=> 0 < n`; EXP_LT_0] THEN
@@ -17169,7 +18284,7 @@ let TAIL_PROB_SUM_LE_EXPECTATION = prove
   SUBGOAL_THEN
     `!k. {x:A | x IN prob_carrier p /\ X x >= &(k + 1)} IN prob_events p`
     ASSUME_TAC THENL
-  [GEN_TAC THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN ASM_REWRITE_TAC[];
+  [GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN ASM_REWRITE_TAC[];
    ALL_TAC] THEN
   SUBGOAL_THEN
     `!k. prob p {x:A | x IN prob_carrier p /\ X x >= &(k + 1)} =
@@ -17204,8 +18319,137 @@ let TAIL_PROB_SUMMABLE = prove
   EXISTS_TAC `expectation p (X:A->real)` THEN
   ASM_SIMP_TAC[TAIL_PROB_SUM_LE_EXPECTATION] THEN
   GEN_TAC THEN MATCH_MP_TAC PROB_POSITIVE THEN
-  MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+  MATCH_MP_TAC RV_PREIMAGE_GE THEN
   ASM_MESON_TAC[integrable]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Discrete layer-cake (tail-sum) formula: for a nonnegative integer-valued   *)
+(* integrable random variable, the partial sums of the tail probabilities     *)
+(* P(X >= k+1) converge to the expectation E[X].                              *)
+(* ------------------------------------------------------------------------- *)
+
+(* Pointwise identity: for a natural number m and n at least m-1, the finite   *)
+(* sum of dyadic-step indicators recovers m exactly.                          *)
+let SUM_INDICATOR_EQ_NAT = prove
+ (`!m n:num. m <= n + 1
+     ==> sum(0..n) (\k. if &m >= &(k + 1) then &1 else &0) = &m`,
+  GEN_TAC THEN INDUCT_TAC THENL
+  [REWRITE_TAC[SUM_SING_NUMSEG; ADD_CLAUSES; ARITH_RULE `m <= 1 <=> m = 0 \/ m = 1`] THEN
+   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV;
+   REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN DISCH_TAC THEN
+   ASM_CASES_TAC `m <= n + 1` THENL
+   [ASM_SIMP_TAC[] THEN
+    SUBGOAL_THEN `~(&m >= &(SUC n + 1))` ASSUME_TAC THENL
+    [REWRITE_TAC[REAL_OF_NUM_GE; GE] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+    ASM_REWRITE_TAC[REAL_ADD_RID];
+    SUBGOAL_THEN `m = SUC n + 1` ASSUME_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `sum(0..n) (\k. if &m >= &(k + 1) then &1 else &0) = &(n + 1)`
+      SUBST1_TAC THENL
+    [SUBGOAL_THEN
+       `sum(0..n) (\k. if &m >= &(k + 1) then &1 else &0) = sum(0..n) (\k:num. &1)`
+       SUBST1_TAC THENL
+     [MATCH_MP_TAC SUM_EQ_NUMSEG THEN REPEAT STRIP_TAC THEN REWRITE_TAC[] THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+      POP_ASSUM MP_TAC THEN REWRITE_TAC[REAL_OF_NUM_GE; GE] THEN ASM_ARITH_TAC;
+      REWRITE_TAC[SUM_CONST_NUMSEG; SUB_0; REAL_MUL_RID]];
+     SUBGOAL_THEN `&m >= &(SUC n + 1)` ASSUME_TAC THENL
+     [ASM_REWRITE_TAC[REAL_OF_NUM_GE; GE; LE_REFL]; ALL_TAC] THEN
+     ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_SUC] THEN
+     UNDISCH_TAC `m = SUC n + 1` THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_SUC; ADD1] THEN
+     DISCH_THEN(MP_TAC o AP_TERM `real_of_num`) THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_SUC; ADD1] THEN
+     REAL_ARITH_TAC]]]);;
+
+(* The partial sum of tail probabilities equals the nonnegative expectation of *)
+(* the corresponding finite sum of indicator functions.                       *)
+let TAIL_SUM_EQ_NN_EXPECTATION = prove
+ (`!p:A prob_space X n.
+     random_variable p X /\
+     (!k. {y:A | y IN prob_carrier p /\ X y >= &(k + 1)} IN prob_events p)
+     ==> nn_expectation p
+           (\x. sum(0..n) (\k. indicator_fn {y:A | y IN prob_carrier p /\ X y >= &(k + 1)} x)) =
+         sum(0..n) (\k. prob p {y:A | y IN prob_carrier p /\ X y >= &(k + 1)})`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `expectation p
+       (\x:A. sum(0..n) (\k. indicator_fn {y:A | y IN prob_carrier p /\ X y >= &(k + 1)} x)) =
+     nn_expectation p
+       (\x:A. sum(0..n) (\k. indicator_fn {y:A | y IN prob_carrier p /\ X y >= &(k + 1)} x))`
+    (SUBST1_TAC o SYM) THENL
+  [MATCH_MP_TAC EXPECTATION_NONNEG_EQ_NN THEN CONJ_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_SUM THEN REPEAT STRIP_TAC THEN
+    REWRITE_TAC[ETA_AX] THEN ASM_SIMP_TAC[INTEGRABLE_INDICATOR];
+    REPEAT STRIP_TAC THEN BETA_TAC THEN MATCH_MP_TAC SUM_POS_LE_NUMSEG THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC[indicator_fn] THEN
+    COND_CASES_TAC THEN REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  MP_TAC(ISPECL
+    [`p:A prob_space`;
+     `\k. indicator_fn {y:A | y IN prob_carrier p /\ (X:A->real) y >= &(k + 1)}`;
+     `n:num`] EXPECTATION_SUM) THEN
+  REWRITE_TAC[] THEN
+  ANTS_TAC THENL
+  [REPEAT STRIP_TAC THEN ASM_SIMP_TAC[INTEGRABLE_INDICATOR]; ALL_TAC] THEN
+  DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC SUM_EQ_NUMSEG THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC EXPECTATION_INDICATOR THEN ASM_SIMP_TAC[]);;
+
+(* The tail-sum formula, via the monotone convergence theorem: the indicator   *)
+(* partial sums increase pointwise to X (since X is integer-valued).           *)
+let EXPECTATION_EQ_TAIL_SUM = prove
+ (`!p:A prob_space X.
+     integrable p X /\
+     (!x. x IN prob_carrier p ==> &0 <= X x) /\
+     (!x. x IN prob_carrier p ==> ?m:num. X x = &m)
+     ==> ((\n. sum(0..n) (\k. prob p {y | y IN prob_carrier p /\ X y >= &(k + 1)}))
+          ---> expectation p X) sequentially`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `random_variable (p:A prob_space) X` ASSUME_TAC THENL
+  [ASM_MESON_TAC[integrable]; ALL_TAC] THEN
+  SUBGOAL_THEN
+    `!k. {y:A | y IN prob_carrier p /\ X y >= &(k + 1)} IN prob_events p`
+    ASSUME_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!n:num. sum(0..n) (\k. prob p {y:A | y IN prob_carrier p /\ X y >= &(k + 1)}) =
+            nn_expectation p
+              (\x. sum(0..n)
+                (\k. indicator_fn {y:A | y IN prob_carrier p /\ X y >= &(k + 1)} x))`
+   (fun th -> REWRITE_TAC[th]) THENL
+  [GEN_TAC THEN CONV_TAC SYM_CONV THEN
+   MATCH_MP_TAC TAIL_SUM_EQ_NN_EXPECTATION THEN ASM_REWRITE_TAC[];
+   ALL_TAC] THEN
+  SUBGOAL_THEN `expectation p (X:A->real) = nn_expectation p X` SUBST1_TAC THENL
+  [MATCH_MP_TAC EXPECTATION_NONNEG_EQ_NN THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  MP_TAC(BETA_RULE(ISPECL
+   [`p:A prob_space`;
+    `\n:num. \x:A. sum(0..n) (\k. indicator_fn {y:A | y IN prob_carrier p /\ X y >= &(k+1)} x)`;
+    `X:A->real`] MCT_NN_EXPECTATION)) THEN
+  REWRITE_TAC[ETA_AX] THEN DISCH_THEN MATCH_MP_TAC THEN REPEAT CONJ_TAC THENL
+  [GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SUM THEN REPEAT STRIP_TAC THEN
+   REWRITE_TAC[ETA_AX] THEN ASM_SIMP_TAC[INTEGRABLE_INDICATOR];
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_POS_LE_NUMSEG THEN REPEAT STRIP_TAC THEN
+   REWRITE_TAC[indicator_fn] THEN COND_CASES_TAC THEN REAL_ARITH_TAC;
+   REPEAT STRIP_TAC THEN REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN
+   MATCH_MP_TAC(REAL_ARITH `&0 <= a ==> s <= s + a`) THEN
+   REWRITE_TAC[indicator_fn] THEN COND_CASES_TAC THEN REAL_ARITH_TAC;
+   X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+   FIRST_X_ASSUM(fun th -> MP_TAC(SPEC `x:A` th)) THEN ASM_REWRITE_TAC[] THEN
+   DISCH_THEN(X_CHOOSE_TAC `m:num`) THEN
+   REWRITE_TAC[indicator_fn; IN_ELIM_THM] THEN
+   SUBGOAL_THEN
+     `!k. (if x IN prob_carrier p /\ (X:A->real) x >= &(k + 1) then &1 else &0) =
+          (if X x >= &(k + 1) then &1 else &0)` (fun th -> REWRITE_TAC[th]) THENL
+   [GEN_TAC THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+   MATCH_MP_TAC REALLIM_EVENTUALLY THEN
+   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `m:num` THEN
+   X_GEN_TAC `n:num` THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC SUM_INDICATOR_EQ_NAT THEN ASM_ARITH_TAC;
+   EXISTS_TAC `expectation p (X:A->real)` THEN GEN_TAC THEN
+   ASM_SIMP_TAC[TAIL_SUM_EQ_NN_EXPECTATION] THEN
+   ASM_MESON_TAC[TAIL_PROB_SUM_LE_EXPECTATION]]);;
 
 (* Telescoping sum for inverse differences *)
 let SUM_TELESCOPING_INV = prove
@@ -17981,7 +19225,7 @@ let SLLN_SUBSEQ_GSEQ = prove
    ASM_REWRITE_TAC[SUM_0; REAL_MUL_RZERO]; ALL_TAC] THEN
   CONJ_TAC THENL
   [(* prob >= 0 *)
-   MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RANDOM_VARIABLE_GE THEN
+   MATCH_MP_TAC PROB_POSITIVE THEN MATCH_MP_TAC RV_PREIMAGE_GE THEN
    MATCH_MP_TAC RANDOM_VARIABLE_ABS THEN MATCH_MP_TAC RANDOM_VARIABLE_CMUL THEN
    MP_TAC(ISPECL [`p:A prob_space`; `X:num->A->real`; `nn - 1`]
      INTEGRABLE_SUM) THEN
