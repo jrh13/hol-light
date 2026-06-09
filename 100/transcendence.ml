@@ -4433,7 +4433,7 @@ let deg_coeff_from_le = prove(`
   ~(coeff n p = ring_0 r) ==>
   poly_deg r p = n
 `,
-  qed[POLY_DEG_EQ_COEFF_FROM_LE]
+  qed[POLY_DEG_EQ_FROM_LE]
 );;
 
 let poly_eval_expand_coeff = prove(`
