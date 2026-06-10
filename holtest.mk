@@ -278,9 +278,9 @@ $(LOGDIR)/TacticTrace/make-test.ready:
 	@mkdir -p $(LOGDIR)/$$(dirname TacticTrace/make-test)
 	@echo '### Running TacticTrace/Makefile'
 	@$(MAKE) clean --quiet -C TacticTrace
-	@$(MAKE) --quiet -C TacticTrace
-	@cd TacticTrace && ./build-hol-kernel.sh
-	@$(MAKE) test --quiet -C TacticTrace > $(LOGDIR)/TacticTrace/make-test 2>&1
+	@$(MAKE) --quiet -C TacticTrace > $(LOGDIR)/TacticTrace/make-test 2>&1
+	@export HOLLIGHT_DIR=`$(HOLLIGHT) -dir` && cd TacticTrace && ./build-hol-kernel.sh >> $(LOGDIR)/TacticTrace/make-test 2>&1
+	@$(MAKE) test --quiet -C TacticTrace >> $(LOGDIR)/TacticTrace/make-test 2>&1
 	@cat TacticTrace/examples/*.hollog >> $(LOGDIR)/TacticTrace/make-test
 	@touch $(LOGDIR)/TacticTrace/make-test.ready
 
