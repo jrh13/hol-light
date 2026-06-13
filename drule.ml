@@ -160,9 +160,16 @@ let (INSTANTIATE_ALL : instantiation->thm->thm) =
 (* but there's usually an implicit check outside that the match worked       *)
 (* anyway. A test could be put in (see if any "env" variables are left in    *)
 (* the term after abstracting out the pattern instances) but it'd be slower. *)
+(*                                                                           *)
+(* The "term_match_checked" variant does perform that test for the first     *)
+(* order case, i.e. whenever a pattern variable would be assigned a subterm  *)
+(* with a free occurrence of a variable bound on the target side, so that    *)
+(* such matches fail at once rather than being rejected downstream. The      *)
+(* higher order paths below are unchanged, so it is still only a partial     *)
+(* check and the implicit check outside remains the real guarantee.          *)
 (* ------------------------------------------------------------------------- *)
 
-let (term_match:term list -> term -> term -> instantiation) =
+let term_match,term_match_checked =
   let safe_inserta ((y,x) as n) l =
     try let z = rev_assoc x l in
         if aconv y z then l else failwith "safe_inserta"
@@ -177,109 +184,116 @@ let (term_match:term list -> term -> term -> instantiation) =
     let name = fst(dest_var(genvar aty)) in
     fun ty -> mk_var(name,ty) in
 
-  let rec term_pmatch lconsts env vtm ctm ((insts,homs) as sofar) =
-    match (vtm,ctm) with
-      Var(_,_),_ ->
-       (try let ctm' = rev_assoc vtm env in
-            if compare ctm' ctm = 0 then sofar
-            else failwith "term_pmatch"
-        with Failure "find" ->
-            if mem vtm lconsts then
-              if compare ctm vtm = 0 then sofar
-              else failwith "term_pmatch: can't instantiate local constant"
-            else safe_inserta (ctm,vtm) insts,homs)
-    | Const(vname,vty),Const(cname,cty) ->
-        if compare vname cname = 0 then
-          if compare vty cty = 0 then sofar
-          else safe_insert (mk_dummy cty,mk_dummy vty) insts,homs
-        else failwith "term_pmatch"
-    | Abs(vv,vbod),Abs(cv,cbod) ->
-        let sofar' = safe_insert
-          (mk_dummy(snd(dest_var cv)),mk_dummy(snd(dest_var vv))) insts,homs in
-        term_pmatch lconsts ((cv,vv)::env) vbod cbod sofar'
-    | _ ->
-      let vhop = repeat rator vtm in
-      if is_var vhop && not (mem vhop lconsts) &&
-                       not (can (rev_assoc vhop) env) then
-        let vty = type_of vtm and cty = type_of ctm in
-        let insts' =
-          if compare vty cty = 0 then insts
-          else safe_insert (mk_dummy cty,mk_dummy vty) insts in
-        (insts',(env,ctm,vtm)::homs)
-      else
-        let lv,rv = dest_comb vtm
-        and lc,rc = dest_comb ctm in
-        let sofar' = term_pmatch lconsts env lv lc sofar in
-        term_pmatch lconsts env rv rc sofar' in
+  let gen_term_match check_escape =
+    let rec term_pmatch lconsts env vtm ctm ((insts,homs) as sofar) =
+      match (vtm,ctm) with
+        Var(_,_),_ ->
+         (try let ctm' = rev_assoc vtm env in
+              if compare ctm' ctm = 0 then sofar
+              else failwith "term_pmatch"
+          with Failure "find" ->
+              if mem vtm lconsts then
+                if compare ctm vtm = 0 then sofar
+                else failwith "term_pmatch: can't instantiate local constant"
+              else if check_escape &&
+                      exists (fun (cv,_) -> vfree_in cv ctm) env then
+                failwith "term_pmatch: bound variable would escape"
+              else safe_inserta (ctm,vtm) insts,homs)
+      | Const(vname,vty),Const(cname,cty) ->
+          if compare vname cname = 0 then
+            if compare vty cty = 0 then sofar
+            else safe_insert (mk_dummy cty,mk_dummy vty) insts,homs
+          else failwith "term_pmatch"
+      | Abs(vv,vbod),Abs(cv,cbod) ->
+          let sofar' = safe_insert
+            (mk_dummy(snd(dest_var cv)),mk_dummy(snd(dest_var vv))) insts,homs in
+          term_pmatch lconsts ((cv,vv)::env) vbod cbod sofar'
+      | _ ->
+        let vhop = repeat rator vtm in
+        if is_var vhop && not (mem vhop lconsts) &&
+                         not (can (rev_assoc vhop) env) then
+          let vty = type_of vtm and cty = type_of ctm in
+          let insts' =
+            if compare vty cty = 0 then insts
+            else safe_insert (mk_dummy cty,mk_dummy vty) insts in
+          (insts',(env,ctm,vtm)::homs)
+        else
+          let lv,rv = dest_comb vtm
+          and lc,rc = dest_comb ctm in
+          let sofar' = term_pmatch lconsts env lv lc sofar in
+          term_pmatch lconsts env rv rc sofar' in
 
-  let get_type_insts insts =
-    itlist (fun (t,x) -> type_match (snd(dest_var x)) (type_of t)) insts in
+    let get_type_insts insts =
+      itlist (fun (t,x) -> type_match (snd(dest_var x)) (type_of t)) insts in
 
-  let separate_insts insts =
-      let realinsts,patterns = partition (is_var o snd) insts in
-      let betacounts =
-        if patterns = [] then [] else
-        itlist
-          (fun (_,p) sof ->
-            let hop,args = strip_comb p in
-            try safe_insert (length args,hop) sof with Failure _ ->
-            (warn true "Inconsistent patterning in higher order match"; sof))
-          patterns [] in
-      let tyins = get_type_insts realinsts [] in
-      betacounts,
-      mapfilter (fun (t,x) ->
-        let x' = let xn,xty = dest_var x in
-                 mk_var(xn,type_subst tyins xty) in
-        if compare t x' = 0 then fail() else (t,x')) realinsts,
-      tyins in
+    let separate_insts insts =
+        let realinsts,patterns = partition (is_var o snd) insts in
+        let betacounts =
+          if patterns = [] then [] else
+          itlist
+            (fun (_,p) sof ->
+              let hop,args = strip_comb p in
+              try safe_insert (length args,hop) sof with Failure _ ->
+              (warn true "Inconsistent patterning in higher order match"; sof))
+            patterns [] in
+        let tyins = get_type_insts realinsts [] in
+        betacounts,
+        mapfilter (fun (t,x) ->
+          let x' = let xn,xty = dest_var x in
+                   mk_var(xn,type_subst tyins xty) in
+          if compare t x' = 0 then fail() else (t,x')) realinsts,
+        tyins in
 
-  let rec term_homatch lconsts tyins (insts,homs) =
-    if homs = [] then insts else
-    let (env,ctm,vtm) = hd homs in
-    if is_var vtm then
-      if compare ctm vtm = 0
-       then term_homatch lconsts tyins (insts,tl homs) else
-      let newtyins = safe_insert (type_of ctm,snd(dest_var vtm)) tyins
-      and newinsts = (ctm,vtm)::insts in
-      term_homatch lconsts newtyins (newinsts,tl homs) else
-    let vhop,vargs = strip_comb vtm in
-    let afvs = freesl vargs in
-    let inst_fn = inst tyins in
-    try let tmins = map
-          (fun a -> (try rev_assoc a env with Failure _ -> try
-                         rev_assoc a insts with Failure _ ->
-                         if mem a lconsts then a else fail()),
-                    inst_fn a) afvs in
-        let pats0 = map inst_fn vargs in
-        let pats = map (vsubst tmins) pats0 in
-        let vhop' = inst_fn vhop in
-        let ni =
-          let chop,cargs = strip_comb ctm in
-          if compare cargs pats = 0 then
-            if compare chop vhop = 0
-            then insts else safe_inserta (chop,vhop) insts else
-          let ginsts = map
-            (fun p -> (if is_var p then p else genvar(type_of p)),p) pats in
-          let ctm' = subst ginsts ctm
-          and gvs = map fst ginsts in
-          let abstm = list_mk_abs(gvs,ctm') in
-          let vinsts = safe_inserta (abstm,vhop) insts in
-          let icpair = ctm',list_mk_comb(vhop',gvs) in
-          icpair::vinsts in
-        term_homatch lconsts tyins (ni,tl homs)
-    with Failure _ ->
-        let lc,rc = dest_comb ctm
-        and lv,rv = dest_comb vtm in
-        let pinsts_homs' =
-          term_pmatch lconsts env rv rc (insts,(env,lc,lv)::(tl homs)) in
-        let tyins' = get_type_insts (fst pinsts_homs') [] in
-        term_homatch lconsts tyins' pinsts_homs' in
+    let rec term_homatch lconsts tyins (insts,homs) =
+      if homs = [] then insts else
+      let (env,ctm,vtm) = hd homs in
+      if is_var vtm then
+        if compare ctm vtm = 0
+         then term_homatch lconsts tyins (insts,tl homs) else
+        let newtyins = safe_insert (type_of ctm,snd(dest_var vtm)) tyins
+        and newinsts = (ctm,vtm)::insts in
+        term_homatch lconsts newtyins (newinsts,tl homs) else
+      let vhop,vargs = strip_comb vtm in
+      let afvs = freesl vargs in
+      let inst_fn = inst tyins in
+      try let tmins = map
+            (fun a -> (try rev_assoc a env with Failure _ -> try
+                           rev_assoc a insts with Failure _ ->
+                           if mem a lconsts then a else fail()),
+                      inst_fn a) afvs in
+          let pats0 = map inst_fn vargs in
+          let pats = map (vsubst tmins) pats0 in
+          let vhop' = inst_fn vhop in
+          let ni =
+            let chop,cargs = strip_comb ctm in
+            if compare cargs pats = 0 then
+              if compare chop vhop = 0
+              then insts else safe_inserta (chop,vhop) insts else
+            let ginsts = map
+              (fun p -> (if is_var p then p else genvar(type_of p)),p) pats in
+            let ctm' = subst ginsts ctm
+            and gvs = map fst ginsts in
+            let abstm = list_mk_abs(gvs,ctm') in
+            let vinsts = safe_inserta (abstm,vhop) insts in
+            let icpair = ctm',list_mk_comb(vhop',gvs) in
+            icpair::vinsts in
+          term_homatch lconsts tyins (ni,tl homs)
+      with Failure _ ->
+          let lc,rc = dest_comb ctm
+          and lv,rv = dest_comb vtm in
+          let pinsts_homs' =
+            term_pmatch lconsts env rv rc (insts,(env,lc,lv)::(tl homs)) in
+          let tyins' = get_type_insts (fst pinsts_homs') [] in
+          term_homatch lconsts tyins' pinsts_homs' in
 
-  fun lconsts vtm ctm ->
-    let pinsts_homs = term_pmatch lconsts [] vtm ctm ([],[]) in
-    let tyins = get_type_insts (fst pinsts_homs) [] in
-    let insts = term_homatch lconsts tyins pinsts_homs in
-    separate_insts insts;;
+    fun lconsts vtm ctm ->
+      let pinsts_homs = term_pmatch lconsts [] vtm ctm ([],[]) in
+      let tyins = get_type_insts (fst pinsts_homs) [] in
+      let insts = term_homatch lconsts tyins pinsts_homs in
+      separate_insts insts in
+
+  (gen_term_match false:term list -> term -> term -> instantiation),
+  (gen_term_match true:term list -> term -> term -> instantiation);;
 
 (* ------------------------------------------------------------------------- *)
 (* First order unification of terms of the same type.                        *)
@@ -459,7 +473,7 @@ let PART_MATCH,GEN_PART_MATCH =
       let bvms = match_bvs tm pbod [] in
       let abod = deep_alpha bvms bod in
       let ath = EQ_MP (ALPHA bod abod) sth in
-      let insts = term_match lconsts (partfn abod) tm in
+      let insts = term_match_checked lconsts (partfn abod) tm in
       let fth = INSTANTIATE insts ath in
       if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
       let tm' = partfn (concl fth) in
@@ -476,7 +490,7 @@ let PART_MATCH,GEN_PART_MATCH =
       let bvms = match_bvs tm pbod [] in
       let abod = deep_alpha bvms bod in
       let ath = EQ_MP (ALPHA bod abod) sth in
-      let insts = term_match lconsts (partfn abod) tm in
+      let insts = term_match_checked lconsts (partfn abod) tm in
       let eth = INSTANTIATE insts (GENL fvs ath) in
       let fth = itlist (fun v th -> snd(SPEC_VAR th)) fvs eth in
       if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
