@@ -306,6 +306,21 @@ let type_of_pretype,term_of_preterm,retypecheck =
   in
 
   (* ----------------------------------------------------------------------- *)
+  (* Collect the names in a varstruct that are also constants. A binder may  *)
+  (* legitimately shadow a constant of the same name, so these are forced to *)
+  (* be treated as bound variables when typing the varstruct (see Absp,      *)
+  (* below). Handles plain and type-annotated binders and tuple varstructs.  *)
+  (* ----------------------------------------------------------------------- *)
+
+  let rec varstruct_consts ptm =
+    match ptm with
+    | Varp(s,_) -> if can get_const_type s then [s] else []
+    | Typing(t,_) -> varstruct_consts t
+    | Combp(Combp(Varp(",",_),l),r) ->
+        union (varstruct_consts l) (varstruct_consts r)
+    | _ -> [] in
+
+  (* ----------------------------------------------------------------------- *)
   (* Attempt to attach a given type to a term, performing unifications.      *)
   (* ----------------------------------------------------------------------- *)
 
@@ -346,11 +361,12 @@ let type_of_pretype,term_of_preterm,retypecheck =
         let ty''' = Ptycon("fun",[ty';ty'']) in
         let uenv0 = unify (Some ptm) uenv ty''' ty in
         let v',venv1,uenv1 =
-          let v',venv1,uenv1 = typify ty' (v,[],uenv0) in
-          match v' with
-          |Constp(s,_) when !ignore_constant_varstruct ->
-              Varp(s,ty'),[s,ty'],uenv0
-          |_ -> v',venv1,uenv1
+          let cseed =
+            if !ignore_constant_varstruct
+            then map (fun s -> s,new_type_var()) (varstruct_consts v)
+            else [] in
+          let v',venv1,uenv1 = typify ty' (v,cseed,uenv0) in
+          v',cseed@venv1,uenv1
         in
         let bod',venv2,uenv2 = typify ty'' (bod,venv1@venv,uenv1) in
         Absp(v',bod'),venv2,uenv2
