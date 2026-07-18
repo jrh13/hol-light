@@ -134,9 +134,9 @@ let independent_relation = new_definition
     !x y. x IN s /\ y IN s /\ ~(x = y) ==> ~adj x y`;;
 
 let relation_homomorphism = new_definition
- `relation_homomorphism vertices
+ `relation_homomorphism vertex_set
        (source:A->A->bool) (target:B->B->bool) (f:A->B) <=>
-    !x y. x IN vertices /\ y IN vertices /\ source x y
+    !x y. x IN vertex_set /\ y IN vertex_set /\ source x y
           ==> target (f x) (f y)`;;
 
 let TRIANGLE_FREE_INCIDENCE_NEIGHBORHOOD = prove

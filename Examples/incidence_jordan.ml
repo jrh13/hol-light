@@ -1,7 +1,7 @@
 (* The Jordan graph predicate is exactly the closed, two-endpoint refinement. *)
 
-needs "Jordan/make.ml";;
 needs "Library/incidence.ml";;
+needs "Jordan/make.ml";;
 
 let JORDAN_GRAPH_EQ_INCIDENCE = prove
  (`!G:(V,E)graph_t.

@@ -1,7 +1,7 @@
 (* Koenigsberg permits loops, so active edges can have one or two endpoints. *)
 
-needs "100/konigsberg.ml";;
 needs "Library/incidence.ml";;
+needs "100/konigsberg.ml";;
 
 let KONIGSBERG_GRAPH_IMP_INCIDENCE = prove
  (`!edge_set:E->bool. !vertex_set:V->bool. !incidence:E->V->bool.
@@ -23,9 +23,11 @@ let KONIGSBERG_GRAPH_IMP_INCIDENCE = prove
          (E->bool)#(V->bool)#(E->V->bool))` THEN
     REWRITE_TAC[graph; edges; vertices; termini] THEN
     DISCH_THEN(MP_TAC o SPEC `e:E`) THEN
-    ASM_REWRITE_TAC[] THEN
+    ASM_REWRITE_TAC[IN] THEN
     DISCH_THEN(X_CHOOSE_THEN `a:V`
       (X_CHOOSE_THEN `b:V` STRIP_ASSUME_TAC)) THEN
     ASM_REWRITE_TAC[] THEN
     ASM_CASES_TAC `a:V = b` THEN ASM_REWRITE_TAC[] THEN
-    SIMP_TAC[HAS_SIZE; CARD_CLAUSES; FINITE_RULES]]);;
+    ASM_SIMP_TAC
+      [HAS_SIZE; CARD_CLAUSES; FINITE_RULES; IN_INSERT; NOT_IN_EMPTY] THEN
+    ARITH_TAC]);;
