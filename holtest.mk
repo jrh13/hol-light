@@ -31,6 +31,9 @@ STANDALONE_EXAMPLES:=\
 	Examples/harmonicsum \
 	Examples/hol88 \
 	Examples/holby \
+	Examples/incidence_jordan \
+	Examples/incidence_konigsberg \
+	Library/incidence \
 	Library/integer \
 	Examples/inverse_bug_puzzle_miz3 \
 	Examples/inverse_bug_puzzle_tac \
