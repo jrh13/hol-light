@@ -10,6 +10,12 @@ exception Sanity;;
 
 exception Unsolvable;;
 
+(* CSDP failed for a structural reason (e.g. it rejected the input, as with    *)
+(* "Constraint k is empty"), as opposed to merely reporting the SDP infeasible. *)
+(* This is raised as a non-"Failure" exception so that the iterative deepening  *)
+(* search does not silently treat it as "no certificate at this degree".        *)
+exception Csdp_error of int;;
+
 (* ------------------------------------------------------------------------- *)
 (* Turn a rational into a decimal string with d sig digits.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -980,7 +986,8 @@ let csdp nblocks blocksizes obj mats =
    else if rv = 3 then
     (Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline())
-   else if rv <> 0 then failwith("csdp: error "^string_of_int rv)
+   else if rv >= 4 && rv <= 9 then failwith("csdp: error "^string_of_int rv)
+   else if rv <> 0 then raise(Csdp_error rv)
    else ());
   res;;
 
@@ -1067,8 +1074,24 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   and obj = length pvs,
             itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (num 0)))
                         undefined in
+  (* Depending on the essentially arbitrary order in which variables were      *)
+  (* eliminated above, a free variable may end up not occurring in any of the  *)
+  (* semidefinite blocks, giving an all-zero constraint matrix. CSDP rejects   *)
+  (* such a problem outright ("Constraint k is empty"). Such a variable is      *)
+  (* wholly unconstrained by the SDP, and (since it occurs in no diagonal       *)
+  (* block entry) has objective coefficient zero, so we can just drop it before *)
+  (* solving and set it to zero in the result without affecting anything.       *)
+  let solve_filtered obj mats =
+    let m = length mats - 1 in
+    let keep = filter (fun k -> not(is_undefined(el k mats))) (1--m) in
+    if keep = [] then vec_0 m else
+    let mats' = el 0 mats :: map (fun k -> el k mats) keep
+    and obj' = length keep,
+               itern 1 keep (fun k i -> (i |--> element obj k)) undefined in
+    let subvec = csdp nblocks blocksizes obj' mats' in
+    (m,itern 1 keep (fun k i -> (k |--> element subvec i)) undefined) in
   let raw_vec = if pvs = [] then vec_0 0
-                else scale_then (csdp nblocks blocksizes) obj mats in
+                else scale_then solve_filtered obj mats in
   let find_rounding d =
    (if !debugging then
      (Format.print_string("Trying rounding with limit "^string_of_num d);
@@ -1118,6 +1141,9 @@ let rec deepen f n =
   try print_string "Searching with depth limit ";
       print_int n; print_newline(); f n
   with Failure _ -> deepen f (n + 1);;
+(* Note: this deliberately retries only on "Failure" (which includes SDP        *)
+(* infeasibility at the current degree); a "Csdp_error" from a structurally     *)
+(* rejected problem propagates instead of causing an unbounded deepening loop.  *)
 
 (* ------------------------------------------------------------------------- *)
 (* The ordering so we can create canonical HOL polynomials.                  *)

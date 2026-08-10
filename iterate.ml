@@ -1920,22 +1920,29 @@ let th = prove
 (* Thanks to finite sums, we can express cardinality of finite union.        *)
 (* ------------------------------------------------------------------------- *)
 
+let CARD_UNIONS_IMAGE = prove
+ (`!(f:K->A->bool) s.
+        FINITE s /\ (!t. t IN s ==> FINITE(f t)) /\
+        (!t u. t IN s /\ u IN s /\ ~(t = u) ==> f t INTER f u = {})
+        ==> CARD(UNIONS(IMAGE f s)) = nsum s (\i. CARD(f i))`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN REWRITE_TAC[IMAGE_CLAUSES] THEN
+  REWRITE_TAC[UNIONS_0; UNIONS_INSERT; NOT_IN_EMPTY; IN_INSERT] THEN
+  REWRITE_TAC[CARD_CLAUSES; NSUM_CLAUSES] THEN REPEAT GEN_TAC THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_SIMP_TAC[NSUM_CLAUSES] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (SUBST1_TAC o SYM) STRIP_ASSUME_TAC) THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_UNION_EQ THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FINITE_UNIONS; FINITE_UNION; INTER_UNIONS] THEN
+  ASM SET_TAC[]);;
+
 let CARD_UNIONS = prove
  (`!s:(A->bool)->bool.
         FINITE s /\ (!t. t IN s ==> FINITE t) /\
         (!t u. t IN s /\ u IN s /\ ~(t = u) ==> t INTER u = {})
         ==> CARD(UNIONS s) = nsum s CARD`,
-  ONCE_REWRITE_TAC[IMP_CONJ] THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  REWRITE_TAC[UNIONS_0; UNIONS_INSERT; NOT_IN_EMPTY; IN_INSERT] THEN
-  REWRITE_TAC[CARD_CLAUSES; NSUM_CLAUSES] THEN
-  MAP_EVERY X_GEN_TAC [`t:A->bool`; `f:(A->bool)->bool`] THEN
-  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
-  ASM_SIMP_TAC[NSUM_CLAUSES] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 (SUBST1_TAC o SYM) STRIP_ASSUME_TAC) THEN
-  CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_UNION_EQ THEN
-  ASM_SIMP_TAC[FINITE_UNIONS; FINITE_UNION; INTER_UNIONS] THEN
-  REWRITE_TAC[EMPTY_UNIONS; IN_ELIM_THM] THEN ASM MESON_TAC[]);;
+  MP_TAC(ISPEC `\x:A->bool. x` CARD_UNIONS_IMAGE) THEN
+  REWRITE_TAC[IMAGE_ID; ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Expand "nsum (m..n) f" where m and n are numerals.                        *)

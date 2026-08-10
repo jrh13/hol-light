@@ -10,6 +10,14 @@ TYPES_OBJECTS = $(TYPES_SOURCES:.ml=.cmo)
 # Set the HOLLIGHT_DIR to <this Makefile>/..
 HOLLIGHT_DIR?=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))/..
 
+# If a local OPAM switch exists at $(HOLLIGHT_DIR)/_opam, prepend its bin
+# directory to PATH so that ocamlfind, ocamlc, etc. are picked up even when
+# this Makefile is invoked from an environment that has not run
+# `eval $(opam env)`.
+ifneq ($(wildcard $(HOLLIGHT_DIR)/_opam/bin),)
+  export PATH := $(abspath $(HOLLIGHT_DIR)/_opam/bin):$(PATH)
+endif
+
 TESTS =\
   examples/tactic.ml \
   examples/conv.ml

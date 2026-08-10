@@ -8,6 +8,121 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  8th Aug 2026       Autoformalization/three_squares.ml [new file], Autoformalization/sarkovskii.ml [new file]
+
+Added a new subdirectory Autoformalization as a home for miscellaneous
+results formalized entirely autonomously by AI systems. Initially this
+contains two such formalizations:
+
+ 1. three_squares.ml is a formalization by Claude Opus 4.8 of the
+    classic Legendre three-squares theorem characterizing those
+    integers representable as a sum of three integer squares, as
+    well as the corollary that every integer is a sum of three
+    triangular numbers.
+
+ 2. sarkovskii.ml is a formalization by GPT-5.6-sol of Sarkovskii's
+    theorem on periodic points of functions on real intervals. It
+    is initially proved for functions real->real, then that core
+    result is generalized using elementary topological machinery
+    to arbitrary intervals.
+
+Mon  3rd Aug 2026       Examples/sos.ml
+
+Added a fix to handle degenerate SDPs with an empty constraint in REAL_SOS.
+This Claude-written change was based on a bug report and suggested fix from
+Daniel Nezamabadi. The issue is that real_positivnullstellensatz_general
+eliminates the linear monoid-matching equations in an essentially
+arbitrary order (via choose), then treats the remaining free variables as
+the SDP decision variables. Depending on that order, a free variable can
+turn out not to occur in any semidefinite block, so its constraint matrix
+mk_matrix is identically zero. CSDP rejects such a problem outright with
+"Constraint k is empty" and return code 206, rather than solving it.
+This is order-dependent: HOL Light's choose happens to pick an order that
+avoids it on the existing examples, but a differently-ordered dictionary
+implementation (e.g. Candle's) can hit it, e.g. on
+
+ `a1 >= &0 /\ a2 >= &0 /\
+  (a1 * a1 + a2 * a2 = b1 * b1 + b2 * b2 + &2) /\
+  (a1 * b1 + a2 * b2 = &0)
+  ==> a1 * a2 - b1 * b2 >= &0`;;
+
+The elimination is otherwise fine: the number of free variables (the affine
+solution dimension) is invariant across orders, so feasibility and the
+optimum are unchanged. Only the split of the free variables into "occurs in
+a block" vs "does not" varies, and an unlucky order leaves one decoupled.
+
+The fix is that before calling CSDP, we now drop any free variable whose
+constraint matrix is zero, solve the reduced SDP, and set the dropped
+variable to zero in the result. This is lossless: a variable absent from
+every block also has a zero objective coefficient (the objective is built
+from diagonal block entries), so it is genuinely unconstrained and
+irrelevant to the optimum. When no matrix is empty the reduced problem is
+identical to the original.
+
+This update also separately makes the "deepen" iterative deepending search
+function robust to genuinely malformed problems: CSDP return codes are now
+classified so that infeasibility (1,2) and numerical trouble (4-9) remain
+retryable Failures for the iterative deepening / tryfind search (some
+proofs, e.g. the Chebyshev and Zeng examples, legitimately rely on
+retrying past a numerical failure), while a structural rejection raises a
+new Csdp_error that deepen does not catch. Previously such a rejection was
+either swallowed as "no certificate at this degree", causing "deepen" to
+loop to ever higher degrees, or surfaced as a confusing
+missing-output-file error.
+
+Sun  2nd Aug 2026       WZ [new directory]
+
+Added a formal implementation of the Wilf-Zeilberger algorithm for
+hypergeometric summation, one which largely avoids akwardnesses over zero
+denominators and special cases by an interpretion using real gamma function
+limits. This was fully implemented back in 2014 and described in the paper:
+
+  John Harrison
+  "Formal Proofs of Hypergeometric Sums"
+  Journal of Automated Reasoning 55 (2015)
+  https://www.cl.cam.ac.uk/~jrh13/papers/wz.html
+
+The setup has belatedly been made available having been cleaned up and
+extended, mainly with a cleaner Maxima certificate-generation interface
+and a few more examples, by Codex using gpt-5.6-sol (xhigh). Among the
+automatic examples is the A recurrence that is proved more manually in
+the recently added Examples/apery.ml proof.
+
+Sat  1st Aug 2026       Examples/apery.ml [new file]
+
+Added a proof of Apery's theorem, the irrationality of zeta(3). This
+originates in 2014, when I was inspired by a presentation from Assia
+Mahboubi of a proof project in Coq, which was eventually completed and
+published as A. Mahboubi and T. Sibut-Pinote, "A Formal Proof of the
+Irrationality of zeta(3)" (2021). At that time the A and B recurrences
+had been proved in Coq following Bruno Salvy's computer algebra proof
+
+  http://algo.inria.fr/libraries/autocomb/Apery2-html/apery.html
+
+but there was no machinery to provide the lcm(1..n) estimate needed
+for the full result. I decided to derive them from the HOL Light proof
+of the Prime Number Theorem (which is overkill). At that time I also
+formalized almost all other parts of the Apery proof including the A
+recurrence, but ground to a halt on the B recurrence which seemed to
+require much more work. I eventually revived this in 2026 and had
+Claude Opus 4.8 complete the B recurrence proof, following Salvy again.
+
+Fri 10th Jul 2026       nets.ml
+
+Made an optimization from June Lee to the discrimination nets in nets.ml,
+using balanced trees to speed lookup. The original code is conceptually
+ancient, little changed from Cambridge LCF days.
+
+Mon 15th Jun 2026       iterate.ml
+
+Added a simple but useful generalization of CARD_UNIONS whose proof is
+no more difficult than that special cases, which is now derived from it.
+
+  CARD_UNIONS_IMAGE =
+    |- !f s. FINITE s /\ (!t. t IN s ==> FINITE(f t)) /\
+             (!t u. t IN s /\ u IN s /\ ~(t = u) ==> f t INTER f u = {})
+             ==> CARD(UNIONS(IMAGE f s)) = nsum s (\i. CARD(f i))
+
 Mon  8th Jun 2026       Library/ringtheory.ml, Library/rabin_test.ml, 100/transcendence.ml
 
 Extended the ring theory library with the Hilbert Basis Theorem for

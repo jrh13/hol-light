@@ -34,7 +34,7 @@ jobs:
           opam install -y num ledit camlp-streams ocamlfind
 
       - name: Checkout this repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: hol-light
 
@@ -59,7 +59,7 @@ jobs:
           opam init --disable-sandboxing
 
       - name: Checkout this repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: hol-light
 
@@ -102,7 +102,7 @@ jobs:
           opam init --disable-sandboxing
 
       - name: Checkout this repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: hol-light
 

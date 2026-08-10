@@ -23,20 +23,54 @@ type term_label = Vnet                          (* variable (instantiable)   *)
                  | Cnet of (string * int)       (* constant                  *)
                  | Lnet of int;;                (* lambda term (abstraction) *)
 
-type 'a net = Netnode of (term_label * 'a net) list * 'a list;;
+(* ------------------------------------------------------------------------- *)
+(* Edges out of a net node are split by label kind. The Vnet edge is unique  *)
+(* (so it's a direct field, looked up in O(1)); the others are persistent    *)
+(* balanced trees keyed by (string * int) or int with monomorphic            *)
+(* comparators. This gives O(log n) per-edge lookup.                         *)
+(* ------------------------------------------------------------------------- *)
+
+module Sikey = struct
+  type t = string * int
+  let compare (s1,i1) (s2,i2) =
+    let c = String.compare s1 s2 in
+    if c <> 0 then c else compare (i1:int) i2
+end;;
+
+module Intkey = struct
+  type t = int
+  let compare (i1:int) i2 = compare i1 i2
+end;;
+
+module Si_map = Map.Make(Sikey);;
+module I_map = Map.Make(Intkey);;
+
+type 'a netnode_data = {
+  vnet: 'a net option;
+  cnets: 'a net Si_map.t;
+  lcnets: 'a net Si_map.t;
+  lnets: 'a net I_map.t;
+  tips: 'a list;
+}
+and 'a net = Netnode of 'a netnode_data;;
 
 (* ------------------------------------------------------------------------- *)
 (* The empty net.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let empty_net = Netnode([],[]);;
+let empty_net =
+  Netnode { vnet = None;
+            cnets = Si_map.empty;
+            lcnets = Si_map.empty;
+            lnets = I_map.empty;
+            tips = [] };;
 
 (* ------------------------------------------------------------------------- *)
 (* Insert a new element into a net.                                          *)
 (* ------------------------------------------------------------------------- *)
 
 let enter =
-  let label_to_store lconsts tm =
+  let label_to_store (lconsts:term list) (tm:term) : term_label * term list =
     let op,args = strip_comb tm in
     if is_const op then Cnet(fst(dest_const op),length args),args
     else if is_abs op then
@@ -57,41 +91,65 @@ let enter =
     if canon_lt x h then x::l else
     h::(sinsert x (tl l)) in
   let set_insert x l = try sinsert x l with Failure "sinsert" -> l in
-  let rec net_update lconsts (elem,tms,Netnode(edges,tips)) =
+  let update_si k upd m =
+    let child0 = try Si_map.find k m with Not_found -> empty_net in
+    Si_map.add k (upd child0) m in
+  let update_int k upd m =
+    let child0 = try I_map.find k m with Not_found -> empty_net in
+    I_map.add k (upd child0) m in
+  let rec net_update (lconsts:term list) (elem:'a)
+                     (tms:term list) (net:'a net) : 'a net =
+    let Netnode r = net in
     match tms with
-      [] -> Netnode(edges,set_insert elem tips)
+      [] -> Netnode { r with tips = set_insert elem r.tips }
     | (tm::rtms) ->
-          let label,ntms = label_to_store lconsts tm in
-          let child,others =
-            try (snd F_F I) (remove (fun (x,y) -> x = label) edges)
-            with Failure _ -> (empty_net,edges) in
-          let new_child = net_update lconsts (elem,ntms@rtms,child) in
-          Netnode ((label,new_child)::others,tips) in
-  fun lconsts (tm,elem) net -> net_update lconsts (elem,[tm],net);;
+        let label,ntms = label_to_store lconsts tm in
+        let upd child = net_update lconsts elem (ntms@rtms) child in
+        match (label:term_label) with
+          Vnet ->
+            let child0 =
+              match r.vnet with Some c -> c | None -> empty_net in
+            Netnode { r with vnet = Some (upd child0) }
+        | Cnet k ->
+            Netnode { r with cnets = update_si k upd r.cnets }
+        | Lcnet k ->
+            Netnode { r with lcnets = update_si k upd r.lcnets }
+        | Lnet k ->
+            Netnode { r with lnets = update_int k upd r.lnets } in
+  fun lconsts (tm,elem) net -> net_update lconsts elem [tm] net;;
 
 (* ------------------------------------------------------------------------- *)
 (* Look up a term in a net and return possible matches.                      *)
 (* ------------------------------------------------------------------------- *)
 
 let lookup =
-  let label_for_lookup tm =
+  let label_for_lookup (tm:term) : term_label * term list =
     let op,args = strip_comb tm in
     if is_const op then Cnet(fst(dest_const op),length args),args
     else if is_abs op then Lnet(length args),(body op)::args
     else Lcnet(fst(dest_var op),length args),args in
-  let rec follow (tms,Netnode(edges,tips)) =
+  let rec follow (tms:term list) (net:'a net) : 'a list =
+    let Netnode r = net in
     match tms with
-      [] -> tips
+      [] -> r.tips
     | (tm::rtms) ->
-          let label,ntms = label_for_lookup tm in
-          let collection =
-            try let child = assoc label edges in
-                follow(ntms @ rtms, child)
-            with Failure _ -> [] in
-          if label = Vnet then collection else
-          try collection @ follow(rtms,assoc Vnet edges)
-          with Failure _ -> collection in
-  fun tm net -> follow([tm],net);;
+        let label,ntms = label_for_lookup tm in
+        let collection =
+          match (label:term_label) with
+            Cnet k ->
+              (try follow (ntms@rtms) (Si_map.find k r.cnets)
+               with Not_found -> [])
+          | Lcnet k ->
+              (try follow (ntms@rtms) (Si_map.find k r.lcnets)
+               with Not_found -> [])
+          | Lnet k ->
+              (try follow (ntms@rtms) (I_map.find k r.lnets)
+               with Not_found -> [])
+          | Vnet -> [] in
+        match r.vnet with
+          None -> collection
+        | Some vchild -> collection @ follow rtms vchild in
+  fun tm net -> follow [tm] net;;
 
 (* ------------------------------------------------------------------------- *)
 (* Function to merge two nets (code from Don Syme's hol-lite).               *)
@@ -110,11 +168,22 @@ let merge_nets =
     if canon_eq h1 h2 then h1::(set_merge t1 t2)
     else if canon_lt h1 h2 then h1::(set_merge t1 l2)
     else h2::(set_merge l1 t2) in
-  let rec merge_nets (Netnode(l1,data1),Netnode(l2,data2)) =
-    let add_node ((lab,net) as p) l =
-      try let (lab',net'),rest = remove (fun (x,y) -> x = lab) l in
-          (lab',merge_nets (net,net'))::rest
-      with Failure _ -> p::l in
-    Netnode(itlist add_node l2 (itlist add_node l1 []),
-            set_merge data1 data2) in
+  let rec merge_nets (n1,n2) =
+    let Netnode r1 = n1 and Netnode r2 = n2 in
+    let merge_opt a b =
+      match a,b with
+        Some x, Some y -> Some (merge_nets (x,y))
+      | Some _, None -> a
+      | None, _ -> b in
+    let merge_si =
+      Si_map.union (fun _ a b -> Some (merge_nets (a,b))) in
+    let merge_int =
+      I_map.union (fun _ a b -> Some (merge_nets (a,b))) in
+    Netnode {
+      vnet = merge_opt r1.vnet r2.vnet;
+      cnets = merge_si r1.cnets r2.cnets;
+      lcnets = merge_si r1.lcnets r2.lcnets;
+      lnets = merge_int r1.lnets r2.lnets;
+      tips = set_merge r1.tips r2.tips;
+    } in
   merge_nets;;

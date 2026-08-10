@@ -5,12 +5,15 @@ updates:
     schedule:
       interval: "weekly"
 
-  - package-ecosystem: "pip"
+  # Python (MCP server dev tooling under /mcp). We do NOT want routine
+  # version-bump PRs for this: it is local tooling, not shipped code, and the
+  # transitive graph churns constantly. open-pull-requests-limit: 0 suppresses
+  # all *version* updates. Dependabot *security* updates are unaffected and
+  # will still open PRs (provided "Dependabot security updates" is enabled in
+  # repo Settings -> Code security), so we stay covered on real advisories
+  # without chasing the bleeding edge.
+  - package-ecosystem: "uv"
     directory: "/mcp"
     schedule:
       interval: "weekly"
-    # Only alert on our direct dependencies, not transitive ones
-    # we can't control (pulled in by the mcp SDK).
-    allow:
-      - dependency-name: "mcp"
-      - dependency-name: "pytest"
+    open-pull-requests-limit: 0
