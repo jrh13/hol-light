@@ -14190,40 +14190,41 @@ let CONTINUOUS_ON_VECTOR_POLYNOMIAL_FUNCTION = prove
   SIMP_TAC[CONTINUOUS_AT_IMP_CONTINUOUS_ON;
            CONTINUOUS_VECTOR_POLYNOMIAL_FUNCTION]);;
 
+let REAL_POLY_DERIVATIVE = prove
+ (`!p:real^1->real.
+        real_polynomial_function p
+        ==> ?p'. real_polynomial_function p' /\
+                 !x. ((p o lift) has_real_derivative (p'(lift x))) (atreal x)`,
+  MATCH_MP_TAC
+   (derive_strong_induction(real_polynomial_function_RULES,
+                            real_polynomial_function_INDUCT)) THEN
+  REWRITE_TAC[DIMINDEX_1; FORALL_1; o_DEF; GSYM drop; LIFT_DROP] THEN
+  CONJ_TAC THENL
+   [EXISTS_TAC `\x:real^1. &1` THEN
+    REWRITE_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_ID];
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [X_GEN_TAC `c:real` THEN EXISTS_TAC `\x:real^1. &0` THEN
+    REWRITE_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_CONST];
+    ALL_TAC] THEN
+  CONJ_TAC THEN
+  MAP_EVERY X_GEN_TAC [`f:real^1->real`; `g:real^1->real`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (CONJUNCTS_THEN2 ASSUME_TAC
+     (X_CHOOSE_THEN `f':real^1->real` STRIP_ASSUME_TAC))
+   (CONJUNCTS_THEN2 ASSUME_TAC
+     (X_CHOOSE_THEN `g':real^1->real` STRIP_ASSUME_TAC)))
+  THENL
+   [EXISTS_TAC `\x. (f':real^1->real) x + g' x`;
+    EXISTS_TAC `\x. (f:real^1->real) x * g' x + f' x * g x`] THEN
+  ASM_SIMP_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_ADD;
+               HAS_REAL_DERIVATIVE_MUL_ATREAL]);;
+
 let HAS_VECTOR_DERIVATIVE_VECTOR_POLYNOMIAL_FUNCTION = prove
  (`!p:real^1->real^N.
         vector_polynomial_function p
         ==> ?p'. vector_polynomial_function p' /\
                  !x. (p has_vector_derivative p'(x)) (at x)`,
-  let lemma = prove
-   (`!p:real^1->real.
-          real_polynomial_function p
-          ==> ?p'. real_polynomial_function p' /\
-                 !x. ((p o lift) has_real_derivative (p'(lift x))) (atreal x)`,
-    MATCH_MP_TAC
-     (derive_strong_induction(real_polynomial_function_RULES,
-                              real_polynomial_function_INDUCT)) THEN
-    REWRITE_TAC[DIMINDEX_1; FORALL_1; o_DEF; GSYM drop; LIFT_DROP] THEN
-    CONJ_TAC THENL
-     [EXISTS_TAC `\x:real^1. &1` THEN
-      REWRITE_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_ID];
-      ALL_TAC] THEN
-    CONJ_TAC THENL
-     [X_GEN_TAC `c:real` THEN EXISTS_TAC `\x:real^1. &0` THEN
-      REWRITE_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_CONST];
-      ALL_TAC] THEN
-    CONJ_TAC THEN
-    MAP_EVERY X_GEN_TAC [`f:real^1->real`; `g:real^1->real`] THEN
-    DISCH_THEN(CONJUNCTS_THEN2
-     (CONJUNCTS_THEN2 ASSUME_TAC
-       (X_CHOOSE_THEN `f':real^1->real` STRIP_ASSUME_TAC))
-     (CONJUNCTS_THEN2 ASSUME_TAC
-       (X_CHOOSE_THEN `g':real^1->real` STRIP_ASSUME_TAC)))
-    THENL
-     [EXISTS_TAC `\x. (f':real^1->real) x + g' x`;
-      EXISTS_TAC `\x. (f:real^1->real) x * g' x + f' x * g x`] THEN
-    ASM_SIMP_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_ADD;
-                 HAS_REAL_DERIVATIVE_MUL_ATREAL]) in
   GEN_TAC THEN REWRITE_TAC[vector_polynomial_function] THEN DISCH_TAC THEN
   SUBGOAL_THEN
    `!i. 1 <= i /\ i <= dimindex(:N)
@@ -14234,7 +14235,7 @@ let HAS_VECTOR_DERIVATIVE_VECTOR_POLYNOMIAL_FUNCTION = prove
    [X_GEN_TAC `i:num` THEN STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN
     ASM_REWRITE_TAC[] THEN
-    DISCH_THEN(MP_TAC o MATCH_MP lemma) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP REAL_POLY_DERIVATIVE) THEN
     REWRITE_TAC[HAS_REAL_VECTOR_DERIVATIVE_AT] THEN
     REWRITE_TAC[o_DEF; LIFT_DROP; FORALL_DROP];
     GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN

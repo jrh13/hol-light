@@ -3138,6 +3138,51 @@ let REAL_INTEGRABLE_DIRICHLET_KERNEL_MUL_EXPAND = prove
   EXISTS_TAC `{&0}` THEN REWRITE_TAC[REAL_NEGLIGIBLE_SING] THEN
   SIMP_TAC[IN_DIFF; IN_SING; dirichlet_kernel]);;
 
+let SIN_SUB_X_BOUND = prove
+ (`!x. abs(sin(x) - x) <= abs(x) pow 3`,
+  GEN_TAC THEN MP_TAC(ISPECL [`0`; `Cx x`] TAYLOR_CSIN) THEN
+  REWRITE_TAC[VSUM_CLAUSES_NUMSEG; GSYM CX_SIN] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN
+  REWRITE_TAC[complex_pow; COMPLEX_POW_1; COMPLEX_DIV_1; IM_CX] THEN
+  REWRITE_TAC[GSYM CX_MUL; GSYM CX_SUB; COMPLEX_NORM_CX; REAL_ABS_0] THEN
+  REWRITE_TAC[REAL_EXP_0; REAL_MUL_LID] THEN REAL_ARITH_TAC);;
+
+let SIN_OVER_X_SUB1_BOUND = prove
+ (`!x. ~(x = &0) ==> abs(sin(x) / x - &1) <= x pow 2`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_POW2_ABS] THEN
+  MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC `abs x` THEN
+  REWRITE_TAC[GSYM REAL_ABS_MUL; GSYM(CONJUNCT2 real_pow)] THEN
+  ASM_REWRITE_TAC[GSYM REAL_ABS_NZ; ARITH] THEN
+  ASM_SIMP_TAC[REAL_SUB_LDISTRIB; REAL_DIV_LMUL; REAL_MUL_RID] THEN
+  REWRITE_TAC[SIN_SUB_X_BOUND]);;
+
+let SIN_LOWER_BOUND_HALF = prove
+ (`!x. abs(x) <= &1 / &2  ==> abs(x) / &2 <= abs(sin x)`,
+  REPEAT STRIP_TAC THEN MP_TAC(SPEC `x:real` SIN_SUB_X_BOUND) THEN
+  MATCH_MP_TAC(REAL_ARITH
+    `&4 * x3 <= abs x ==> abs(s - x) <= x3 ==> abs(x) / &2 <= abs s`) THEN
+  REWRITE_TAC[REAL_ARITH
+   `&4 * x pow 3 <= x <=> x * x pow 2 <= x * (&1 / &2) pow 2`] THEN
+  MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[GSYM REAL_LE_SQUARE_ABS] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let INV_SIN_SUB_INV_BOUND = prove
+ (`!x. ~(x = &0) /\ abs x <= &1 / &2
+       ==> abs(inv(sin x) - inv x) <= &2 * abs x`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC `abs(sin x)` THEN
+  REWRITE_TAC[GSYM REAL_ABS_MUL] THEN ASM_CASES_TAC `sin x = &0` THENL
+   [MP_TAC(SPEC `x:real` SIN_EQ_0_PI) THEN
+    MP_TAC PI_APPROX_32 THEN ASM_REAL_ARITH_TAC;
+    ASM_SIMP_TAC[GSYM REAL_ABS_NZ; REAL_SUB_LDISTRIB; REAL_MUL_RINV] THEN
+    REWRITE_TAC[REAL_ARITH `abs(&1 - s * inv x) = abs(s / x - &1)`] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(x:real) pow 2` THEN
+    ASM_SIMP_TAC[SIN_OVER_X_SUB1_BOUND] THEN
+    ONCE_REWRITE_TAC[GSYM REAL_POW2_ABS] THEN
+    REWRITE_TAC[REAL_POW_2; REAL_MUL_ASSOC] THEN
+    MATCH_MP_TAC REAL_LE_RMUL THEN
+    MP_TAC(ISPEC `x:real` SIN_LOWER_BOUND_HALF) THEN ASM_REAL_ARITH_TAC]);;
+
 let FOURIER_SUM_LIMIT_SINE_PART = prove
  (`!f t l d.
         f absolutely_real_integrable_on real_interval[--pi,pi] /\
@@ -3149,46 +3194,6 @@ let FOURIER_SUM_LIMIT_SINE_PART = prove
                                 (\x. sin((&n + &1 / &2) * x) *
                                      ((f(t + x) + f(t - x)) - &2 * l) / x))
              ---> &0) sequentially)`,
-  let lemma0 = prove
-   (`!x. abs(sin(x) - x) <= abs(x) pow 3`,
-    GEN_TAC THEN MP_TAC(ISPECL [`0`; `Cx x`] TAYLOR_CSIN) THEN
-    REWRITE_TAC[VSUM_CLAUSES_NUMSEG; GSYM CX_SIN] THEN
-    CONV_TAC NUM_REDUCE_CONV THEN
-    REWRITE_TAC[complex_pow; COMPLEX_POW_1; COMPLEX_DIV_1; IM_CX] THEN
-    REWRITE_TAC[GSYM CX_MUL; GSYM CX_SUB; COMPLEX_NORM_CX; REAL_ABS_0] THEN
-    REWRITE_TAC[REAL_EXP_0; REAL_MUL_LID] THEN REAL_ARITH_TAC) in
-  let lemma1 = prove
-   (`!x. ~(x = &0) ==> abs(sin(x) / x - &1) <= x pow 2`,
-    REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_POW2_ABS] THEN
-    MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC `abs x` THEN
-    REWRITE_TAC[GSYM REAL_ABS_MUL; GSYM(CONJUNCT2 real_pow)] THEN
-    ASM_REWRITE_TAC[GSYM REAL_ABS_NZ; ARITH] THEN
-    ASM_SIMP_TAC[REAL_SUB_LDISTRIB; REAL_DIV_LMUL; REAL_MUL_RID] THEN
-    REWRITE_TAC[lemma0]) in
-  let lemma2 = prove
-   (`!x. abs(x) <= &1 / &2  ==> abs(x) / &2 <= abs(sin x)`,
-    REPEAT STRIP_TAC THEN MP_TAC(SPEC `x:real` lemma0) THEN
-    MATCH_MP_TAC(REAL_ARITH
-      `&4 * x3 <= abs x ==> abs(s - x) <= x3 ==> abs(x) / &2 <= abs s`) THEN
-    REWRITE_TAC[REAL_ARITH
-     `&4 * x pow 3 <= x <=> x * x pow 2 <= x * (&1 / &2) pow 2`] THEN
-    MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[GSYM REAL_LE_SQUARE_ABS] THEN
-    ASM_REAL_ARITH_TAC) in
-  let lemma3 = prove
-   (`!x. ~(x = &0) /\ abs x <= &1 / &2
-         ==> abs(inv(sin x) - inv x) <= &2 * abs x`,
-    REPEAT STRIP_TAC THEN
-    MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC `abs(sin x)` THEN
-    REWRITE_TAC[GSYM REAL_ABS_MUL] THEN ASM_CASES_TAC `sin x = &0` THENL
-     [MP_TAC(SPEC `x:real` SIN_EQ_0_PI) THEN
-      MP_TAC PI_APPROX_32 THEN ASM_REAL_ARITH_TAC;
-      ASM_SIMP_TAC[GSYM REAL_ABS_NZ; REAL_SUB_LDISTRIB; REAL_MUL_RINV] THEN
-      REWRITE_TAC[REAL_ARITH `abs(&1 - s * inv x) = abs(s / x - &1)`] THEN
-      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(x:real) pow 2` THEN
-      ASM_SIMP_TAC[lemma1] THEN ONCE_REWRITE_TAC[GSYM REAL_POW2_ABS] THEN
-      REWRITE_TAC[REAL_POW_2; REAL_MUL_ASSOC] THEN
-      MATCH_MP_TAC REAL_LE_RMUL THEN
-      MP_TAC(ISPEC `x:real` lemma2) THEN ASM_REAL_ARITH_TAC]) in
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`f:real->real`; `t:real`; `l:real`; `d:real`]
         FOURIER_SUM_LIMIT_DIRICHLET_KERNEL_PART) THEN
@@ -3282,7 +3287,7 @@ let FOURIER_SUM_LIMIT_SINE_PART = prove
          `abs(z - &1) <= y ==> abs(&1 + y) <= B ==> abs(z) <= B`) THEN
         ASM_SIMP_TAC[REAL_FIELD
           `~(x = &0) ==> (&2 * y) / x = y / (x / &2)`] THEN
-        MATCH_MP_TAC lemma1 THEN ASM_REAL_ARITH_TAC]];
+        MATCH_MP_TAC SIN_OVER_X_SUB1_BOUND THEN ASM_REAL_ARITH_TAC]];
 
     SUBGOAL_THEN `real_interval[&0,d] SUBSET real_interval[--pi,pi]`
     MP_TAC THENL
@@ -3358,7 +3363,7 @@ let FOURIER_SUM_LIMIT_SINE_PART = prove
     GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o RAND_CONV)
      [GSYM REAL_INV_DIV] THEN
     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&2 * abs(x / &2)` THEN
-    CONJ_TAC THENL [MATCH_MP_TAC lemma3; ASM_REAL_ARITH_TAC] THEN
+    CONJ_TAC THENL [MATCH_MP_TAC INV_SIN_SUB_INV_BOUND; ASM_REAL_ARITH_TAC] THEN
     ASM_REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)

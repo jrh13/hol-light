@@ -617,6 +617,352 @@ let HOELDER_BOUND = prove
     ASM_SIMP_TAC[MEASURE_POS_LE; RPOW_POS_LE] THEN
     REWRITE_TAC[NORM_1; REAL_ABS_LE]]);;
 
+(* ========================================================================= *)
+(* The complex L^2 inner product (f|g) = INT f cnj(g) on an arbitrary set.   *)
+(* A companion to lspace / lnorm above (which are real-valued): for complex- *)
+(* valued functions this is the natural sesquilinear pairing, with Cauchy-   *)
+(* Schwarz obtained from HOELDER_INEQUALITY at p = q = 2.                    *)
+(* ========================================================================= *)
+
+let lproduct = new_definition
+ `lproduct (s:real^N->bool) (f:real^N->complex) (g:real^N->complex) =
+    integral s (\x. f x * cnj(g x))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Conjugate symmetry:  (f|g) = cnj(g|f)  (integrand assumed integrable).    *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_SYM = prove
+ (`!s (f:real^N->complex) g.
+     (\x. f x * cnj(g x)) integrable_on s
+     ==> lproduct s f g = cnj(lproduct s g f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  SUBGOAL_THEN `(\x. (g:real^N->complex) x * cnj(f x)) = (\x. cnj(f x * cnj(g x)))`
+    SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; CNJ_MUL; CNJ_CNJ] THEN REWRITE_TAC[COMPLEX_MUL_SYM];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`\x. (f:real^N->complex) x * cnj(g x)`; `s:real^N->bool`; `cnj`]
+    INTEGRAL_LINEAR) THEN
+  ASM_REWRITE_TAC[LINEAR_CNJ; o_DEF] THEN
+  DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[CNJ_CNJ]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Cx(drop .) commutes with the integral of a real^1-valued integrand.       *)
+(* (Reusable bridge: real-valued integral -> its complex embedding.)         *)
+(* ------------------------------------------------------------------------- *)
+
+let CXDROP_LINEAR = prove
+ (`linear (\y:real^1. Cx(drop y))`,
+  REWRITE_TAC[linear; DROP_ADD; DROP_CMUL; COMPLEX_CMUL; CX_ADD; CX_MUL] THEN
+  CONV_TAC COMPLEX_RING);;
+
+let CX_DROP_INTEGRAL = prove
+ (`!s (gg:real^N->real^1). gg integrable_on s
+     ==> integral s (\x. Cx(drop(gg x))) = Cx(drop(integral s gg))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`gg:real^N->real^1`; `s:real^N->bool`; `\y:real^1. Cx(drop y)`]
+    INTEGRAL_LINEAR) THEN
+  ASM_REWRITE_TAC[CXDROP_LINEAR; o_DEF]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Self inner product:  (f|f) = Cx(INT |f|^2)  (real, nonneg).               *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_SELF = prove
+ (`!s (f:real^N->complex).
+     (\x. lift(norm(f x) pow 2)) integrable_on s
+     ==> lproduct s f f = Cx(drop(integral s (\x. lift(norm(f x) pow 2))))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  SUBGOAL_THEN `(\x. (f:real^N->complex) x * cnj(f x)) =
+                (\x. Cx(drop(lift(norm(f x) pow 2))))` SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; LIFT_DROP; COMPLEX_MUL_CNJ; CX_POW]; ALL_TAC] THEN
+  ASM_SIMP_TAC[CX_DROP_INTEGRAL]);;
+
+(* Self inner product against the norm:  (f|f) = Cx(||f||_2^2).  The bridge   *)
+(* tying lproduct to lnorm (via LNORM_RPOW), specialised to p = 2.           *)
+let LPRODUCT_SELF_LNORM = prove
+ (`!s (f:real^N->complex). f IN lspace s (&2)
+     ==> lproduct s f f = Cx((lnorm s (&2) f) pow 2)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. lift(norm((f:real^N->complex) x) pow 2)) integrable_on s`
+   ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o REWRITE_RULE[lspace; IN_ELIM_THM]) THEN
+    SIMP_TAC[RPOW_POW]; ALL_TAC] THEN
+  ASM_SIMP_TAC[LPRODUCT_SELF] THEN AP_TERM_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `&2`; `f:real^N->complex`] LNORM_RPOW) THEN
+  ASM_REWRITE_TAC[REAL_ARITH `~(&2 = &0)`] THEN
+  REWRITE_TAC[RPOW_POW] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN REFL_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Complex Cauchy-Schwarz:  |(f|g)| <= ||f||_2 ||g||_2  (f,g in L^2).        *)
+(* Chains through the real-valued HOELDER_INEQUALITY (p=q=2) above via       *)
+(* norm(INT .) <= INT norm(.) and norm(f cnj g) = ||f|| ||g||.               *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_CAUCHY_SCHWARZ = prove
+ (`!s (f:real^N->complex) g.
+     f IN lspace s (&2) /\ g IN lspace s (&2) /\
+     (\x. f x * cnj(g x)) integrable_on s
+     ==> norm(lproduct s f g) <= lnorm s (&2) f * lnorm s (&2) g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC
+   `drop(integral s
+      (\x. lift(norm((f:real^N->complex) x) * norm((g:real^N->complex) x))))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
+    ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+     [MP_TAC(ISPECL
+        [`s:real^N->bool`; `&2`; `&2`;
+         `f:real^N->complex`; `g:real^N->complex`]
+        LSPACE_INTEGRABLE_PRODUCT) THEN ASM_REWRITE_TAC[] THEN
+      CONV_TAC REAL_RAT_REDUCE_CONV;
+      GEN_TAC THEN DISCH_TAC THEN
+      REWRITE_TAC[LIFT_DROP; COMPLEX_NORM_MUL; COMPLEX_NORM_CNJ; REAL_LE_REFL]];
+    MP_TAC(ISPECL
+      [`s:real^N->bool`; `&2`; `&2`;
+       `f:real^N->complex`; `g:real^N->complex`]
+      HOELDER_INEQUALITY) THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Right-conjugate-linearity of the pairing:  scaling the second argument    *)
+(* by a complex constant pulls out its conjugate; summing the second         *)
+(* argument over a finite family distributes.                                *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_RMUL = prove
+ (`!s (f:real^N->complex) (h:real^N->complex) c.
+     (\x. f x * cnj(h x)) integrable_on s
+     ==> lproduct s f (\x. c * h x) = cnj c * lproduct s f h`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  SUBGOAL_THEN `(\x. (f:real^N->complex) x * cnj(c * h x)) =
+                (\x. cnj c * (f x * cnj(h x)))`
+   SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; CNJ_MUL] THEN CONV_TAC COMPLEX_RING; ALL_TAC] THEN
+  ASM_SIMP_TAC[INTEGRAL_COMPLEX_LMUL]);;
+
+let LPRODUCT_RSUM = prove
+ (`!s (f:real^N->complex) (g:A->real^N->complex) k.
+     FINITE k /\ (!i. i IN k ==> (\x. f x * cnj(g i x)) integrable_on s)
+     ==> lproduct s f (\x. vsum k (\i. g i x)) =
+         vsum k (\i. lproduct s f (g i))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  SUBGOAL_THEN
+   `(\x. (f:real^N->complex) x * cnj(vsum k (\i. (g:A->real^N->complex) i x))) =
+    (\x. vsum k (\i. f x * cnj(g i x)))`
+   SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `x:real^N` THEN
+    ASM_SIMP_TAC[CNJ_VSUM; GSYM VSUM_COMPLEX_LMUL]; ALL_TAC] THEN
+  MP_TAC(BETA_RULE(ISPECL
+    [`\(i:A) (x:real^N). (f:real^N->complex) x * cnj(g i x)`;
+     `s:real^N->bool`; `k:A->bool`] INTEGRAL_VSUM)) THEN
+  ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Left-linearity (first argument), the duals of LPRODUCT_RMUL/RSUM.  All    *)
+(* four together give full sesquilinearity.                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_LMUL = prove
+ (`!s (f:real^N->complex) (g:real^N->complex) c.
+     (\x. f x * cnj(g x)) integrable_on s
+     ==> lproduct s (\x. c * f x) g = c * lproduct s f g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  SUBGOAL_THEN `(\x. (c * (f:real^N->complex) x) * cnj(g x)) =
+                (\x. c * (f x * cnj(g x)))`
+   SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN CONV_TAC COMPLEX_RING; ALL_TAC] THEN
+  ASM_SIMP_TAC[INTEGRAL_COMPLEX_LMUL]);;
+
+let LPRODUCT_LSUM = prove
+ (`!s (g:A->real^N->complex) (h:real^N->complex) k.
+     FINITE k /\ (!i. i IN k ==> (\x. g i x * cnj(h x)) integrable_on s)
+     ==> lproduct s (\x. vsum k (\i. g i x)) h =
+         vsum k (\i. lproduct s (g i) h)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  SUBGOAL_THEN
+   `(\x. vsum k (\i. (g:A->real^N->complex) i x) * cnj(h x)) =
+    (\x. vsum k (\i. g i x * cnj(h x)))`
+   SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `x:real^N` THEN
+    ASM_SIMP_TAC[GSYM VSUM_COMPLEX_RMUL]; ALL_TAC] THEN
+  MP_TAC(BETA_RULE(ISPECL
+    [`\(i:A) (x:real^N). (g:A->real^N->complex) i x * cnj(h x)`;
+     `s:real^N->bool`; `k:A->bool`] INTEGRAL_VSUM)) THEN
+  ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* L^p is closed under complex-scalar multiplication and under conjugation;  *)
+(* conjugation preserves measurability (on any set, via the zero-extension   *)
+(* bridge MEASURABLE_ON_UNIV); and the product f cnj(g) of two L^2 functions *)
+(* is integrable.                                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let LSPACE_COMPLEX_LMUL = prove
+ (`!(h:real^N->complex) (c:complex) p.
+     h IN lspace (:real^N) p ==> (\x. c * h x) IN lspace (:real^N) p`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[lspace; IN_ELIM_THM] THEN STRIP_TAC THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC MEASURABLE_ON_COMPLEX_MUL THEN
+    ASM_REWRITE_TAC[MEASURABLE_ON_CONST]; ALL_TAC] THEN
+  SUBGOAL_THEN
+   `(\x. lift(norm((c:complex) * h x) rpow p)) =
+    (\x. (norm c rpow p) % lift(norm((h:real^N->complex) x) rpow p))`
+   SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; COMPLEX_NORM_MUL; RPOW_MUL; LIFT_CMUL]; ALL_TAC] THEN
+  MATCH_MP_TAC INTEGRABLE_CMUL THEN ASM_REWRITE_TAC[]);;
+
+(* Conjugation preserves measurability on an ARBITRARY set s (not just the   *)
+(* whole space): reduce to the zero-extension via MEASURABLE_ON_UNIV, using  *)
+(* cnj(vec 0) = vec 0, then apply whole-space conjugation-measurability.     *)
+let MEASURABLE_ON_CNJ = prove
+ (`!(g:real^N->complex) s. g measurable_on s
+     ==> (\x. cnj(g x)) measurable_on s`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM MEASURABLE_ON_UNIV] THEN REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+   `(\x. if x IN s then cnj((g:real^N->complex) x) else vec 0) =
+    cnj o (\x. if x IN s then g x else vec 0)`
+   SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_THM] THEN GEN_TAC THEN COND_CASES_TAC THEN
+    REWRITE_TAC[COMPLEX_VEC_0; CNJ_CX]; ALL_TAC] THEN
+  MATCH_MP_TAC MEASURABLE_ON_COMPOSE_CONTINUOUS THEN
+  ASM_REWRITE_TAC[MEASURABLE_ON_UNIV] THEN
+  MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN REWRITE_TAC[LINEAR_CNJ]);;
+
+let L2_CNJ_PRODUCT_INTEGRABLE = prove
+ (`!s (f:real^N->complex) (g:real^N->complex).
+     f IN lspace s (&2) /\ g IN lspace s (&2)
+     ==> (\x. f x * cnj(g x)) integrable_on s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE THEN
+  MATCH_MP_TAC MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_ABSOLUTELY_INTEGRABLE THEN
+  EXISTS_TAC
+   `\x:real^N. lift(norm((f:real^N->complex) x) * norm((g:real^N->complex) x))` THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC MEASURABLE_ON_COMPLEX_MUL THEN CONJ_TAC THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE[lspace; IN_ELIM_THM]) THEN ASM_REWRITE_TAC[];
+      MATCH_MP_TAC MEASURABLE_ON_CNJ THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[lspace; IN_ELIM_THM]) THEN ASM_REWRITE_TAC[]];
+    MP_TAC(ISPECL
+      [`s:real^N->bool`; `&2`; `&2`; `f:real^N->complex`; `g:real^N->complex`]
+      LSPACE_INTEGRABLE_PRODUCT) THEN
+    ASM_REWRITE_TAC[REAL_ARITH `&0 < &2`; REAL_ARITH `inv(&2)+inv(&2)= &1`];
+    GEN_TAC THEN DISCH_TAC THEN
+    REWRITE_TAC[LIFT_DROP; COMPLEX_NORM_MUL; COMPLEX_NORM_CNJ; REAL_LE_REFL]]);;
+
+let LSPACE_CNJ = prove
+ (`!(f:real^N->complex) s. f IN lspace s (&2)
+     ==> (\x. cnj(f x)) IN lspace s (&2)`,
+  REWRITE_TAC[lspace; IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[MEASURABLE_ON_CNJ; COMPLEX_NORM_CNJ]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Left-subtractivity of the inner product: <a|c> - <b|c> = <a-b|c>.         *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_LSUB = prove
+ (`!(a:real^N->complex) b c (s:real^N->bool).
+     a IN lspace s (&2) /\ b IN lspace s (&2) /\ c IN lspace s (&2)
+     ==> lproduct s a c - lproduct s b c =
+         lproduct s (\x. a x - b x) c`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[lproduct] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N->complex`; `c:real^N->complex`]
+    L2_CNJ_PRODUCT_INTEGRABLE) THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `b:real^N->complex`; `c:real^N->complex`]
+    L2_CNJ_PRODUCT_INTEGRABLE) THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[GSYM INTEGRAL_SUB] THEN
+  MATCH_MP_TAC INTEGRAL_EQ THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  REWRITE_TAC[] THEN SIMPLE_COMPLEX_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity of the inner product under L^2 convergence in the first slot:  *)
+(* if gn ---> g in L^2 norm (all in L^2) and h is a fixed L^2 function, then *)
+(* <gn|h> ---> <g|h>.  The workhorse for extending bilinear identities from  *)
+(* a dense class to all of L^2.                                              *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_L2LIM = prove
+ (`!(gn:num->real^N->complex) (g:real^N->complex) (h:real^N->complex)
+     (s:real^N->bool).
+     (!n. gn n IN lspace s (&2)) /\ g IN lspace s (&2) /\
+     h IN lspace s (&2) /\
+     (!e. &0 < e ==> ?M. !n. n >= M
+          ==> lnorm s (&2) (\x. gn n x - g x) < e)
+     ==> ((\n. lproduct s (gn n) h) --> lproduct s g h)
+         sequentially`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[LIM_SEQUENTIALLY; dist] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `&0 <= lnorm s (&2) (h:real^N->complex)` ASSUME_TAC THENL
+   [ASM_SIMP_TAC[LNORM_POS_LE]; ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < lnorm s (&2) (h:real^N->complex) + &1` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+    `e / (lnorm s (&2) (h:real^N->complex) + &1)`) THEN
+  ASM_SIMP_TAC[REAL_LT_DIV] THEN
+  DISCH_THEN(X_CHOOSE_TAC `M:num`) THEN EXISTS_TAC `M:num` THEN
+  X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `lproduct s (gn n) h - lproduct s g h =
+    lproduct s (\x. (gn:num->real^N->complex) n x - g x) h`
+   SUBST1_TAC THENL
+   [MATCH_MP_TAC LPRODUCT_LSUB THEN ASM_REWRITE_TAC[ETA_AX]; ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LET_TRANS THEN
+  EXISTS_TAC `lnorm s (&2) (\x. (gn:num->real^N->complex) n x - g x) *
+              lnorm s (&2) (h:real^N->complex)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC LPRODUCT_CAUCHY_SCHWARZ THEN ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC LSPACE_SUB THEN ASM_REWRITE_TAC[REAL_POS; ETA_AX];
+      MATCH_MP_TAC L2_CNJ_PRODUCT_INTEGRABLE THEN
+      ASM_SIMP_TAC[LSPACE_SUB; REAL_POS; ETA_AX]];
+    MATCH_MP_TAC REAL_LET_TRANS THEN
+    EXISTS_TAC `lnorm s (&2) (\x. (gn:num->real^N->complex) n x - g x) *
+                (lnorm s (&2) (h:real^N->complex) + &1)` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL
+       [MATCH_MP_TAC LNORM_POS_LE THEN ASM_SIMP_TAC[LSPACE_SUB; REAL_POS; ETA_AX];
+        ASM_REAL_ARITH_TAC];
+      SUBGOAL_THEN `e = (e / (lnorm s (&2) (h:real^N->complex) + &1)) *
+                        (lnorm s (&2) h + &1)` SUBST1_TAC THENL
+       [ASM_SIMP_TAC[REAL_DIV_RMUL; REAL_LT_IMP_NZ]; ALL_TAC] THEN
+      MATCH_MP_TAC REAL_LT_RMUL THEN ASM_REWRITE_TAC[] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[GE] THEN
+      ASM_ARITH_TAC]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity of the inner product in the SECOND slot: mn -> m in L^2        *)
+(* (with d a fixed L^2 function) ==> <d|mn> -> <d|m>.  Via conjugate         *)
+(* symmetry (LPRODUCT_SYM) and first-slot continuity (LPRODUCT_L2LIM).       *)
+(* ------------------------------------------------------------------------- *)
+
+let LPRODUCT_L2LIM_RSLOT = prove
+ (`!(mn:num->real^N->complex) (m:real^N->complex) (d:real^N->complex)
+     (s:real^N->bool).
+     (!n. mn n IN lspace s (&2)) /\ m IN lspace s (&2) /\
+     d IN lspace s (&2) /\
+     (!e. &0 < e ==> ?M. !n. n >= M
+          ==> lnorm s (&2) (\x. mn n x - m x) < e)
+     ==> ((\n. lproduct s d (mn n)) --> lproduct s d m)
+         sequentially`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(\n. lproduct s d (mn n)) =
+    (\n. cnj(lproduct s ((mn:num->real^N->complex) n) d))`
+   SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `k:num` THEN
+    MATCH_MP_TAC LPRODUCT_SYM THEN
+    MATCH_MP_TAC L2_CNJ_PRODUCT_INTEGRABLE THEN ASM_SIMP_TAC[ETA_AX];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `lproduct s d m = cnj(lproduct s (m:real^N->complex) d)`
+   SUBST1_TAC THENL
+   [MATCH_MP_TAC LPRODUCT_SYM THEN
+    MATCH_MP_TAC L2_CNJ_PRODUCT_INTEGRABLE THEN ASM_SIMP_TAC[ETA_AX];
+    ALL_TAC] THEN
+  REWRITE_TAC[LIM_CNJ] THEN
+  MATCH_MP_TAC LPRODUCT_L2LIM THEN ASM_REWRITE_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Completeness (Riesz-Fischer).                                             *)
 (* ------------------------------------------------------------------------- *)

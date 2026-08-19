@@ -8,6 +8,29 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 16th Aug 2026       Multivariate/realanalysis.ml, Multivariate/lpspaces.ml, 100/fourier.ml, Autoformalization/fifteen_theorem.ml [new file], Autoformalization/carleson.ml [new file], Autoformalization/fourier_transform.ml [new file]
+
+Added two more substantial fully autonomous formalizations.
+
+The carleson.ml formalization, produced by Claude Opus 4.8, proves
+Carleson's theorem that the Fourier series of a square-integrable periodic
+function converges almost everywhere. The development follows Fremlin's
+presentation of the Lacey-Thiele time-frequency proof in "Measure Theory"
+volume 2 (sec 286), including the Hardy-Littlewood maximal estimates, tile and
+tree arguments, and the Carleson maximal inequality. Its supporting
+Fourier-transform library develops Fourier analysis on the real line, including
+inversion, Schwartz functions, Plancherel's theorem and the L2 transform, again
+following Fremlin's, "Measure Theory" volume 2, the earlier sections 283-285.
+A few small additions and tweaks are made to existing files as part of this
+formalization (e.g. adding the complex inner product to lpspaces.ml).
+
+The fifteen_theorem.ml formalization, produced by GPT-5.6-sol (xhigh),
+proves the Conway-Schneeberger Fifteen Theorem: a positive-definite integral
+quadratic form is universal exactly when it represents every positive integer
+up to 15. The proof follows Bhargava's treatment using truants, escalator
+lattices, the nine ternary escalators and a finite rank-four analysis, together
+with classical ternary-form results and checked finite computations.
+
 Sat  8th Aug 2026       Autoformalization/three_squares.ml [new file], Autoformalization/sarkovskii.ml [new file]
 
 Added a new subdirectory Autoformalization as a home for miscellaneous

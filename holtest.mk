@@ -15,6 +15,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/borsuk \
 	Examples/brunn_minkowski \
 	Library/card \
+	Autoformalization/carleson \
 	Examples/combin \
 	Examples/complexpolygon \
 	Examples/cong \
@@ -25,6 +26,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/dlo \
 	Examples/doomsday \
 	Library/fieldtheory \
+	Autoformalization/fifteen_theorem \
 	Library/floor \
 	Examples/forster \
 	Examples/gcdrecurrence \
