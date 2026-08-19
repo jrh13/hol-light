@@ -29,5 +29,8 @@ UnitTests/basic_tests.native
 UnitTests/printer_tests_inlined.ml
 UnitTests/printer_tests.byte
 UnitTests/printer_tests.native
+UnitTests/parser_tests_inlined.ml
+UnitTests/parser_tests.byte
+UnitTests/parser_tests.native
 hol-*.ckpt
 __pycache__/

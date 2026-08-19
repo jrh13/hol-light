@@ -285,27 +285,3 @@ try
   check_axioms (); (* check_axioms must raise Failure *)
   assert false;
 with Failure _ -> () | Assert_failure _ as e -> raise e;;
-
-(* ------------------------------------------------------------------------- *)
-(* A binder may shadow a constant of the same name, even when type-annotated *)
-(* or part of a tuple varstruct (see varstruct_consts and the Absp branch in *)
-(* preterm.ml). Without the fix the first quotation below raises             *)
-(* "shadow_test_const has type bool, it cannot be used with type num".       *)
-(* ------------------------------------------------------------------------- *)
-
-let _ = new_definition `shadow_test_const = T`;;   (* a constant of type bool *)
-
-(* An annotated binder shadows the constant: the bound variable has the      *)
-(* annotated type, not the constant's bool type.                             *)
-let () =
-  let tm = `forall (shadow_test_const:num). shadow_test_const > 0` in
-  let v = bndvar (rand tm) in
-  assert (is_var v && type_of v = `:num`);;
-
-(* Tuple varstructs are handled too. *)
-assert (aconv `\(shadow_test_const:num,y:num). shadow_test_const + y`
-              `\(a:num,b:num). a + b`);;
-
-(* A free occurrence of the same name still resolves to the constant. *)
-assert (is_const
-  (lhand `shadow_test_const /\ (?(shadow_test_const:num). shadow_test_const > 0)`));;
