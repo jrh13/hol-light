@@ -198,7 +198,7 @@ UnitTests/records_inlined.cmx: UnitTests/records_inlined.ml hol_lib.cmxa hol.sh 
 default: hol_lib.cma hol_lib.cmxa \
          UnitTests/basic_tests.byte UnitTests/basic_tests.native \
          UnitTests/printer_tests.byte UnitTests/printer_tests.native \
-         UnitTests/parser_tests.byte UnitTests/parser_tests.native
+         UnitTests/parser_tests.byte UnitTests/parser_tests.native \
          UnitTests/records.byte UnitTests/records.native
 endif
 
