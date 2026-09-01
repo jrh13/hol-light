@@ -44,7 +44,7 @@ See [TUTORIAL.md](TUTORIAL.md) for more examples (including s2n-bignum ARM proof
 | `hol_type` | Get the type of a term | Raw text |
 | `hol_load` | Load a HOL Light file via `needs` | Structured JSON |
 | `hol_interrupt` | Cancel a long-running command | Status message |
-| `hol_restart` | Kill and restart the HOL Light subprocess | Status message |
+| `hol_restart` | Reload config; optionally rebuild a checkpoint; restart HOL | Structured JSON |
 | `hol_status` | Check process health, uptime, config, checkpoint | Structured JSON |
 | `hol_help` | Return tactic reference and proof guide (SKILL.md) | Markdown text |
 | `start_recording` | Start recording proof tactics to a JSONL file | Status message |
@@ -98,9 +98,32 @@ timeout = 600
 
 # Maximum characters for eval output before truncation.
 max_output_chars = 4000
+
+# Checkpoint recipes for hol_restart(rebuild_hol_and_checkpoint=true).
+# "base" is vanilla HOL Light and needs no recipe; other checkpoints require one.
+# Example recipe with s2n-bignum ARM infrastructure (uncomment to enable):
+# [checkpoint_recipes.gcm]
+# include_dirs = ["/path/to/s2n-bignum"]
+# loads = ['needs "arm/proofs/base.ml"', 'needs "common/gcm.ml"']
 ```
 
-Use `hol_status` to verify which config file and checkpoint are active.
+`hol_restart(checkpoint="gcm")` selects `gcm` for one invocation without
+modifying the config. `hol_restart(rebuild_hol_and_checkpoint=true)`
+synchronously runs `make clean` and `make` to rebuild HOL Light from source,
+then rebuilds the selected checkpoint recipe, before restarting HOL. Because it
+rebuilds HOL Light itself, it commonly takes several minutes and must be
+requested explicitly. The `base` checkpoint can be rebuilt without a recipe;
+any other checkpoint requires an explicit `[checkpoint_recipes.<name>]` entry,
+otherwise the rebuild fails rather than replacing a custom checkpoint with bare
+HOL. If the build or checkpoint creation fails, the MCP server remains
+available but stops HOL and rejects proof work until the build is fixed and
+`hol_restart(rebuild_hol_and_checkpoint=true)` succeeds.
+
+The restart response reports the active and configured checkpoints, process
+IDs, startup mode, changed config values, and failure diagnostics. Use
+`hol_status` to inspect the active checkpoint, its captured file fingerprint,
+whether its files have changed since startup, and whether a rebuild is
+required.
 
 ## Usage
 
@@ -138,8 +161,8 @@ The server includes a built-in `hol_help` tool that returns the full tactic refe
 
 ```bash
 cd mcp
-uv run pytest test_server.py -v       # 48 unit tests
-uv run python smoke_test.py           # 37 MCP integration checks
+uv run pytest test_server.py test_restart.py -v   # 63 unit tests
+uv run python smoke_test.py                        # 37 MCP integration checks
 ```
 
 First run includes HOL Light startup (~75s cold, ~2s with checkpoint).

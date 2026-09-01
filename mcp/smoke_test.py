@@ -161,7 +161,16 @@ async def main():
 
             # hol_restart (run last — kills the process)
             r = await session.call_tool("hol_restart", {})
-            check("hol_restart", "restarted" in r.content[0].text.lower(), r.content[0].text)
+            restart = json.loads(r.content[0].text)
+            check(
+                "hol_restart",
+                restart["success"] is True
+                or (
+                    restart["startup_mode"] == "cold"
+                    and "No usable checkpoint" in restart.get("error", "")
+                ),
+                str(restart),
+            )
             r = await session.call_tool("eval", {"code": "1 + 1"})
             ev = json.loads(r.content[0].text)
             check("eval after restart", "2" in ev["output"], ev["output"])

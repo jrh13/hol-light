@@ -23,7 +23,7 @@ HOL Light is a classical higher-order logic theorem prover. The law of excluded 
 6. **backtrack** — undo if a tactic made things worse
 7. Repeat 2–6 until proved
 8. **hol_status** — check if HOL Light is alive (useful for debugging)
-9. **hol_restart** — restart HOL Light if it has died or is in a bad state
+9. **hol_restart** — restart HOL Light if it has died or is in a bad state; pass `checkpoint=` to switch checkpoint for one restart, or `rebuild_hol_and_checkpoint=true` to rebuild HOL Light and its checkpoint from source (a multi-minute operation)
 
 Always read the goal state carefully before choosing a tactic. The structured JSON tells you exactly what hypotheses you have and what you need to show.
 

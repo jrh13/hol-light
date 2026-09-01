@@ -22,3 +22,16 @@ max_output_chars = 4000
 # Also settable via HOL_REPLAY_INIT and HOL_REPLAY_PREFIX env vars.
 # replay_init = "/path/to/init.ml"
 # replay_prefix = "/path/to/prefix.jsonl"
+
+# Recipes describe how hol_restart(rebuild_hol_and_checkpoint=true) rebuilds a
+# checkpoint. Relative include directories are resolved against this config file.
+# The "base" checkpoint is vanilla HOL Light and can be rebuilt without a recipe;
+# every other checkpoint MUST define one here or the rebuild fails (we never
+# rebuild a custom checkpoint as bare HOL).
+#
+# Example recipe with s2n-bignum ARM infrastructure. Uncomment and adjust
+# include_dirs to your s2n-bignum checkout to enable
+# hol_restart(checkpoint="gcm", rebuild_hol_and_checkpoint=true).
+# [checkpoint_recipes.gcm]
+# include_dirs = ["/path/to/s2n-bignum"]
+# loads = ['needs "arm/proofs/base.ml"', 'needs "common/gcm.ml"']

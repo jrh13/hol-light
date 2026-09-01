@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """MCP server for HOL Light theorem prover."""
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import json
 import os
 import queue
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -13,6 +18,8 @@ HOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MCP_DIR = os.path.dirname(os.path.abspath(__file__))
 SENTINEL = "HOL_MCP_DONE_a7f3b2e1"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+CHECKPOINT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+RESTART_HEARTBEAT_SECONDS = 15
 
 
 def _load_config():
@@ -39,11 +46,133 @@ def _load_config():
 
 
 _config, CONFIG_PATH = _load_config()
-TIMEOUT = _config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600")))
-CHECKPOINT_NAME = _config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "base"))
-MAX_OUTPUT_CHARS = _config.get("max_output_chars", int(os.environ.get("HOL_MAX_OUTPUT", "4000")))
 
-from mcp.server.fastmcp import FastMCP
+
+def _positive_int(value, name):
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return value
+
+
+def _optional_string(value, name):
+    if value is not None and not isinstance(value, str):
+        raise ValueError(f"{name} must be a string")
+    return value
+
+
+def _validate_checkpoint_name(name):
+    if not isinstance(name, str) or not CHECKPOINT_RE.fullmatch(name) or ".." in name:
+        raise ValueError(
+            "checkpoint must start with an alphanumeric character and contain "
+            "only letters, digits, '.', '_', or '-'"
+        )
+    return name
+
+
+def _effective_config(config, config_path):
+    """Validate raw TOML data and return its effective runtime values."""
+    if not isinstance(config, dict):
+        raise ValueError("configuration root must be a TOML table")
+
+    checkpoint = _validate_checkpoint_name(
+        config.get("checkpoint", os.environ.get("HOL_CHECKPOINT", "base"))
+    )
+    timeout = _positive_int(
+        config.get("timeout", int(os.environ.get("HOL_TIMEOUT", "600"))),
+        "timeout",
+    )
+    max_output = _positive_int(
+        config.get(
+            "max_output_chars", int(os.environ.get("HOL_MAX_OUTPUT", "4000"))
+        ),
+        "max_output_chars",
+    )
+
+    recording_dir = config.get("recording_dir") or os.environ.get(
+        "HOL_RECORDING_DIR"
+    )
+    recording_dir = _optional_string(recording_dir, "recording_dir")
+    if recording_dir:
+        recording_dir = os.path.abspath(recording_dir)
+
+    replay_init = _optional_string(
+        config.get("replay_init") or os.environ.get("HOL_REPLAY_INIT"),
+        "replay_init",
+    )
+    replay_prefix = _optional_string(
+        config.get("replay_prefix") or os.environ.get("HOL_REPLAY_PREFIX"),
+        "replay_prefix",
+    )
+
+    raw_recipes = config.get("checkpoint_recipes", {})
+    if not isinstance(raw_recipes, dict):
+        raise ValueError("checkpoint_recipes must be a TOML table")
+    config_dir = os.path.dirname(config_path) if config_path else os.getcwd()
+    recipes = {}
+    for name, raw_recipe in raw_recipes.items():
+        _validate_checkpoint_name(name)
+        if not isinstance(raw_recipe, dict):
+            raise ValueError(f"checkpoint_recipes.{name} must be a TOML table")
+        include_dirs = raw_recipe.get("include_dirs", [])
+        loads = raw_recipe.get("loads", [])
+        if (
+            not isinstance(include_dirs, list)
+            or not all(isinstance(path, str) for path in include_dirs)
+        ):
+            raise ValueError(
+                f"checkpoint_recipes.{name}.include_dirs must be an array of strings"
+            )
+        if (
+            not isinstance(loads, list)
+            or not all(isinstance(load, str) for load in loads)
+        ):
+            raise ValueError(
+                f"checkpoint_recipes.{name}.loads must be an array of strings"
+            )
+        recipes[name] = {
+            "include_dirs": [
+                path
+                if os.path.isabs(path)
+                else os.path.abspath(os.path.join(config_dir, path))
+                for path in include_dirs
+            ],
+            "loads": list(loads),
+        }
+
+    return {
+        "raw": config,
+        "checkpoint": checkpoint,
+        "timeout": timeout,
+        "max_output_chars": max_output,
+        "recording_dir": recording_dir,
+        "replay_init": replay_init,
+        "replay_prefix": replay_prefix,
+        "checkpoint_recipes": recipes,
+    }
+
+
+def _config_snapshot(config):
+    return {
+        key: config[key]
+        for key in (
+            "checkpoint",
+            "timeout",
+            "max_output_chars",
+            "recording_dir",
+            "replay_init",
+            "replay_prefix",
+            "checkpoint_recipes",
+        )
+    }
+
+
+_runtime_config = _effective_config(_config, CONFIG_PATH)
+TIMEOUT = _runtime_config["timeout"]
+CONFIGURED_CHECKPOINT = _runtime_config["checkpoint"]
+CHECKPOINT_NAME = CONFIGURED_CHECKPOINT
+MAX_OUTPUT_CHARS = _runtime_config["max_output_chars"]
+
+from mcp.server.fastmcp import Context, FastMCP
 mcp = FastMCP("hol-light",
     instructions="HOL Light theorem prover. Call hol_help() for a tactic reference and proof guide.")
 
@@ -57,17 +186,23 @@ def _read_skill():
 
 _proc = None
 _lock = threading.Lock()
+_restart_lock = threading.Lock()
 _helpers_loaded = False
 _start_time = None
+_startup_mode = None
+_checkpoint_active = False
+_checkpoint_error = None
+_checkpoint_fingerprint = None
+_restart_required = False
+_restart_error = None
 
 # Proof recording state
 _recording_path = None  # path to JSONL file; None = not recording
 _recording = []         # list of {"action": "tactic", "tactic": ..., "total_goals": ...}
 
 # Auto-recording: if recording_dir is set in config or env, enable recording at startup.
-_auto_record_dir = _config.get("recording_dir") or os.environ.get("HOL_RECORDING_DIR")
+_auto_record_dir = _runtime_config["recording_dir"]
 if _auto_record_dir:
-    _auto_record_dir = os.path.abspath(_auto_record_dir)
     os.makedirs(_auto_record_dir, exist_ok=True)
     _recording_path = os.path.join(_auto_record_dir, "recording.jsonl")
 
@@ -77,18 +212,18 @@ _result_queue = queue.Queue(maxsize=1)
 _reader_buf = []
 
 
-def _reader_thread(proc):
+def _reader_thread(proc, result_queue, reader_buf):
     while True:
         line = proc.stdout.readline()
         if not line:
             # Process died — signal immediately so callers don't hang
-            _result_queue.put("[HOL Light process died unexpectedly]")
+            result_queue.put("[HOL Light process died unexpectedly]")
             break
         if SENTINEL in line:
-            _result_queue.put("".join(_reader_buf).strip())
-            _reader_buf.clear()
+            result_queue.put("".join(reader_buf).strip())
+            reader_buf.clear()
         else:
-            _reader_buf.append(line)
+            reader_buf.append(line)
 
 
 def _opam_env():
@@ -114,18 +249,76 @@ def _opam_env():
     return env
 
 
-def _start_hol():
-    global _proc
+def _checkpoint_dir(name):
+    return os.path.join(HOL_DIR, f"hol-{name}.ckpt")
+
+
+def _checkpoint_files(name):
+    ckpt_dir = _checkpoint_dir(name)
+    if not os.path.isdir(ckpt_dir):
+        return []
+    return sorted(
+        os.path.join(ckpt_dir, filename)
+        for filename in os.listdir(ckpt_dir)
+        if filename.startswith("ckpt_") and filename.endswith(".dmtcp")
+    )
+
+
+def _fingerprint_checkpoint(name):
+    fingerprint = []
+    for path in _checkpoint_files(name):
+        try:
+            stat = os.stat(path)
+        except OSError:
+            return None
+        fingerprint.append(
+            {
+                "name": os.path.basename(path),
+                "size": stat.st_size,
+                "mtime_ns": stat.st_mtime_ns,
+            }
+        )
+    return fingerprint or None
+
+
+def _start_hol(
+    checkpoint=None,
+    force_cold=False,
+    checkpoint_error=None,
+    allow_restart_required=False,
+):
+    global _proc, _result_queue, _reader_buf
+    global _start_time, _startup_mode, _checkpoint_active
+    global _checkpoint_error, _checkpoint_fingerprint, CHECKPOINT_NAME
+    if _restart_required and not allow_restart_required:
+        raise RuntimeError(
+            f"HOL is unavailable after a failed HOL/checkpoint rebuild: {_restart_error}. "
+            "Fix the build and run hol_restart(rebuild_hol_and_checkpoint=true)."
+        )
     if _proc is not None:
         return
-    ckpt_dir = os.path.join(HOL_DIR, f"hol-{CHECKPOINT_NAME}.ckpt")
-    ckpt_files = sorted(
-        f for f in os.listdir(ckpt_dir) if f.startswith("ckpt_") and f.endswith(".dmtcp")
-    ) if os.path.isdir(ckpt_dir) else []
-    if ckpt_files:
+    checkpoint = checkpoint or CHECKPOINT_NAME
+    CHECKPOINT_NAME = checkpoint
+    ckpt_files = _checkpoint_files(checkpoint)
+    use_checkpoint = bool(ckpt_files) and not force_cold
+    _checkpoint_fingerprint = _fingerprint_checkpoint(checkpoint)
+    _checkpoint_active = use_checkpoint
+    _startup_mode = "checkpoint" if use_checkpoint else "cold"
+    if checkpoint_error:
+        _checkpoint_error = checkpoint_error
+    elif not ckpt_files:
+        _checkpoint_error = (
+            f"No usable checkpoint files found in {_checkpoint_dir(checkpoint)}"
+        )
+    else:
+        _checkpoint_error = None
+
+    _result_queue = queue.Queue(maxsize=1)
+    _reader_buf = []
+    if use_checkpoint:
         _proc = subprocess.Popen(
             ["dmtcp_restart", "--no-strict-checking", "--coord-port", "0"] +
-            [os.path.join(ckpt_dir, f) for f in ckpt_files],
+            ckpt_files,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -146,9 +339,12 @@ def _start_hol():
             bufsize=1,
             env=_opam_env(),
         )
-    global _start_time
     _start_time = time.time()
-    t = threading.Thread(target=_reader_thread, args=(_proc,), daemon=True)
+    t = threading.Thread(
+        target=_reader_thread,
+        args=(_proc, _result_queue, _reader_buf),
+        daemon=True,
+    )
     t.start()
 
 
@@ -194,8 +390,8 @@ def _replay_prefix():
     Loads replay_init (ML file) then replays replay_prefix (JSONL of tactics).
     Both are optional; configured via hol-mcp.toml or env vars.
     """
-    init_path = _config.get("replay_init") or os.environ.get("HOL_REPLAY_INIT")
-    prefix_path = _config.get("replay_prefix") or os.environ.get("HOL_REPLAY_PREFIX")
+    init_path = _runtime_config["replay_init"]
+    prefix_path = _runtime_config["replay_prefix"]
     if not init_path and not prefix_path:
         return
     if init_path:
@@ -516,50 +712,486 @@ def hol_interrupt() -> str:
     return "No HOL Light process running."
 
 
-@mcp.tool()
-def hol_restart() -> str:
-    """Kill and restart the HOL Light subprocess.
+def _reload_config():
+    """Reload the config file selected when the server started."""
+    if CONFIG_PATH is None:
+        return _effective_config({}, None)
+    if not os.path.isfile(CONFIG_PATH):
+        raise ValueError(f"Config file no longer exists: {CONFIG_PATH}")
+    import tomllib
+    try:
+        with open(CONFIG_PATH, "rb") as config_file:
+            config = tomllib.load(config_file)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise ValueError(f"Unable to load config {CONFIG_PATH}: {exc}") from exc
+    return _effective_config(config, CONFIG_PATH)
 
-    Use when HOL Light has died or is in a bad state.
-    Any in-progress proof state will be lost.
-    """
-    global _proc, _helpers_loaded
-    with _lock:
-        if _proc is not None:
-            try:
-                _proc.kill()
-                _proc.wait(timeout=5)
-            except Exception:
-                pass
-            _proc = None
-        _helpers_loaded = False
-        global _recording_flushed
-        _recording_flushed = len(_recording)
-        _drain_queue()
-        _reader_buf.clear()
-        _start_hol()
+
+def _config_changes(previous, current):
+    changes = {}
+    previous = _config_snapshot(previous)
+    current = _config_snapshot(current)
+    for key in previous:
+        if previous[key] != current[key]:
+            changes[key] = {"old": previous[key], "new": current[key]}
+    return changes
+
+
+def _apply_runtime_config(config):
+    global _config, _runtime_config, TIMEOUT, MAX_OUTPUT_CHARS
+    global CONFIGURED_CHECKPOINT, _auto_record_dir
+    _config = config["raw"]
+    _runtime_config = config
+    TIMEOUT = config["timeout"]
+    MAX_OUTPUT_CHARS = config["max_output_chars"]
+    CONFIGURED_CHECKPOINT = config["checkpoint"]
+    _auto_record_dir = config["recording_dir"]
+
+
+def _process_alive():
+    return _proc is not None and _proc.poll() is None
+
+
+def _terminate_hol():
+    global _proc
+    proc = _proc
+    if proc is None:
+        return
+    try:
+        if proc.poll() is None:
+            proc.kill()
+        proc.wait(timeout=5)
+    except Exception:
+        pass
+    _proc = None
+
+
+def _prepare_process_restart():
+    global _helpers_loaded, _recording_flushed
+    _helpers_loaded = False
+    _recording_flushed = len(_recording)
+    _drain_queue()
+    _reader_buf.clear()
+
+
+def _quarantine_hol(error):
+    """Stop stale HOL state after a forced rebuild failure."""
+    global _restart_required, _restart_error, _startup_mode
+    global _checkpoint_active, _checkpoint_error, _checkpoint_fingerprint
+    _terminate_hol()
+    _prepare_process_restart()
+    _restart_required = True
+    _restart_error = str(error)
+    _startup_mode = None
+    _checkpoint_active = False
+    _checkpoint_error = str(error)
+    _checkpoint_fingerprint = None
+
+
+def _clear_restart_requirement():
+    global _restart_required, _restart_error
+    _restart_required = False
+    _restart_error = None
+
+
+def _restart_process(checkpoint):
+    """Replace the process, falling back to a usable cold HOL on restore errors."""
+    global _proc
+    _terminate_hol()
+    _prepare_process_restart()
+
+    restore_error = None
+    try:
+        _start_hol(checkpoint, allow_restart_required=True)
         _load_helpers()
-    return "HOL Light restarted."
+    except Exception as exc:
+        if _checkpoint_active:
+            restore_error = f"Checkpoint restore failed: {exc}"
+        else:
+            return False, str(exc)
+
+    if restore_error is None and _startup_mode == "cold" and _checkpoint_error:
+        return False, _checkpoint_error
+
+    if restore_error is None:
+        return True, None
+
+    _terminate_hol()
+    _prepare_process_restart()
+    try:
+        _start_hol(
+            checkpoint,
+            force_cold=True,
+            checkpoint_error=restore_error,
+            allow_restart_required=True,
+        )
+        _load_helpers()
+    except Exception as exc:
+        return False, f"{restore_error}; cold start also failed: {exc}"
+    return False, restore_error
+
+
+def _run_restart_command(command, stage):
+    try:
+        result = subprocess.run(
+            command,
+            cwd=HOL_DIR,
+            env=_opam_env(),
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise RuntimeError(f"{stage} could not start: {exc}") from exc
+    if result.returncode != 0:
+        output = "\n".join(
+            part.strip() for part in (result.stdout, result.stderr) if part.strip()
+        )
+        if len(output) > 4000:
+            output = output[-4000:]
+        raise RuntimeError(
+            f"{stage} failed with exit code {result.returncode}"
+            + (f":\n{output}" if output else "")
+        )
+
+
+def _build_checkpoint(checkpoint, recipe):
+    stage_dir = tempfile.mkdtemp(
+        prefix=f".hol-{checkpoint}.ckpt.", dir=HOL_DIR
+    )
+    shutil.rmtree(stage_dir)
+    command = [
+        sys.executable,
+        os.path.join(MCP_DIR, "make_checkpoint.py"),
+        "--name",
+        checkpoint,
+        "--output-dir",
+        stage_dir,
+    ]
+    for include_dir in recipe["include_dirs"]:
+        command.extend(["-I", include_dir])
+    command.extend(recipe["loads"])
+    try:
+        _run_restart_command(command, "checkpoint creation")
+        if not _checkpoint_files_in_dir(stage_dir):
+            raise RuntimeError(
+                f"Checkpoint creation produced no usable files in {stage_dir}"
+            )
+        return stage_dir
+    except Exception:
+        if os.path.exists(stage_dir):
+            shutil.rmtree(stage_dir, ignore_errors=True)
+        raise
+
+
+def _checkpoint_files_in_dir(path):
+    if not os.path.isdir(path):
+        return []
+    return sorted(
+        os.path.join(path, filename)
+        for filename in os.listdir(path)
+        if filename.startswith("ckpt_") and filename.endswith(".dmtcp")
+    )
+
+
+def _install_checkpoint(checkpoint, staged_dir):
+    """Move a staged checkpoint into place, replacing any existing one.
+
+    On failure the caller quarantines HOL and requires a fresh rebuild, so we
+    do not attempt to preserve or roll back to the previous checkpoint.
+    """
+    final_dir = _checkpoint_dir(checkpoint)
+    try:
+        if os.path.exists(final_dir):
+            shutil.rmtree(final_dir)
+        os.replace(staged_dir, final_dir)
+    except Exception as install_exc:
+        return False, f"Unable to install rebuilt checkpoint: {install_exc}"
+
+    if not _checkpoint_files(checkpoint):
+        return False, "Installed checkpoint contains no usable files"
+    return True, None
+
+
+def _restart_response(
+    started, previous_pid, checkpoint, checkpoint_overridden,
+    rebuild_hol_and_checkpoint, changes
+):
+    return {
+        "success": False,
+        "rebuild_hol_and_checkpoint": rebuild_hol_and_checkpoint,
+        "rebuilt": False,
+        "config_reloaded": False,
+        "checkpoint": checkpoint,
+        "configured_checkpoint": CONFIGURED_CHECKPOINT,
+        "checkpoint_overridden": checkpoint_overridden,
+        "previous_pid": previous_pid,
+        "pid": _proc.pid if _process_alive() else None,
+        "startup_mode": _startup_mode,
+        "elapsed_seconds": round(time.monotonic() - started, 3),
+        "config_changes": changes,
+    }
+
+
+def _hol_restart_sync(checkpoint, rebuild_hol_and_checkpoint, progress):
+    started = time.monotonic()
+    previous_pid = _proc.pid if _process_alive() else None
+    old_process_alive = _process_alive()
+    selected = checkpoint or CONFIGURED_CHECKPOINT
+    checkpoint_overridden = checkpoint is not None
+    changes = {}
+
+    with _restart_lock:
+        progress("config_validation", "Reloading and validating configuration")
+        try:
+            new_config = _reload_config()
+            selected = _validate_checkpoint_name(
+                checkpoint if checkpoint is not None else new_config["checkpoint"]
+            )
+            changes = _config_changes(_runtime_config, new_config)
+            if _restart_required and not rebuild_hol_and_checkpoint:
+                raise ValueError(
+                    "A previous HOL/checkpoint rebuild failed. Fix the build "
+                    "and run hol_restart(rebuild_hol_and_checkpoint=true) "
+                    "before continuing."
+                )
+            if new_config["recording_dir"] != _auto_record_dir:
+                raise ValueError(
+                    "recording_dir cannot be changed by hol_restart; "
+                    "the existing HOL process and recording were preserved"
+                )
+            recipe = new_config["checkpoint_recipes"].get(selected)
+            if rebuild_hol_and_checkpoint and recipe is None:
+                if selected == "base":
+                    # "base" is canonically vanilla HOL Light, so it can be
+                    # rebuilt without an explicit recipe. Any other checkpoint
+                    # must define one; we never rebuild a custom checkpoint as
+                    # bare HOL and silently swap it in.
+                    recipe = {"include_dirs": [], "loads": []}
+                else:
+                    raise ValueError(
+                        "rebuild_hol_and_checkpoint=True requires "
+                        f"checkpoint_recipes.{selected} (only the \"base\" "
+                        "checkpoint can be rebuilt without an explicit recipe)"
+                    )
+            if rebuild_hol_and_checkpoint:
+                missing = [
+                    path for path in recipe["include_dirs"]
+                    if not os.path.isdir(path)
+                ]
+                if missing:
+                    raise ValueError(
+                        "Checkpoint recipe include directories do not exist: "
+                        + ", ".join(missing)
+                    )
+        except Exception as exc:
+            response = _restart_response(
+                started, previous_pid, selected, checkpoint_overridden,
+                rebuild_hol_and_checkpoint, changes
+            )
+            response.update({
+                "stage": "config_validation",
+                "error": str(exc),
+                "hol_preserved": old_process_alive and _process_alive(),
+            })
+            response["elapsed_seconds"] = round(time.monotonic() - started, 3)
+            return response
+
+        _apply_runtime_config(new_config)
+        staged_dir = None
+        if rebuild_hol_and_checkpoint:
+            failure_stage = "clean"
+            try:
+                progress("clean", "Running make clean")
+                _run_restart_command(["make", "clean"], "make clean")
+                failure_stage = "build"
+                progress("build", "Building HOL Light")
+                _run_restart_command(["make"], "make")
+                failure_stage = "checkpoint_creation"
+                progress(
+                    "checkpoint_creation",
+                    f"Creating checkpoint {selected}",
+                )
+                staged_dir = _build_checkpoint(selected, recipe)
+            except Exception as exc:
+                with _lock:
+                    _quarantine_hol(exc)
+                response = _restart_response(
+                    started, previous_pid, selected, checkpoint_overridden,
+                    rebuild_hol_and_checkpoint, changes
+                )
+                response.update({
+                    "config_reloaded": True,
+                    "stage": failure_stage,
+                    "error": str(exc),
+                    "hol_preserved": False,
+                })
+                response["pid"] = None
+                response["startup_mode"] = None
+                response["elapsed_seconds"] = round(time.monotonic() - started, 3)
+                return response
+
+        progress("restart", f"Restarting HOL with checkpoint {selected}")
+        with _lock:
+            if rebuild_hol_and_checkpoint:
+                installed, install_error = _install_checkpoint(
+                    selected, staged_dir
+                )
+                if not installed:
+                    if staged_dir and os.path.exists(staged_dir):
+                        shutil.rmtree(staged_dir, ignore_errors=True)
+                    _quarantine_hol(install_error)
+                    response = _restart_response(
+                        started, previous_pid, selected, checkpoint_overridden,
+                        rebuild_hol_and_checkpoint, changes
+                    )
+                    response.update({
+                        "config_reloaded": True,
+                        "stage": "checkpoint_install",
+                        "error": install_error,
+                        "hol_preserved": False,
+                    })
+                    response["pid"] = None
+                    response["startup_mode"] = None
+                    response["elapsed_seconds"] = round(
+                        time.monotonic() - started, 3
+                    )
+                    return response
+
+                _clear_restart_requirement()
+            success, restart_error = _restart_process(selected)
+
+        response = _restart_response(
+            started, previous_pid, selected, checkpoint_overridden,
+            rebuild_hol_and_checkpoint, changes
+        )
+        response.update({
+            "success": success,
+            "rebuilt": rebuild_hol_and_checkpoint,
+            "config_reloaded": True,
+            "hol_preserved": False,
+        })
+        if not success:
+            response.update({
+                "stage": "restart",
+                "error": restart_error or "HOL Light restart failed",
+            })
+        response["pid"] = _proc.pid if _process_alive() else None
+        response["startup_mode"] = _startup_mode
+        response["elapsed_seconds"] = round(time.monotonic() - started, 3)
+        return response
+
+
+@mcp.tool()
+async def hol_restart(
+    checkpoint: str | None = None,
+    rebuild_hol_and_checkpoint: bool = False,
+    ctx: Context = None,
+) -> str:
+    """Reload configuration and restart the HOL Light subprocess.
+
+    Args:
+        checkpoint: Optional checkpoint override for this restart only.
+        rebuild_hol_and_checkpoint: Run make clean and make to rebuild HOL
+            Light from source, then rebuild the selected checkpoint, before
+            restarting. This is a heavy, multi-minute operation, so it must be
+            requested explicitly.
+
+    Rebuilding HOL Light and its checkpoint commonly takes several minutes. The
+    existing HOL process remains alive until the build and checkpoint creation
+    have succeeded.
+    """
+    events = queue.SimpleQueue()
+    executor = ThreadPoolExecutor(
+        max_workers=1, thread_name_prefix="hol-restart"
+    )
+    future = executor.submit(
+        _hol_restart_sync,
+        checkpoint,
+        rebuild_hol_and_checkpoint,
+        lambda stage, message: events.put((stage, message)),
+    )
+    current_stage = None
+    stage_started = time.monotonic()
+    last_heartbeat = stage_started
+    progress_numbers = {
+        "config_validation": 1,
+        "clean": 2,
+        "build": 3,
+        "checkpoint_creation": 4,
+        "restart": 5,
+    }
+
+    try:
+        while not future.done():
+            while True:
+                try:
+                    stage, message = events.get_nowait()
+                except queue.Empty:
+                    break
+                current_stage = stage
+                stage_started = time.monotonic()
+                last_heartbeat = stage_started
+                if ctx is not None:
+                    await ctx.report_progress(
+                        progress_numbers[stage], 5, message
+                    )
+            now = time.monotonic()
+            if (
+                ctx is not None
+                and current_stage is not None
+                and now - last_heartbeat >= RESTART_HEARTBEAT_SECONDS
+            ):
+                elapsed = round(now - stage_started)
+                await ctx.report_progress(
+                    progress_numbers[current_stage],
+                    5,
+                    f"{current_stage.replace('_', ' ')}: {elapsed}s elapsed",
+                )
+                last_heartbeat = now
+            await asyncio.sleep(0.25)
+
+        result = future.result()
+    finally:
+        executor.shutdown(wait=future.done())
+    while True:
+        try:
+            stage, message = events.get_nowait()
+        except queue.Empty:
+            break
+        if ctx is not None:
+            await ctx.report_progress(progress_numbers[stage], 5, message)
+    return json.dumps(result)
 
 
 @mcp.tool()
 def hol_status() -> str:
     """Check whether the HOL Light subprocess is alive.
 
-    Returns JSON: {"alive": bool, "pid": int|null, "checkpoint": str,
-                   "config": str|null, "uptime_seconds": float|null,
-                   "timeout": int, "max_output_chars": int}
+    Returns JSON with process health, active and configured checkpoints,
+    startup mode, checkpoint fingerprint/staleness, and runtime limits.
     """
-    import json
     alive = _proc is not None and _proc.poll() is None
+    current_fingerprint = _fingerprint_checkpoint(CHECKPOINT_NAME)
+    checkpoint_stale = (
+        _checkpoint_fingerprint is not None
+        and current_fingerprint != _checkpoint_fingerprint
+    )
     return json.dumps({
         "alive": alive,
         "pid": _proc.pid if alive else None,
         "checkpoint": CHECKPOINT_NAME,
+        "configured_checkpoint": CONFIGURED_CHECKPOINT,
         "config": CONFIG_PATH,
         "uptime_seconds": round(time.time() - _start_time, 1) if alive and _start_time else None,
         "timeout": TIMEOUT,
         "max_output_chars": MAX_OUTPUT_CHARS,
+        "startup_mode": _startup_mode,
+        "checkpoint_active": _checkpoint_active,
+        "checkpoint_error": _checkpoint_error,
+        "checkpoint_fingerprint": _checkpoint_fingerprint,
+        "checkpoint_stale": checkpoint_stale,
+        "restart_required": _restart_required,
+        "restart_error": _restart_error,
     })
 
 

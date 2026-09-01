@@ -1,0 +1,55 @@
+\DOC define_auto_record_type
+
+\TYPE {define_auto_record_type : string -> thm * thm * thm}
+
+\SYNOPSIS
+Defines a record type and registers all its component properties.
+
+\DESCRIBE
+The function {define_auto_record_type} takes a record type specification in the
+same syntax as {define_record_type}, namely
+{
+   "op = { fld1 : ty1 ; fld2 : ty2 ; ... ; fldn : tyn }"
+}
+\noindent It first calls {define_record_type} to define the type {op}, its
+single constructor {op}{_RECORD} and the {read}/{write} component for each
+field, returning the same triple {(ith,rth,cth)} of induction, recursion and
+component-characterization theorems.
+
+In addition, it derives and adds to the relevant global databases the standard
+properties of the fields as components, so that subsequent automation (for
+instance component-based simplification and orthogonality reasoning) can use
+them without further manual proof. Specifically it registers, for every field:
+the read-over-write theorems ({record_read_write_thms}), the strongly-valid,
+valid, extensionally-valid and weakly-valid component theorems, and the
+orthogonality theorems for each pair of distinct fields
+({record_orthogonality_thms}).
+
+Because it is layered on {define_record_type}, re-issuing an identical
+definition is benign in the same way (see {define_record_type}); note however
+that the component database entries are re-added on each such call.
+
+\FAILURE
+Fails under the same conditions as {define_record_type}: an ill-formed
+specification, a clash with an existing unrelated definition of the type or a
+field constant, or a redefinition of the type name with a different field list.
+
+\EXAMPLE
+{
+  # needs "Library/records.ml";;
+  # let point_INDUCT,point_RECURSION,point_COMPONENTS =
+      define_auto_record_type "point = { xc: num; yc: num }";;
+  ...
+}
+\noindent After this, the read-over-write and orthogonality laws for {xc} and
+{yc} are available to component-based automation, and can also be obtained
+explicitly:
+{
+  # record_read_write_thms (point_INDUCT,point_COMPONENTS);;
+  # record_orthogonality_thms (point_INDUCT,point_COMPONENTS);;
+}
+
+\SEEALSO
+define_record_type, define_type.
+
+\ENDDOC

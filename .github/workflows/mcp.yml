@@ -36,7 +36,7 @@ jobs:
       - name: Run unit tests
         run: |
           eval $(opam env)
-          cd mcp && uv run pytest test_server.py -v
+          cd mcp && uv run pytest test_server.py test_restart.py -v
 
       - name: Run smoke tests
         run: |

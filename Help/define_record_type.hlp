@@ -1,0 +1,84 @@
+\DOC define_record_type
+
+\TYPE {define_record_type : string -> thm * thm * thm}
+
+\SYNOPSIS
+Defines a record type with named fields and their read/write components.
+
+\DESCRIBE
+Given a string specifying a record type, {define_record_type} defines a new
+single-constructor inductive type together with a {read}/{write} component (see
+{Library/components.ml}) for each field. The input string has the form
+{
+   "op = { fld1 : ty1 ; fld2 : ty2 ; ... ; fldn : tyn }"
+}
+\noindent where {op} is the name of the type operator to be defined, {fld1},
+..., {fldn} are the field names and {ty1}, ..., {tyn} are the corresponding
+types. As with {define_type}, the number of distinct type variables among the
+{tyi} determines the arity of the type operator {op}.
+
+The underlying type is defined with a single constructor called {op}{_RECORD},
+taking the field types as arguments in order. For each
+field {fldi} a constant of that name is introduced by {new_specification},
+characterized as a component: {read fldi} projects out the field and
+{write fldi} updates it. The function returns a triple {(ith,rth,cth)}: the
+induction theorem, the recursion theorem and the conjunction of the component
+read/write characterizations.
+
+The type name is recorded, so that a subsequent call to {define_record_type}
+with the same type name is benign: if the fields are identical the previously
+computed theorems are returned (with a warning), rather than the constants
+being redeclared. See {\FAILURE} for the case of a clashing redefinition.
+
+To additionally register all the standard component properties (read-over-write
+laws, validity and orthogonality) with the component database, use
+{define_auto_record_type}.
+
+\FAILURE
+Fails if the string is not a syntactically valid record specification, if the
+type {op}{_RECORD} or one of the field constants is already in use for an
+unrelated definition, or if the type name has already been used by
+{define_record_type} with a different list of fields (in which case the error
+message is {"define_record_type: type op already defined with different
+fields"}).
+
+\EXAMPLE
+Here we define a record type of two-dimensional points with natural-number
+coordinates:
+{
+  # needs "Library/records.ml";;
+  # define_record_type "point = { xc: num; yc: num }";;
+  val it : thm * thm * thm =
+    (|- !P. (!a0 a1. P (point_RECORD a0 a1)) ==> (!x. P x),
+     |- !f. ?fn. !a0 a1. fn (point_RECORD a0 a1) = f a0 a1,
+     |- (!a0 a1. read xc (point_RECORD a0 a1) = a0) /\
+        (!a0' a0 a1. write xc a0' (point_RECORD a0 a1) = point_RECORD a0' a1) /\
+        (!a0 a1. read yc (point_RECORD a0 a1) = a1) /\
+        (!a1' a0 a1. write yc a1' (point_RECORD a0 a1) = point_RECORD a0 a1'))
+}
+\noindent Re-issuing the identical definition is benign and returns the same
+theorems:
+{
+  # define_record_type "point = { xc: num; yc: num }";;
+  Warning: Benign redefinition of record type
+  val it : thm * thm * thm = ...
+}
+\noindent Since the field types here mention two distinct type variables {A}
+and {B}, the following defines {pair} as a binary type operator rather than a
+type constant:
+{
+  # define_record_type "pair = { fst_c: A; snd_c: B }";;
+  val it : thm * thm * thm =
+    (|- !P. (!a0 a1. P (pair_RECORD a0 a1)) ==> (!x. P x),
+     |- !f. ?fn. !a0 a1. fn (pair_RECORD a0 a1) = f a0 a1,
+     |- (!a0 a1. read fst_c (pair_RECORD a0 a1) = a0) /\
+        (!a0' a0 a1. write fst_c a0' (pair_RECORD a0 a1) = pair_RECORD a0' a1) /\
+        (!a0 a1. read snd_c (pair_RECORD a0 a1) = a1) /\
+        (!a1' a0 a1. write snd_c a1' (pair_RECORD a0 a1) = pair_RECORD a0 a1'))
+}
+\noindent so that, for example, {`p:(num,bool)pair`} is a well-formed type.
+
+\SEEALSO
+define_auto_record_type, define_type.
+
+\ENDDOC

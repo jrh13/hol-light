@@ -183,10 +183,23 @@ UnitTests/parser_tests.native: UnitTests/parser_tests_inlined.cmx hol_lib.cmxa h
 UnitTests/parser_tests_inlined.cmx: UnitTests/parser_tests_inlined.ml hol_lib.cmxa hol.sh ; \
         ./hol.sh compile UnitTests/parser_tests_inlined.ml
 
+# UnitTests/records.ml: record type (Library/records.ml) checks.
+UnitTests/records_inlined.ml: UnitTests/records.ml inline_load.ml hol.sh ; \
+        ./hol.sh inline-load UnitTests/records.ml UnitTests/records_inlined.ml
+UnitTests/records.byte: UnitTests/records_inlined.ml hol_lib.cmo hol.sh ; \
+        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
+        UnitTests/records_inlined.ml -o UnitTests/records.byte
+UnitTests/records.native: UnitTests/records_inlined.cmx hol_lib.cmxa hol.sh ; \
+        ./hol.sh link UnitTests/records_inlined.cmx -o UnitTests/records.native
+UnitTests/records_inlined.cmx: UnitTests/records_inlined.ml hol_lib.cmxa hol.sh ; \
+        ./hol.sh compile UnitTests/records_inlined.ml
+
 default: hol_lib.cma hol_lib.cmxa \
          UnitTests/basic_tests.byte UnitTests/basic_tests.native \
          UnitTests/printer_tests.byte UnitTests/printer_tests.native \
          UnitTests/parser_tests.byte UnitTests/parser_tests.native
+         UnitTests/records.byte UnitTests/records.native
 endif
 
 # Build a standalone hol image called "hol" (needs Linux and DMTCP)
@@ -290,6 +303,8 @@ clean:; \
          UnitTests/printer_tests.byte UnitTests/printer_tests.native \
          UnitTests/parser_tests_inlined.* \
          UnitTests/parser_tests.byte UnitTests/parser_tests.native \
+         UnitTests/records_inlined.* \
+         UnitTests/records.byte UnitTests/records.native \
          ocaml-hol hol.sh hol hol.ckpt \
          hol.multivariate hol.multivariate.ckpt \
          hol.sosa hol.sosa.ckpt \

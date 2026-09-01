@@ -138,7 +138,7 @@ apply_tactic  "DISJ2_TAC THEN REWRITE_TAC[EVEN_ADD] THEN ASM_REWRITE_TAC[NOT_EVE
 6. **backtrack** — undo if a tactic didn't help
 7. Repeat until `"proved":true`
 8. **hol_status** — check if HOL Light is alive (useful for debugging)
-9. **hol_restart** — restart HOL Light if it has died or is in a bad state
+9. **hol_restart** — restart HOL Light if it has died or is in a bad state; pass `checkpoint=` to switch checkpoint for one restart, or `rebuild_hol_and_checkpoint=true` to rebuild HOL Light and its checkpoint from source (a multi-minute operation)
 
 **Utility tools:** **hol_type** (get term types), **hol_load** (load files), **hol_interrupt** (cancel hung tactics), **hol_help** (tactic reference), **start_recording** / **stop_recording** (record tactics to JSONL for replay)
 

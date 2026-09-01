@@ -41,6 +41,10 @@ def parse_args():
     )
     p.add_argument("--name", default="base",
                    help="Checkpoint name (creates hol-<name>.ckpt/). Default: base")
+    p.add_argument(
+        "--output-dir",
+        help="Write checkpoint files to this directory instead of hol-<name>.ckpt/",
+    )
     p.add_argument("-I", dest="include_dirs", action="append", default=[],
                    help="Add OCaml include directory (can be repeated)")
     p.add_argument("extra_loads", nargs="*", metavar="EXPR",
@@ -119,7 +123,11 @@ def send_and_wait(proc, code, error_msg):
 
 def main():
     args = parse_args()
-    ckpt_dir = os.path.join(HOL_DIR, f"hol-{args.name}.ckpt")
+    ckpt_dir = (
+        os.path.abspath(args.output_dir)
+        if args.output_dir
+        else os.path.join(HOL_DIR, f"hol-{args.name}.ckpt")
+    )
     ocaml_hol = os.path.join(HOL_DIR, "ocaml-hol")
 
     # Validate prerequisites
@@ -159,7 +167,7 @@ def main():
         env["HOLLIGHT_LOAD_PATH"] = f"{extra}:{existing}" if existing else extra
 
     # Print plan
-    print(f"Checkpoint: hol-{args.name}.ckpt/", flush=True)
+    print(f"Checkpoint: {ckpt_dir}/", flush=True)
     if args.include_dirs:
         print(f"Include dirs: {args.include_dirs}", flush=True)
     if args.extra_loads:

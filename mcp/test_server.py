@@ -5,6 +5,7 @@ shared across all tests via module-scoped fixture.
 """
 
 import json
+import asyncio
 import os
 import pytest
 import server
@@ -134,6 +135,16 @@ def test_hol_status_alive():
     assert result["uptime_seconds"] > 0
     assert isinstance(result["timeout"], int)
     assert isinstance(result["max_output_chars"], int)
+    assert isinstance(result["configured_checkpoint"], str)
+    assert result["startup_mode"] in {"checkpoint", "cold"}
+    assert isinstance(result["checkpoint_active"], bool)
+    assert result["checkpoint_error"] is None or isinstance(result["checkpoint_error"], str)
+    assert result["checkpoint_fingerprint"] is None or isinstance(
+        result["checkpoint_fingerprint"], list
+    )
+    assert isinstance(result["checkpoint_stale"], bool)
+    assert isinstance(result["restart_required"], bool)
+    assert result["restart_error"] is None or isinstance(result["restart_error"], str)
 
 
 def test_hol_status_reports_checkpoint_name():
@@ -158,15 +169,20 @@ def test_apply_tactic_with_custom_timeout():
 def test_eval_timeout_expires():
     r = json.loads(server.eval("let rec loop () = loop () in loop ()", timeout=1))
     assert r["success"] is False or "timeout" in r["output"].lower()
-    server.hol_restart()
+    asyncio.run(server.hol_restart())
 
 
 # --- hol_restart ---
 
 def test_hol_restart():
     old_pid = server._proc.pid
-    result = server.hol_restart()
-    assert "restarted" in result.lower()
+    result = json.loads(asyncio.run(server.hol_restart()))
+    if result["success"] is False:
+        assert result["startup_mode"] == "cold"
+        assert "No usable checkpoint" in result["error"]
+    assert result["previous_pid"] == old_pid
+    assert result["pid"] != old_pid
+    assert result["config_reloaded"] is True
     assert server._proc.poll() is None
     assert server._proc.pid != old_pid
     r = json.loads(server.eval("1 + 1"))

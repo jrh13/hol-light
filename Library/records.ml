@@ -28,12 +28,23 @@ let parse_record_specification =
                else tyname,rs
           | _ -> raise Noparse;;
 
+let the_record_types = ref
+ ([]:(string*((string*hol_type)list*(thm*thm*thm)))list);;
+
 let define_record_type =
   let tweak = (MATCH_MP o prove)
    (`(?r. P r) /\ (?w. Q w) ==> ?c. P(read c) /\ Q(write c)`,
     REWRITE_TAC[EXISTS_COMPONENT; read; write] THEN MESON_TAC[]) in
   fun s ->
     let tyname,fields = parse_record_specification s in
+    if can (assoc tyname) (!the_record_types) then
+      let ofields,othms = assoc tyname (!the_record_types) in
+      if ofields = fields
+      then (warn true "Benign redefinition of record type"; othms)
+      else failwith
+        ("define_record_type: type "^tyname^
+         " already defined with different fields")
+    else
     let tyname_rec = tyname^"_RECORD" in
     let ith,rth =
      define_type_raw [mk_vartype tyname,[tyname_rec,map snd fields]] in
@@ -58,7 +69,9 @@ let define_record_type =
                     let rethm = prove_recursive_functions_exist rth rcdef in
                     new_specification [fnm] (tweak (CONJ rethm wethm)))
       fnms avs in
-    ith,rth,end_itlist CONJ defs;;
+    let result = ith,rth,end_itlist CONJ defs in
+    the_record_types := (tyname,(fields,result))::(!the_record_types);
+    result;;
 
 (* ------------------------------------------------------------------------- *)
 (* Get the components out of a record definition                             *)

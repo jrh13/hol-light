@@ -92,6 +92,8 @@ jobs:
           ./UnitTests/printer_tests.native
           ./UnitTests/parser_tests.byte
           ./UnitTests/parser_tests.native
+          ./UnitTests/records.byte
+          ./UnitTests/records.native
 
   test3:
     runs-on: ubuntu-22.04
@@ -137,4 +139,6 @@ jobs:
           ./UnitTests/printer_tests.native
           ./UnitTests/parser_tests.byte
           ./UnitTests/parser_tests.native
+          ./UnitTests/records.byte
+          ./UnitTests/records.native
 
