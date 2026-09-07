@@ -90,6 +90,8 @@ jobs:
           ./UnitTests/basic_tests.native
           ./UnitTests/printer_tests.byte
           ./UnitTests/printer_tests.native
+          ./UnitTests/parser_tests.byte
+          ./UnitTests/parser_tests.native
           ./UnitTests/records.byte
           ./UnitTests/records.native
 
@@ -135,6 +137,8 @@ jobs:
           ./UnitTests/basic_tests.native
           ./UnitTests/printer_tests.byte
           ./UnitTests/printer_tests.native
+          ./UnitTests/parser_tests.byte
+          ./UnitTests/parser_tests.native
           ./UnitTests/records.byte
           ./UnitTests/records.native
 

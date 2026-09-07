@@ -171,6 +171,18 @@ UnitTests/printer_tests.native: UnitTests/printer_tests_inlined.cmx hol_lib.cmxa
 UnitTests/printer_tests_inlined.cmx: UnitTests/printer_tests_inlined.ml hol_lib.cmxa hol.sh ; \
         ./hol.sh compile UnitTests/printer_tests_inlined.ml
 
+# UnitTests/parser_tests.ml: parsing and typechecking of quotations.
+UnitTests/parser_tests_inlined.ml: UnitTests/parser_tests.ml inline_load.ml hol.sh ; \
+        ./hol.sh inline-load UnitTests/parser_tests.ml UnitTests/parser_tests_inlined.ml
+UnitTests/parser_tests.byte: UnitTests/parser_tests_inlined.ml hol_lib.cmo hol.sh ; \
+        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
+        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
+        UnitTests/parser_tests_inlined.ml -o UnitTests/parser_tests.byte
+UnitTests/parser_tests.native: UnitTests/parser_tests_inlined.cmx hol_lib.cmxa hol.sh ; \
+        ./hol.sh link UnitTests/parser_tests_inlined.cmx -o UnitTests/parser_tests.native
+UnitTests/parser_tests_inlined.cmx: UnitTests/parser_tests_inlined.ml hol_lib.cmxa hol.sh ; \
+        ./hol.sh compile UnitTests/parser_tests_inlined.ml
+
 # UnitTests/records.ml: record type (Library/records.ml) checks.
 UnitTests/records_inlined.ml: UnitTests/records.ml inline_load.ml hol.sh ; \
         ./hol.sh inline-load UnitTests/records.ml UnitTests/records_inlined.ml
@@ -186,6 +198,7 @@ UnitTests/records_inlined.cmx: UnitTests/records_inlined.ml hol_lib.cmxa hol.sh 
 default: hol_lib.cma hol_lib.cmxa \
          UnitTests/basic_tests.byte UnitTests/basic_tests.native \
          UnitTests/printer_tests.byte UnitTests/printer_tests.native \
+         UnitTests/parser_tests.byte UnitTests/parser_tests.native \
          UnitTests/records.byte UnitTests/records.native
 endif
 
@@ -288,6 +301,8 @@ clean:; \
          UnitTests/basic_tests.byte UnitTests/basic_tests.native \
          UnitTests/printer_tests_inlined.* \
          UnitTests/printer_tests.byte UnitTests/printer_tests.native \
+         UnitTests/parser_tests_inlined.* \
+         UnitTests/parser_tests.byte UnitTests/parser_tests.native \
          UnitTests/records_inlined.* \
          UnitTests/records.byte UnitTests/records.native \
          ocaml-hol hol.sh hol hol.ckpt \
