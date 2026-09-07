@@ -225,6 +225,53 @@ let test_fn = function
 set_jrh_lexer;;
 
 (* ------------------------------------------------------------------------- *)
+(* term_match (permissive) vs term_match_checked.                            *)
+(*                                                                           *)
+(* Matching `?x. t` against `?y. P y` would bind t := `P y`, letting the      *)
+(* target's bound variable y escape into a free position. term_match still   *)
+(* accepts this, as its documentation says it may; term_match_checked        *)
+(* rejects it at once, before any costly INSTANTIATE.                        *)
+(* ------------------------------------------------------------------------- *)
+
+(* Permissive matcher: succeeds, as it always has. *)
+let _ =
+  let pat = `(?x:A. t):bool` in
+  let tm = `?y:num. (P:num->bool) y` in
+  let _ = term_match [] pat tm in ();;
+
+(* Checked matcher: rejects the escaping substitution. *)
+let _ =
+  let pat = `(?x:A. t):bool` in
+  let tm = `?y:num. (P:num->bool) y` in
+  try
+    let _ = term_match_checked [] pat tm in
+    failwith "term_match_checked should have rejected escaping bound variable"
+  with Failure msg
+    when msg <> "term_match_checked should have rejected escaping bound variable" -> ();;
+
+(* Both matchers must agree on a non-escaping (first-order) match. *)
+let _ =
+  let pat = `(f:num->num->num) (a:num) (b:num)` in
+  let tm = `(f:num->num->num) 3 5` in
+  let _,m1,_ = term_match [] pat tm in
+  let _,m2,_ = term_match_checked [] pat tm in
+  assert (m1 = m2);;
+
+(* PART_MATCH / REWR_CONV route through term_match_checked, so the same      *)
+(* shape must still fail early (the performance win is preserved).           *)
+let _ =
+  try
+    let _ = REWR_CONV EXISTS_SIMP `?y:num. (P:num->bool) y` in
+    failwith "REWR_CONV EXISTS_SIMP should reject `?y. P y`"
+  with Failure msg when msg <> "REWR_CONV EXISTS_SIMP should reject `?y. P y`" -> ();;
+
+(* Sanity: when the body genuinely doesn't mention the bound var, the same   *)
+(* rewrite must still succeed.                                               *)
+let _ =
+  let th = REWR_CONV EXISTS_SIMP `?y:num. T` in
+  assert (concl th = `(?y:num. T) <=> T`);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test check_axioms.                                                        *)
 (* ------------------------------------------------------------------------- *)
 

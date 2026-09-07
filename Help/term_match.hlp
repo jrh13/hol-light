@@ -30,9 +30,12 @@ This function can occasionally `succeed' yet produce a match that does not in
 fact work. In typical uses, this will be implicitly checked by a subsequent
 inference process. However, to get a self-contained matching effect, the user
 should check that the instantiation returned does achieve a match, e.g. by
-applying {instantiate}.
+applying {instantiate}. The variant {term_match_checked}, which is the one used
+by {PART_MATCH}, rules out one common family of such spurious matches, those
+assigning to a pattern variable a subterm in which a variable bound on the
+other side occurs free, at the cost of a little more work per match.
 
 \SEEALSO
-instantiate, INSTANTIATE, PART_MATCH.
+instantiate, INSTANTIATE, PART_MATCH, term_match_checked.
 
 \ENDDOC
