@@ -1,0 +1,29 @@
+on:
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix: # limited to 256 jobs
+        ocaml-version: [4.05.0, 4.06.1, 4.07.1, 4.08.1, 4.09.1, 4.10.2, 4.11.2, 4.12.1, 4.13.1, 4.14.1] # 10 versions
+        camlp5-version: [8.00.03]
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out hol-light ...
+        uses: actions/checkout@v3
+      - name: set up opam ...
+        uses: avsm/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+      - name: install hol-light dependencies ...
+        run: |
+          sudo apt-get install -y libipc-system-simple-perl libstring-shellquote-perl
+          opam install num ocamlfind camlp5.${{ matrix.camlp5-version }}
+      - name: check hol.ml ...
+        run: |
+          eval $(opam env)
+          make
+          cat ci.ml | ocaml
