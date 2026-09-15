@@ -13,11 +13,12 @@ and this is the root of the Github code repository:
 Basic installation instructions are below. For more detailed information
 on usage, see the Tutorial:
 
-        https://hol-light.github.io/tutorial.pdf
+        https://hol-light.github.io/tutorial/HTML/tutorial.html (HTML)
+        https://hol-light.github.io/tutorial/tutorial.pdf (PDF)
 
 Refer to the reference manual for more details of individual functions:
 
-        https://hol-light.github.io/references/HTML/reference.html (HTML files)
+        https://hol-light.github.io/references/HTML/index.html (HTML files)
         https://hol-light.github.io/references/reference.pdf (one PDF file)
 
         *       *       *       *       *       *       *       *
@@ -27,7 +28,7 @@ Refer to the reference manual for more details of individual functions:
 The Objective CAML (OCaml) implementation is a prerequisite for running
 HOL Light. HOL Light should work with any recent version of OCaml; I've
 tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2,
-4.00, 4.05, 4.14, 5.1.0 and 5.2.0.
+4.00, 4.05, 4.14, 5.1.0, 5.2.0, 5.4.0 and 5.5.0.
 
 The easiest way to install HOL Light is through OPAM, an OCaml package
 manager. After installing OPAM (https://opam.ocaml.org/doc/Install.html),
