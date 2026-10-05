@@ -8,6 +8,53 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun  6th Sep 2026       Autoformalization/hilbert_waring.ml [new file], Autoformalization/planar_graph.ml [new file]
+
+Added two more fully autonomous formalizations.
+
+The hilbert_waring.ml formalization, produced by Claude Opus 4.8, proves
+Hilbert's solution of Waring's problem: for each positive exponent e there is
+a bound k(e) such that every natural number is a sum of k(e) e-th powers. The
+proof follows Linnik's elementary method as presented in Khinchin's "Three
+Pearls of Number Theory", chapter 3. It develops the difference-polynomial and
+fiber-counting induction behind Khinchin's fundamental lemma, obtains positive
+Schnirelmann density for a bounded sumset of e-th powers, and applies the
+existing Schnirelmann density-to-basis theorem.
+
+The planar_graph.ml formalization, produced by GPT-5.6-sol (xhigh), develops a
+general theory of finite simple planar graphs over an arbitrary vertex type,
+with edges represented as two-element sets and planarity defined using
+non-crossing arcs in the plane. It proves Fary's straight-line embedding
+theorem, equivalent recursive-triangulation and Euler-rotation
+characterizations of planarity, Euler's formula and the planar edge bound,
+Kuratowski's theorem in terms of K5 and K3,3 subdivisions, and Wagner's
+theorem in terms of the corresponding forbidden minors. It also supplies
+reusable results about graph minors, degrees and degeneracy, relabelling,
+components, closure operations and amalgamation. The proof of Fary's theorem
+follows the maximal-triangulation and recursive-disk approach in Jeff
+Erickson's "Planar Graphs" notes, itself following de Fraysseix, Pach and
+Pollack. The Kuratowski development uses rotation systems, Thomassen's
+contractible-edge theorem and separator induction.
+
+Tue  1st Sep 2026       Makefile, pa_j/chooser.sh, pa_j/pa_j_8.04.00.ml [renamed]
+
+Adopted a simplification and generalization of the pa_j selection for
+camlp5 contributed by Matthias Kannwischer. In fact the same file
+pa_j/pa_j_8.04.00.ml works for many OCaml versions including 5.5.
+
+Mon 31st Aug 2026       mcp/passim
+
+Adopted an update from Sanketh Menda with a more flexible version of the MCP
+server's "hol_restart", enhancing it from a bare kill/restart into a
+config-aware restart, so an agent editing an underlying source file can
+refresh its environment without dropping the session.
+
+Mon 31st Aug 2026       Library/records.ml
+
+Adopted an update from June Lee to make "define_record_type" idempotent,
+i.e. to allow "benign redefinition" as with other comparable definitional
+principles.
+
 Sun 16th Aug 2026       Multivariate/realanalysis.ml, Multivariate/lpspaces.ml, 100/fourier.ml, Autoformalization/fifteen_theorem.ml [new file], Autoformalization/carleson.ml [new file], Autoformalization/fourier_transform.ml [new file]
 
 Added two more substantial fully autonomous formalizations.

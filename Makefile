@@ -83,7 +83,7 @@ pa_j.ml: pa_j/pa_j_3.07.ml pa_j/pa_j_3.08.ml pa_j/pa_j_3.09.ml \
          pa_j/pa_j_3.1x_5.xx.ml pa_j/pa_j_3.1x_6.xx.ml \
          pa_j/pa_j_4.xx_8.00.ml pa_j/pa_j_4.xx_8.02.ml \
          pa_j/pa_j_4.xx_8.03.ml pa_j/pa_j_4.xx_8.03.06.ml \
-         pa_j/pa_j_5.4_8.04.00.ml ; \
+         pa_j/pa_j_8.04.00.ml ; \
   cp pa_j/`pa_j/chooser.sh` pa_j.ml
 
 # Choose an appropriate bignum library.
