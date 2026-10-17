@@ -51,19 +51,22 @@ default: update_database.ml pa_j.cmo hol.sh;
 # ledit is installed for line editing of OCaml REPL
 # Use --no-install to avoid installing HOL Light through the opam file
 # in this directory.
+# camlp5 is pinned before installing ledit, which depends on it: pinning it
+# afterwards can downgrade camlp5 and so force a rebuild of ledit, which
+# fails with OPAM 2.6 (the rebuild happens in an empty directory).
 switch:; \
   opam update ; \
   opam switch create . ocaml-base-compiler.4.14.0 --no-install ; \
-  eval $(opam env) ; \
-  opam install -y zarith ledit ; \
-  opam pin -y add camlp5 8.03.06
+  eval $$(opam env) ; \
+  opam pin -y add camlp5 8.03.06 && \
+  opam install -y zarith ledit
 
 switch-5:; \
   opam update ; \
   opam switch create . ocaml-base-compiler.5.4.0 --no-install ; \
-  eval $(opam env) ; \
-  opam install -y zarith ledit ; \
-  opam pin -y add camlp5 8.04.00
+  eval $$(opam env) ; \
+  opam pin -y add camlp5 8.04.00 && \
+  opam install -y zarith ledit
 
 # Choose an appropriate "update_database.ml" file
 
