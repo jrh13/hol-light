@@ -2,7 +2,7 @@ HOLLIGHT:=./hol.sh
 
 STANDALONE_EXAMPLES:=\
 	Library/agm \
-	Library/apery \
+	Examples/apery \
 	Library/bdd \
 	Examples/bdd_examples \
 	Library/binary \
@@ -238,6 +238,14 @@ $(LOGDIR)/Library/rstc-reduct.ready:
 	@echo '### Loading Library/rstc.ml,reduct.ml' > $(LOGDIR)/Library/rstc-reduct
 	@(echo 'loadt "Library/rstc.ml";;'; echo 'loadt "Examples/reduct.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Library/rstc-reduct 2>&1
 	@touch $(LOGDIR)/Library/rstc-reduct.ready
+
+$(LOGDIR)/Mizarlight/make.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Mizarlight/make)
+	@echo '### Loading Mizarlight/make.ml'
+	@echo '### Loading Mizarlight/make.ml' > $(LOGDIR)/Mizarlight/make
+	$(MAKE) -C Mizarlight pa_f.cmo
+	@echo 'loadt "Mizarlight/make.ml";;' | (time $(HOLLIGHT)) >> $(LOGDIR)/Mizarlight/make 2>&1
+	@touch $(LOGDIR)/Mizarlight/make.ready
 
 $(LOGDIR)/miz3/make-test.ready:
 	@mkdir -p $(LOGDIR)/$$(dirname miz3/make-test)
