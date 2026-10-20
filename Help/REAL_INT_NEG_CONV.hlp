@@ -18,8 +18,8 @@ forms of integer literal of type {:real}.
 
 \EXAMPLE
 {
-  # REAL_INT_NEG_CONV `-- (-- &3 / &2)`;;
-  val it : thm = |- --(-- &3 / &2) = &3 / &2
+  # REAL_INT_NEG_CONV `-- (-- &3)`;;
+  val it : thm = |- -- -- &3 = &3
 }
 
 \COMMENTS

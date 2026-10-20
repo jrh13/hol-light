@@ -40834,26 +40834,26 @@ let TIETZE_EXTENSION_COMPLETELY_REGULAR = prove
     MAP_EVERY X_GEN_TAC [`k:((A->real)->bool)`; `e:A->(A->real)->real`] THEN
     REWRITE_TAC[embedding_map; HOMEOMORPHIC_MAP_MAPS; LEFT_IMP_EXISTS_THM] THEN
     X_GEN_TAC `e':((A->real)->real)->A` THEN ABBREV_TAC
-     `cube:((A->real)->real)topology =
+     `c:((A->real)->real)topology =
       product_topology k
        (\f. subtopology euclideanreal (real_interval [&0,&1]))` THEN
     REWRITE_TAC[homeomorphic_maps] THEN STRIP_TAC THEN
     MP_TAC(ISPECL
-     [`cube:((A->real)->real)topology`;
+     [`c:((A->real)->real)topology`;
       `(f:A->real) o (e':((A->real)->real)->A)`;
       `IMAGE (e:A->(A->real)->real) s`;
       `t:real->bool`] TIETZE_EXTENSION_REALINTERVAL) THEN
     ASM_SIMP_TAC[FORALL_IN_IMAGE; o_THM] THEN ANTS_TAC THENL
      [REPEAT CONJ_TAC THENL
        [MATCH_MP_TAC COMPACT_HAUSDORFF_OR_REGULAR_IMP_NORMAL_SPACE THEN
-        EXPAND_TAC "cube" THEN
+        EXPAND_TAC "c" THEN
         REWRITE_TAC[COMPACT_SPACE_PRODUCT_TOPOLOGY;
                     HAUSDORFF_SPACE_PRODUCT_TOPOLOGY] THEN
         SIMP_TAC[HAUSDORFF_SPACE_SUBTOPOLOGY;
                  HAUSDORFF_SPACE_EUCLIDEANREAL] THEN
         SIMP_TAC[COMPACT_IN_EUCLIDEANREAL_INTERVAL; COMPACT_SPACE_SUBTOPOLOGY];
         MATCH_MP_TAC COMPACT_IN_IMP_CLOSED_IN THEN CONJ_TAC THENL
-         [EXPAND_TAC "cube" THEN
+         [EXPAND_TAC "c" THEN
           SIMP_TAC[HAUSDORFF_SPACE_PRODUCT_TOPOLOGY;
                    HAUSDORFF_SPACE_SUBTOPOLOGY;
                    HAUSDORFF_SPACE_EUCLIDEANREAL];

@@ -16,6 +16,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/brunn_minkowski \
 	Library/card \
 	Autoformalization/carleson \
+	Autoformalization/carleson_hunt \
 	Examples/combin \
 	Examples/complexpolygon \
 	Examples/cong \
@@ -30,6 +31,7 @@ STANDALONE_EXAMPLES:=\
 	Library/floor \
 	Examples/forster \
 	Examples/gcdrecurrence \
+	Autoformalization/godel_completeness \
 	Library/grouptheory \
 	Autoformalization/hilbert_waring \
 	Examples/harmonicsum \
@@ -62,6 +64,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/prog \
 	Examples/prover9 \
 	Examples/pseudoprime \
+	Autoformalization/puiseux \
 	Library/q \
 	Library/rabin_test \
 	Examples/rectypes \

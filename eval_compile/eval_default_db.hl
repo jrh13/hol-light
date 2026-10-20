@@ -1,0 +1,141 @@
+(* ------------------------------------------------------------------------- *)
+(* Copied from compute-hol-light                                             *)
+(* (github.com/hol-light-family/compute-hol-light, master 67addec of         *)
+(* 2026-09-30); in this copy the needs path is relative to the HOL Light     *)
+(* root, and the layout is reflowed to 79 columns.  The code is otherwise    *)
+(* unchanged (see README.md).                                                *)
+(* ------------------------------------------------------------------------- *)
+
+(* ========================================================================= *)
+(* Compilation of HOL Light functions into executable OCaml code             *)
+(*                                                                           *)
+(* Copyright (c) 2018 Alexey Solovyev                                        *)
+(*                                                                           *)
+(* This file is distributed under the terms of the MIT licence               *)
+(* ========================================================================= *)
+
+needs "eval_compile/eval_compile.hl";;
+
+let conv_EQ_num =
+  let const = `(=):num->num->bool` in
+  fun a b opt -> trans_opt opt (NUM_EQ_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_SUC =
+  let const = `SUC` in
+  fun a opt -> trans_opt opt (NUM_SUC_CONV (mk_comb (const, a)));;
+
+let conv_PRE =
+  let const = `PRE` in
+  fun a opt -> trans_opt opt (NUM_PRE_CONV (mk_comb (const, a)));;
+
+let conv_ADD =
+  let const = `+` in
+  fun a b opt -> trans_opt opt (NUM_ADD_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_SUB =
+  let const = `-` in
+  fun a b opt -> trans_opt opt (NUM_SUB_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_MUL =
+  let const = `*` in
+  fun a b opt -> trans_opt opt (NUM_MULT_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_EXP =
+  let const = `EXP` in
+  fun a b opt -> trans_opt opt (NUM_EXP_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_DIV =
+  let const = `DIV` in
+  fun a b opt -> trans_opt opt (NUM_DIV_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_MOD =
+  let const = `MOD` in
+  fun a b opt -> trans_opt opt (NUM_MOD_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_FACT =
+  let const = `FACT` in
+  fun a opt -> trans_opt opt (NUM_FACT_CONV (mk_comb (const, a)));;
+
+let conv_LE =
+  let const = `<=` in
+  fun a b opt -> trans_opt opt (NUM_LE_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_LT =
+  let const = `<` in
+  fun a b opt -> trans_opt opt (NUM_LT_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_GE =
+  let const = `>=` in
+  fun a b opt -> trans_opt opt (NUM_GE_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_GT =
+  let const = `>` in
+  fun a b opt -> trans_opt opt (NUM_GT_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_MIN =
+  let const = `MIN` in
+  fun a b opt -> trans_opt opt (NUM_MIN_CONV (list_mk_comb (const, [a; b])));;
+
+let conv_MAX =
+  let const = `MAX` in
+  fun a b opt -> trans_opt opt (NUM_MAX_CONV (list_mk_comb (const, [a; b])));;
+
+let NOT_CLAUSES' = prove(`~T = F /\ ~F = T`, REWRITE_TAC[]);;
+
+let LOGIC_SIMP = TAUT
+  `((A ==> B) <=> ~A \/ B) /\
+   (~ ~A <=> A)`;;
+
+let EQ_BOOL = prove
+  (`(T = T <=> T) /\
+    (F = F <=> T) /\
+    (T = F <=> F) /\
+    (F = T <=> F)`,
+  REWRITE_TAC[]);;
+
+let EQ_OPT = prove
+  (`(opt:(A)option = opt <=> T) /\
+    (NONE = SOME (x:A) <=> F) /\
+    (SOME x = NONE <=> F) /\
+    (SOME x = SOME y <=> x = y)`,
+  REWRITE_TAC[injectivity "option"; distinctness "option"]);;
+
+let EQ_PAIR = prove
+  (`(xy:(A#B) = xy <=> T) /\
+    ((x:A, y:B) = (a, b) <=> x = a /\ y = b)`,
+  REWRITE_TAC[PAIR_EQ]);;
+
+let EQ_LIST = prove
+  (`(xs:(A)list = xs <=> T) /\
+    ([] = CONS x xs <=> F) /\
+    (CONS x xs = [] <=> F) /\
+    (CONS x xs = CONS y ys <=> x = y /\ xs = ys)`,
+  REWRITE_TAC[injectivity "list"; distinctness "list"]);;
+
+let default_db ?eliminate_abs name =
+  let db = empty_db name ?eliminate_abs in
+  List.iter (fun rw -> add_extra_rewrite db rw) [
+    "LET_DEF", LET_DEF;
+    "LET_END_DEF", LET_END_DEF;
+    "LOGIC_SIMP", LOGIC_SIMP;
+  ];
+  List.iter (fun (c, name) -> set_rule db c ~name) [
+    `(=):num->num->bool`, "conv_EQ_num";
+    `SUC`, "conv_SUC"; `PRE`, "conv_PRE";
+    `+`, "conv_ADD"; `-`, "conv_SUB";
+    `*`, "conv_MUL"; `EXP`, "conv_EXP";
+    `DIV`, "conv_DIV"; `MOD`, "conv_MOD";
+    `FACT`, "conv_FACT";
+    `<=`, "conv_LE"; `<`, "conv_LT";
+    `>=`, "conv_GE"; `>`, "conv_GT";
+    `MIN`, "conv_MIN"; `MAX`, "conv_MAX";
+  ];
+  add_thms db [
+    "NOT_CLAUSES'", NOT_CLAUSES', [];
+    "EQ_BOOL", EQ_BOOL, [];
+    "EQ_OPT", EQ_OPT, [];
+    "EQ_PAIR", EQ_PAIR, [];
+    "EQ_LIST", EQ_LIST, [];
+  ];;
+
+

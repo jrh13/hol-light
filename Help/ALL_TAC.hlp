@@ -32,7 +32,7 @@ However if we split off many lemmas, we get a deeply nested proof structure
 that's a bit confusing. In cases where the proofs of the lemmas are trivial
 one-liners like this we might just want to keep the proof basically linear with
 {
-  # e(SUBGOL_THEN `n MOD 2 < 2` ASSUME_TAC THENL [ARITH_TAC; ALL_TAC] THEN
+  # e(SUBGOAL_THEN `n MOD 2 < 2` ASSUME_TAC THENL [ARITH_TAC; ALL_TAC] THEN
       ...rest of proof...);;
 }
 
