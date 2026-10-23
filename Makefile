@@ -48,25 +48,22 @@ default: update_database.ml pa_j.cmo hol.sh;
 # Create a local OPAM switch and install dependencies on it.
 # This will use the latest OCaml version that fully supports features of
 # HOL Light.
-# ledit is installed for line editing of OCaml REPL
-# Use --no-install to avoid installing HOL Light through the opam file
-# in this directory.
-# camlp5 is pinned before installing ledit, which depends on it: pinning it
-# afterwards can downgrade camlp5 and so force a rebuild of ledit, which
-# fails with OPAM 2.6 (the rebuild happens in an empty directory).
+# Use --no-install to avoid installing HOL Light itself through the opam file
+# in this directory; the dependencies are then installed with --deps-only,
+# so that the versions actually used (camlp5, zarith and ledit, the last for
+# line editing of the OCaml REPL) are the ones that the opam file asks for
+# rather than a second, hand-maintained list that can drift away from it.
 switch:; \
   opam update ; \
   opam switch create . ocaml-base-compiler.4.14.0 --no-install ; \
   eval $$(opam env) ; \
-  opam pin -y add camlp5 8.03.06 && \
-  opam install -y zarith ledit
+  opam install -y . --deps-only
 
 switch-5:; \
   opam update ; \
-  opam switch create . ocaml-base-compiler.5.4.0 --no-install ; \
+  opam switch create . ocaml-base-compiler.5.5.0 --no-install ; \
   eval $$(opam env) ; \
-  opam pin -y add camlp5 8.04.00 && \
-  opam install -y zarith ledit
+  opam install -y . --deps-only
 
 # Choose an appropriate "update_database.ml" file
 
