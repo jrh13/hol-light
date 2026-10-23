@@ -1,0 +1,56 @@
+\DOC term_match_checked
+
+\TYPE {term_match_checked : term list -> term -> term -> instantiation}
+
+\SYNOPSIS
+Match one term against another, failing early on out-of-scope assignments.
+
+\DESCRIBE
+The call {term_match_checked lcs t t'} behaves like {term_match lcs t t'},
+attempting to find an instantiation for the free variables of {t}, not
+permitting assignment of `local constant' variables in the list {lcs}, so that
+{t} becomes alpha-equivalent to {t'}. It differs in that it fails at once if
+matching would assign to a free variable of {t} a subterm of {t'} in which some
+variable bound in {t'} over that subterm occurs free. Such an assignment can
+never yield a term alpha-equivalent to {t'}, since instantiation renames the
+pattern's own binder instead of capturing the variable; {term_match} accepts it
+anyway and leaves the mismatch to be detected downstream. This is the matcher
+used by {PART_MATCH} and {GEN_PART_MATCH}, where detecting the mismatch during
+matching is much cheaper than instantiating the theorem and finding it
+afterwards.
+
+\FAILURE
+Fails if the terms cannot be matched, and in particular on the out-of-scope
+matches described above, where {term_match} succeeds.
+
+\EXAMPLE
+Matching the pattern of {EXISTS_SIMP} against an existential whose body does
+use the bound variable cannot work, but only the checked matcher says so:
+{
+  # term_match [] `?x:A. t` `?y:num. y = 1`;;
+  val it : instantiation = ([], [(`y = 1`, `t`)], [(`:num`, `:A`)])
+
+  # term_match_checked [] `?x:A. t` `?y:num. y = 1`;;
+  Exception: Failure "term_pmatch: bound variable would escape".
+}
+\noindent while genuine matches, including higher order ones, are unaffected:
+{
+  # term_match_checked [] `?x:A. t` `?y:num. 1 = 1`;;
+  val it : instantiation = ([], [(`1 = 1`, `t`)], [(`:num`, `:A`)])
+
+  # term_match_checked [] `~(?x:A. P x)` `~(?n. 5 < n /\ n < 6)`;;
+  val it : instantiation =
+    ([(1, `P`)], [(`\n. 5 < n /\ n < 6`, `P`)], [(`:num`, `:A`)])
+}
+
+\COMMENTS
+The check covers the first order case only; the higher order paths of the
+matcher can still return an instantiation in which a bound variable of {t'}
+escapes. So, just as with {term_match}, a user wanting a self-contained
+matching effect should check that the instantiation returned does achieve a
+match, e.g. by applying {instantiate}.
+
+\SEEALSO
+instantiate, INSTANTIATE, PART_MATCH, term_match.
+
+\ENDDOC
