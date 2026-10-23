@@ -17,7 +17,7 @@ rational numbers).
 
 \EXAMPLE
 {
-  # mk_intconst (Int (-101));;
+  # mk_intconst (num (-101));;
   val it : term = `-- &101`
 
   # type_of it;;

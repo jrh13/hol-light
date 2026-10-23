@@ -9259,7 +9259,8 @@ let STRICTLY_CONVEX_CYCLE_BEZIER_ARC_TANGENT_AT_OLD_VERTEX = prove
   REPEAT GEN_TAC THEN
   INTRO_TAC "convex nlarge rbound ibound" THEN
   REWRITE_TAC[bezier_arc_point; bezier_arc_tangent] THEN
-  MATCH_MP_TAC STRICTLY_CONVEX_CYCLE_QUADRATIC_BEZIER_TANGENT_AT_OLD_VERTEX THEN
+  MATCH_MP_TAC
+    STRICTLY_CONVEX_CYCLE_QUADRATIC_BEZIER_TANGENT_AT_OLD_VERTEX THEN
   ASM_REWRITE_TAC[] THEN
   MP_TAC(SPECL [`k:num`; `r:num`] BEZIER_PARAMETER_BOUNDS) THEN
   ASM_REWRITE_TAC[]);;
@@ -13510,10 +13511,10 @@ let PLANE_GRAPH_EMBEDDING_FACE_VERTICES_SUBSET_EDGE = prove
       `plane_graph_carrier (V:A->bool) E p c`;
       `(c:(A->bool)->real^2->bool) e`]
      (SET_RULE
-      `!k carrier edge:real^2->bool.
+      `!k carrier t:real^2->bool.
          k SUBSET (:real^2) DIFF carrier /\
-         k = (:real^2) DIFF edge
-         ==> carrier SUBSET edge`)) THEN
+         k = (:real^2) DIFF t
+         ==> carrier SUBSET t`)) THEN
     ASM_REWRITE_TAC[];
     ALL_TAC] THEN
   SUBGOAL_THEN

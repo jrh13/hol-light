@@ -20,18 +20,18 @@ Fails if no subterm matching {l} occurs in the goal.
 
 \EXAMPLE
 {
-  # g ‘!a b c. a < b ==> (a - b) / (a - b) * c = c‘;;
+  # g `!a b c. a < b ==> (a - b) / (a - b) * c = c`;;
   val it : goalstack = 1 subgoal (1 total)
 
-  ‘!a b c. a < b ==> (a - b) / (a - b) * c = c‘
+  `!a b c. a < b ==> (a - b) / (a - b) * c = c`
 
   # e(CASE_REWRITE_TAC REAL_DIV_REFL);;
   val it : goalstack = 1 subgoal (1 total)
 
-  ‘!a b c.
+  `!a b c.
     a < b
       ==> (~(a - b = &0) ==> &1 * c = c) /\
-        (a - b = &0 ==> (a - b) / (a - b) * c = c)‘
+        (a - b = &0 ==> (a - b) / (a - b) * c = c)`
 }
 
 \USES

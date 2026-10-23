@@ -1,0 +1,22 @@
+(* ========================================================================= *)
+(* 4CT/make_parallel.ml                                                      *)
+(*                                                                           *)
+(* make.ml with the computations run in parallel in one HOL Light process    *)
+(* (OCaml 5 or later):                                                       *)
+(*                                                                           *)
+(*   loadt "4CT/make_parallel.ml";;                                          *)
+(*                                                                           *)
+(* loads parallel.ml, which switches present_eval.ml and part2_run.ml to     *)
+(* their parallel mode (par_hook.ml), then make.ml itself: the same files,   *)
+(* the same theorems.  The side conditions of the presentation scripts (most *)
+(* of the unavoidability computation) and the 633 configurations of Part 2   *)
+(* are evaluated in FOURCOLOR_DOMAINS domains (default: the number of cores; *)
+(* the runtime starts at most 128 unless OCAMLRUNPARAM d is raised).         *)
+(* FOURCOLOR_CONFIGS=lo-hi restricts Part 2 as in make.ml, and               *)
+(* FOURCOLOR_MINOR_HEAP=w sets the minor heap of every domain (default 8M    *)
+(* words, see parallel.ml).  On OCaml 4 parallel.ml stops with an error at   *)
+(* its first line and make.ml then runs sequentially.                        *)
+(* ========================================================================= *)
+
+needs "4CT/parallel.ml";;
+needs "4CT/make.ml";;

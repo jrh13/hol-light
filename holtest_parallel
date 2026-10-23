@@ -5,6 +5,9 @@
 # This script attempts to distribute the tests over available cores
 # and should be faster in many cases than the sequential "holtest".
 #
+# It assumes HOL Light is already built (holtest.mk invokes ./hol.sh by
+# default); build it first with "make" (and "make switch-5" etc. as needed).
+#
 # Try examining the output using something like
 #
 #     egrep -i '###|error in|not.found' /tmp/hollog_*/holtest.log
@@ -20,23 +23,10 @@
 
 set -e
 
-if which hol-light > /dev/null ; then
-    hollight=hol-light
-elif type ckpt > /dev/null; then
-    make clean; make hol
-    (cd Mizarlight; make clean; make)
-    hollight=./hol
-else
-    make clean; make
-    (cd Mizarlight; make clean; make)
-    hollight=./hol.sh
-    export HOLLIGHT_DIR=`$hollight -dir`
-fi
-
 if [ "${NUMCORES}" == "" ]; then
   NUMCORES=$(getconf _NPROCESSORS_ONLN)
 fi
-make -j ${NUMCORES} "HOLLIGHT=$hollight" SHELL=bash \
+make -j ${NUMCORES} SHELL=bash \
     -f holtest.mk all
 
 # Remove "#"s in the follwing lines to build the proof-recording version

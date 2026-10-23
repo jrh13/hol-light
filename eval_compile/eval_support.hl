@@ -1,0 +1,543 @@
+(* ------------------------------------------------------------------------- *)
+(* Copied from compute-hol-light                                             *)
+(* (github.com/hol-light-family/compute-hol-light, master 67addec of         *)
+(* 2026-09-30); in this copy compare replaces Stdlib.compare (which needs    *)
+(* OCaml 4.07 or later), and the layout is reflowed to 79 columns.  The code *)
+(* is otherwise unchanged (see README.md).                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* ========================================================================= *)
+(* Compilation of HOL Light functions into executable OCaml code             *)
+(*                                                                           *)
+(* Copyright (c) 2018 Alexey Solovyev                                        *)
+(*                                                                           *)
+(* This file is distributed under the terms of the MIT licence               *)
+(* ========================================================================= *)
+
+let trans_opt th_opt th =
+  match th_opt with
+  | None -> th
+  | Some th0 -> TRANS th0 th;;
+
+let is_true_th th =
+  match concl th with
+  | Comb (_, Const ("T", _)) -> true
+  | _ -> false;;
+
+(* Evaluation errors *)
+
+type eval_error = {
+  failure_msg: string;
+  eval_name: string;
+  eval_args: term list;
+};;
+
+exception Eval_error of eval_error list;;
+
+let eval_error msg name args =
+  raise (Eval_error [{
+    failure_msg = msg;
+    eval_name = name;
+    eval_args = args;
+  }]);;
+
+let eval_error_propagate errs name args =
+  raise (Eval_error ({
+    failure_msg = (match errs with err :: _ -> err.failure_msg | _ -> "");
+    eval_name = name;
+    eval_args = args;
+  } :: errs));;
+
+(* Call counters *)
+
+let create_counter, reset_all_counters, get_counter, get_all_counters =
+  let counters = Hashtbl.create 100 in
+  let create (name: string) =
+    try Hashtbl.find counters name
+    with Not_found ->
+      let counter = ref 0 in
+      Hashtbl.add counters name counter;
+      counter in
+  let reset_all () =
+    Hashtbl.iter (fun _ c -> c := 0) counters in
+  let get name = !(Hashtbl.find counters name) in
+  let get_all () =
+    [] |> Hashtbl.fold (fun name v ls -> (name, !v) :: ls) counters
+       |> List.sort (fun (_, v1) (_, v2) -> compare v2 v1) in
+  create, reset_all, get, get_all;;
+
+let rec hash_string_of_term tm =
+  match tm with
+  | Var (name, _) -> name
+  | Const (name, _) -> name
+  | Comb (l, r) -> hash_string_of_term l ^ hash_string_of_term r
+  | Abs (Var(name, _), b) -> name ^ hash_string_of_term b
+  | _ -> failwith "impossible";;
+
+(* Hashtbl memo *)
+
+let create_hashtbl_memo, clear_hashtbl_memos, get_hashtbl_memos =
+  let memos = Hashtbl.create 100 in
+  let create (name: string) =
+    try Hashtbl.find memos name
+    with Not_found ->
+      let memo: (string list, thm)Hashtbl.t = Hashtbl.create 10000 in
+      Hashtbl.add memos name memo;
+      memo in
+  let clear_all () =
+    Hashtbl.iter (fun _ m -> Hashtbl.clear m) memos in
+  let get_all () =
+    Hashtbl.fold (fun name memo r -> (name, memo) :: r) memos [] in
+  create, clear_all, get_all;;
+
+(* Assoc and Assoc_lru memos *)
+
+module Assoc = struct
+  type 'a t = {
+    data : 'a option array;
+    size : int;
+    attempts : int
+  }
+
+  let rec next_pow2 x n =
+    if x >= n || x * 2 > Sys.max_array_length then x
+    else next_pow2 (2 * x) n
+
+  let create ?(attempts = 2) n =
+    let size = next_pow2 16 n in {
+      data = Array.make size None;
+      size = size;
+      attempts = attempts;
+    }
+
+  let clear h = Array.fill h.data 0 h.size None
+
+  let index h key = Hashtbl.hash key land (h.size - 1)
+
+  let next_index h i = (i * 17 + 1) land (h.size - 1)
+
+  (* let add h key v =
+    let rec add_aux n i =
+      match h.data.(i) with
+      | _ when n <= 0 -> h.data.(i) <- Some (key, v)
+      | None -> h.data.(i) <- Some (key, v)
+      | Some (k, _) ->
+        if k = key then h.data.(i) <- Some (key, v)
+        else add_aux (n - 1) (next_index h i) in
+    let i = index h key in
+    add_aux h.attempts i *)
+
+  let add h key v =
+    let rec add_aux n i =
+      match h.data.(i) with
+      | _ when n < 0 -> false
+      | None -> h.data.(i) <- Some (key, v); true
+      | Some (k, _) ->
+        if k = key then (h.data.(i) <- Some (key, v); true)
+        else add_aux (n - 1) (next_index h i) in
+    let i = index h key in
+    if add_aux h.attempts i then ()
+    else
+      h.data.(i) <- Some (key, v)
+
+  let find h key =
+    let rec find_aux n i =
+      match h.data.(i) with
+      | _ when n < 0 -> raise Not_found
+      | None -> raise Not_found
+      | Some (k, v) ->
+        if k = key then v
+        else find_aux (n - 1) (next_index h i) in
+    let i = index h key in
+    find_aux h.attempts i
+end;;
+
+module Assoc_lru = struct
+  type 'a t = {
+    data : 'a list array;
+    size : int;
+    list_size : int
+  }
+
+  let rec next_pow2 x n =
+    if x >= n || x * 2 > Sys.max_array_length then x
+    else next_pow2 (2 * x) n
+
+  let create ?(list_size = 5) n =
+    let size = next_pow2 16 n in {
+      data = Array.make size [];
+      size = size;
+      list_size = list_size;
+    }
+
+  let clear h = Array.fill h.data 0 h.size []
+
+  let index h key = Hashtbl.hash key land (h.size - 1)
+
+  let add h key v =
+    let rec trim n lst =
+      match lst with
+      | [] -> lst
+      | x :: xs ->
+        if n <= 0 then []
+        else
+          let ys = trim (n - 1) xs in
+          if ys == xs then lst
+          else
+            x :: ys in
+      let i = index h key in
+      h.data.(i) <- trim h.list_size ((key, v) :: h.data.(i))
+
+  let find h key =
+    let rec find_aux acc = function
+    | [] -> raise Not_found
+    | ((k, v) as x) :: xs ->
+      if k = key then
+        v, x :: List.rev_append acc xs
+      else
+        find_aux (x :: acc) xs in
+    let i = index h key in
+    let v, lst = find_aux [] h.data.(i) in
+    h.data.(i) <- lst; v
+end;;
+
+let create_assoc_memo, clear_assoc_memos, get_assoc_memos =
+  let memos = Hashtbl.create 100 in
+  let create size (name: string) =
+    try Hashtbl.find memos name
+    with Not_found ->
+      let memo: (string list * thm) Assoc.t = Assoc.create size in
+      Hashtbl.add memos name memo;
+      memo in
+  let clear_all () =
+    Hashtbl.iter (fun _ m -> Assoc.clear m) memos in
+  let get_all () =
+    Hashtbl.fold (fun name memo r -> (name, memo) :: r) memos [] in
+  create, clear_all, get_all;;
+
+let create_lru_memo, clear_lru_memos, get_lru_memos =
+  let memos = Hashtbl.create 100 in
+  let create size ?list_size (name: string) =
+    try Hashtbl.find memos name
+    with Not_found ->
+      let memo: (string list * thm) Assoc_lru.t = Assoc_lru.create
+        ?list_size size in
+      Hashtbl.add memos name memo;
+      memo in
+  let clear_all () =
+    Hashtbl.iter (fun _ m -> Assoc_lru.clear m) memos in
+  let get_all () =
+    Hashtbl.fold (fun name memo r -> (name, memo) :: r) memos [] in
+  create, clear_all, get_all;;
+
+let clear_all_memos () =
+  clear_hashtbl_memos ();
+  clear_assoc_memos ();
+  clear_lru_memos ();;
+
+(* Lists of arguments *)
+
+let create_arg_list, clear_arg_lists, all_arg_lists =
+  let lists = Hashtbl.create 100 in
+  let create (name: string) =
+    try Hashtbl.find lists name
+    with Not_found ->
+      let list = ref ([]: term list list) in
+      Hashtbl.add lists name list;
+      list in
+  let clear_all () =
+    Hashtbl.iter (fun _ s -> s := []) lists in
+  let all () =
+    Hashtbl.fold (fun name args r -> (name, !args) :: r) lists [] in
+  create, clear_all, all;;
+
+module Term_set = Set.Make(
+  struct
+    type t = term
+    let compare (t1:t) (t2:t) = compare t1 t2
+  end);;
+
+module Type_set = Set.Make(
+  struct
+    type t = hol_type
+    let compare (t1:t) (t2:t) = compare t1 t2
+  end);;
+
+module Term_list_set = Set.Make(
+  struct
+    type t = term list
+    let compare (ts1:t) (ts2:t) = compare ts1 ts2
+  end);;
+
+let setify_types tys =
+  Type_set.of_list tys |> Type_set.elements;;
+
+let setify_terms tms =
+  Term_set.of_list tms |> Term_set.elements;;
+
+let freqs list =
+  let table = Hashtbl.create (length list) in
+  let count x =
+    let v =
+      try Hashtbl.find table x
+      with Not_found ->
+        let v = ref 0 in
+        Hashtbl.add table x v; v in
+    incr v in
+  List.iter count list;
+  Hashtbl.fold (fun k v r -> (k, !v) :: r) table []
+    |> List.sort (fun (_, v1) (_, v2) -> compare v2 v1);;
+
+let analyze_arg_list args =
+  let n = List.length args in
+  let k = Term_list_set.of_list args |> Term_list_set.cardinal in
+  float (n - k) /. float n, n;;
+
+let analyze_arg_lists () =
+  all_arg_lists ()
+    |> List.map (fun (name, args) -> name, analyze_arg_list args)
+    |> List.sort (fun (_, (v1, _)) (_, (v2, _)) -> compare v2 v1);;
+
+(* A performance improvement trick from calc_num.ml *)
+let standardize, standardize_tm, standardize_list, standardize_reset,
+  standardize_enable =
+  let cache = Hashtbl.create 100 in
+  let enabled = ref true in
+  let find t =
+    try Hashtbl.find cache t
+    with Not_found -> Hashtbl.add cache t t; t in
+  let rec replace tm =
+    match tm with
+    | Var _ | Const _ -> find tm
+    | Comb (s, t) -> (* find @@*) mk_comb (replace s, replace t)
+    | Abs (v, b) -> (* find @@*) mk_abs (replace v, replace b) in
+  let st th =
+    let concl' = replace (concl th) in
+    EQ_MP (REFL concl') th in
+  let get () = Hashtbl.fold (fun _ t ts -> t :: ts) cache [] in
+  let reset () = Hashtbl.clear cache in
+  let enable flag = enabled := flag in
+    (fun th -> if !enabled then st th else th),
+    (fun tm -> if !enabled then replace tm else tm),
+    get, reset, enable;;
+
+let strip_comb_gabs tm =
+  match strip_comb tm with
+  | Const ("GABS", _) as op, a1 :: args -> mk_comb (op, a1), args
+  | op, args as r -> r;;
+
+let inst_type_thms ty ths =
+  let inst_type th =
+    let op, _ = concl th |> dest_eq |> fst |> strip_comb_gabs in
+    let tyi = type_match (type_of op) ty [] in
+    INST_TYPE tyi th in
+  List.map inst_type ths;;
+
+(* The same as find_path but also considers variables in Abs *)
+let find_full_path =
+  let rec find p tm =
+    match tm with
+    | _ when p tm -> []
+    | Abs (v, b) -> (try "b" :: find p b with Failure _ -> "v" :: find p v)
+    | Comb (l, r) -> (try "r" :: find p r with Failure _ -> "l" :: find p l)
+    | _ -> failwith "find_full_path" in
+  fun p tm ->
+    implode (find p tm);;
+
+let follow_full_path =
+  let rec follow s tm =
+    match s with
+    | [] -> tm
+    | "v" :: t -> follow t (bndvar tm)
+    | "b" :: t -> follow t (body tm)
+    | "r" :: t -> follow t (rand tm)
+    | "l" :: t -> follow t (rator tm)
+    | _ -> failwith "follow_full_path" in
+  fun s tm ->
+    follow (explode s) tm;;
+
+let dest_pattern =
+  let dest_geq = dest_binary "GEQ" in
+  let dest_simple_pattern tm =
+    let _, body = strip_abs tm |> snd |> strip_exists in
+    match strip_comb body with
+    | Const ("_UNGUARDED_PATTERN", _), [lhs; rhs] ->
+      fst (dest_geq lhs), None, fst (dest_geq rhs)
+    | Const ("_GUARDED_PATTERN", _), [lhs; guard; rhs] ->
+      fst (dest_geq lhs), Some guard, fst (dest_geq rhs)
+    | _ -> failwith ("dest_simple_pattern: " ^ string_of_term tm) in
+  let rec dest tm =
+    match tm with
+    | Comb (Comb (Const ("_SEQPATTERN", _), pat), rest) ->
+      dest_simple_pattern pat :: dest rest
+    | Abs _ -> [dest_simple_pattern tm]
+    | _ -> failwith ("dest_pattern: " ^ string_of_term tm) in
+  dest;;
+
+let dest_match tm =
+  match strip_comb tm with
+  | Const ("_MATCH", _), [arg; pat] -> Some arg, dest_pattern pat
+  | Const ("_FUNCTION", _), [pat] -> None, dest_pattern pat
+  | Const ("_FUNCTION", _), [pat; arg] -> Some arg, dest_pattern pat
+  | _ -> failwith "dest_match";;
+
+let eliminate_top_match th =
+  let tm = concl th in
+  let _, rhs = dest_eq tm in
+  match dest_match rhs with
+  | Some arg, pats when forall
+    (function (_, None, _) -> true | _ -> false) pats ->
+    map (fun (p, _, body) ->
+      let inst = term_match [] arg p in
+      let body' =
+        let fv = frees p in
+        let _, subs, _ = inst in
+        subst (filter (fun (_, v) -> not (mem v fv)) subs) body in
+      let th1 = INSTANTIATE inst th in
+      let th_concl = mk_eq (th1 |> concl |> rand, body') in
+      let th2 = prove(th_concl,
+        CONV_TAC (TOP_DEPTH_CONV MATCH_CONV) THEN
+        SIMP_TAC[COND_ID]
+        THEN TRY ARITH_TAC) in
+      TRANS th1 th2) pats
+  | _ -> failwith "eliminate_top_match";;
+
+let rec GEN_BETAS_CONV tm =
+  (GEN_BETA_CONV ORELSEC (RATOR_CONV GEN_BETAS_CONV THENC GEN_BETA_CONV)) tm;;
+
+let rec BODY_CONJUNCTS th =
+  if is_forall (concl th) then
+    BODY_CONJUNCTS (SPEC_ALL th)
+  else if is_conj (concl th) then
+    BODY_CONJUNCTS (CONJUNCT1 th) @ BODY_CONJUNCTS (CONJUNCT2 th)
+  else [th];;
+
+let eq_intro thm =
+  if is_eq (concl thm) then thm else
+  if is_neg (concl thm) then EQF_INTRO thm
+  else EQT_INTRO thm;;
+
+let split_thm =
+  let rewrites = [
+    (* MESON[] `!P Q. P /\ Q <=> if P then Q else F`; *)
+    (* MESON[] `!P Q. P \/ Q <=> if P then T else Q`; *)
+    MESON[] `!P X Y. (if ~P then X else Y) <=> (if P then Y else X)`;
+  ] in
+  let split th =
+    let ths = try eliminate_top_match th with _ -> [th] in
+    List.map eq_intro ths in
+  fun th ->
+    BODY_CONJUNCTS th
+      |> List.map split
+      |> flat
+      |> List.map (fun th -> PURE_REWRITE_RULE rewrites th);;
+
+let find_abs_and_match =
+  let rec find acc tm =
+    match tm with
+    | Var _ | Const _ -> acc
+    | Abs _ | Comb (Const ("GABS", _), _) ->
+      let _, btm = strip_gabs tm in
+      find (insert tm acc) btm
+    | Comb (ltm, rtm) ->
+      try
+        let arg, pats = dest_match tm in
+        itlist (fun (_, _, b) acc -> find acc b) pats (insert tm acc)
+      with Failure _ ->
+        find (find acc ltm) rtm
+  in
+  find [];;
+
+(* This function introduces new definitions for all abstractions in a given
+theorem and replaces abstractions with these new definitions.
+It returns a new theorem and a list of definitions (theorems) for abstractions.
+*)
+let replace_abstractions =
+  let def_counter = ref 0 in
+  let defs = Hashtbl.create 100 in
+  let create_abs_def name tm =
+    let fv = frees tm in
+    let args, _ = strip_gabs tm in
+    let ty = List.fold_right mk_fun_ty (map type_of fv) (type_of tm) in
+    let var = mk_var (name, ty) in
+    let lhs = list_mk_comb (var, fv) in
+    let def_th = new_definition (mk_eq (lhs, tm)) |> SPEC_ALL in
+    let repl_th = SYM def_th in
+    let eq_th =
+      List.fold_left AP_THM def_th args
+        |> CONV_RULE (RAND_CONV GEN_BETAS_CONV) in
+    repl_th, eq_th
+  in
+  let create_match_def name tm arg =
+    let fv = frees tm in
+    let arg_var = variant fv (mk_var ("arg", type_of arg)) in
+    let tm' = subst[arg_var, arg] tm in
+    let fv' = subtract (frees tm') [arg_var] @ [arg_var] in
+    let ty = List.fold_right mk_fun_ty (map type_of fv') (type_of tm') in
+    let var = mk_var (name, ty) in
+    let lhs = list_mk_comb (var, fv') in
+    let def_th = new_definition (mk_eq (lhs, tm')) |> SPEC_ALL in
+    let repl_th = SYM (INST[arg, arg_var] def_th) in
+    let eq_th = end_itlist CONJ (eliminate_top_match def_th) in
+    repl_th, eq_th
+  in
+  let create_function_def name tm =
+    let fv = frees tm in
+    let arg_var = variant fv
+      (mk_var ("arg", type_of tm |> dest_fun_ty |> fst)) in
+    let ty = List.fold_right mk_fun_ty (map type_of fv) (type_of tm) in
+    let var = mk_var (name, ty) in
+    let lhs = list_mk_comb (var, fv) in
+    let def_th = new_definition (mk_eq (lhs, tm)) |> SPEC_ALL in
+    let repl_th = SYM def_th in
+    let eq_th = end_itlist CONJ
+      (eliminate_top_match (AP_THM def_th arg_var)) in
+    repl_th, eq_th
+  in
+  let rec gen_name () =
+    let name = Format.sprintf "$%d" !def_counter in
+    incr def_counter;
+    if can get_const_type name then gen_name () else name
+  in
+  let create_def tm =
+    try Hashtbl.find defs tm
+    with Not_found ->
+      let name = gen_name () in
+      let repl_th, eq_th =
+        let no_guards = forall (function (_, None, _) -> true | _ -> false) in
+        try
+          match dest_match tm with
+          | Some arg, pats when no_guards pats ->
+            (try create_match_def name tm arg
+             with _ -> eval_error "A definition for match cannot be created"
+               "create_match_def" [tm])
+          | None, pats when no_guards pats ->
+            (try create_function_def name tm
+             with _ -> eval_error "A definition for function cannot be created"
+               "create_match_def" [tm])
+          | _ -> failwith "dest_match"
+        with Failure _ ->
+          create_abs_def name tm in
+      Hashtbl.add defs tm (repl_th, eq_th);
+      repl_th, eq_th
+  in
+  let replace th path =
+    let tm = follow_path path (concl th) in
+    let repl_th, eq_th = create_def tm in
+    let th' = CONV_RULE (PATH_CONV path (REWR_CONV repl_th)) th in
+    th', eq_th
+  in
+  fun th ->
+    let th = PURE_REWRITE_RULE[LET_DEF; LET_END_DEF] th in
+    let ths = BODY_CONJUNCTS th in
+    let ignore_tms = ths
+      |> map (rand o concl)
+      |> filter (fun tm -> try fst (dest_match tm) <> None with _ -> false) in
+    let paths = ths
+      |> end_itlist CONJ |> concl
+      |> find_abs_and_match
+      |> C subtract ignore_tms
+      |> map (fun tm -> find_path ((=) tm) (concl th)) in
+    List.fold_left (fun (th, eq_ths) path ->
+      let th', eq_th = replace th path in
+      th', eq_th :: eq_ths) (th, []) paths;;

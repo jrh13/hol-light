@@ -1,0 +1,494 @@
+(* ------------------------------------------------------------------------- *)
+(* Copied from compute-hol-light                                             *)
+(* (github.com/hol-light-family/compute-hol-light, master 67addec of         *)
+(* 2026-09-30); in this copy the needs path is relative to the HOL Light     *)
+(* root, compare replaces Stdlib.compare (which needs OCaml 4.07 or later),  *)
+(* and the layout is reflowed to 79 columns.  The code is otherwise          *)
+(* unchanged (see README.md).                                                *)
+(* ------------------------------------------------------------------------- *)
+
+(* ========================================================================= *)
+(* Compilation of HOL Light functions into executable OCaml code             *)
+(*                                                                           *)
+(* Copyright (c) 2018 Alexey Solovyev                                        *)
+(*                                                                           *)
+(* This file is distributed under the terms of the MIT licence               *)
+(* ========================================================================= *)
+
+(* We need split_thm *)
+needs "eval_compile/eval_support.hl";;
+
+(* Regular expressions for transforming names *)
+#load "str.cma";;
+
+type arg_type =
+  Ttype of hol_type
+| Tfun of arg_type list * hol_type;;
+
+type pattern =
+  Pvar of int
+| Papp of term * pattern list;;
+
+type memo_type = Hashtbl_memo | Assoc_memo of int | Assoc_lru of int * int;;
+
+type extra =
+  | Extra_counter of int
+  | Extra_memo of memo_type
+  | Extra_arg_list;;
+
+type rewrite_rec = {
+  args: pattern list;
+  arg_types: arg_type list;
+  fv: term list;
+  thm_name: string;
+  thm_index: int;
+  thm: thm;
+};;
+
+type db_rec = {
+  f_name: string;
+  f_prefix: string;
+  const: term;
+  type_inst_const: term option;
+  nargs: int;
+  mutable extra: extra list;
+  mutable rewrites: rewrite_rec list;
+};;
+
+type derived_thm = {
+  original_name: string;
+  new_name: string;
+  eq_names: string list;
+};;
+
+type database = {
+  database_name: string;
+  eliminate_abs: bool;
+  rules: (string, (term * db_rec) list) Hashtbl.t;
+  mutable name_counter: int;
+  mutable derived_thms: derived_thm list;
+  mutable extra_rewrites: (string * thm) list;
+  mutable extra_rules: (string * (thm -> thm)) list;
+};;
+
+let get_type =
+  let rec get ty =
+    match splitlist dest_fun_ty ty with
+    | [], t -> Ttype t
+    | tys, t -> Tfun (map get tys, t) in
+  fun tm ->
+    get (type_of tm);;
+
+let rec get_type_vars t =
+  match t with
+  | Ttype ty -> tyvars ty
+  | Tfun (args, r) -> end_itlist union (tyvars r :: map get_type_vars args);;
+
+let enum_names_range s ns =
+  List.map (fun k -> s ^ string_of_int k) ns;;
+
+let enum_names s n = enum_names_range s (1 -- n);;
+
+let string_of_term_type tm =
+  Format.sprintf "%s:%s" (string_of_term tm) (string_of_type (type_of tm));;
+
+let check_arg_form, check_args_form =
+  let rec chk t stk free =
+    if is_comb t then
+      let rator, rand = dest_comb t in
+      let free', pat1 = chk rand [] free in
+      chk rator (pat1 :: stk) free'
+    else if is_var t then
+      if stk = [] then
+        let newi = List.length free in
+        try (free, Pvar (newi - index t free - 1))
+        with _ -> (t :: free, Pvar newi)
+      else
+        failwith ("check_arg_form: " ^ fst (dest_var t) ^
+                  " occurs as a variable on lhs")
+    else if is_const t then
+      (free, Papp (t, stk))
+    else
+      failwith ("check_arg_form: lambda abstraction not allowed on lhs")
+  in
+  let check_arg_form tm =
+    match chk tm [] [] with
+      | (fv, Papp (head, args)) -> (List.rev fv, head, args)
+      | _ -> failwith "check_arg_form: ill-formed lhs" in
+  let check_args_form tms =
+    let fv, args =
+      List.fold_right (fun arg (fv, args) ->
+        let fv', arg' = chk arg [] fv in
+        (fv', arg' :: args)) tms ([], []) in
+    List.rev fv, args in
+  check_arg_form, check_args_form;;
+
+
+let fix_name, clear_fixes, add_fix_repl =
+  let repls = ref [] in
+  let clear () = repls := [] in
+  let add_repl str repl =
+    let re = Str.regexp_string str in
+    repls := List.stable_sort
+      (fun (s1, _, _) (s2, _, _) -> String.length s2 - String.length s1)
+                              ((str, re, repl) :: !repls) in
+  let fix name =
+    List.fold_left (fun s (_, re, repl) -> Str.global_replace re repl s)
+      name !repls in
+  fix, clear, add_repl;;
+
+let variant_name existing name =
+  let rec loop n =
+    let name' = if n = 0 then name else name ^ string_of_int n in
+    if mem name' existing then
+      loop (n + 1)
+    else
+      name' in
+  loop 0;;
+
+let fix_identifier str =
+  let str' =
+    Str.global_replace (Str.regexp "[^a-zA-Z0-9]") "_" str
+      |> Str.global_replace (Str.regexp "__+") "_"
+      |> Str.global_replace (Str.regexp "^_+\\|_+$") "" in
+  if Str.string_match (Str.regexp "[a-z]") str' 0 then str'
+  else
+    "id_" ^ str';;
+
+let suffix_of_type const =
+  let name, ty = dest_const const in
+  let c0 = mk_const (name, []) in
+  let inst = type_match (type_of c0) ty [] in
+  let tys = map fst inst |> filter (not o is_vartype) in
+  String.concat "_" (map string_of_type tys);;
+
+(* Standard names for common symbols *)
+let () =
+  clear_fixes();
+  List.iter (uncurry add_fix_repl) [
+    "/\\", "AND";
+    "\\/", "OR";
+    "==>", "IMP";
+    "~", "NOT";
+    "+", "ADD";
+    "-", "SUB";
+    "*", "MUL";
+    "/", "DIV";
+    "<", "LT";
+    ">", "GT";
+    "<=", "LE";
+    ">=", "GE";
+    "=", "EQ";
+    "$", "tmp";
+];;
+
+(* Database functions *)
+
+let empty_db ?(eliminate_abs = false) name = {
+    database_name = name;
+    eliminate_abs = eliminate_abs;
+    rules = Hashtbl.create 100;
+    name_counter = 0;
+    derived_thms = [];
+    extra_rewrites = [];
+    extra_rules = [];
+  };;
+
+let add_extra_rule db (rule_string, rule) =
+  if can (assoc rule_string) db.extra_rules then ()
+  else
+    db.extra_rules <- db.extra_rules @ [rule_string, rule];;
+
+let add_extra_rewrite db (rw_string, rw) =
+  if can (assoc rw_string) db.extra_rewrites then ()
+  else
+    db.extra_rewrites <- db.extra_rewrites @ [rw_string, rw];;
+
+let entries db = Hashtbl.fold (fun name e r -> (name, e) :: r) db.rules [];;
+
+let has_entries db name =
+  Hashtbl.mem db.rules name;;
+
+let add_entry db const entry =
+  let name, _ = dest_const const in
+  let entries = try Hashtbl.find db.rules name with Not_found -> [] in
+  Hashtbl.replace db.rules name ((const, entry) :: entries);;
+
+let same_extra e1 e2 =
+  match e1, e2 with
+  | Extra_counter _, Extra_counter _ -> true
+  | Extra_memo _, Extra_memo _ -> true
+  | Extra_arg_list, Extra_arg_list -> true
+  | _ -> false;;
+
+let add_extra ls e =
+  e :: filter (fun e' -> not (same_extra e e')) ls;;
+
+let find_entries db const =
+  let name, ty = dest_const const in
+  let entries = Hashtbl.find db.rules name in
+  filter (fun (c, db_rec) -> can (type_match (type_of c) ty) []) entries
+    |> map snd;;
+
+let find_most_specific_entry db const =
+  let match_length ty1 ty2 =
+    type_match ty1 ty2 []
+      |> List.filter (fun (a, _) -> is_type a)
+      |> List.length in
+  try
+    let _, ty = dest_const const in
+    find_entries db const
+      |> List.map (fun e -> match_length (type_of e.const) ty, e)
+      |> List.sort (fun (l1, _) (l2, _) -> compare l1 l2)
+      |> List.hd |> snd
+  with Failure _ | Not_found ->
+    failwith (Format.sprintf "find_most_specific_entry: no entries for `%s`"
+                (string_of_term_type const));;
+
+let find_exact_entry db const =
+  let exact_match ty1 ty2 =
+    type_match ty1 ty2 []
+      |> List.for_all (fun (a, _) -> is_vartype a) in
+  try
+    let _, ty = dest_const const in
+    find_entries db const
+      |> List.find (fun e -> exact_match (type_of e.const) ty)
+  with Not_found ->
+    failwith (Format.sprintf "find_exact_entry: no entries for `%s`"
+                (string_of_term_type const));;
+
+let get_entries db names =
+  map (Hashtbl.find db.rules) names |> flat |> map snd;;
+
+let set_extra_for_consts db extra consts =
+  List.map (find_exact_entry db) consts
+    |> List.iter (fun (e: db_rec) -> e.extra <- add_extra e.extra extra);;
+
+let set_extra_for_names db extra names =
+  get_entries db names
+    |> List.iter (fun (e: db_rec) -> e.extra <- add_extra e.extra extra);;
+
+let set_extra_for_all db extra =
+  entries db
+    |> List.iter (fun (_, es) ->
+         List.iter (fun (_, (e: db_rec)) -> e.extra <- add_extra e.extra extra)
+           es);;
+
+let set_rule db ?name const =
+  if can (find_exact_entry db) const then
+    failwith (Format.sprintf "set_rule: duplicate entry for `%s`"
+                (string_of_term_type const));
+  let c_name, cty = dest_const const in
+  let names =
+    try get_entries db [c_name] |> List.map (fun e -> e.f_name)
+    with Not_found -> [] in
+  let f_prefix = fix_name c_name in
+  let f_name = variant_name names @@
+    match name with
+    | None -> ["f"; f_prefix; suffix_of_type const]
+                |> List.filter (fun s -> s <> "")
+                |> String.concat "_"
+                |> fix_identifier
+    | Some name -> name in
+  let nargs =
+    match get_type const with
+    | Tfun (args, _) -> List.length args
+    | _ -> 0 in
+  let entry: db_rec = {
+    f_name = f_name;
+    f_prefix = f_prefix;
+    const = const;
+    type_inst_const = None;
+    nargs = nargs;
+    extra = [];
+    rewrites = [];
+  } in
+  add_entry db const entry;;
+
+let add_thm db ?type_tm ?fname (thm_name, index, eq_th) =
+  let const, _ = concl eq_th |> dest_eq |> fst |> strip_comb in
+  let name, cty = dest_const const in
+  let key_const, type_inst =
+    match type_tm with
+    | None -> const, []
+    | Some ty_const -> ty_const, type_match cty (type_of ty_const) [] in
+  if name <> fst (dest_const key_const) then failwith "add_thm: bad type_tm";
+  let th1 = INST_TYPE type_inst eq_th in
+  let lhs, rhs = dest_eq (concl th1) in
+  let fv, _, arg_pats = check_arg_form lhs in
+  let entry =
+    try find_exact_entry db key_const
+    with Failure _ ->
+      let names =
+        try get_entries db [name] |> List.map (fun e -> e.f_name)
+        with Not_found -> [] in
+      let fname = fix_name (match fname with Some s -> s | _ -> name) in
+      let e = {
+        f_name = ["f"; fname; suffix_of_type key_const]
+                  |> List.filter (fun s -> s <> "")
+                  |> String.concat "_"
+                  |> fix_identifier
+                  |> variant_name names;
+        f_prefix = fname;
+        const = key_const;
+        type_inst_const = if key_const = const then None else Some key_const;
+        nargs = List.length arg_pats;
+        extra = [];
+        rewrites = [];
+      } in
+      add_entry db key_const e; e in
+  if entry.nargs <> List.length arg_pats then
+    failwith (Format.sprintf "Incorrect number of arguments for '%s' in '%s'"
+                             name (string_of_thm eq_th));
+  let thms = List.map (fun rw -> rw.thm) entry.rewrites in
+  warn (List.mem th1 thms)
+    ("Duplicate rewriting rule for the theorem: " ^ string_of_thm th1);
+  entry.rewrites <- {
+    args = arg_pats;
+    arg_types = map get_type @@ snd (strip_comb lhs);
+    fv = fv;
+    thm = th1;
+    thm_name = thm_name;
+    thm_index = index;
+  } :: entry.rewrites;;
+
+let add_thms db ths =
+  let extra_rw = PURE_REWRITE_RULE (map snd db.extra_rewrites) in
+  let extra_rules = rev_itlist (o) (map snd db.extra_rules) I in
+  let add ?fname (name, th, type_tms) =
+    let eqs = split_thm th |> map extra_rw |> map extra_rules in
+    let add_all type_tm =
+      List.iteri (fun i th -> add_thm db ?type_tm ?fname (name, i + 1, th)) eqs
+        in
+    match type_tms with
+    | [] -> add_all None
+    | _ -> List.iter (fun tm -> add_all (Some tm)) type_tms
+  in
+  (* TODO: compute type_tms for new definitions *)
+  let add_def base_name ((th, th_name), index) =
+    let const = th |> BODY_CONJUNCTS |> hd |> concl |> lhand |>
+      strip_comb |> fst in
+    if not (can (find_most_specific_entry db) const) then
+      add ~fname:(Format.sprintf "%s_abs%d" base_name index) (th_name, th, [])
+  in
+  let process ((name, th, type_tms) as args) =
+    if not db.eliminate_abs then add args
+    else
+      let th', def_ths = replace_abstractions th in
+      if def_ths = [] then add args
+      else begin
+        let n1 = db.name_counter + 1 in
+        let n2 = n1 + List.length def_ths - 1 in
+        let derived = {
+          original_name = name;
+          new_name = "no_abs_" ^ name;
+          eq_names = enum_names_range "abs_def_" (n1 -- n2);
+        } in
+        db.name_counter <- n2;
+        db.derived_thms <- derived :: db.derived_thms;
+        add (derived.new_name, th', type_tms);
+        (* TODO: there should be a better and more robust way to get this *)
+        (* name *)
+        let cname, _ = th' |> BODY_CONJUNCTS |> hd |> concl |> dest_eq |> fst
+          |> strip_comb |> fst |> dest_const in
+        List.iter (add_def (fix_name cname))
+          (zip (zip def_ths derived.eq_names) (1--List.length def_ths))
+      end
+  in
+  List.iter process ths;
+  db;;
+
+let spec_rule db rule type_tm =
+  if rule.rewrites = [] then
+    set_rule db type_tm
+  else
+    List.iter (fun rw ->
+      add_thm db ~type_tm ~fname:rule.f_prefix
+        (rw.thm_name, rw.thm_index, rw.thm))
+    (List.rev rule.rewrites);;
+
+(* Kosaraju's algorithm *)
+let resolve_deps deps =
+  let find table v d =
+    try Hashtbl.find table v with Not_found -> d in
+  let in_edges = Hashtbl.create 100 in
+  let visited = ref [] in
+  let assigned = ref [] in
+  let list = ref [] in
+  let rec visit from v =
+    if from <> v then begin
+      let es = find in_edges v [] in
+      Hashtbl.replace in_edges v (insert from es)
+    end;
+    if not (mem v !visited) then begin
+      visited := v :: !visited;
+      List.iter (visit v) (find deps v []);
+      list := v :: !list
+    end in
+  let rec assign v =
+    if mem v !assigned then []
+    else begin
+      assigned := v :: !assigned;
+      let ins = find in_edges v [] in
+      itlist (fun w c -> assign w @ c) ins [v]
+    end in
+  let vs = Hashtbl.fold (fun v es r -> union (v :: es) r) deps [] in
+  List.iter (W visit) vs;
+  rev_itlist (fun v r ->
+    match assign v with
+    | [] -> r
+    | comp -> comp :: r) !list [];;
+
+let dependencies db ?(inst_types = true) tm : term list list =
+  let deps = Hashtbl.create 100 in
+  let rec consts tm =
+    match tm with
+    | Const _ -> Term_set.singleton tm
+    | Var _ -> Term_set.empty
+    | Comb (l, r) -> Term_set.union (consts l) (consts r)
+    | Abs (_, b) -> consts b
+  in
+  let find_entry c =
+    try Some (find_exact_entry db c)
+    with Failure _ ->
+      try
+        let entry = find_most_specific_entry db c in
+        if inst_types then
+          (spec_rule db entry c; Some (find_exact_entry db c))
+        else
+          Some entry
+      with Failure _ -> None
+  in
+  let rec process closed_set open_set =
+    if Term_set.is_empty open_set then ()
+    else
+      let const = Term_set.choose open_set in
+      let open' = Term_set.remove const open_set in
+      let closed' = Term_set.add const closed_set in
+      match find_entry const with
+      | Some entry when entry.rewrites <> [] && not
+        (Hashtbl.mem deps entry.const) ->
+        let next_all =
+          List.map (fun rw -> rw.thm |> concl |> rand |> consts) entry.rewrites
+            |> List.fold_left Term_set.union Term_set.empty
+            |> Term_set.filter (fun c ->
+                try
+                  let e = find_most_specific_entry db c in
+                  e.rewrites <> []
+                with Failure _ -> false) in
+        Hashtbl.add deps entry.const (Term_set.elements next_all);
+        let next = Term_set.filter
+          (fun c -> not (Term_set.mem c closed')) next_all in
+        process closed' (Term_set.union open' next)
+      | _ -> process closed' open'
+  in
+  process Term_set.empty (consts tm);
+  Hashtbl.filter_map_inplace (fun _ cs ->
+    Some (cs
+      |> List.map (find_most_specific_entry db)
+      (* TODO: probably the filter is not required *)
+      (* |> List.filter (fun entry -> entry.rewrites <> []) *)
+      |> List.map (fun entry -> entry.const)
+      |> setify))
+    deps;
+  resolve_deps deps;;

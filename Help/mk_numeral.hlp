@@ -16,7 +16,7 @@ rationals).
 
 \EXAMPLE
 {
-  # mk_numeral (Int 10);;
+  # mk_numeral (num 10);;
   val it : term = `10`
 
   # mk_numeral(pow2 64);;
