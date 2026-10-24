@@ -234,8 +234,9 @@ checkpointing programs.
 
  2. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
     Somtimes you need a recent version of camlp5 to be compatible with
-    your OCaml. For example, OCaml 4.05 is compatible with camlp5 7.10 and
-    OCaml 4.14 and above is compatible with camlp5 8.02 and 8.03. I recommend
+    your OCaml. For example, OCaml 4.05 is compatible with camlp5 7.10,
+    OCaml 4.14 is compatible with camlp5 8.02 and 8.03, OCaml 5.4 with
+    camlp5 8.04 and 8.05, and OCaml 5.5 with camlp5 8.05. I recommend
     downloading the sources for a recent version from
 
         https://github.com/camlp5/camlp5/releases ('tags' tab has full series)
