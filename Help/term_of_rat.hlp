@@ -17,7 +17,7 @@ Never fails.
 
 \EXAMPLE
 {
-  # term_of_rat (Int 3 // Int 2);;
+  # term_of_rat (num 3 // num 2);;
   val it : term = `&3 / &2`
 }
 

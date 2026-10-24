@@ -2,7 +2,7 @@ HOLLIGHT:=./hol.sh
 
 STANDALONE_EXAMPLES:=\
 	Library/agm \
-	Library/apery \
+	Examples/apery \
 	Library/bdd \
 	Examples/bdd_examples \
 	Library/binary \
@@ -16,6 +16,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/brunn_minkowski \
 	Library/card \
 	Autoformalization/carleson \
+	Autoformalization/carleson_hunt \
 	Examples/combin \
 	Examples/complexpolygon \
 	Examples/cong \
@@ -30,6 +31,7 @@ STANDALONE_EXAMPLES:=\
 	Library/floor \
 	Examples/forster \
 	Examples/gcdrecurrence \
+	Autoformalization/godel_completeness \
 	Library/grouptheory \
 	Autoformalization/hilbert_waring \
 	Examples/harmonicsum \
@@ -62,6 +64,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/prog \
 	Examples/prover9 \
 	Examples/pseudoprime \
+	Autoformalization/puiseux \
 	Library/q \
 	Library/rabin_test \
 	Examples/rectypes \
@@ -238,6 +241,14 @@ $(LOGDIR)/Library/rstc-reduct.ready:
 	@echo '### Loading Library/rstc.ml,reduct.ml' > $(LOGDIR)/Library/rstc-reduct
 	@(echo 'loadt "Library/rstc.ml";;'; echo 'loadt "Examples/reduct.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Library/rstc-reduct 2>&1
 	@touch $(LOGDIR)/Library/rstc-reduct.ready
+
+$(LOGDIR)/Mizarlight/make.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Mizarlight/make)
+	@echo '### Loading Mizarlight/make.ml'
+	@echo '### Loading Mizarlight/make.ml' > $(LOGDIR)/Mizarlight/make
+	$(MAKE) -C Mizarlight pa_f.cmo
+	@echo 'loadt "Mizarlight/make.ml";;' | (time $(HOLLIGHT)) >> $(LOGDIR)/Mizarlight/make 2>&1
+	@touch $(LOGDIR)/Mizarlight/make.ready
 
 $(LOGDIR)/miz3/make-test.ready:
 	@mkdir -p $(LOGDIR)/$$(dirname miz3/make-test)

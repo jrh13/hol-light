@@ -16,13 +16,13 @@ rationals).
 
 \EXAMPLE
 {
-  # gcd_num (Int 35) (Int(-77));;
+  # gcd_num (num 35) (num(-77));;
   val it : num = 7
 
-  # gcd_num (Int 11) (Int 0);;
+  # gcd_num (num 11) (num 0);;
   val it : num = 11
 
-  # gcd_num (Int 22 // Int 7) (Int 2);;
+  # gcd_num (num 22 // num 7) (num 2);;
   Exception: Failure "big_int_of_ratio".
 }
 

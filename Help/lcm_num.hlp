@@ -16,7 +16,7 @@ rationals).
 
 \EXAMPLE
 {
-  # lcm_num (Int 35) (Int(-77));;
+  # lcm_num (num 35) (num(-77));;
   val it : num = 385
 }
 

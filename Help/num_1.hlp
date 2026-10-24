@@ -13,7 +13,7 @@ unlimited-precision numbers provided by the OCaml {Num} library.
 Not applicable.
 
 \USES
-Exactly the same as {Int 1}, but may save recreation of a cons cell each time.
+Exactly the same as {num 1}, but may save recreation of a cons cell each time.
 
 \SEEALSO
 num_0, num_2, num_10.

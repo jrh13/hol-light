@@ -1,0 +1,187 @@
+(* ------------------------------------------------------------------------- *)
+(* Copied from compute-hol-light                                             *)
+(* (github.com/hol-light-family/compute-hol-light, master 67addec of         *)
+(* 2026-09-30); in this copy the layout is reflowed to 79 columns.  The code *)
+(* is otherwise unchanged (see README.md).                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* ========================================================================= *)
+(* Compilation of HOL Light functions into executable OCaml code             *)
+(*                                                                           *)
+(* Copyright (c) 2018 Alexey Solovyev                                        *)
+(*                                                                           *)
+(* This file is distributed under the terms of the MIT licence               *)
+(* ========================================================================= *)
+
+type expr =
+  (* expr, (pattern, guard, body) *)
+  | Match of expr * (expr * expr option * expr) list
+  | Try of expr * (expr * expr) list
+  | Lambda of expr list * expr
+  | Tuple of expr list
+  | List_expr of expr list
+  | Let of bool * string * expr list * expr * expr option
+  | Let_and of expr list * expr option
+  | If of expr * expr * expr
+  | App of expr * expr
+  | Term of term
+  | Type of hol_type
+  | String of string
+  | Raw of string;;
+
+let is_app = function App _ -> true | _ -> false;;
+
+let is_let = function Let _ -> true | _ -> false;;
+
+let is_match = function Match _ -> true | _ -> false;;
+
+let is_compound = function
+  | Let _ | Let_and _ | Match _ | Try _ | Lambda _ -> true
+  | _ -> false;;
+
+let mk_app (head, args) =
+  List.fold_left (fun e a -> App (e, a)) head args;;
+
+let mk_raw s = Raw s;;
+
+let mk_tuple = function
+  | [] -> Raw "()"
+  | [e] -> e
+  | es -> Tuple es;;
+
+let mk_list_expr exprs = List_expr exprs;;
+
+let mk_int_list ints = mk_list_expr
+  (List.map (fun i -> mk_raw (string_of_int i)) ints);;
+
+let mk_let_and ?(body = None) = function
+  | [] -> failwith "mk_let_and: empty list"
+  | exprs when forall is_let exprs -> Let_and (exprs, body)
+  | _ -> failwith "mk_let_and: all expressions must be let-expressions";;
+
+let mk_let ?(args = []) ?(body = None) (name, expr) =
+  Let (false, name, args, expr, body);;
+
+let rec chain_let = function
+  | [e] -> e
+  | Let (r, a, b, e, _) :: es ->
+    Let (r, a, b, e, Some (chain_let es))
+  | Let_and (exprs, _) :: es ->
+    Let_and (exprs, Some (chain_let es))
+  | _ -> failwith "chain_let";;
+
+let rec append_let_body let_e body =
+  match let_e with
+  | Let_and (exprs, None) -> Let_and (exprs, Some body)
+  | Let_and (exprs, Some n) -> Let_and (exprs, Some (append_let_body n body))
+  | Let (r, a, b, e, None) -> Let (r, a, b, e, Some body)
+  | Let (r, a, b, e, Some n) -> Let (r, a, b, e, Some (append_let_body n body))
+  | _ -> failwith "append_let_body";;
+
+let print_expr =
+  let let_form and_flag rec_flag =
+    match and_flag, rec_flag with
+    | true, _ -> "and"
+    | _, true -> "let rec"
+    | _ -> "let" in
+  let rec print_args fmt =
+    Format.pp_print_list ~pp_sep:(fun fmt () -> Format.pp_print_string fmt " ")
+      (print_expr false) fmt
+  and print_let and_flag match_flag fmt = function
+    | Let (r, name, args, expr, None) ->
+      Format.fprintf fmt "@[<v 2>%s %s %a%s=@ %a@]@ "
+        (let_form and_flag r) name
+        print_args args (if args = [] then "" else " ")
+        (print_expr false) expr
+    | Let (r, name, args, expr, Some body) ->
+      let f = format_of_string
+        (if is_compound expr then
+          "@[<v 2>let%s %s %a%s=@ %a in@]@ %a"
+        else
+          "@[<hv 2>let%s %s %a%s=@ %a in@]@ %a") in
+      Format.fprintf fmt f
+          (if r then " rec" else "") name
+          print_args args (if args = [] then "" else " ")
+          (print_expr false) expr (print_expr match_flag) body
+    | _ -> failwith "print_let: Let expected"
+  and print_expr flag fmt = function
+  | Raw s -> Format.fprintf fmt "%s" s
+  | String s -> Format.fprintf fmt "\"%s\"" s
+  | Term tm ->
+    Format.fprintf fmt "`(%s):%s`"
+      (string_of_term tm) (string_of_type (type_of tm))
+  | Type ty ->
+    Format.fprintf fmt "`:%s`" (string_of_type ty)
+  | Tuple es ->
+    Format.fprintf fmt "(%a)"
+      (Format.pp_print_list
+        ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
+        (print_expr false)) es
+  | List_expr es ->
+    Format.fprintf fmt "[%a]"
+      (Format.pp_print_list
+        ~pp_sep:(fun fmt () -> Format.pp_print_string fmt "; ")
+        (print_expr false)) es
+  | Lambda (args, body) ->
+    Format.fprintf fmt "@[<v 2>fun %a ->@,%a@]"
+      print_args args (print_expr flag) body
+  | If (c, t, e) ->
+    Format.fprintf fmt "@[<v 2>if %a then@ %a@;<1 -2>else@ %a@]"
+      (print_expr false) c (print_expr flag) t (print_expr flag) e
+  | App (f, x) ->
+    let f1 = format_of_string "%a" in
+    let f2 = format_of_string (if is_app x then " (%a)" else " %a") in
+    Format.fprintf fmt (f1 ^^ f2) (print_expr false) f (print_expr false) x
+  | Let _ as expr -> print_let false flag fmt expr
+  | Let_and (expr1 :: exprs, None) ->
+    Format.fprintf fmt "@[<v>%a%a@]"
+      (print_let false flag) expr1
+      (Format.pp_print_list ~pp_sep:(fun fmt () -> ()) (print_let true flag))
+        exprs
+  | Let_and (expr1 :: exprs, Some body) ->
+    Format.fprintf fmt "@[<v>%a%a in@]@ %a"
+      (print_let false flag) expr1
+      (Format.pp_print_list ~pp_sep:(fun fmt () -> ()) (print_let true flag))
+        exprs
+      (print_expr flag) body
+  | Let_and _ -> failwith "Let_and: empty list"
+  | Try (expr, cases) ->
+    Format.fprintf fmt "@[<v 2>try@ %a@]@ with@,| %a"
+      (print_expr false) expr
+      (Format.pp_print_list
+        ~pp_sep:(fun fmt () -> Format.pp_print_string fmt "| ")
+        (fun fmt (pat, body) ->
+          let f = format_of_string
+            (if is_compound body then
+              "@[<v>%a ->@ %a@]@,"
+             else
+              "@[<hv>%a ->@ %a@]@,") in
+          Format.fprintf fmt f
+            (print_expr false) pat (print_expr true) body)) cases
+  | Match (expr, cases) ->
+    let print_guard fmt = function
+      | None -> Format.pp_print_string fmt ""
+      | Some g -> Format.fprintf fmt " when %a" (print_expr false) g in
+    let f' = format_of_string "match %a with@,| %a" in
+    let f = if flag then "(" ^^ f' ^^ ")" else f' in
+    Format.fprintf fmt f
+      (print_expr false) expr
+      (Format.pp_print_list
+        ~pp_sep:(fun fmt () -> Format.pp_print_string fmt "| ")
+        (fun fmt (pat, guard, body) ->
+          let f = format_of_string
+            (if is_compound body then
+              "@[<v>%a%a ->@ %a@]@,"
+             else
+              "@[<hv>%a%a ->@ %a@]@,") in
+          Format.fprintf fmt f
+            (print_expr false) pat
+            print_guard guard
+            (print_expr true) body)) cases in
+  print_expr false;;
+
+let print_exprs fmt exprs =
+  if exprs <> [] then
+    let sep fmt () = Format.fprintf fmt ";;@,@," in
+    Format.fprintf fmt "@[<v>%a;;@]@."
+      (Format.pp_print_list ~pp_sep:sep print_expr) exprs;;
