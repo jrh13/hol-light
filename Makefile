@@ -60,14 +60,14 @@ switch:; \
   opam update ; \
   opam switch create . ocaml-base-compiler.4.14.0 --no-install ; \
   eval $$(opam env) ; \
-  opam install -y . --deps-only ; \
+  opam install -y . --deps-only && \
   opam pin add -y -n camlp5 $$(opam var camlp5:version)
 
 switch-5:; \
   opam update ; \
   opam switch create . ocaml-base-compiler.5.5.2 --no-install ; \
   eval $$(opam env) ; \
-  opam install -y . --deps-only ; \
+  opam install -y . --deps-only && \
   opam pin add -y -n camlp5 $$(opam var camlp5:version)
 
 # Choose an appropriate "update_database.ml" file

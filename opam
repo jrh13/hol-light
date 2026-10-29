@@ -63,7 +63,7 @@ depends: [
   # tree was tested with; pa_j/chooser.sh has no pa_j file for a newer one.
   # Implications rather than alternatives: OPAM compiles this formula to CNF,
   # where an alternative multiplies the clause count instead of adding to it.
-  ("ocaml" {< "4.14.0" | >= "5.4.0"} | "camlp5" {<= "8.03.06"})
+  ("ocaml" {< "4.10.0" | >= "5.4.0"} | "camlp5" {<= "8.03.06"})
   ("ocaml" {< "5.4.0" | >= "5.5.0"} | "camlp5" {= "8.04.00"})
   ("ocaml" {< "5.5.0" | >= "5.6.0"} | "camlp5" {>= "8.05" & <= "8.05.03"})
 ]
