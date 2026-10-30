@@ -10,6 +10,7 @@ needs "Multivariate/convex.ml";;
 new_type_abbrev("complex",`:real^2`);;
 
 let prioritize_complex() =
+  prioritize_real();
   overload_interface("--",`vector_neg:complex->complex`);
   overload_interface("+",`vector_add:complex->complex->complex`);
   overload_interface("-",`vector_sub:complex->complex->complex`);

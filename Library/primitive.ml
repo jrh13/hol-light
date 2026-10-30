@@ -8,6 +8,10 @@ needs "Library/binomial.ml";;
 needs "Library/pocklington.ml";;
 needs "Library/multiplicative.ml";;
 
+prioritize_int();;
+prioritize_num();;
+prioritize_real();;
+
 (* ------------------------------------------------------------------------- *)
 (* Lemma connecting concepts in the various background theories.             *)
 (* ------------------------------------------------------------------------- *)

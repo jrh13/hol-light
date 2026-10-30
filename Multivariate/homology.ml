@@ -5,6 +5,7 @@
 needs "Library/frag.ml";;               (* Free Abelian groups               *)
 needs "Library/grouptheory.ml";;        (* Basic group theory machinery      *)
 needs "Multivariate/metric.ml";;        (* General topology                  *)
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* Standard simplices, all of which are topological subspaces of R^num.      *)

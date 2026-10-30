@@ -9,6 +9,7 @@ needs "Library/binomial.ml";;
 needs "Multivariate/polytope.ml";;
 needs "Multivariate/measure.ml";;
 needs "Multivariate/transcendentals.ml";;
+prioritize_complex();;
 
 (* ------------------------------------------------------------------------- *)
 (* Open-ness and closedness of a set of reals.                               *)

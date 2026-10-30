@@ -8,6 +8,7 @@
 
 needs "Multivariate/homology.ml";;
 needs "Multivariate/polytope.ml";;
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* Transfer of Brouwer degree from product topology setting.                 *)

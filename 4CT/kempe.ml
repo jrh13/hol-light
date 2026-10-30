@@ -139,7 +139,7 @@ let MATCHG_CLAUSES = prove
 
 (* Case splits on a list and on a chromogram symbol with chosen names.       *)
 
-let LIST_CASES_TAC tm x xs =
+let X_LIST_CASES_TAC tm x xs =
   DISJ_CASES_THEN2 SUBST_ALL_TAC
     (X_CHOOSE_THEN x (X_CHOOSE_THEN xs SUBST_ALL_TAC)) (ISPEC tm list_CASES);;
 
@@ -157,7 +157,7 @@ let MATCH_GRAM_NEG_GEN = prove
      matchg (APPEND lb [~b0]) et w`,
   LIST_INDUCT_TAC THEN REPEAT GEN_TAC THEN
   REWRITE_TAC[gram_neg_rec; MATCHG_CLAUSES; APPEND_EQ_NIL; NOT_CONS_NIL] THEN
-  LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
+  X_LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
   REWRITE_TAC[MATCHG_CLAUSES; APPEND_EQ_NIL; NOT_CONS_NIL] THEN
   GRAM_CASES_TAC `h:gram_symbol` THEN
   REWRITE_TAC[GRAM_DISTINCT; MATCHG_CLAUSES] THENL
@@ -166,7 +166,7 @@ let MATCH_GRAM_NEG_GEN = prove
     REWRITE_TAC[APPEND; LENGTH; GSYM ADD1] THEN SIMP_TAC[];
     ASM_REWRITE_TAC[];
     ALL_TAC; ALL_TAC] THEN
-  LIST_CASES_TAC `lb:bool list` `b:bool` `lb':bool list` THEN
+  X_LIST_CASES_TAC `lb:bool list` `b:bool` `lb':bool list` THEN
   REWRITE_TAC[LENGTH; NOT_SUC; SUC_SUB1; APPEND; MATCHG_CLAUSES] THEN
   ASM_REWRITE_TAC[] THEN CONV_TAC TAUT);;
 
@@ -188,7 +188,7 @@ let MATCH_GRAM_FLIP_GEN = prove
      matchg sb et (gram_flip_rec (LENGTH sb) w) <=>
      matchg (APPEND sb [T; F]) et w \/ matchg (APPEND sb [F; T]) et w`,
   LIST_INDUCT_TAC THEN REPEAT GEN_TAC THEN
-  LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
+  X_LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
   REWRITE_TAC[MATCHG_CLAUSES; APPEND_EQ_NIL; NOT_CONS_NIL;
               GRAM_FLIP_REC_NOT_NIL] THEN
   REWRITE_TAC[gram_flip_rec; MATCHG_CLAUSES; NOT_CONS_NIL] THEN
@@ -200,7 +200,7 @@ let MATCH_GRAM_FLIP_GEN = prove
     DISCH_THEN SUBST1_TAC THEN CONV_TAC TAUT;
     ASM_REWRITE_TAC[] THEN CONV_TAC TAUT;
     ALL_TAC; ALL_TAC] THEN
-  LIST_CASES_TAC `sb:bool list` `b:bool` `sb':bool list` THEN
+  X_LIST_CASES_TAC `sb:bool list` `b:bool` `sb':bool list` THEN
   REWRITE_TAC[LENGTH; NOT_SUC; SUC_SUB1; APPEND; MATCHG_CLAUSES;
               MATCH_GRAM_NEG] THEN
   ASM_REWRITE_TAC[] THEN ASM_CASES_TAC `cbit0 (e:color)` THEN
@@ -220,14 +220,14 @@ let MATCHG_APPEND = prove
      ==> (matchg (APPEND lb lb0) (APPEND et [e]) (APPEND w [s]) <=>
           matchg lb et w /\ matchg lb0 [e] [s])`,
   LIST_INDUCT_TAC THEN REPEAT GEN_TAC THEN
-  LIST_CASES_TAC `et:color list` `e0:color` `et':color list` THEN
+  X_LIST_CASES_TAC `et:color list` `e0:color` `et':color list` THEN
   REWRITE_TAC[APPEND; gram_balanced; MATCHG_CLAUSES; NOT_CONS_NIL] THENL
    [REWRITE_TAC[LENGTH_EQ_NIL] THEN
     DISCH_THEN(SUBST1_TAC o CONJUNCT1) THEN REWRITE_TAC[APPEND];
     REWRITE_TAC[LENGTH_EQ_NIL] THEN
     DISCH_THEN(SUBST1_TAC o CONJUNCT1) THEN REWRITE_TAC[APPEND] THEN
     GRAM_CASES_TAC `s:gram_symbol` THEN
-    LIST_CASES_TAC `lb0:bool list` `b:bool` `lb0':bool list` THEN
+    X_LIST_CASES_TAC `lb0:bool list` `b:bool` `lb0':bool list` THEN
     REWRITE_TAC[MATCHG_CLAUSES; APPEND_EQ_NIL; NOT_CONS_NIL];
     DISCH_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP MATCHG_SIZE) THEN
     REWRITE_TAC[LENGTH; LENGTH_APPEND] THEN ARITH_TAC;
@@ -242,13 +242,13 @@ let MATCHG_APPEND = prove
      [`~bx`; `lb:bool list`; `lb0:bool list`;
       `et':color list`; `e:color`; `s:gram_symbol`]) THEN
     ASM_REWRITE_TAC[];
-    LIST_CASES_TAC `lb:bool list` `b:bool` `lb':bool list` THEN
+    X_LIST_CASES_TAC `lb:bool list` `b:bool` `lb':bool list` THEN
     REWRITE_TAC[LENGTH; NOT_SUC; SUC_SUB1; APPEND; MATCHG_CLAUSES] THEN
     DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
      [`bx:bool`; `lb':bool list`; `lb0:bool list`;
       `et':color list`; `e:color`; `s:gram_symbol`]) THEN
     ASM_REWRITE_TAC[];
-    LIST_CASES_TAC `lb:bool list` `b:bool` `lb':bool list` THEN
+    X_LIST_CASES_TAC `lb:bool list` `b:bool` `lb':bool list` THEN
     REWRITE_TAC[LENGTH; NOT_SUC; SUC_SUB1; APPEND; MATCHG_CLAUSES] THEN
     DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
      [`~bx`; `lb':bool list`; `lb0:bool list`;
@@ -270,7 +270,7 @@ let MATCH_GRAM_ROT = prove
     REWRITE_TAC[] THEN EXISTS_TAC `cbit0(sumt(et:color list))` THEN
     ASM_REWRITE_TAC[]] THEN
   FIRST_X_ASSUM(X_CHOOSE_TAC `b0:bool`) THEN
-  LIST_CASES_TAC `w:gram_symbol list` `s:gram_symbol`
+  X_LIST_CASES_TAC `w:gram_symbol list` `s:gram_symbol`
     `w':gram_symbol list` THENL
    [REWRITE_TAC[MATCHG_CLAUSES; rot1] THEN COND_CASES_TAC THEN
     ASM_REWRITE_TAC[APPEND_EQ_NIL; NOT_CONS_NIL];
@@ -280,7 +280,7 @@ let MATCH_GRAM_ROT = prove
   GRAM_CASES_TAC `s:gram_symbol` THEN
   REWRITE_TAC[GRAM_DISTINCT; gram_balanced; ADD_CLAUSES] THEN DISCH_TAC THENL
    [REWRITE_TAC[MATCH_GRAM_FLIP] THEN
-    LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
+    X_LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
     REWRITE_TAC[ROT1_NIL; ROT1_CONS; MATCHG_CLAUSES; APPEND_EQ_NIL;
                 NOT_CONS_NIL] THEN
     MP_TAC(ISPECL [`w':gram_symbol list`; `b0:bool`; `[T]`; `[F]`;
@@ -292,7 +292,7 @@ let MATCH_GRAM_ROT = prove
     REPEAT(DISCH_THEN SUBST1_TAC) THEN
     ASM_CASES_TAC `cbit0 (e:color)` THEN ASM_REWRITE_TAC[] THEN
     CONV_TAC TAUT;
-    LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
+    X_LIST_CASES_TAC `et:color list` `e:color` `et':color list` THEN
     REWRITE_TAC[ROT1_NIL; ROT1_CONS; MATCHG_CLAUSES; APPEND_EQ_NIL;
                 NOT_CONS_NIL] THEN
     MP_TAC(ISPECL [`w':gram_symbol list`; `~b0`; `[]:bool list`;
@@ -472,7 +472,7 @@ let LIST_CYCLE_F_CLOSED = prove
  (`!f (r:(A)list).
     list_cycle (\x y. f x = y) r ==> (!y. MEM y r ==> MEM (f y) r)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[list_cycle] THEN
-  LIST_CASES_TAC `r:(A)list` `x:A` `m:(A)list` THEN
+  X_LIST_CASES_TAC `r:(A)list` `x:A` `m:(A)list` THEN
   REWRITE_TAC[NOT_CONS_NIL; list_path] THEN STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP LIST_PATH_F_MEM) THEN
   REWRITE_TAC[MEM] THEN ASM_MESON_TAC[]);;
@@ -906,7 +906,7 @@ let TRACE_COL_RING_A = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[TRACE_COL_RING] THEN DISCH_TAC THEN
   ASM_REWRITE_TAC[CONS_11] THEN
   CONJ_TAC THENL [MATCH_ACCEPT_TAC ADDC_COMM; ALL_TAC] THEN
-  LIST_CASES_TAC `p1:(A)list` `h:A` `t:(A)list` THEN
+  X_LIST_CASES_TAC `p1:(A)list` `h:A` `t:(A)list` THEN
   REWRITE_TAC[MAP; ptrace; trace_DEF; TRACE_COL_CONS; NOT_CONS_NIL;
               CONS_11] THEN
   FIRST_X_ASSUM(MP_TAC o check (is_eq o concl)) THEN
@@ -1016,7 +1016,7 @@ let RING_CASE_A = prove
     ALL_TAC] THEN
   ASM_SIMP_TAC[DART_DOUBLE_WALKUP; IN_DELETE] THEN REPEAT CONJ_TAC THENL
    [UNDISCH_TAC `~(p1:(A)list = [])` THEN
-    LIST_CASES_TAC `p1:(A)list` `h:A` `t:(A)list` THEN
+    X_LIST_CASES_TAC `p1:(A)list` `h:A` `t:(A)list` THEN
     REWRITE_TAC[NOT_CONS_NIL; list_cycle; list_path] THEN
     RULE_ASSUM_TAC(REWRITE_RULE[list_path]) THEN
     SUBGOAL_THEN `LAST (CONS (edge_map G (z:A)) (CONS h t)) = LAST (CONS h t)`
@@ -1068,8 +1068,8 @@ let CASE_A_CHROMOGRAM = prove
     EXISTS_TAC `CONS Gpush (CONS Gpop0 w)`] THEN
   ASM_REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL] THEN
     X_GEN_TAC `et':color list` THEN
-  LIST_CASES_TAC `et':color list` `e:color` `et1:color list` THEN
-  LIST_CASES_TAC `et1:color list` `e':color` `et2:color list` THEN
+  X_LIST_CASES_TAC `et':color list` `e:color` `et1:color list` THEN
+  X_LIST_CASES_TAC `et1:color list` `e':color` `et2:color list` THEN
   REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL] THEN STRIP_TAC THENL
    [MAP_EVERY EXISTS_TAC [`Color1`; `et2:color list`] THEN
     ASM_REWRITE_TAC[distinctness "color"];
@@ -1092,9 +1092,9 @@ let CASE_B_CHROMOGRAM = prove
                                     matchg [] (CONS e0 (CONS (addc e0 e)
                                       rest)) w`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-  LIST_CASES_TAC `w:gram_symbol list` `s1:gram_symbol`
+  X_LIST_CASES_TAC `w:gram_symbol list` `s1:gram_symbol`
     `w1:gram_symbol list` THEN
-  LIST_CASES_TAC `w1:gram_symbol list` `s2:gram_symbol`
+  X_LIST_CASES_TAC `w1:gram_symbol list` `s2:gram_symbol`
     `w0:gram_symbol list` THEN
   GRAM_CASES_TAC `s1:gram_symbol` THEN GRAM_CASES_TAC `s2:gram_symbol` THEN
   REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL] THEN STRIP_TAC THENL
@@ -1113,7 +1113,7 @@ let CASE_B_CHROMOGRAM = prove
       ASM_CASES_TAC `cbit0 h1` THEN ASM_CASES_TAC `cbit0 h2` THEN
       ASM_REWRITE_TAC[] THEN CONV_TAC TAUT;
       X_GEN_TAC `et':color list` THEN
-      LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
+      X_LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
       REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL; MATCH_GRAM_FLIP] THEN
       DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC DISJ_CASES_TAC) THENL
        [MAP_EVERY EXISTS_TAC [`e:color`; `rest:color list`; `Color2`];
@@ -1126,7 +1126,7 @@ let CASE_B_CHROMOGRAM = prove
     SUBGOAL_THEN `addc h1 Color1 = addc Color1 h1` SUBST1_TAC THENL
      [MATCH_ACCEPT_TAC ADDC_COMM; ALL_TAC] THEN
     ASM_REWRITE_TAC[] THEN X_GEN_TAC `et':color list` THEN
-    LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
+    X_LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
     REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL; MATCH_GRAM_NEG] THEN
       STRIP_TAC THEN
     MAP_EVERY EXISTS_TAC [`e:color`; `rest:color list`; `addc Color1 e`] THEN
@@ -1142,7 +1142,7 @@ let CASE_B_CHROMOGRAM = prove
     EXISTS_TAC `CONS Gskip w0` THEN
     ASM_REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL] THEN
     X_GEN_TAC `et':color list` THEN
-    LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
+    X_LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
     REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL] THEN STRIP_TAC THEN
     MAP_EVERY EXISTS_TAC [`e:color`; `rest:color list`; `Color2`] THEN
     COLOR_ASM_TAC;
@@ -1151,7 +1151,7 @@ let CASE_B_CHROMOGRAM = prove
     STRIP_TAC THEN EXISTS_TAC `CONS Gpush (gram_neg w0)` THEN
     ASM_REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL; MATCH_GRAM_NEG] THEN
     X_GEN_TAC `et':color list` THEN
-    LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
+    X_LIST_CASES_TAC `et':color list` `e:color` `rest:color list` THEN
     REWRITE_TAC[MATCHG_CLAUSES; NOT_CONS_NIL; MATCH_GRAM_NEG] THEN
       STRIP_TAC THEN
     MAP_EVERY EXISTS_TAC [`e:color`; `rest:color list`; `Color1`] THEN
@@ -1330,7 +1330,7 @@ let LIFT_TRACE_A = prove
   SUBGOAL_THEN `MAP (k0:A->color) p1 = MAP k1 p1` ASSUME_TAC THENL
    [MATCH_MP_TAC MAP_EQ THEN ASM_REWRITE_TAC[GSYM ALL_MEM]; ALL_TAC] THEN
   SUBGOAL_THEN `(k0:A->color) (LAST (CONS ez p1)) = k0 ez` ASSUME_TAC THENL
-   [LIST_CASES_TAC `p1:(A)list` `h:A` `t:(A)list` THENL
+   [X_LIST_CASES_TAC `p1:(A)list` `h:A` `t:(A)list` THENL
      [REWRITE_TAC[LAST];
       RULE_ASSUM_TAC(SIMP_RULE[LAST_CONS_NE; NOT_CONS_NIL]) THEN
       SIMP_TAC[LAST_CONS_NE; NOT_CONS_NIL] THEN ASM_REWRITE_TAC[] THEN
@@ -1686,7 +1686,7 @@ let KEMPE_MAP_NONEMPTY = prove
               REWRITE_RULE[ring_trace]) THEN
   SUBGOAL_THEN `?nz p1. p = CONS (nz:A) p1`
     (REPEAT_TCL CHOOSE_THEN SUBST_ALL_TAC) THENL
-   [LIST_CASES_TAC `p:(A)list` `nz:A` `p1:(A)list` THENL
+   [X_LIST_CASES_TAC `p:(A)list` `nz:A` `p1:(A)list` THENL
      [MP_TAC(ISPECL [`node_map (G:(A)hypermap)`; `z:A`; `[]:(A)list`]
         LIST_CYCLE_HD) THEN
       ASM_REWRITE_TAC[LAST] THEN

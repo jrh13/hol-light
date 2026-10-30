@@ -4,6 +4,7 @@
 
 needs "Multivariate/determinants.ml";;
 needs "Multivariate/convex.ml";;
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* Flyspeck definition of plane, and its invariance theorems.                *)

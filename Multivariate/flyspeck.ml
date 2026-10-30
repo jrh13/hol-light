@@ -13,7 +13,7 @@ prioritize_vector();;
 (* Not really Flyspeck-specific but needs both angles and cross products.    *)
 (* ------------------------------------------------------------------------- *)
 
-let NORM_CROSS = prove
+let NORM_CROSS_SIN = prove
  (`!x y. norm(x cross y) = norm(x) * norm(y) * sin(vector_angle x y)`,
   REPEAT GEN_TAC THEN
   MATCH_MP_TAC REAL_POW_EQ THEN EXISTS_TAC `2` THEN

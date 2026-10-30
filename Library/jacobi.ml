@@ -3,6 +3,7 @@
 (* ========================================================================= *)
 
 needs "Library/primitive.ml";;
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* Some fairly generic lemmas, but it's not quite clear where to put them.   *)
@@ -481,7 +482,7 @@ let JACOBI_OF_2 = prove
       MATCH_MP_TAC(NUMBER_RULE
        `(d:num) divides a ==> (d divides (a + b) <=> d divides b)`) THEN
       MATCH_MP_TAC(NUMBER_RULE
-       `e divides d /\ d divides a /\ d divides b
+       `(e:num) divides d /\ d divides a /\ d divides b
         ==> d * e divides a * b`) THEN
       ASM_SIMP_TAC[lemma0] THEN REWRITE_TAC[DIVIDES_2; ARITH]]) in
   GEN_TAC THEN COND_CASES_TAC THENL
@@ -572,7 +573,7 @@ let JACOBI_RECIPROCITY_ALT = prove
     ASM_SIMP_TAC[DIVIDES_DIVIDES_DIV; GSYM DIVIDES_2;
                  ODD_MULT; DIVIDES_ADD; lemma0] THEN
     MATCH_MP_TAC(NUMBER_RULE
-     `d divides a * b /\ a * b + a + b = c
+     `(d:num) divides a * b /\ a * b + a + b = c
       ==> (d divides c <=> d divides (a + b))`) THEN
     ASM_SIMP_TAC[DIVIDES_MUL2; lemma0] THEN
     REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [ODD_EXISTS])) THEN
@@ -800,7 +801,7 @@ let JACOBI_EQ_1 = prove
   MATCH_MP_TAC(MESON[INT_POW_ONE] `x:int = &1 ==> x pow n = &1`) THEN
   COND_CASES_TAC THENL [ASM_MESON_TAC[COPRIME_PRIME_EQ]; ALL_TAC] THEN
   COND_CASES_TAC THEN REWRITE_TAC[] THEN ASM_MESON_TAC[NUMBER_RULE
-   `(a == b) (mod m) /\ n divides m ==> (a == b) (mod n)`]);;
+   `(a:num == b) (mod m) /\ n divides m ==> (a == b) (mod n)`]);;
 
 let JACOBI_NE_MINUS1 = prove
  (`!n a. (?x. (x EXP 2 == a) (mod n)) ==> ~(jacobi(a,n) = -- &1)`,

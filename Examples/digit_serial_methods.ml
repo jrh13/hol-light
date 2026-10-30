@@ -19,7 +19,7 @@ let THEOREM_V_1 = prove
  (`!(V:real) (beta:num->real) (omega:num->real) (DSF:num->real->real)
     (B:num->real) (H:num->real) (v:num->real) (Tl:num->real) (Tp:num->real)
     (PSI:num->real#real->real) (psi:num->real#real->real)
-    (tau:num->real->real) (taup:num->real->real).
+    (taul:num->real->real) (taup:num->real->real).
 
         // Environmental assumptions including nondecreasing property
         &0 <= V /\
@@ -28,10 +28,10 @@ let THEOREM_V_1 = prove
         (!i. i >= 0 ==> abs (psi i (V,Tl i)) <= PSI i (V,abs(Tl i))) /\
         (!i x y. &0 <= x /\ x <= y ==> PSI i (V,x) <= PSI i (V,y)) /\
 
-        (!u. tau 0 u = u) /\
-        (!i u. tau (i + 1) u =
-               beta (i + 1) * PSI i (u,tau i u) * tau i u + omega (i + 1)) /\
-        (!i u. taup i u = (&1 + PSI i (u,tau i u)) * tau i u) /\
+        (!u. taul 0 u = u) /\
+        (!i u. taul (i + 1) u =
+               beta (i + 1) * PSI i (u,taul i u) * taul i u + omega (i + 1)) /\
+        (!i u. taup i u = (&1 + PSI i (u,taul i u)) * taul i u) /\
 
         // Computing recursively
         B 0 = &1 /\ H 0 = &0 /\ Tl 0 = V /\
@@ -44,7 +44,7 @@ let THEOREM_V_1 = prove
 
         // Conclude loop invariant and bounds.
         ==> (!i. V = H i + Tl i / B i) /\
-            (!i. i >= 0 ==> abs(Tl i) <= tau i V) /\
+            (!i. i >= 0 ==> abs(Tl i) <= taul i V) /\
             (!i. i >= 0 ==> abs(Tp i) <= taup i V)`,
 
   REPEAT GEN_TAC THEN REWRITE_TAC[GE; real_gt; real_gt; LE_0] THEN
@@ -251,7 +251,7 @@ let COROLLARY_V_3 = prove
  (`!(V:real) (beta:num->real) (omega:num->real) (DSF:num->real->real)
     (B:num->real) (H:num->real) (v:num->real) (Tl:num->real) (Tp:num->real)
     (PSI:num->real#real->real) (psi:num->real#real->real)
-    (tau:num->real->real) (taup:num->real->real).
+    (taul:num->real->real) (taup:num->real->real).
 
         // Environmental assumptions including nondecreasing property
         &0 < V /\
@@ -260,10 +260,10 @@ let COROLLARY_V_3 = prove
         (!i. i >= 0 ==> abs (psi i (V,Tl i)) <= PSI i (V,abs(Tl i))) /\
         (!i x y. &0 <= x /\ x <= y ==> PSI i (V,x) <= PSI i (V,y)) /\
 
-        (!u. tau 0 u = u) /\
-        (!i u. tau (i + 1) u =
-               beta (i + 1) * PSI i (u,tau i u) * tau i u + omega (i + 1)) /\
-        (!i u. taup i u = (&1 + PSI i (u,tau i u)) * tau i u) /\
+        (!u. taul 0 u = u) /\
+        (!i u. taul (i + 1) u =
+               beta (i + 1) * PSI i (u,taul i u) * taul i u + omega (i + 1)) /\
+        (!i u. taup i u = (&1 + PSI i (u,taul i u)) * taul i u) /\
 
         // Computing recursively
         B 0 = &1 /\ H 0 = &0 /\ Tl 0 = V /\
@@ -281,13 +281,13 @@ let COROLLARY_V_3 = prove
         // Hence conclude our bounds
         ==> !a b. real_interval[a,b] SUBSET {x | x > &0}
                   ==> !i u. u IN real_interval[a,b]
-                            ==> tau i u <= max (tau i a) (tau i b) /\
+                            ==> taul i u <= max (taul i a) (taul i b) /\
                                 taup i u <= max (taup i a) (taup i b)`,
   REWRITE_TAC[real_gt; real_ge; GT; GE; LE_0] THEN
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   FIRST_ASSUM(ASSUME_TAC o MATCH_MP REAL_LT_IMP_LE) THEN
   REPEAT GEN_TAC THEN DISCH_TAC THEN
-  SUBGOAL_THEN `!i:num. posynomial (tau i)` ASSUME_TAC THENL
+  SUBGOAL_THEN `!i:num. posynomial (taul i)` ASSUME_TAC THENL
    [INDUCT_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
     ASM_REWRITE_TAC[ADD1; POSYNOMIAL_V] THEN
     MATCH_MP_TAC POSYNOMIAL_ADD THEN CONJ_TAC THENL
@@ -321,7 +321,7 @@ let FULL_COROLLARY = prove
  (`!(V:real) (beta:num->real) (omega:num->real) (DSF:num->real->real)
     (B:num->real) (H:num->real) (v:num->real) (Tl:num->real) (Tp:num->real)
     (PSI:num->real#real->real) (psi:num->real#real->real)
-    (tau:num->real->real) (taup:num->real->real).
+    (taul:num->real->real) (taup:num->real->real).
 
         // Not stated explicitly in the theorem itself but higher up.
         &0 < V /\
@@ -332,10 +332,10 @@ let FULL_COROLLARY = prove
         (!i. i >= 0 ==> abs (psi i (V,Tl i)) <= PSI i (V,abs(Tl i))) /\
         (!i x y. &0 <= x /\ x <= y ==> PSI i (V,x) <= PSI i (V,y)) /\
 
-        (!u. tau 0 u = u) /\
-        (!i u. tau (i + 1) u =
-               beta (i + 1) * PSI i (u,tau i u) * tau i u + omega (i + 1)) /\
-        (!i u. taup i u = (&1 + PSI i (u,tau i u)) * tau i u) /\
+        (!u. taul 0 u = u) /\
+        (!i u. taul (i + 1) u =
+               beta (i + 1) * PSI i (u,taul i u) * taul i u + omega (i + 1)) /\
+        (!i u. taup i u = (&1 + PSI i (u,taul i u)) * taul i u) /\
 
         // Computing recursively
         B 0 = &1 /\ H 0 = &0 /\ Tl 0 = V /\
@@ -352,11 +352,11 @@ let FULL_COROLLARY = prove
 
         // Hence conclude invariant and all bounds.
         ==> (!i. V = H i + Tl i / B i) /\
-            (!i. abs(Tl i) <= tau i V) /\
+            (!i. abs(Tl i) <= taul i V) /\
             (!i. abs(Tp i) <= taup i V) /\
             (!a b. real_interval[a,b] SUBSET {x | x > &0}
                    ==> !i u. u IN real_interval[a,b]
-                             ==> tau i u <= max (tau i a) (tau i b) /\
+                             ==> taul i u <= max (taul i a) (taul i b) /\
                                  taup i u <= max (taup i a) (taup i b))`,
   REWRITE_TAC[real_gt; real_ge; GT; GE; LE_0] THEN
   REPEAT GEN_TAC THEN STRIP_TAC THEN
@@ -383,12 +383,12 @@ let FULL_COROLLARY = prove
 (* ------------------------------------------------------------------------- *)
 
 let BOUND_THEOREM_DIV = prove
- (`!beta Sigma omega B DSF H R Tp X Y g sigma v.
+ (`!beta Sigma omega B DSF H R Tp X Y g e v.
         (!i. i >= 0 ==> beta i > &0) /\
         &1 / &2 <= X /\ X < &1 /\
         &1 <= Y /\ Y < &2 /\
         (!y. &1 <= y /\ y < &2
-             ==> g y = (&1 + sigma y) / y /\ abs(sigma y) <= Sigma) /\
+             ==> g y = (&1 + e y) / y /\ abs(e y) <= Sigma) /\
         (!i. i >= 1 ==> (!x. abs (x - DSF i x) <= omega i)) /\
         B 0 = &1 /\ H 0 = &0 /\ R 0 = X /\
         (!i. Tp i = g(Y) * R i) /\
@@ -396,11 +396,11 @@ let BOUND_THEOREM_DIV = prove
         (!i. B (i + 1) = beta (i + 1) * B i) /\
         (!i. H (i + 1) = H i + v (i + 1) / B (i + 1)) /\
         (!i. R (i + 1) = beta (i + 1) * R i -  v(i + 1) * Y)
-        ==> ?tau. (!u. tau 0 u = u) /\
-                  (!i u. tau (i + 1) u =
-                         beta (i + 1) * Sigma * tau i u + omega (i + 1)) /\
-                  (!i. abs(X / Y - H i)
-                       <= max (tau i (&1 / &4)) (tau i (&1)) / B i)`,
+        ==> ?taul. (!u. taul 0 u = u) /\
+                   (!i u. taul (i + 1) u =
+                          beta (i + 1) * Sigma * taul i u + omega (i + 1)) /\
+                   (!i. abs(X / Y - H i)
+                        <= max (taul i (&1 / &4)) (taul i (&1)) / B i)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[GE; LE_0; real_gt] THEN STRIP_TAC THEN
   SUBGOAL_THEN `&0 <= Sigma` ASSUME_TAC THENL
    [FIRST_X_ASSUM(MP_TAC o SPEC `&1:real`) THEN REAL_ARITH_TAC;
@@ -413,20 +413,20 @@ let BOUND_THEOREM_DIV = prove
    [ASM_MESON_TAC[REAL_LT_DIV]; ALL_TAC] THEN
   MAP_EVERY ABBREV_TAC
    [`PSI:num->real#real->real = \i (u,t). Sigma`;
-    `psi:num->real#real->real = \i (u,t). sigma(Y:real)`] THEN
-  (X_CHOOSE_THEN `tau:num->real->real`
+    `psi:num->real#real->real = \i (u,t). e(Y:real)`] THEN
+  (X_CHOOSE_THEN `taul:num->real->real`
     (STRIP_ASSUME_TAC o REWRITE_RULE[ADD1]) o
    prove_recursive_functions_exist num_RECURSION)
-    `(!u:real. tau 0 u = u) /\
-     (!i u. tau (SUC i) u =
-            beta (i + 1) * PSI i (u,tau i u) * tau i u + omega (i + 1))` THEN
+    `(!u:real. taul 0 u = u) /\
+     (!i u. taul (SUC i) u =
+            beta (i + 1) * PSI i (u,taul i u) * taul i u + omega (i + 1))` THEN
   (X_CHOOSE_THEN `Tl:num->real`
     (STRIP_ASSUME_TAC o REWRITE_RULE[ADD1]) o
    prove_recursive_functions_exist num_RECURSION)
     `Tl 0 :real = X / Y /\
     !i. Tl (SUC i) = beta (i + 1) * Tl i - v (i + 1)` THEN
   ABBREV_TAC
-   `taup:num->real->real = \i u. (&1 + PSI i (u,tau i u)) * tau i u` THEN
+   `taup:num->real->real = \i u. (&1 + PSI i (u,taul i u)) * taul i u` THEN
   MP_TAC(ISPECL
    [`X / Y:real`;
     `beta:num->real`;
@@ -439,7 +439,7 @@ let BOUND_THEOREM_DIV = prove
     `Tp:num->real`;
     `PSI:num->real#real->real`;
     `psi:num->real#real->real`;
-    `tau:num->real->real`;
+    `taul:num->real->real`;
     `taup:num->real->real`]
     FULL_COROLLARY) THEN
   REWRITE_TAC[GE; LE_0; real_gt] THEN ANTS_TAC THENL
@@ -470,7 +470,7 @@ let BOUND_THEOREM_DIV = prove
       FIRST_X_ASSUM MATCH_ACCEPT_TAC;
       EXPAND_TAC "PSI" THEN REWRITE_TAC[] THEN
       ASM_SIMP_TAC[POSYNOMIAL_CONST] THEN NO_TAC];
-    STRIP_TAC THEN EXISTS_TAC `tau:num->real->real` THEN
+    STRIP_TAC THEN EXISTS_TAC `taul:num->real->real` THEN
     ASM_REWRITE_TAC[REAL_ADD_SUB] THEN CONJ_TAC THENL
      [EXPAND_TAC "PSI" THEN REWRITE_TAC[]; ALL_TAC] THEN
     ASM_SIMP_TAC[REAL_ABS_DIV; REAL_LE_DIV2_EQ;
@@ -489,12 +489,12 @@ let BOUND_THEOREM_DIV = prove
     REWRITE_TAC[REAL_LE_INV_EQ] THEN ASM_REAL_ARITH_TAC]);;
 
 let BOUND_THEOREM_SQRT = prove
- (`!beta Sigma omega B DSF H R Tp X g sigma v.
+ (`!beta Sigma omega B DSF H R Tp X g e v.
         (!i. i >= 0 ==> beta i > &0) /\
         &1 / &4 <= X /\ X < &1 /\
         (!x. &1 / &4 <= x /\ x < &1
-             ==> g x = (&1 + sigma x) / sqrt x /\
-                 abs(sigma x) <= Sigma) /\
+             ==> g x = (&1 + e x) / sqrt x /\
+                 abs(e x) <= Sigma) /\
         (!i. i >= 1 ==> (!x. abs (x - DSF i x) <= omega i)) /\
         B 0 = &1 /\ H 0 = &0 /\ R 0 = X / &2 /\
         (!i. Tp i = (if i = 0 then &2 else &1) * g(X) * R i) /\
@@ -503,16 +503,16 @@ let BOUND_THEOREM_SQRT = prove
         (!i. H (i + 1) = H i + v (i + 1) / B (i + 1)) /\
         (!i. R (i + 1) =
              beta (i + 1) * R i -  v(i + 1) * (H(i + 1) + H i) / &2)
-        ==> ?tau.
-                  (!u. tau 0 u = u) /\
-                  (!i u. tau (i + 1) u =
+        ==> ?taul.
+                  (!u. taul 0 u = u) /\
+                  (!i u. taul (i + 1) u =
                          beta (i + 1) *
                          (if i = 0 then Sigma
-                          else Sigma + (&1 + Sigma) * tau i u / (&2 * u * B i))
-                          * tau i u +
+                          else Sigma + (&1 + Sigma) * taul i u / (&2 * u * B i))
+                          * taul i u +
                          omega (i + 1)) /\
                   (!i. abs(sqrt X - H i)
-                       <= max (tau i (&1 / &2)) (tau i (&1)) / B i)`,
+                       <= max (taul i (&1 / &2)) (taul i (&1)) / B i)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[GE; LE_0; real_gt] THEN STRIP_TAC THEN
   SUBGOAL_THEN `&0 <= Sigma` ASSUME_TAC THENL
    [FIRST_X_ASSUM(MP_TAC o SPEC `&1 / &2`) THEN REAL_ARITH_TAC;
@@ -528,21 +528,21 @@ let BOUND_THEOREM_SQRT = prove
         if i = 0 then Sigma
         else Sigma + (&1 + Sigma) * t / (&2 * u * B i)`;
     `psi:num->real#real->real = \i (u,t).
-        if i = 0 then sigma(X)
-        else (&1 + sigma(X:real)) * (&1 - t / (&2 * u * B i)) - &1`] THEN
-  (X_CHOOSE_THEN `tau:num->real->real`
+        if i = 0 then e(X)
+        else (&1 + e(X:real)) * (&1 - t / (&2 * u * B i)) - &1`] THEN
+  (X_CHOOSE_THEN `taul:num->real->real`
     (STRIP_ASSUME_TAC o REWRITE_RULE[ADD1]) o
    prove_recursive_functions_exist num_RECURSION)
-    `(!u:real. tau 0 u = u) /\
-     (!i u. tau (SUC i) u =
-            beta (i + 1) * PSI i (u,tau i u) * tau i u + omega (i + 1))` THEN
+    `(!u:real. taul 0 u = u) /\
+     (!i u. taul (SUC i) u =
+            beta (i + 1) * PSI i (u,taul i u) * taul i u + omega (i + 1))` THEN
   (X_CHOOSE_THEN `Tl:num->real`
     (STRIP_ASSUME_TAC o REWRITE_RULE[ADD1]) o
    prove_recursive_functions_exist num_RECURSION)
     `Tl 0 = sqrt(X) /\
     !i. Tl (SUC i) = beta (i + 1) * Tl i - v (i + 1)` THEN
   ABBREV_TAC
-   `taup:num->real->real = \i u. (&1 + PSI i (u,tau i u)) * tau i u` THEN
+   `taup:num->real->real = \i u. (&1 + PSI i (u,taul i u)) * taul i u` THEN
   MP_TAC(ISPECL
    [`sqrt X`;
     `beta:num->real`;
@@ -555,7 +555,7 @@ let BOUND_THEOREM_SQRT = prove
     `Tp:num->real`;
     `PSI:num->real#real->real`;
     `psi:num->real#real->real`;
-    `tau:num->real->real`;
+    `taul:num->real->real`;
     `taup:num->real->real`]
     FULL_COROLLARY) THEN
   REWRITE_TAC[GE; LE_0; real_gt] THEN ANTS_TAC THENL
@@ -644,7 +644,7 @@ let BOUND_THEOREM_SQRT = prove
       ASM_SIMP_TAC[REAL_LT_INV_EQ; REAL_ARITH
        `&0 < inv(&2) * x <=> &0 < x`] THEN
       MATCH_MP_TAC POSYNOMIAL_VDIV THEN ASM_REWRITE_TAC[]];
-    STRIP_TAC THEN EXISTS_TAC `tau:num->real->real` THEN
+    STRIP_TAC THEN EXISTS_TAC `taul:num->real->real` THEN
     ASM_REWRITE_TAC[REAL_ADD_SUB] THEN CONJ_TAC THENL
      [EXPAND_TAC "PSI" THEN REWRITE_TAC[]; ALL_TAC] THEN
     ASM_SIMP_TAC[REAL_ABS_DIV; REAL_LE_DIV2_EQ;

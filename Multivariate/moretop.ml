@@ -5,6 +5,7 @@
 (* ========================================================================= *)
 
 needs "Multivariate/realanalysis.ml";;
+prioritize_complex();;
 
 (* ------------------------------------------------------------------------- *)
 (* Injective map into R is also an open map w.r.t. the universe, and this    *)

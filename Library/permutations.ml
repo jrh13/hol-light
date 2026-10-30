@@ -154,6 +154,12 @@ let PERMUTES_SURJECTIVE = prove
  (`!p s. p permutes s ==> !y. ?x. p(x) = y`,
   REWRITE_TAC[permutes] THEN MESON_TAC[]);;
 
+let PERMUTES_EQ = prove
+ (`!p q (s:A->bool).
+        p permutes s /\ q permutes s /\ (!x. x IN s ==> p x = q x) ==> p = q`,
+  REWRITE_TAC[permutes; FUN_EQ_THM] THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `(x:A) IN s` THEN ASM_SIMP_TAC[]);;
+
 let PERMUTES_INVERSES_o = prove
  (`!p s. p permutes s ==> p o inverse(p) = I /\ inverse(p) o p = I`,
   REWRITE_TAC[GSYM INJECTIVE_INVERSE_o; GSYM SURJECTIVE_INVERSE_o] THEN
@@ -228,6 +234,15 @@ let PERMUTES_ALT = prove
    `!s. (!y. ~(y IN s) ==> P y) /\ (!y. y IN s ==> P y) ==> !y. P y`) THEN
   EXISTS_TAC `IMAGE (p:A->A) s` THEN REWRITE_TAC[FORALL_IN_IMAGE] THEN
   ASM SET_TAC[]);;
+
+let PERMUTES = prove
+ (`!(s:A->bool) (f:A->A).
+        f permutes s <=>
+        (!x. ~(x IN s) ==> f x = x) /\
+        (!x. x IN s ==> f x IN s) /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+        (!y. y IN s ==> ?x. x IN s /\ f x = y)`,
+  REWRITE_TAC[PERMUTES_ALT] THEN MESON_TAC[]);;
 
 let PERMUTES_RESTRICT_SET = prove
  (`!Q p s:A->bool.
@@ -316,6 +331,26 @@ let PERMUTES_ID = prove
 let PERMUTES_I = prove
  (`!s. I permutes s`,
   REWRITE_TAC[permutes; I_THM] THEN MESON_TAC[]);;
+
+let PERMUTES_DOUBLETON = prove
+ (`!p a b:A. p permutes {a,b} <=> p = I \/ p = swap(a,b)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC;
+    STRIP_TAC THEN ASM_SIMP_TAC[PERMUTES_I; PERMUTES_SWAP; IN_INSERT]] THEN
+  ASM_CASES_TAC `b:A = a` THENL
+   [UNDISCH_TAC `p permutes {a:A,b}` THEN
+    ASM_REWRITE_TAC[INSERT_AC; PERMUTES_SING] THEN SIMP_TAC[];
+    ALL_TAC] THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP PERMUTES_INJECTIVE) THEN
+  FIRST_ASSUM(MP_TAC o SPEC `a:A` o MATCH_MP PERMUTES_IN_IMAGE) THEN
+  FIRST_ASSUM(MP_TAC o SPEC `b:A` o MATCH_MP PERMUTES_IN_IMAGE) THEN
+  FIRST_ASSUM(MP_TAC o CONJUNCT1 o GEN_REWRITE_RULE I [permutes]) THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; DE_MORGAN_THM] THEN
+  REPEAT DISCH_TAC THEN REWRITE_TAC[FUN_EQ_THM; I_THM; swap] THEN
+  ASM_CASES_TAC `(p:A->A) a = a` THENL [DISJ1_TAC; DISJ2_TAC] THEN
+  X_GEN_TAC `x:A` THEN
+  ASM_CASES_TAC `x:A = a` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `x:A = b` THEN ASM_SIMP_TAC[] THEN ASM_MESON_TAC[]);;
 
 let PERMUTES_COMPOSE = prove
  (`!p q s. p permutes s /\ q permutes s ==> (q o p) permutes s`,
@@ -430,6 +465,13 @@ let PERMUTES_FINITE_SURJECTIVE = prove
 (* ------------------------------------------------------------------------- *)
 (* Restriction of permutations to subsets                                    *)
 (* ------------------------------------------------------------------------- *)
+
+(* Restriction of f to s permutes s iff f is a bijection of s onto s *)
+let RESTRICT_PERMUTES_EQ = prove
+ (`!(f:A->A) s.
+        (\x. if x IN s then f x else x) permutes s <=>
+        IMAGE f s = s /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)`,
+  REWRITE_TAC[PERMUTES] THEN SET_TAC[]);;
 
 let RESTRICT_PERMUTES_SUBSET = prove
  (`!s t (f:A->A).
@@ -1065,7 +1107,7 @@ let SIGN_IDEMPOTENT = prove
   GEN_TAC THEN REWRITE_TAC[sign] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV);;
 
-let REAL_ABS_SIGN = prove
+let REAL_ABS_SIGN_PERMUTATION = prove
  (`!p. abs(sign p) = &1`,
   REWRITE_TAC[sign] THEN REAL_ARITH_TAC);;
 

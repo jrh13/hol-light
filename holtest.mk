@@ -21,6 +21,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/complexpolygon \
 	Examples/cong \
 	Examples/cooper \
+	Library/cyclotomic \
 	Examples/dickson \
 	Examples/digit_serial_methods \
 	Examples/division_algebras \
@@ -28,8 +29,10 @@ STANDALONE_EXAMPLES:=\
 	Examples/doomsday \
 	Library/fieldtheory \
 	Autoformalization/fifteen_theorem \
+	Library/finite_fields \
 	Library/floor \
 	Examples/forster \
+	Library/galois \
 	Examples/gcdrecurrence \
 	Autoformalization/godel_completeness \
 	Library/grouptheory \
@@ -66,8 +69,9 @@ STANDALONE_EXAMPLES:=\
 	Examples/pseudoprime \
 	Autoformalization/puiseux \
 	Library/q \
-	Library/rabin_test \
 	Examples/rectypes \
+	Library/ring_det \
+	Library/ring_groups \
 	Library/ringtheory \
 	Examples/safetyliveness \
 	Autoformalization/sarkovskii \
@@ -198,6 +202,7 @@ GREAT_100_THEOREMS:= \
 	100/transcendence \
 	100/triangular \
 	100/two_squares \
+	100/unsolvability \
 	100/wilson
 
 

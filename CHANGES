@@ -8,6 +8,299 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 27th Oct 2026       100/unsolvability.ml [new file]
+
+Proved the unsolvability of the quintic by radicals, number 16 of the 100
+theorems. radical_number is the inductively generated set of complex
+numbers obtained from 0 and 1 by field operations and extraction of roots
+of positive degree. NOT_RADICAL_QUINTIC_ROOT proves
+
+  |- ~(?z. radical_number z /\ z pow 5 - Cx(&4) * z + Cx(&2) = Cx(&0))
+
+The polynomial is irreducible by Eisenstein's criterion and has exactly
+three real roots, so conjugation swaps its two non-real roots. The general
+Galois-theoretic transposition criterion then excludes every radical root.
+NOT_RADICAL_ROOT_REAL_FIELD gives the corresponding result for any
+irreducible polynomial over a real subfield, of prime degree at least 5,
+with exactly two non-real roots. The file uses the same definition of
+complex_ring as 100/transcendence.ml, so the two can be loaded together.
+
+Tue 27th Oct 2026       Library/finite_fields.ml [new file], Library/rabin_test.ml [deleted]
+
+Added primitive roots and cyclic unit groups (FINITE_FIELD_PRIMITIVE_ROOT),
+subfields and homomorphisms, norm and trace surjectivity and fibre sizes,
+Hilbert 90 (HILBERT_90_FINITE_FIELD), Frobenius conjugates of irreducible
+roots, the factorization of X^(q^n) - X (X_POW_SUB_X_FINITE_FIELD), counts
+and existence of irreducible polynomials of each positive degree
+(FINITE_FIELD_IRREDUCIBLE_EXISTS), and finite layers of algebraic closures
+and normal extensions. The Galois group of a normal extension of a finite
+field is abelian.
+
+Rabin's irreducibility test (RABIN_IRREDUCIBILITY_TEST), formerly in
+Library/rabin_test.ml, is now in finite_fields.ml, with its statements
+unchanged apart from bound-variable names, and the former file has been
+deleted. FINITE_FIELD_ELEMENT_POW, FINITE_FIELD_POW_ITERATE and
+FINITE_FIELD_CARD_CHAR_POWER move here and
+RING_ENDOMORPHISM_FROBENIUS_ITERATE to ringtheory.ml, with the same
+statements up to bound-variable names. The other auxiliary lemmas of the
+former file have been removed, the library now having more general versions;
+no other file in the distribution used them. The removed names are
+RING_DIVIDES_POW_ITERATE, POLY_NONUNIT_DEGREE_GE_1, RING_DIVIDES_REDUCE,
+FIELD_NONZERO_PRODUCT_PERMUTE, QUOTIENT_POLY_RING_FINITE_CARD,
+IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN, IRREDUCIBLE_DIVIDES_XQ_MINUS_X,
+FIELD_ROOTS_BOUND, IRREDUCIBLE_DIVIDES_DEGREE_BOUND and
+IRREDUCIBLE_DIVIDES_DEGREE.
+
+Tue 27th Oct 2026       Library/galois.ml [new file], Library/cyclotomic.ml [new file], Library/primitive.ml
+
+Added Galois groups, Galois extensions and fixed fields, Artin's fixed-field
+theorem (ARTIN_FIXED_FIELD), the fundamental theorem for finite Galois
+extensions (FUNDAMENTAL_THEOREM_OF_GALOIS_THEORY), normal subgroups and
+quotients, conjugation and composita, and natural irrationalities. Added
+Galois groups of polynomials, including prime-degree transposition,
+discriminant and cubic criteria; Galois groups of finite fields; Hilbert 90
+(HILBERT_90); Kummer and Artin-Schreier extensions; radical extensions and
+elements; and the equivalence in characteristic zero between solvability
+by radicals and solvability of the Galois group (SOLVABLE_BY_RADICALS_EQ,
+GALOIS_SOLVABLE_EQ_RADICAL), with the criterion
+PRIME_TRANSPOSITION_NO_RADICAL_ROOT for particular polynomials. Material
+for infinite Galois theory includes restriction maps and the directed
+family of finite Galois subextensions covering a Galois extension. New
+definitions:
+
+        finite_galois_subfields
+        fixed_field
+        galois_extension
+        galois_group
+        radical_element
+        radical_extension
+
+The separate cyclotomic.ml embeds the Galois group of k(z), for z of finite
+positive order n, in the units modulo n, and characterizes when it is the
+whole group by [k(z):k] = phi(n). It loads modmul_group.ml. Also made
+primitive.ml explicitly restore its required overload ordering.
+
+Tue 27th Oct 2026       Library/fieldtheory.ml, 100/transcendence.ml
+
+Extended the field theory library, with extensions given by arbitrary
+homomorphisms rather than only inclusions, to cover extension degrees,
+minimal polynomials, perfect fields, splitting extensions with their
+existence and uniqueness (SPLITTING_EXTENSION_EXISTS,
+SPLITTING_EXTENSION_UNIQUE), normal and separable extensions, separable
+closures and purely inseparable extensions, separable and inseparable
+degrees (EXTENSION_DEGREE_SEPARABLE_INSEPARABLE), extensions and
+independence of homomorphisms, normal closures and the primitive element
+theorem (PRIMITIVE_ELEMENT_THEOREM). The degree of an infinite extension is
+0, so the tower law EXTENSION_DEGREE_TOWER_LAW needs no finiteness
+hypothesis. Also added trace and norm of finite extensions, with formulas in
+terms of minimal polynomials and embeddings (ALGEBRA_TRACE_NORM_EMBEDDINGS)
+and tower laws, and the existence and uniqueness of finite fields of each
+prime power order (FINITE_FIELD_EXISTS, ISOMORPHIC_FINITE_FIELDS).
+fieldtheory.ml now loads Library/ring_det.ml, where the trace and norm are
+defined. New definitions:
+
+        extension_degree
+        inseparable_degree
+        minimal_polynomial
+        normal_extension
+        perfect_field
+        poly_splits_over
+        purely_inseparable_extension
+        ring_homomorphism_extensions
+        separable_closure
+        separable_degree
+        separable_element
+        separable_extension
+        splitting_extension
+
+Added span and basis lemmas, including free bases of simple algebraic
+extensions. Over a field, a finite projective basis exists exactly when a
+finite free basis does. Further root and separability results include that
+over a field X^n - c is separable for nonzero c when the characteristic
+does not divide n.
+
+FIELD_EXTENSION_INTO_SUBFIELD_GENERATED and RING_SPAN_EMPTY lose redundant
+hypotheses; FIELD_EXTENSION_FROM_SUBRING_GENERATED now quantifies s; and
+ALGEBRAICALLY_CLOSED_FIELD_DECOMPOSE has one combined antecedent. The proof
+of FINITELY_GENERATED_EXTENSION_TRANS_EQ is adapted to the first of these.
+
+In 100/transcendence.ml, replaced the local minimal_polynomial constant by
+minimal_polynomial (QinC_ring,complex_ring) I z from the general library.
+MINIMAL_POLYNOMIAL_QINC_COMPLEX recovers the old characterization, and the
+six theorems that mentioned the old constant now use the general one.
+Added the field-extension, evaluation and algebraicity bridges, adjusted the
+imports, and adapted the polynomial separability proofs.
+
+Tue 27th Oct 2026       Library/ring_det.ml [new file]
+
+Added determinants of square arrays over any commutative ring, indexed by
+any finite set, with the standard determinant, cofactor, adjugate,
+multilinearity and multiplicativity (RING_DET_MUL) properties, reindexing,
+triangular and block arrays, Kronecker and Vandermonde formulas, Ryser's
+formula for the permanent, the Weinstein-Aronszajn identity and
+characteristic polynomials.
+
+Defined finite free and projective bases and the canonical trace and norm
+of an algebra admitting a finite projective basis, with defaults 0 and 1
+when there is none. In a free basis these are the trace and determinant of
+the multiplication matrix; in a projective basis the norm is det(A + I - E),
+where A represents multiplication and E the identity. Proved independence
+of the basis, the basic algebraic, unit, base-change, tower, product and
+discriminant properties, and Cayley-Hamilton for the multiplication matrix
+(MUL_MATRIX_CHARPOLY_ROOT).
+
+Added polynomial resultants and discriminants and their root formulas.
+Over a field, excluding a pair of zero polynomials, the resultant vanishes
+exactly when there is a nonconstant common factor (POLY_RESULTANT_EQ_0).
+For a polynomial of positive degree, the discriminant vanishes exactly when
+it is not separable (POLY_DISCRIMINANT_EQ_0). The file does not change the
+number priority. New definitions:
+
+        algebra_norm
+        algebra_trace
+        basis_coordinates
+        basis_discriminant
+        free_basis
+        mul_matrix
+        poly_discriminant
+        poly_resultant
+        projective_basis
+        ring_charpoly
+        ring_cofactor
+        ring_det
+        ring_sign
+
+Tue 27th Oct 2026       Library/ring_groups.ml [new file]
+
+Added a new file with the additive group and the unit group of a ring, their
+induced homomorphisms and behaviour under subrings and products, including
+restricted products (as for adeles and ideles), and Dedekind's independence
+of characters for homomorphisms into the units of an integral domain
+(GROUP_HOMOMORPHISMS_UNITS_INDEPENDENT). New definitions:
+
+        ring_additive_group
+        unit_group
+
+Tue 27th Oct 2026       Library/grouptheory.ml
+
+Added the second and third isomorphism theorems
+(SECOND_GROUP_ISOMORPHISM_THEOREM, THIRD_GROUP_ISOMORPHISM_THEOREM) and
+explicit forms of all three, coset and quotient-group lemmas, inverse limits
+and restricted products, and Iwasawa's simplicity criterion
+(IWASAWA_SIMPLE): the quotient by the kernel of the action has no normal
+subgroups other than the trivial one and itself. The inverse-limit
+construction does not require a directed index relation. Also added
+normal-subgroup results for groups of orders 6 and 12, and further
+abelian-group, homomorphism and exact-sequence lemmas. New definitions:
+
+        group_cosets
+        inverse_limit_group
+        restricted_product_group
+
+Tue 27th Oct 2026       Library/ringtheory.ml
+
+Added commutative algebra concerning radicals, the Jacobson radical and
+minimal prime ideals (RADICAL_EQ_INTERS_MINIMAL_PRIMES), localization maps
+and iterated localizations, fields of fractions with the universal map into
+fields (FRACTION_FIELD_MAP, FRACTION_FIELD_MAP_ISOMORPHISM), residue fields
+(FIELD_RESIDUE_FIELD), prime ideals of finite products, and restricted
+products of rings, together with associated homomorphism, quotient,
+divisibility and polynomial lemmas. The conversion
+RING_HOMOMORPHISM_PUSH_CONV moves a homomorphism through ring operations,
+leaving the carrier conditions on the atoms as hypotheses. New definitions:
+
+        field_of_fractions
+        fraction_field_map
+        jacobson_radical
+        localization_map
+        minimal_prime_ideal
+        minimal_prime_over
+        residue_field
+        residue_hom
+        restricted_product_ring
+
+Tue 27th Oct 2026       Multivariate/metric.ml, Multivariate/topology.ml, Multivariate/canal.ml, Multivariate/determinants.ml, Multivariate/measure.ml
+
+Added quotient topologies and their universal property, the topology of
+pointwise convergence with discrete codomain, irreducible sets and sober
+spaces, and further results about continuous maps, discrete and product
+spaces, and locally compact Hausdorff spaces. Added continuity of the norm
+and complex inverse, and second countability and local compactness of
+Euclidean space. Moved INDUCT_MATRIX_ROW_OPERATIONS,
+INDUCT_MATRIX_ELEMENTARY and INDUCT_MATRIX_ELEMENTARY_ALT unchanged from
+measure.ml to determinants.ml, where they need no measure theory. New
+definitions:
+
+        irreducible_in
+        pointwise_topology
+        quotient_topology
+        sober_space
+
+Tue 27th Oct 2026       Library/permutations.ml, Library/transc.ml, Multivariate/cvectors.ml, Multivariate/flyspeck.ml, Permutation/permutation.ml, 4CT/kempe.ml
+
+Renamed bindings that hid unrelated theorems or tactics in other files:
+REAL_ABS_SIGN in permutations.ml is now REAL_ABS_SIGN_PERMUTATION;
+FINITE_INDEX_INRANGE_2 in cvectors.ml is FINITE_INDEX_INRANGE_4;
+DIVISION_0 and SUM_DIFFS in transc.ml are DIVISION_0_DSIZE and PSUM_DIFFS;
+NORM_CROSS in flyspeck.ml is NORM_CROSS_SIN; the definition theorem for
+PERMUTATION in Permutation/permutation.ml is PERMUTATION_DEF; and the
+three-argument LIST_CASES_TAC in kempe.ml is X_LIST_CASES_TAC. Updated
+their uses. The mathematical constants and statements are unchanged.
+
+Tue 27th Oct 2026       Multivariate/*, Library/jacobi.ml, Library/calc_real.ml, Permutation/morelist.ml
+
+Made several analysis and number-theory files explicitly restore the number
+priorities their proofs require, so that they load the same way after
+files that leave a different priority. prioritize_complex() now first calls
+prioritize_real(), giving real priority to overloaded operations without a
+complex counterpart. Added num annotations to three NUMBER_RULE quotations
+in jacobi.ml. ASSERT_TAC in Permutation/morelist.ml now uses
+STRIP_ASSUME_TAC, matching Multivariate/misc.ml. Also made canal.ml
+explicitly load measure.ml, whose measurability results it uses.
+
+Mon 26th Oct 2026       int.ml, iterate.ml, lists.ml, sets.ml, Library/iter.ml, Library/wo.ml
+
+Added integer-power monotonicity, list snoc decomposition, commuting-square
+and fibre-bijection lemmas, bounds on weakly increasing chains of sets,
+upward-closed number segments, digit-expansion bounds and uniqueness,
+ITER_INTERTWINE_INVARIANT, and a dual form of Zorn's lemma using
+intersections of nonempty chains (ZL_SUBSETS_INTERS_NONEMPTY). No existing
+theorem is changed.
+
+Sun 25th Oct 2026       Library/card.ml, Library/fieldtheory.ml
+
+Added number-type annotations in CARD_EQ_REAL and
+FINITELY_GENERATED_EXTENSION_TRANS_EQ to make their proofs independent of
+the incoming number priority. No statement changes.
+
+Sat 24th Oct 2026       Library/ringtheory.ml, Autoformalization/puiseux.ml
+
+Added polynomial splitting and separability, further degree, root,
+derivative and factorization results, Frobenius maps, finite-ring polynomial
+counts, and multiplicative-order and roots-of-unity results. Generalized
+RING_MUL_LCANCEL and RING_MUL_RCANCEL from units to regular elements;
+generalized POLY_DEG_CMUL and POLY_DEG_MUL_X_MINUS_A with conditional
+conclusions; restated POLY_DEG_VAR_POW and POLY_DERIV_VAR_POW using
+polynomial operations; quantified the previously free variable of
+POLY_CONST_SUBRING_GENERATED; and restated the separability theorems with
+poly_separable. Adapted the use of POLY_DEG_CMUL in puiseux.ml. New
+definitions:
+
+        poly_separable
+        poly_splits
+
+Sat 24th Oct 2026       Library/matroids.ml, Library/card.ml, Library/permutations.ml, Library/grouptheory.ml, Library/symmetric_group.ml, Examples/digit_serial_methods.ml
+
+Added matroid basis and dimension bounds, equal-fibre cardinalities,
+permutation and restriction lemmas, solvable-group chains with cyclic and
+prime-order quotients, exponent coordinates for finitely generated abelian
+groups, and TRANSITIVE_TRANSPOSITION_SYMMETRIC_ISOMORPHISM: a monomorphism
+into the symmetric group of a set of prime size whose image is transitive
+and contains a transposition is an isomorphism. Renamed bound variables
+sigma and tau in symmetric_group.ml and digit_serial_methods.ml so that
+they can be loaded after multiplicative.ml defines constants of those names.
+Only bound-variable names change in those existing statements.
+
  Mon 19th Oct 2026       4CT/* [new directory], eval_compile/* [new directory], Autoformalization/planar_graph.ml, Multivariate/metric.ml
 
 Added a formal proof of the Four Colour Theorem, autoformalized by Claude.

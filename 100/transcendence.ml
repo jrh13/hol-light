@@ -226,7 +226,10 @@ The proof here focuses more on identities of formal power series.
 (* ===== imports *)
 
 needs "Library/products.ml";;
+prioritize_num();;
 needs "Library/ringtheory.ml";;
+needs "Library/fieldtheory.ml";;
+prioritize_real();;
 needs "Multivariate/cauchy.ml";;
 
 prioritize_real();; (* to ensure portability *)
@@ -7136,7 +7139,7 @@ let no_square_divisor_if_coprime_derivative = prove
      ring_coprime(x_poly r) (p,x_derivative r p) ==>
      ring_divides(x_poly r) (poly_mul r q q) p ==>
      ring_unit(x_poly r) q`,
-  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV; GSYM poly_separable] THEN
   qed[ring_squarefree; RING_POW_2; POLY_RING_CLAUSES;
       RING_POLYNOMIAL; POLY_SEPARABLE_IMP_SQUAREFREE]
 );;
@@ -7147,7 +7150,7 @@ let nonzero_if_coprime_derivative = prove(`
   ring_coprime(x_poly r) (p,x_derivative r p) ==>
   ~(p = poly_0 r)
 `,
-rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV; GSYM poly_separable] THEN
 qed[POLY_SEPARABLE_IMP_SQUAREFREE; RING_SQUAREFREE_IMP_NONZERO;
     FIELD_IMP_NONTRIVIAL_RING; TRIVIAL_POLY_RING; POLY_RING]
 );;
@@ -7158,7 +7161,7 @@ let squarefree_if_coprime_derivative = prove(`
   ring_coprime(x_poly r) (p,x_derivative r p) ==>
   ring_squarefree(x_poly r) p
 `,
-  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV; GSYM poly_separable] THEN
   qed[POLY_SEPARABLE_IMP_SQUAREFREE]
 );;
 
@@ -7336,7 +7339,7 @@ let coprime_prime_derivative = prove(`
   ring_prime(x_poly r) p ==>
   ring_coprime(x_poly r) (p,x_derivative r p)
 `,
-  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV; GSYM poly_separable] THEN
   qed[POLY_IRREDUCIBLE_IMP_SEPARABLE; INTEGRAL_DOMAIN_PRIME_IMP_IRREDUCIBLE;
       INTEGRAL_DOMAIN_POLY_RING; FIELD_IMP_INTEGRAL_DOMAIN]);;
 
@@ -7580,7 +7583,7 @@ let coprime_derivative_if_squarefree = prove(`
   ring_squarefree(x_poly r) f ==>
   ring_coprime(x_poly r) (f,x_derivative r f)
 `,
-  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV] THEN
+  rw[x_poly; X_DERIVATIVE_EQ_POLY_DERIV; GSYM poly_separable] THEN
   qed[POLY_SQUAREFREE_IMP_SEPARABLE]
 );;
 
@@ -11222,45 +11225,70 @@ let algebraic_number_QinC = prove(`
 
 (* ===== minimal polynomials *)
 
-let minimal_polynomial = new_definition `
-  minimal_polynomial (z:complex) =
-  if algebraic_number z
-  then (@p. (ring_polynomial QinC_ring p
-             /\ ~(p = poly_0 QinC_ring)
-             /\ monic QinC_ring p
-             /\ ring_irreducible(x_poly QinC_ring) p
-             /\ poly_eval complex_ring p z = Cx(&0)
-            ))
-  else poly_0 QinC_ring
-`;;
+(* The minimal polynomial of z over QinC_ring is the general constant        *)
+(* minimal_polynomial (k,l) h x of Library/fieldtheory.ml for the extension  *)
+(* complex_ring of QinC_ring with h = I, written minimal_polynomial          *)
+(* (QinC_ring,complex_ring) I z below. The following lemmas translate the    *)
+(* general notions into the ones used in this file; the last one gives it    *)
+(* explicitly.                                                               *)
+
+let FIELD_EXTENSION_QINC_COMPLEX = prove
+ (`field_extension (QinC_ring,complex_ring) I`,
+  REWRITE_TAC[field_extension; field_QinC; field_complex] THEN
+  REWRITE_TAC[GSYM subring_complex_QinC; I_DEF; RING_MONOMORPHISM_INCLUSION]);;
+
+let POLY_EXTEND_QINC_COMPLEX = prove
+ (`!p z. poly_extend (QinC_ring,complex_ring) I (\v:1. z) p =
+         poly_eval complex_ring p z`,
+  REWRITE_TAC[GSYM subring_complex_QinC; POLY_EXTEND_FROM_SUBRING_GENERATED;
+              poly_eval; poly_evaluate]);;
+
+let ALGEBRAIC_OVER_QINC_COMPLEX = prove
+ (`!z. algebraic_over (QinC_ring,complex_ring) I z <=> algebraic_number z`,
+  REWRITE_TAC[algebraic_over; algebraic_number_root_QinC_poly;
+              POLY_EXTEND_QINC_COMPLEX; complex_ring_clauses; IN_UNIV;
+              GSYM x_poly; GSYM x_poly_use]);;
+
+let MINIMAL_POLYNOMIAL_QINC_COMPLEX = prove
+ (`!z. minimal_polynomial (QinC_ring,complex_ring) I z =
+       if algebraic_number z
+       then (@p. ring_polynomial QinC_ring p /\
+                 ~(p = poly_0 QinC_ring) /\
+                 monic QinC_ring p /\
+                 ring_irreducible(x_poly QinC_ring) p /\
+                 poly_eval complex_ring p z = Cx(&0))
+       else poly_0 QinC_ring`,
+  REWRITE_TAC[minimal_polynomial; ALGEBRAIC_OVER_QINC_COMPLEX;
+              POLY_EXTEND_QINC_COMPLEX; complex_ring_clauses;
+              GSYM x_poly; GSYM x_poly_use]);;
 
 let algebraic_has_minimal_polynomial = prove(`
   !z:complex.
   algebraic_number z ==>
-  ring_polynomial QinC_ring (minimal_polynomial z)
-  /\ ~((minimal_polynomial z) = poly_0 QinC_ring)
-  /\ monic QinC_ring (minimal_polynomial z)
-  /\ ring_irreducible(x_poly QinC_ring) (minimal_polynomial z)
-  /\ poly_eval complex_ring (minimal_polynomial z) z = Cx(&0)
+  ring_polynomial QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I z)
+  /\ ~((minimal_polynomial (QinC_ring,complex_ring) I z) = poly_0 QinC_ring)
+  /\ monic QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I z)
+  /\ ring_irreducible(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z)
+  /\ poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I z) z = Cx(&0)
 `,
-  qed[minimal_polynomial;algebraic_number_is_root_unique_monic_irreducible_QinC_poly]
+  qed[MINIMAL_POLYNOMIAL_QINC_COMPLEX;algebraic_number_is_root_unique_monic_irreducible_QinC_poly]
 );;
 
 let maybe_algebraic_minimal_polynomial = prove(`
   !z:complex.
-  ring_polynomial QinC_ring (minimal_polynomial z)
-  /\ poly_eval complex_ring (minimal_polynomial z) z = Cx(&0)
+  ring_polynomial QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I z)
+  /\ poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I z) z = Cx(&0)
 `,
   intro THEN
   case `algebraic_number z` THENL [
     qed[algebraic_has_minimal_polynomial]
   ;
-    have `minimal_polynomial z = poly_0 QinC_ring` [minimal_polynomial] THEN
+    have `minimal_polynomial (QinC_ring,complex_ring) I z = poly_0 QinC_ring` [MINIMAL_POLYNOMIAL_QINC_COMPLEX] THEN
     qed[RING_POLYNOMIAL_0]
   ;
     qed[algebraic_has_minimal_polynomial]
   ;
-    have `minimal_polynomial z = poly_0 QinC_ring` [minimal_polynomial] THEN
+    have `minimal_polynomial (QinC_ring,complex_ring) I z = poly_0 QinC_ring` [MINIMAL_POLYNOMIAL_QINC_COMPLEX] THEN
     qed[POLY_EVAL_0;complex_ring_clauses;poly_0_QinC_eq_poly_0_complex]
   ]
 );;
@@ -11268,10 +11296,10 @@ let maybe_algebraic_minimal_polynomial = prove(`
 let minimal_polynomial_QinC = prove(`
   !z:complex.
   z IN QinC ==>
-  minimal_polynomial z = x_minus_const QinC_ring z
+  minimal_polynomial (QinC_ring,complex_ring) I z = x_minus_const QinC_ring z
 `,
   intro THEN
-  rw[minimal_polynomial] THEN
+  rw[MINIMAL_POLYNOMIAL_QINC_COMPLEX] THEN
   simp[algebraic_number_QinC] THEN
   specialize[`z:complex`]algebraic_number_QinC_explicit THEN
   sufficesby SELECT_UNIQUE THEN
@@ -11887,7 +11915,7 @@ let not_coprime_QinC_if_shared_complex_root = prove(`
 
 let complex_root_minimal_polynomial_refl = prove(`
   !z:complex.
-  complex_root (minimal_polynomial z) z
+  complex_root (minimal_polynomial (QinC_ring,complex_ring) I z) z
 `,
   rw[complex_root] THEN
   qed[maybe_algebraic_minimal_polynomial]
@@ -11897,7 +11925,7 @@ let minimal_polynomial_divides = prove(`
   !z:complex p:(1->num)->complex.
   algebraic_number z ==>
   ring_polynomial QinC_ring p ==>
-  ( ring_divides(x_poly QinC_ring) (minimal_polynomial z) p
+  ( ring_divides(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z) p
     <=> complex_root p z
   )
 `,
@@ -11905,22 +11933,22 @@ let minimal_polynomial_divides = prove(`
   splitiff THENL [
     intro THEN
     specialize[
-      `minimal_polynomial z`;
+      `minimal_polynomial (QinC_ring,complex_ring) I z`;
       `p:(1->num)->complex`
     ]ring_divides_poly_complex_if_ring_divides_poly_QinC THEN
-    have `complex_root (minimal_polynomial z) SUBSET complex_root p` [complex_root_divides] THEN
+    have `complex_root (minimal_polynomial (QinC_ring,complex_ring) I z) SUBSET complex_root p` [complex_root_divides] THEN
     qed[SUBSET;IN;complex_root_minimal_polynomial_refl]
   ;
     intro THEN
-    have `ring_polynomial QinC_ring (minimal_polynomial z) /\ ~((minimal_polynomial z) = poly_0 QinC_ring) /\ monic QinC_ring (minimal_polynomial z) /\ ring_irreducible (x_poly QinC_ring) (minimal_polynomial z) /\ poly_eval complex_ring (minimal_polynomial z) z = Cx (&0)` [algebraic_has_minimal_polynomial] THEN
-    have `~ring_coprime (x_poly QinC_ring) (minimal_polynomial z,p)` [not_coprime_QinC_if_shared_complex_root;complex_root] THEN
+    have `ring_polynomial QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I z) /\ ~((minimal_polynomial (QinC_ring,complex_ring) I z) = poly_0 QinC_ring) /\ monic QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I z) /\ ring_irreducible (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z) /\ poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I z) z = Cx (&0)` [algebraic_has_minimal_polynomial] THEN
+    have `~ring_coprime (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z,p)` [not_coprime_QinC_if_shared_complex_root;complex_root] THEN
     recall integral_domain_x_poly_QinC THEN
-    have `minimal_polynomial z IN ring_carrier(x_poly QinC_ring)` [x_poly_use] THEN
+    have `minimal_polynomial (QinC_ring,complex_ring) I z IN ring_carrier(x_poly QinC_ring)` [x_poly_use] THEN
     have `p IN ring_carrier(x_poly QinC_ring)` [x_poly_use] THEN
-    have `ring_prime(x_poly QinC_ring) (minimal_polynomial z)` [prime_iff_irreducible_over_field;field_QinC] THEN
+    have `ring_prime(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z)` [prime_iff_irreducible_over_field;field_QinC] THEN
     specialize[
       `x_poly QinC_ring`;
-      `minimal_polynomial z`;
+      `minimal_polynomial (QinC_ring,complex_ring) I z`;
       `p:(1->num)->complex`
     ]INTEGRAL_DOMAIN_PRIME_DIVIDES_OR_COPRIME THEN
     qed[]
@@ -21706,40 +21734,40 @@ let minimal_squarefree_from_algebraic_set = prove(`
     ring_squarefree(x_poly QinC_ring) p /\
     monic QinC_ring p /\
     S SUBSET complex_root p /\
-    (!z. complex_root p z ==> (?s. s IN S /\ minimal_polynomial s = minimal_polynomial z))
+    (!z. complex_root p z ==> (?s. s IN S /\ minimal_polynomial (QinC_ring,complex_ring) I s = minimal_polynomial (QinC_ring,complex_ring) I z))
   )
 `,
   intro THEN
   recall field_QinC THEN
-  have `!z:complex. z IN S ==> ring_polynomial QinC_ring (minimal_polynomial z)` [SUBSET;IN;algebraic_has_minimal_polynomial] THEN
-  have `!z:complex. z IN S ==> ~(minimal_polynomial z = poly_0 QinC_ring)` [SUBSET;IN;algebraic_has_minimal_polynomial] THEN
+  have `!z:complex. z IN S ==> ring_polynomial QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I z)` [SUBSET;IN;algebraic_has_minimal_polynomial] THEN
+  have `!z:complex. z IN S ==> ~(minimal_polynomial (QinC_ring,complex_ring) I z = poly_0 QinC_ring)` [SUBSET;IN;algebraic_has_minimal_polynomial] THEN
   specialize[
     `QinC_ring`;
-    `minimal_polynomial`;
+    `minimal_polynomial (QinC_ring,complex_ring) I`;
     `S:complex->bool`
   ]monic_lcm_set_exists THEN
-  choose `p:(1->num)->complex` `ring_polynomial QinC_ring p /\ monic QinC_ring p /\ (!s:complex. s IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial s) p) /\ (!d. ring_polynomial QinC_ring d ==> (!s. s IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial s) d) ==> ring_divides(x_poly QinC_ring) p d)` [] THEN
+  choose `p:(1->num)->complex` `ring_polynomial QinC_ring p /\ monic QinC_ring p /\ (!s:complex. s IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I s) p) /\ (!d. ring_polynomial QinC_ring d ==> (!s. s IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I s) d) ==> ring_divides(x_poly QinC_ring) p d)` [] THEN
   witness `p:(1->num)->complex` THEN
   intro THENL [
     qed[]
   ;
     recall UFD_x_poly_QinC THEN
-    have `!z:complex. z IN S ==> minimal_polynomial z IN ring_carrier(x_poly QinC_ring)` [x_poly_use] THEN
+    have `!z:complex. z IN S ==> minimal_polynomial (QinC_ring,complex_ring) I z IN ring_carrier(x_poly QinC_ring)` [x_poly_use] THEN
     have `p IN ring_carrier(x_poly QinC_ring)` [x_poly_use] THEN
-    have `!z:complex. z IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial z) p` [] THEN
+    have `!z:complex. z IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z) p` [] THEN
     have `~(p = ring_0(x_poly QinC_ring))` [x_poly_use;monic_poly_0;ring_1_0_QinC;in_complex_ring] THEN
-    subgoal `!z:complex. z IN S ==> ring_squarefree(x_poly QinC_ring) (minimal_polynomial z)` THENL [
+    subgoal `!z:complex. z IN S ==> ring_squarefree(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z)` THENL [
       intro THEN
       have `algebraic_number z` [SUBSET;IN] THEN
-      have `ring_irreducible(x_poly QinC_ring) (minimal_polynomial z)` [SUBSET;IN;algebraic_has_minimal_polynomial] THEN
+      have `ring_irreducible(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z)` [SUBSET;IN;algebraic_has_minimal_polynomial] THEN
       qed[squarefree_if_irreducible_over_field]
     ; pass
     ] THEN
-    have `!z:complex. z IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial z) p` [] THEN
-    have `!d. d IN ring_carrier (x_poly QinC_ring) ==> (!s:complex. s IN S ==> ring_divides (x_poly QinC_ring) (minimal_polynomial s) d) ==> ring_divides (x_poly QinC_ring) p d` [x_poly_use] THEN
+    have `!z:complex. z IN S ==> ring_divides(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z) p` [] THEN
+    have `!d. d IN ring_carrier (x_poly QinC_ring) ==> (!s:complex. s IN S ==> ring_divides (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I s) d) ==> ring_divides (x_poly QinC_ring) p d` [x_poly_use] THEN
     specialize[
       `x_poly QinC_ring`;
-      `minimal_polynomial`;
+      `minimal_polynomial (QinC_ring,complex_ring) I`;
       `S:complex->bool`;
       `p:(1->num)->complex`
     ]ring_squarefree_lcm_set THEN
@@ -21751,45 +21779,45 @@ let minimal_squarefree_from_algebraic_set = prove(`
     intro THEN
     rw[IN] THEN
     have `algebraic_number x` [SUBSET;IN] THEN
-    have `poly_eval complex_ring (minimal_polynomial x) x = Cx(&0)` [algebraic_has_minimal_polynomial] THEN
-    have `ring_divides(x_poly QinC_ring) (minimal_polynomial x) p` [] THEN
-    choose `u:(1->num)->complex` `u IN ring_carrier(x_poly QinC_ring) /\ p = ring_mul(x_poly QinC_ring) (minimal_polynomial x) u` [ring_divides] THEN
-    subgoal `p = poly_mul complex_ring (minimal_polynomial x) u:(1->num)->complex` THENL [
+    have `poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) x = Cx(&0)` [algebraic_has_minimal_polynomial] THEN
+    have `ring_divides(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I x) p` [] THEN
+    choose `u:(1->num)->complex` `u IN ring_carrier(x_poly QinC_ring) /\ p = ring_mul(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I x) u` [ring_divides] THEN
+    subgoal `p = poly_mul complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) u:(1->num)->complex` THENL [
       recall subring_complex_QinC THEN
-      have `ring_powerseries QinC_ring (minimal_polynomial x:(1->num)->complex)` [ring_polynomial] THEN
+      have `ring_powerseries QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I x:(1->num)->complex)` [ring_polynomial] THEN
       have `ring_powerseries QinC_ring (u:(1->num)->complex)` [ring_polynomial;x_poly_use] THEN
       specialize_assuming[
         `complex_ring`;
         `QinC`;
-        `minimal_polynomial x`;
+        `minimal_polynomial (QinC_ring,complex_ring) I x`;
         `u:(1->num)->complex`
       ]poly_mul_subring THEN
       qed[x_poly_use]
     ; pass
     ] THEN
-    subgoal `poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial x) u) x = (poly_eval complex_ring (minimal_polynomial x) x) * (poly_eval complex_ring u x)` THENL [
+    subgoal `poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) u) x = (poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) x) * (poly_eval complex_ring u x)` THENL [
       rw[GSYM complex_ring_clauses] THEN
       specialize_assuming[
         `complex_ring`;
-        `minimal_polynomial x`;
+        `minimal_polynomial (QinC_ring,complex_ring) I x`;
         `u:(1->num)->complex`;
         `x:complex`
       ]POLY_EVAL_MUL THEN
       qed[poly_complex_if_poly_QinC;x_poly_use;in_complex_ring]
     ; pass
     ] THEN
-    have `poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial x) u) x = Cx(&0) * (poly_eval complex_ring u x)` [] THEN
+    have `poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) u) x = Cx(&0) * (poly_eval complex_ring u x)` [] THEN
     complex_field_fact `Cx(&0) * (poly_eval complex_ring u x) = Cx(&0)` THEN
-    have `poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial x) u) x = Cx(&0)` [] THEN
+    have `poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) u) x = Cx(&0)` [] THEN
     have `poly_eval complex_ring p x = Cx(&0)` [] THEN
     qed[complex_root]
   ;
     intro THEN
     recall UFD_x_poly_QinC THEN
-    have `!s. s IN S ==> minimal_polynomial s IN ring_carrier (x_poly QinC_ring)` [x_poly_use] THEN
+    have `!s. s IN S ==> minimal_polynomial (QinC_ring,complex_ring) I s IN ring_carrier (x_poly QinC_ring)` [x_poly_use] THEN
     have `p IN ring_carrier (x_poly QinC_ring)` [x_poly_use] THEN
-    have `!s. s IN S ==> ring_divides (x_poly QinC_ring) (minimal_polynomial s) p` [] THEN
-    subgoal `!d. d IN ring_carrier (x_poly QinC_ring) ==> (!s. s IN S ==> ring_divides (x_poly QinC_ring) (minimal_polynomial s) d) ==> ring_divides (x_poly QinC_ring) p d` THENL [
+    have `!s. s IN S ==> ring_divides (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I s) p` [] THEN
+    subgoal `!d. d IN ring_carrier (x_poly QinC_ring) ==> (!s. s IN S ==> ring_divides (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I s) d) ==> ring_divides (x_poly QinC_ring) p d` THENL [
       rw[GSYM x_poly_use] THEN
       qed[]
     ; pass
@@ -21801,29 +21829,29 @@ let minimal_squarefree_from_algebraic_set = prove(`
     ; pass
     ] THEN
     have `algebraic_number z` [algebraic_number_root_QinC_poly;complex_root] THEN
-    have `ring_irreducible (x_poly QinC_ring) (minimal_polynomial z)` [algebraic_has_minimal_polynomial] THEN
-    have `ring_prime (x_poly QinC_ring) (minimal_polynomial z)` [prime_iff_irreducible_over_field;field_QinC] THEN
+    have `ring_irreducible (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z)` [algebraic_has_minimal_polynomial] THEN
+    have `ring_prime (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z)` [prime_iff_irreducible_over_field;field_QinC] THEN
     specialize[
       `x_poly QinC_ring`;
-      `minimal_polynomial`;
+      `minimal_polynomial (QinC_ring,complex_ring) I`;
       `S:complex->bool`;
       `p:(1->num)->complex`;
-      `minimal_polynomial z`
+      `minimal_polynomial (QinC_ring,complex_ring) I z`
     ]ring_prime_divides_lcm_set THEN
-    have `ring_divides(x_poly QinC_ring) (minimal_polynomial z) p` [minimal_polynomial_divides] THEN
-    choose `s:complex` `s IN S /\ ring_divides (x_poly QinC_ring) (minimal_polynomial z) (minimal_polynomial s)` [] THEN
+    have `ring_divides(x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z) p` [minimal_polynomial_divides] THEN
+    choose `s:complex` `s IN S /\ ring_divides (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z) (minimal_polynomial (QinC_ring,complex_ring) I s)` [] THEN
     witness `s:complex` THEN
     have `algebraic_number s` [SUBSET;IN] THEN
-    have `ring_irreducible (x_poly QinC_ring) (minimal_polynomial s)` [algebraic_has_minimal_polynomial] THEN
-    have `ring_prime (x_poly QinC_ring) (minimal_polynomial s)` [prime_iff_irreducible_over_field;field_QinC] THEN
-    have `ring_associates (x_poly QinC_ring) (minimal_polynomial z) (minimal_polynomial s)` [ring_divides_associates_prime;integral_domain_x_poly_QinC] THEN
-    have `monic QinC_ring (minimal_polynomial s)` [algebraic_has_minimal_polynomial] THEN
-    have `monic QinC_ring (minimal_polynomial z)` [algebraic_has_minimal_polynomial] THEN
+    have `ring_irreducible (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I s)` [algebraic_has_minimal_polynomial] THEN
+    have `ring_prime (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I s)` [prime_iff_irreducible_over_field;field_QinC] THEN
+    have `ring_associates (x_poly QinC_ring) (minimal_polynomial (QinC_ring,complex_ring) I z) (minimal_polynomial (QinC_ring,complex_ring) I s)` [ring_divides_associates_prime;integral_domain_x_poly_QinC] THEN
+    have `monic QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I s)` [algebraic_has_minimal_polynomial] THEN
+    have `monic QinC_ring (minimal_polynomial (QinC_ring,complex_ring) I z)` [algebraic_has_minimal_polynomial] THEN
     recall field_QinC THEN
     specialize[
       `QinC_ring`;
-      `minimal_polynomial z`;
-      `minimal_polynomial s`
+      `minimal_polynomial (QinC_ring,complex_ring) I z`;
+      `minimal_polynomial (QinC_ring,complex_ring) I s`
     ]monic_associates THEN
     qed[]
   ]
@@ -21858,13 +21886,13 @@ let squarefree_from_algebraic_set_avoiding_0 = prove(`
 `,
   intro THEN
   specialize[`S:complex->bool`]minimal_squarefree_from_algebraic_set THEN
-  choose `p:(1->num)->complex` `ring_polynomial QinC_ring p /\ ring_squarefree (x_poly QinC_ring) p /\ monic QinC_ring p /\ S SUBSET complex_root p /\ (!z. complex_root p z ==> (?s. s IN S /\ minimal_polynomial s = minimal_polynomial z))` [] THEN
+  choose `p:(1->num)->complex` `ring_polynomial QinC_ring p /\ ring_squarefree (x_poly QinC_ring) p /\ monic QinC_ring p /\ S SUBSET complex_root p /\ (!z. complex_root p z ==> (?s. s IN S /\ minimal_polynomial (QinC_ring,complex_ring) I s = minimal_polynomial (QinC_ring,complex_ring) I z))` [] THEN
   witness `p:(1->num)->complex` THEN
   simp[] THEN
   case `complex_root p (Cx(&0))` THENL [
-    choose `s:complex` `s IN S /\ minimal_polynomial s = minimal_polynomial(Cx(&0))` [] THEN
-    have `minimal_polynomial s = x_minus_const QinC_ring (Cx(&0))` [minimal_polynomial_QinC;QinC_0] THEN
-    have `minimal_polynomial s = x_minus_const complex_ring (Cx(&0))` [x_minus_const_QinC_eq_x_minus_const_complex] THEN
+    choose `s:complex` `s IN S /\ minimal_polynomial (QinC_ring,complex_ring) I s = minimal_polynomial (QinC_ring,complex_ring) I (Cx(&0))` [] THEN
+    have `minimal_polynomial (QinC_ring,complex_ring) I s = x_minus_const QinC_ring (Cx(&0))` [minimal_polynomial_QinC;QinC_0] THEN
+    have `minimal_polynomial (QinC_ring,complex_ring) I s = x_minus_const complex_ring (Cx(&0))` [x_minus_const_QinC_eq_x_minus_const_complex] THEN
     have `poly_eval complex_ring (x_minus_const complex_ring (Cx(&0))) s = Cx(&0)` [maybe_algebraic_minimal_polynomial] THEN
     have `poly_eval complex_ring (x_minus_const complex_ring (Cx(&0))) s = ring_sub complex_ring s (Cx(&0))` [eval_x_minus_const;in_complex_ring] THEN
     have `ring_sub complex_ring s (Cx(&0)) = Cx(&0)` [] THEN

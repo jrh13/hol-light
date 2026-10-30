@@ -3465,7 +3465,7 @@ let defint = new_definition
 (* Useful lemmas about the size of `trivial` divisions etc.                 *)
 (* ------------------------------------------------------------------------ *)
 
-let DIVISION_0 = prove(
+let DIVISION_0_DSIZE = prove(
   `!a b. (a = b) ==> (dsize(\n. if (n = 0) then a else b) = 0)`,
   REPEAT GEN_TAC THEN DISCH_THEN SUBST_ALL_TAC THEN REWRITE_TAC[COND_ID] THEN
   REWRITE_TAC[dsize] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
@@ -4056,7 +4056,7 @@ let DIVISION_EXISTS = prove(
      [DISCH_THEN(ASSUME_TAC o MATCH_MP DIVISION_1) THEN
       ASM_REWRITE_TAC[num_CONV `1`; CONJUNCT2 LT; NOT_LESS_0] THEN
       DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC[];
-      DISCH_THEN(SUBST1_TAC o MATCH_MP DIVISION_0) THEN
+      DISCH_THEN(SUBST1_TAC o MATCH_MP DIVISION_0_DSIZE) THEN
       REWRITE_TAC[NOT_LESS_0]]]);;
 
 (* ------------------------------------------------------------------------ *)
@@ -5101,7 +5101,7 @@ let INTEGRABLE_CAUCHY = prove
 (* Limit theorem.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let SUM_DIFFS = prove
+let PSUM_DIFFS = prove
  (`!m n. sum(m,n) (\i. d(SUC i) - d(i)) = d(m + n) - d m`,
   GEN_TAC THEN INDUCT_TAC THEN
   ASM_REWRITE_TAC[sum; ADD_CLAUSES; REAL_SUB_REFL] THEN REAL_ARITH_TAC);;
@@ -5130,7 +5130,7 @@ let RSUM_BOUND = prove
     ALL_TAC] THEN
   FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC o REWRITE_RULE[tdiv]) THEN
   FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_MONO_LE_SUC) THEN
-  ASM_REWRITE_TAC[real_abs; REAL_SUB_LE; SUM_DIFFS; ADD_CLAUSES] THEN
+  ASM_REWRITE_TAC[real_abs; REAL_SUB_LE; PSUM_DIFFS; ADD_CLAUSES] THEN
   MATCH_MP_TAC(REAL_ARITH `a <= d0 /\ d1 <= b ==> d1 - d0 <= b - a`) THEN
   ASM_MESON_TAC[DIVISION_LBOUND; DIVISION_UBOUND]);;
 

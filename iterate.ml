@@ -154,6 +154,44 @@ let SUBSET_NUMSEG = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[SUBSET; IN_NUMSEG] THEN
   EQ_TAC THENL [MESON_TAC[LE_TRANS; NOT_LE; LE_REFL]; ARITH_TAC]);;
 
+let UPWARD_CLOSED_NUMSEG = prove
+ (`!s S. S SUBSET 1..s /\ (!i j. i IN S /\ i <= j /\ j <= s ==> j IN S)
+         ==> S = ((s + 1) - CARD S)..s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `S:num->bool = {}` THENL
+   [ASM_REWRITE_TAC[CARD_CLAUSES] THEN CONV_TAC SYM_CONV THEN
+    REWRITE_TAC[NUMSEG_EMPTY] THEN ARITH_TAC;
+    ALL_TAC] THEN
+  MP_TAC(ISPEC `\j:num. j IN S` num_WOP) THEN
+  REWRITE_TAC[] THEN ASM_REWRITE_TAC[MEMBER_NOT_EMPTY] THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:num` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `1 <= m /\ m <= s` STRIP_ASSUME_TAC THENL
+   [UNDISCH_TAC `S SUBSET 1..s` THEN REWRITE_TAC[SUBSET; IN_NUMSEG] THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `S = m..s` ASSUME_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_NUMSEG] THEN X_GEN_TAC `j:num` THEN
+    EQ_TAC THENL
+     [DISCH_TAC THEN CONJ_TAC THENL
+       [ASM_MESON_TAC[NOT_LT];
+        UNDISCH_TAC `S SUBSET 1..s` THEN REWRITE_TAC[SUBSET; IN_NUMSEG] THEN
+        ASM_MESON_TAC[]];
+      STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      EXISTS_TAC `m:num` THEN ASM_REWRITE_TAC[]];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[CARD_NUMSEG] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  ASM_ARITH_TAC);;
+
+let UPWARD_CLOSED_NUMSEG_EQ = prove
+ (`!s U V.
+        U SUBSET 1..s /\ (!i j. i IN U /\ i <= j /\ j <= s ==> j IN U) /\
+        V SUBSET 1..s /\ (!i j. i IN V /\ i <= j /\ j <= s ==> j IN V) /\
+        CARD U = CARD V
+        ==> U = V`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`s:num`; `V:num->bool`] UPWARD_CLOSED_NUMSEG) THEN
+  MP_TAC(SPECL [`s:num`; `U:num->bool`] UPWARD_CLOSED_NUMSEG) THEN
+  ASM_REWRITE_TAC[] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Equivalence with the more ad-hoc comprehension notation.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -1868,6 +1906,15 @@ let NSUM_CLAUSES_RIGHT = prove
   GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
   SIMP_TAC[LT_REFL; NSUM_CLAUSES_NUMSEG; SUC_SUB1]);;
 
+let NSUM_NUMSEG_LAST = prove
+ (`!k j. 1 <= j ==> nsum(1..j) k = nsum(1..j-1) k + k j`,
+  SIMP_TAC[NSUM_CLAUSES_RIGHT; ARITH_RULE `1 <= j ==> 0 < j`]);;
+
+let NSUM_NUMSEG_MONO = prove
+ (`!k a b. a <= b ==> nsum(1..a) k <= nsum(1..b) k`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_SUBSET_SIMPLE THEN
+  REWRITE_TAC[FINITE_NUMSEG; SUBSET_NUMSEG] THEN ASM_ARITH_TAC);;
+
 let NSUM_PAIR = prove
  (`!f m n. nsum(2*m..2*n+1) f = nsum(m..n) (\i. f(2*i) + f(2*i+1))`,
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_ADD) THEN
@@ -1903,6 +1950,64 @@ let CONG_NSUM = prove
         NSUM_RELATED) THEN
   ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
   CONV_TAC NUMBER_RULE);;
+
+(* Base-e digit sums over 1..n, written with the weights e^(i-1).            *)
+
+let NSUM_DIGITS_BOUND = prove
+ (`!e n a.
+        (!i. i IN 1..n ==> a i < e)
+        ==> nsum(1..n) (\i. e EXP (i - 1) * a i) < e EXP n`,
+  GEN_TAC THEN REWRITE_TAC[IN_NUMSEG] THEN INDUCT_TAC THEN
+  REWRITE_TAC[NSUM_CLAUSES_NUMSEG; ARITH_RULE `1 <= SUC n`; EXP; ARITH] THEN
+  REWRITE_TAC[ARITH_RULE `SUC n - 1 = n`] THEN
+  X_GEN_TAC `a:num->num` THEN DISCH_TAC THEN
+  MATCH_MP_TAC(ARITH_RULE
+   `s < e /\ e * (x + 1) <= e * b ==> s + e * x < b * e`) THEN
+  CONJ_TAC THENL
+   [FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_MESON_TAC[ARITH_RULE `i <= n ==> i <= SUC n`];
+    REWRITE_TAC[LE_MULT_LCANCEL; ARITH_RULE `b + 1 <= c <=> b < c`] THEN
+    DISJ2_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ARITH_TAC]);;
+
+let NSUM_DIGITS_UNIQUE = prove
+ (`!e n a b.
+        (!i. i IN 1..n ==> a i < e /\ b i < e) /\
+        nsum(1..n) (\i. e EXP (i - 1) * a i) =
+        nsum(1..n) (\i. e EXP (i - 1) * b i)
+        ==> !i. i IN 1..n ==> a i = b i`,
+  GEN_TAC THEN INDUCT_TAC THENL
+   [REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC; ALL_TAC] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[NSUM_CLAUSES_NUMSEG; ARITH_RULE `1 <= SUC n`] THEN
+  REWRITE_TAC[ARITH_RULE `SUC n - 1 = n`] THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `a(SUC n):num = b(SUC n) /\
+    nsum(1..n) (\i. e EXP (i - 1) * a i) =
+    nsum(1..n) (\i. e EXP (i - 1) * b i)`
+  STRIP_ASSUME_TAC THENL
+   [MATCH_MP_TAC(MESON[DIVMOD_UNIQ]
+     `!M N q r q' r'.
+        (M = q * N + r /\ r < N) /\ (M = q' * N + r' /\ r' < (N:num))
+        ==> q = q' /\ r = r'`) THEN
+    MAP_EVERY EXISTS_TAC
+     [`nsum(1..n) (\i. e EXP (i - 1) * a i) + e EXP n * a(SUC n)`;
+      `e EXP n`] THEN
+    REPEAT CONJ_TAC THENL
+     [ARITH_TAC;
+      MATCH_MP_TAC NSUM_DIGITS_BOUND;
+      ASM_ARITH_TAC;
+      MATCH_MP_TAC NSUM_DIGITS_BOUND] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[IN_NUMSEG]) THEN REWRITE_TAC[IN_NUMSEG] THEN
+    ASM_MESON_TAC[ARITH_RULE `i <= n ==> i <= SUC n`];
+    ALL_TAC] THEN
+  X_GEN_TAC `i:num` THEN REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN
+  ASM_CASES_TAC `i = SUC n` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`a:num->num`; `b:num->num`]) THEN
+  ANTS_TAC THENL
+   [ASM_REWRITE_TAC[IN_NUMSEG] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[IN_NUMSEG]) THEN
+    ASM_MESON_TAC[ARITH_RULE `i <= n ==> i <= SUC n`];
+    DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[IN_NUMSEG] THEN ASM_ARITH_TAC]);;
 
 let th = prove
  (`(!f g s:A->bool.

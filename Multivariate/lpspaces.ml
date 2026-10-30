@@ -3,6 +3,7 @@
 (* ========================================================================= *)
 
 needs "Multivariate/realanalysis.ml";;
+prioritize_complex();;
 
 (* ------------------------------------------------------------------------- *)
 (* The space L_p of measurable functions f with |f|^p integrable (on s).     *)

@@ -7,6 +7,7 @@
 
 needs "Multivariate/homology.ml";;
 needs "Multivariate/convex.ml";;
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* Paths and arcs.                                                           *)

@@ -6,6 +6,7 @@
 (* ========================================================================= *)
 
 needs "Multivariate/degree.ml";;
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* Derivatives. The definition is slightly tricky since we make it work over *)

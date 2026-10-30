@@ -1297,6 +1297,19 @@ let INJECTIVE_ON_LEFT_INVERSE = prove
     (!y x. x IN s /\ (y = (f:A->B) x) ==> (g y = x))` in
   REWRITE_TAC[lemma; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
 
+let INJECTIVE_ON_COMMUTING_SQUARE = prove
+ (`!(f:A->B) (g:C->D) (p:A->C) (q:B->D) s t s'.
+        (!x. x IN s ==> f x IN s') /\
+        (!x y. x IN s' /\ y IN s' /\ q x = q y ==> x = y) /\
+        (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y) /\
+        IMAGE p s = t /\
+        (!x. x IN s ==> q(f x) = g(p x))
+        ==> ((!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) <=>
+             (!x y. x IN t /\ y IN t /\ g x = g y ==> x = y))`,
+  REPEAT STRIP_TAC THEN EXPAND_TAC "t" THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  ASM_MESON_TAC[]);;
+
 let BIJECTIVE_ON_LEFT_RIGHT_INVERSE = prove
  (`!(f:A->B) s t.
         (!x. x IN s ==> f(x) IN t)
@@ -2738,6 +2751,10 @@ let IN_CROSS = prove
  (`!(x:A) (y:B) s t. (x,y) IN (s CROSS t) <=> x IN s /\ y IN t`,
   REWRITE_TAC[CROSS; IN_ELIM_PAIR_THM]);;
 
+let IN_CROSS_FST_SND = prove
+ (`!(p:X#Y) s t. p IN s CROSS t <=> FST p IN s /\ SND p IN t`,
+  REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; FST; SND]);;
+
 let HAS_SIZE_CROSS = prove
  (`!(s:A->bool) (t:B->bool) m n.
         s HAS_SIZE m /\ t HAS_SIZE n ==> (s CROSS t) HAS_SIZE (m * n)`,
@@ -3784,6 +3801,132 @@ let INFINITE_ENUMERATE_SUBSET = prove
      ASM_MESON_TAC[INFINITE_IMAGE_INJ; num_INFINITE]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A weakly increasing chain of sets with k strict steps contains a strict   *)
+(* chain of length k with the same values; hence a bound for the length of a *)
+(* pair of weakly increasing chains, one of which increases strictly at each *)
+(* step.                                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let WEAK_CHAIN_STRICT_SUBCHAIN = prove
+ (`!(c:num->A->bool) m.
+        (!i. i < m ==> c i SUBSET c(SUC i))
+        ==> ?d. d 0 = c 0 /\
+                d(CARD {i | i < m /\ ~(c i = c(SUC i))}) = c m /\
+                (!i. i <= CARD {i | i < m /\ ~(c i = c(SUC i))}
+                     ==> ?j. j <= m /\ d i = c j) /\
+                (!i. i < CARD {i | i < m /\ ~(c i = c(SUC i))}
+                     ==> d i PSUBSET d(SUC i))`,
+  GEN_TAC THEN INDUCT_TAC THENL
+   [DISCH_TAC THEN EXISTS_TAC `c:num->A->bool` THEN
+    REWRITE_TAC[LT; EMPTY_GSPEC; CARD_CLAUSES; LE] THEN MESON_TAC[];
+    ALL_TAC] THEN
+  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
+  ANTS_TAC THENL
+   [X_GEN_TAC `i:num` THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  ABBREV_TAC `k = CARD {i | i < m /\ ~((c:num->A->bool) i = c(SUC i))}` THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:num->A->bool` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `FINITE {i | i < m /\ ~((c:num->A->bool) i = c(SUC i))}`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{i:num | i < m}` THEN
+    REWRITE_TAC[FINITE_NUMSEG_LT] THEN SET_TAC[];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `(c:num->A->bool) m = c(SUC m)` THENL
+   [SUBGOAL_THEN
+     `{i | i < SUC m /\ ~((c:num->A->bool) i = c(SUC i))} =
+      {i | i < m /\ ~(c i = c(SUC i))}`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[EXTENSION; IN_ELIM_THM; LT] THEN ASM_MESON_TAC[];
+      ASM_REWRITE_TAC[]] THEN
+    EXISTS_TAC `d:num->A->bool` THEN ASM_REWRITE_TAC[] THEN
+    UNDISCH_TAC
+     `!i. i <= k
+          ==> ?j. j <= m /\ (d:num->A->bool) i = (c:num->A->bool) j` THEN
+    MESON_TAC[ARITH_RULE `j <= m ==> j <= SUC m`];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `{i | i < SUC m /\ ~((c:num->A->bool) i = c(SUC i))} =
+    m INSERT {i | i < m /\ ~(c i = c(SUC i))}`
+  SUBST1_TAC THENL
+   [GEN_REWRITE_TAC I [EXTENSION] THEN
+    REWRITE_TAC[IN_ELIM_THM; IN_INSERT; LT] THEN
+    X_GEN_TAC `i:num` THEN ASM_CASES_TAC `i:num = m` THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[CARD_CLAUSES; IN_ELIM_THM; LT_REFL] THEN
+  EXISTS_TAC
+   `\i. if i <= k then (d:num->A->bool) i else c(SUC m)` THEN
+  REWRITE_TAC[LE_0; ARITH_RULE `~(SUC k <= k)`] THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL
+   [X_GEN_TAC `i:num` THEN DISCH_TAC THEN COND_CASES_TAC THENL
+     [UNDISCH_TAC
+       `!i. i <= k
+            ==> ?j. j <= m /\ (d:num->A->bool) i = (c:num->A->bool) j` THEN
+      DISCH_THEN(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+      MESON_TAC[ARITH_RULE `j <= m ==> j <= SUC m`];
+      EXISTS_TAC `SUC m` THEN REWRITE_TAC[LE_REFL]];
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    ASM_CASES_TAC `SUC i <= k` THEN ASM_REWRITE_TAC[] THENL
+     [SUBGOAL_THEN `i:num <= k` (fun th -> REWRITE_TAC[th]) THENL
+       [ASM_ARITH_TAC; FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC];
+      ALL_TAC] THEN
+    SUBGOAL_THEN `i:num = k` SUBST1_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    ASM_REWRITE_TAC[LE_REFL; PSUBSET] THEN
+    UNDISCH_TAC `!i. i < SUC m ==> (c:num->A->bool) i SUBSET c(SUC i)` THEN
+    DISCH_THEN(MP_TAC o SPEC `m:num`) THEN
+    REWRITE_TAC[ARITH_RULE `m < SUC m`]]);;
+
+let WEAK_CHAIN_STRICT_STEPS_BOUND = prove
+ (`!P (c:num->A->bool) m N.
+        (!d n. (!i. i <= n ==> P(d i)) /\
+               (!i. i < n ==> d i PSUBSET d(SUC i))
+               ==> n <= N) /\
+        (!i. i <= m ==> P(c i)) /\ (!i. i < m ==> c i SUBSET c(SUC i))
+        ==> CARD {i | i < m /\ ~(c i = c(SUC i))} <= N`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`c:num->A->bool`; `m:num`] WEAK_CHAIN_STRICT_SUBCHAIN) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:num->A->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN EXISTS_TAC `d:num->A->bool` THEN
+  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]);;
+
+let WEAK_CHAIN_PAIR_BOUND = prove
+ (`!P Q (a:num->A->bool) (b:num->B->bool) n M N.
+        (!d m. (!i. i <= m ==> P(d i)) /\
+               (!i. i < m ==> d i PSUBSET d(SUC i))
+               ==> m <= M) /\
+        (!d m. (!i. i <= m ==> Q(d i)) /\
+               (!i. i < m ==> d i PSUBSET d(SUC i))
+               ==> m <= N) /\
+        (!i. i <= n ==> P(a i) /\ Q(b i)) /\
+        (!i. i < n ==> a i SUBSET a(SUC i) /\ b i SUBSET b(SUC i)) /\
+        (!i. i < n ==> ~(a i = a(SUC i)) \/ ~(b i = b(SUC i)))
+        ==> n <= M + N`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LE_TRANS THEN
+  EXISTS_TAC `CARD {i | i < n /\ ~((a:num->A->bool) i = a(SUC i))} +
+              CARD {i | i < n /\ ~((b:num->B->bool) i = b(SUC i))}` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC LE_TRANS THEN
+    EXISTS_TAC `CARD({i | i < n /\ ~((a:num->A->bool) i = a(SUC i))} UNION
+                     {i | i < n /\ ~((b:num->B->bool) i = b(SUC i))})` THEN
+    CONJ_TAC THENL
+     [GEN_REWRITE_TAC LAND_CONV [GSYM CARD_NUMSEG_LT] THEN
+      MATCH_MP_TAC CARD_SUBSET THEN CONJ_TAC THENL
+       [REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN
+        X_GEN_TAC `j:num` THEN DISCH_TAC THEN
+        FIRST_X_ASSUM(MP_TAC o SPEC `j:num`) THEN ASM_REWRITE_TAC[];
+        MATCH_MP_TAC FINITE_UNION_IMP THEN CONJ_TAC THEN
+        MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{i:num | i < n}` THEN
+        REWRITE_TAC[FINITE_NUMSEG_LT] THEN SET_TAC[]];
+      MATCH_MP_TAC CARD_UNION_LE THEN CONJ_TAC THEN
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{i:num | i < n}` THEN
+      REWRITE_TAC[FINITE_NUMSEG_LT] THEN SET_TAC[]];
+    MATCH_MP_TAC LE_ADD2 THEN CONJ_TAC THEN
+    MATCH_MP_TAC WEAK_CHAIN_STRICT_STEPS_BOUND THENL
+     [EXISTS_TAC `P:(A->bool)->bool`; EXISTS_TAC `Q:(B->bool)->bool`] THEN
+    (CONJ_TAC THENL [FIRST_ASSUM ACCEPT_TAC; ASM_SIMP_TAC[]])]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Mapping between finite sets and lists.                                    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -3828,6 +3971,21 @@ let MEM_LIST_OF_SET = prove
 let FINITE_SET_OF_LIST = prove
  (`!l:A list. FINITE(set_of_list l)`,
   LIST_INDUCT_TAC THEN ASM_SIMP_TAC[set_of_list; FINITE_RULES]);;
+
+let FINITE_PROPER_PREFIXES = prove
+ (`!l:A list. FINITE {p | ?a q. l = APPEND p (CONS a q)}`,
+  LIST_INDUCT_TAC THENL
+   [MATCH_MP_TAC(MESON[FINITE_EMPTY] `s = {} ==> FINITE(s:A list->bool)`) THEN
+    REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM] THEN
+    MESON_TAC[APPEND_EQ_NIL; NOT_CONS_NIL];
+    MATCH_MP_TAC FINITE_SUBSET THEN
+    EXISTS_TAC
+     `[]:A list INSERT IMAGE (CONS (h:A)) {p | ?a q. t = APPEND p (CONS a q)}`
+    THEN ASM_SIMP_TAC[FINITE_INSERT; FINITE_IMAGE] THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_INSERT; IN_IMAGE] THEN
+    X_GEN_TAC `p:A list` THEN
+    STRUCT_CASES_TAC(ISPEC `p:A list` list_CASES) THEN
+    REWRITE_TAC[APPEND; CONS_11; NOT_CONS_NIL] THEN MESON_TAC[]]);;
 
 let IN_SET_OF_LIST = prove
  (`!x l:A list. x IN (set_of_list l) <=> MEM x l`,
@@ -4596,6 +4754,28 @@ let CARD_EQ_BIJECTIONS_SPECIAL = prove
   EXISTS_TAC `\x. if x = a then b else (f:A->B) x` THEN
   EXISTS_TAC `\y. if y = b then a else (g:B->A) y` THEN
   ASM_MESON_TAC[]);;
+
+let FINITE_FIBRES_BIJECTIONS = prove
+ (`!(s:K->bool) (t:L->bool) (p:K->C) (q:L->C).
+        FINITE s /\ FINITE t /\
+        (!z. CARD {x | x IN s /\ p x = z} = CARD {y | y IN t /\ q y = z})
+        ==> ?f g. (!x. x IN s ==> f x IN t /\ g(f x) = x /\ q(f x) = p x) /\
+                  (!y. y IN t ==> g y IN s /\ f(g y) = y)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!z. ?f g. (!x. x IN {x | x IN s /\ (p:K->C) x = z}
+                   ==> (f:K->L) x IN {y | y IN t /\ (q:L->C) y = z} /\
+                       (g:L->K)(f x) = x) /\
+              (!y. y IN {y | y IN t /\ q y = z}
+                   ==> g y IN {x | x IN s /\ p x = z} /\ f(g y) = y)`
+  MP_TAC THENL
+   [GEN_TAC THEN MATCH_MP_TAC CARD_EQ_BIJECTIONS THEN
+    ASM_SIMP_TAC[FINITE_RESTRICT];
+    REWRITE_TAC[SKOLEM_THM; IN_ELIM_THM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:C->K->L` (X_CHOOSE_TAC `g:C->L->K`)) THEN
+    EXISTS_TAC `\x. (f:C->K->L) ((p:K->C) x) x` THEN
+    EXISTS_TAC `\y. (g:C->L->K) ((q:L->C) y) y` THEN
+    REWRITE_TAC[] THEN ASM_MESON_TAC[]]);;
 
 let BIJECTIONS_HAS_SIZE = prove
  (`!s t f:A->B g.

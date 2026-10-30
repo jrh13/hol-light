@@ -15,7 +15,7 @@ override_interface("::",`CONS`);;
 (*  Some handy tactics.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let ASSERT_TAC tm = SUBGOAL_THEN tm ASSUME_TAC;;
+let ASSERT_TAC tm = SUBGOAL_THEN tm STRIP_ASSUME_TAC;;
 
 let SUFFICE_TAC thl tm =
   SUBGOAL_THEN tm (fun th -> MESON_TAC (th :: thl));;

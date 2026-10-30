@@ -8,6 +8,7 @@
 (* ========================================================================= *)
 
 needs "Multivariate/topology.ml";;
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* Some miscelleneous things that are convenient to prove here.              *)

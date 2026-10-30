@@ -9,6 +9,7 @@
 needs "Library/floor.ml";;
 needs "Library/iter.ml";;
 needs "Multivariate/integration.ml";;
+needs "Multivariate/measure.ml";;
 needs "Multivariate/complexes.ml";;
 
 prioritize_complex();;
@@ -754,6 +755,22 @@ let CONTINUOUS_ON_COMPLEX_INV = prove
         ==> (\x. inv(f x)) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
            CONTINUOUS_COMPLEX_INV_WITHIN]);;
+
+let CONTINUOUS_MAP_COMPLEX_INV = prove
+ (`!top (f:A->complex).
+        continuous_map (top,euclidean) f /\
+        (!x. x IN topspace top ==> ~(f x = Cx(&0)))
+        ==> continuous_map (top,euclidean) (\x. inv(f x))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. inv((f:A->complex) x)) = (\w. inv w) o f`
+  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `subtopology euclidean {w:complex | ~(w = Cx(&0))}` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_EUCLIDEAN] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN ASM_MESON_TAC[];
+    MATCH_MP_TAC CONTINUOUS_ON_COMPLEX_INV THEN
+    REWRITE_TAC[CONTINUOUS_ON_ID; IN_ELIM_THM]]);;
 
 let CONTINUOUS_ON_COMPLEX_DIV = prove
  (`!f g s. f continuous_on s /\ g continuous_on s /\

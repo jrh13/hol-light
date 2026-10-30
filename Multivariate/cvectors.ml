@@ -288,13 +288,13 @@ let vector_map3 = new_definition
   `vector_map3 (f:A->B->C->D) (v1:A^N) (v2:B^N) (v3:C^N) :D^N =
     lambda i. f (v1$i) (v2$i) (v3$i)`;;
 
-let FINITE_INDEX_INRANGE_2 = prove
+let FINITE_INDEX_INRANGE_4 = prove
  (`!i. ?k. 1 <= k /\ k <= dimindex(:N) /\ (!x:A^N. x$i = x$k)
   /\ (!x:B^N. x$i = x$k) /\ (!x:C^N. x$i = x$k) /\ (!x:D^N. x$i = x$k)`,
   REWRITE_TAC[finite_index] THEN MESON_TAC[FINITE_INDEX_WORKS]);;
 
 let COMPONENT_TAC x =
-  REPEAT GEN_TAC THEN CHOOSE_TAC (SPEC_ALL FINITE_INDEX_INRANGE_2)
+  REPEAT GEN_TAC THEN CHOOSE_TAC (SPEC_ALL FINITE_INDEX_INRANGE_4)
   THEN ASM_SIMP_TAC[x;LAMBDA_BETA];;
 
 let VECTOR_CONST_COMPONENT = prove
@@ -455,7 +455,7 @@ let vector_zip = new_definition
 let VECTOR_ZIP_COMPONENT = prove
   (`!i v1:A^N v2:B^N. (vector_zip v1 v2)$i = (v1$i,v2$i)`,
   REPEAT GEN_TAC THEN CHOOSE_TAC (INST_TYPE [`:A#B`,`:C`] (SPEC_ALL
-    FINITE_INDEX_INRANGE_2)) THEN ASM_SIMP_TAC[vector_zip;LAMBDA_BETA]);;
+    FINITE_INDEX_INRANGE_4)) THEN ASM_SIMP_TAC[vector_zip;LAMBDA_BETA]);;
 
 let vector_unzip = new_definition
   `vector_unzip (v:(A#B)^N):(A^N)#(B^N) = vector_map FST v,vector_map SND v`;;

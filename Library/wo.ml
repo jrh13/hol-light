@@ -1653,6 +1653,33 @@ let ZL_SUBSETS_UNIONS_NONEMPTY = prove
     ASM_SIMP_TAC[] THEN MESON_TAC[SUBSET; IN_UNIONS];
     ASM_MESON_TAC[]]);;
 
+let ZL_SUBSETS_INTERS_NONEMPTY = prove
+ (`!P. (?x. P x) /\
+       (!c. (?x. x IN c) /\
+            (!x. x IN c ==> P x) /\
+            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
+            ==> P(INTERS c))
+       ==> ?a:A->bool. P a /\ (!x. P x /\ x SUBSET a ==> a = x)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `\x:A->bool. P((:A) DIFF x):bool`
+    ZL_SUBSETS_UNIONS_NONEMPTY) THEN
+  REWRITE_TAC[SET_RULE `(:A) DIFF ((:A) DIFF s) = s`] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL
+     [EXISTS_TAC `(:A) DIFF x` THEN ASM_REWRITE_TAC[SET_RULE
+       `(:A) DIFF ((:A) DIFF s) = s`];
+      X_GEN_TAC `c:(A->bool)->bool` THEN STRIP_TAC THEN
+      SUBGOAL_THEN `(:A) DIFF UNIONS c = INTERS (IMAGE (\x. (:A) DIFF x) c)`
+      SUBST1_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_IMAGE_2; IN_IMAGE] THEN
+      ASM_MESON_TAC[SET_RULE `s SUBSET t ==> (:A) DIFF t SUBSET (:A) DIFF s`]];
+    DISCH_THEN(X_CHOOSE_THEN `a:A->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(:A) DIFF a` THEN ASM_REWRITE_TAC[] THEN
+    X_GEN_TAC `y:A->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(:A) DIFF y`) THEN
+    ASM_REWRITE_TAC[SET_RULE `(:A) DIFF ((:A) DIFF s) = s`] THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; SET_TAC[]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A form of Tukey's lemma.                                                  *)
 (* ------------------------------------------------------------------------- *)

@@ -1269,6 +1269,16 @@ let MATROID_DIMENSION_EQ_CARD = prove
         matroid_basis m b /\ FINITE b ==> matroid_dimension m = CARD b`,
   MESON_TAC[MATROID_DIMENSION_UNIQUE; HAS_SIZE]);;
 
+let MATROID_BASIS_SMALL_SPANNING = prove
+ (`!(m:A matroid) s.
+        matroid_finite_dimensional m /\
+        matroid_spanning m s /\
+        FINITE s /\ CARD s <= matroid_dimension m
+        ==> matroid_basis m s`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MATROID_SPANNING_CONTAINS_BASIS) THEN
+  ASM_MESON_TAC[MATROID_DIMENSION_EQ_CARD; FINITE_SUBSET; CARD_SUBSET_LE]);;
+
 let MATROID_DIM_UNIQUE_ALT = prove
  (`!(m:A matroid) s b n.
         s SUBSET matroid_set m /\ b SUBSET matroid_set m /\ b HAS_SIZE n /\
@@ -1373,6 +1383,15 @@ let MATROID_DIMENSION_FINITE_LE = prove
         ==> matroid_finite_dimensional m /\ matroid_dimension m <= n`,
   MESON_TAC[MATROID_DIMENSION_LE; MATROID_FINITE_DIMENSIONAL]);;
 
+let MATROID_DIMENSION_LE_INDEPENDENT_BOUND = prove
+ (`!(m:A matroid) n.
+        (!s. matroid_independent m s ==> FINITE s /\ CARD s <= n)
+        ==> matroid_finite_dimensional m /\ matroid_dimension m <= n`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `m:A matroid` MATROID_BASIS_EXISTS) THEN
+  ASM_MESON_TAC[MATROID_FINITE_DIMENSIONAL_BASIS; MATROID_DIMENSION_EQ_CARD;
+                matroid_basis]);;
+
 let MATROID_DIM_LE = prove
  (`!(m:A matroid) s b n.
         FINITE b /\ CARD b <= n /\
@@ -1417,6 +1436,14 @@ let MATROID_DIMENSION_GE_FINITE_CARD = prove
   ASM_MESON_TAC[MATROID_INDEPENDENT_CARD_LE_SPAN_FINITE; matroid_basis;
                 MATROID_FINITE_DIMENSIONAL_BASIS; matroid_spanning;
                 MATROID_INDEPENDENT_IMP_SUBSET; MATROID_DIMENSION_EQ_CARD]);;
+
+let MATROID_BASIS_LARGE_INDEPENDENT = prove
+ (`!(m:A matroid) s.
+        matroid_finite_dimensional m /\
+        matroid_independent m s /\ matroid_dimension m <= CARD s
+        ==> matroid_basis m s`,
+  ASM_MESON_TAC[MATROID_DIMENSION_GE_FINITE_CARD; matroid_basis; LE_TRANS;
+                CARD_SUBSET_LE; MATROID_INDEPENDENT_EXTENDS_TO_BASIS]);;
 
 let MATROID_DIMENSION_GE = prove
  (`!(m:A matroid) b n.

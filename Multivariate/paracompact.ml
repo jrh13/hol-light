@@ -5,6 +5,7 @@
 (* ========================================================================= *)
 
 needs "Multivariate/metric.ml";;
+prioritize_real();;
 
 (* Engelking Section 5.2: Countably paracompact space *)
 let countably_paracompact_space = new_definition

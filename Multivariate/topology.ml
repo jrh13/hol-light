@@ -11,6 +11,7 @@ needs "Library/card.ml";;
 needs "Library/iter.ml";;
 needs "Multivariate/metric.ml";;
 needs "Multivariate/determinants.ml";;
+prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
 (* The universal Euclidean topology that we use most of the time.            *)
@@ -12245,6 +12246,19 @@ let CONTINUOUS_ON_LIFT_NORM = prove
  (`!s. (lift o norm) continuous_on s`,
   REWRITE_TAC[CONTINUOUS_ON_LIFT_RANGE; NORM_LIFT] THEN
   MESON_TAC[REAL_ABS_SUB_NORM; REAL_LET_TRANS]);;
+
+let CONTINUOUS_MAP_NORM = prove
+ (`!top (f:A->real^N).
+        continuous_map (top,euclidean) f
+        ==> continuous_map (top,euclideanreal) (\x. norm(f x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_EQ_LIFT] THEN
+  SUBGOAL_THEN `lift o (\x. norm((f:A->real^N) x)) = (lift o norm) o f`
+  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `euclidean:(real^N)topology` THEN ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPECL [`(lift o norm):real^N->real^1`; `(:real^N)`]
+    CONTINUOUS_MAP_EUCLIDEAN) THEN
+  REWRITE_TAC[SUBTOPOLOGY_UNIV; CONTINUOUS_ON_LIFT_NORM]);;
 
 let PROPER_MAP_NORM_SIMPLE = prove
  (`!k. compact k ==> compact {x:real^N | lift(norm x) IN k}`,
@@ -27054,6 +27068,17 @@ let UNIV_SECOND_COUNTABLE = prove
         REPEAT(POP_ASSUM MP_TAC) THEN NORM_ARITH_TAC;
         ASM_REAL_ARITH_TAC]]]);;
 
+let SECOND_COUNTABLE_EUCLIDEAN = prove
+ (`second_countable (euclidean:(real^N)topology)`,
+  REWRITE_TAC[second_countable; GSYM OPEN_IN] THEN
+  X_CHOOSE_THEN `b:(real^N->bool)->bool` STRIP_ASSUME_TAC
+    UNIV_SECOND_COUNTABLE THEN
+  EXISTS_TAC `b:(real^N->bool)->bool` THEN ASM_REWRITE_TAC[] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^N->bool`; `x:real^N`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `u:real^N->bool`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `c:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+  ASM SET_TAC[]);;
+
 let UNIV_SECOND_COUNTABLE_SEQUENCE = prove
  (`?b:num->real^N->bool.
         (!m n. b m = b n <=> m = n) /\
@@ -29377,6 +29402,11 @@ let IS_INTERVAL_IMP_LOCALLY_COMPACT = prove
 let LOCALLY_COMPACT_UNIV = prove
  (`locally compact (:real^N)`,
   SIMP_TAC[OPEN_IMP_LOCALLY_COMPACT; OPEN_UNIV]);;
+
+let LOCALLY_COMPACT_SPACE_EUCLIDEAN = prove
+ (`locally_compact_space (euclidean:(real^N)topology)`,
+  MP_TAC(ISPEC `(:real^N)` LOCALLY_COMPACT_SPACE_SUBTOPOLOGY_EUCLIDEAN) THEN
+  REWRITE_TAC[SUBTOPOLOGY_UNIV; LOCALLY_COMPACT_UNIV]);;
 
 let LOCALLY_COMPACT_INTER = prove
  (`!s t:real^N->bool.

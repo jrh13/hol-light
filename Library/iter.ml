@@ -45,6 +45,13 @@ let ITER_FIXPOINT = prove
   (`!f n x. f x = x ==> ITER n f x = x`,
    GEN_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC [ITER_ALT]);;
 
+let ITER_INTERTWINE_INVARIANT = prove
+ (`!s (f:B->C) h k.
+        (!x. x IN s ==> h x IN s) /\ (!x. x IN s ==> f(h x) = k(f x))
+        ==> !n x. x IN s
+                  ==> ITER n h x IN s /\ f(ITER n h x) = ITER n k (f x)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC[ITER]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Existence of "order" or "characteristic" in a general setting.            *)
 (* ------------------------------------------------------------------------- *)

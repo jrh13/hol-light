@@ -3,6 +3,7 @@
 (* ========================================================================= *)
 
 needs "Library/transc.ml";;
+prioritize_real();;
 
 let REAL_SUB_SUM0 = prove
  (`!x y m. sum(0,m) x - sum(0,m) y = sum(0,m) (\i. x i - y i)`,
