@@ -66,11 +66,17 @@ HOLLIGHT_COMMIT:=$(shell h=`test -e .git && git rev-parse HEAD 2>/dev/null` && e
 
 default: update_database.ml pa_j.cmo hol.sh;
 
-# Save the configuration, writing config.mk only if the value has changed.
+# Save the configuration. config.mk is (re)written only when it is missing or
+# holds a different value, so that when nothing has changed make has no recipe
+# to run: 'make -q' reports up to date and 'make' says there is nothing to do.
 
+CONFIG_USE_MODULE:=$(shell sed -n 's/^HOLLIGHT_USE_MODULE=//p' $(CONFIG_FILE) 2>/dev/null)
+ifneq ($(CONFIG_USE_MODULE),$(HOLLIGHT_USE_MODULE))
 $(CONFIG_FILE): FORCE
-	@echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" | cmp -s - $(CONFIG_FILE) || \
-	  echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" > $(CONFIG_FILE)
+endif
+
+$(CONFIG_FILE):
+	echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" > $(CONFIG_FILE)
 
 FORCE:
 

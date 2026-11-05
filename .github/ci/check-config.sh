@@ -20,3 +20,10 @@ grep -x "HOLLIGHT_USE_MODULE=1" config.mk
 # A plain make keeps using the saved setting.
 make hol.sh
 test "$(./hol.sh -use-module)" = 1
+
+# When nothing has changed, make has nothing to do for hol.sh; a different
+# setting makes it out of date.
+make -q hol.sh
+LC_ALL=C make hol.sh | grep "'hol.sh' is up to date"
+# ('! make -q ...' would not do: set -e ignores the status of a negated command.)
+if make -q hol.sh HOLLIGHT_USE_MODULE=0; then exit 1; fi
