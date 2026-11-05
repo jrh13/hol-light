@@ -81,6 +81,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/ste \
 	Examples/sylvester_gallai \
 	Library/symmetric_group \
+	Library/szemeredi \
 	Autoformalization/three_squares \
 	Examples/vitali \
 	Library/wo \
@@ -142,7 +143,7 @@ GREAT_100_THEOREMS:= \
 	100/arithmetic \
 	100/ballot \
 	100/bernoulli \
-	100/bertrand-primerecip \
+	100/bertrand \
 	100/birthday \
 	100/buffon \
 	100/cantor \
@@ -189,6 +190,7 @@ GREAT_100_THEOREMS:= \
 	100/platonic \
 	100/pnt \
 	100/polyhedron \
+	100/primerecip \
 	100/ptolemy \
 	100/pythagoras \
 	100/quartic \
@@ -278,13 +280,6 @@ $(LOGDIR)/Formal_ineqs/make-ineqs.ready:
 	@echo '### Loading Formal_ineqs/make.ml, examples.hl, examples_poly.hl, examples_flyspeck.hl' > $(LOGDIR)/Formal_ineqs/make-ineqs
 	@(echo 'loadt "Formal_ineqs/make.ml";;'; echo 'loadt "Formal_ineqs/examples.hl";;'; echo 'loadt "Formal_ineqs/examples_poly.hl";;'; echo 'loadt "Formal_ineqs/examples_flyspeck.hl";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Formal_ineqs/make-ineqs 2>&1
 	@touch $(LOGDIR)/Formal_ineqs/make-ineqs.ready
-
-$(LOGDIR)/100/bertrand-primerecip.ready:
-	@mkdir -p $(LOGDIR)/$$(dirname 100/bertrand-primerecip)
-	@echo '### Loading 100/bertrand.ml,100/primerecip.ml'
-	@echo '### Loading 100/bertrand.ml,100/primerecip.ml' > $(LOGDIR)/100/bertrand-primerecip
-	@(echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/100/bertrand-primerecip 2>&1
-	@touch $(LOGDIR)/100/bertrand-primerecip.ready
 
 $(LOGDIR)/Cadical/make-test.ready:
 	@mkdir -p $(LOGDIR)/$$(dirname Cadical/make-test)

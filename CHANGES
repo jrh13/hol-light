@@ -8,6 +8,110 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu  5th Nov 2026       Library/szemeredi.ml [new file]
+
+Added Szemeredi's theorem and related results of Ramsey theory, all derived
+from the combinatorics of words. The words of length n over {0,...,k-1}
+are the functions num->num that are 0 from n on, and hj_cube k n is the
+set of them; m-variable words (hj_subspace) describe m-dimensional
+subspaces through the substitution hj_subst, combinatorial lines are the
+1-variable words (hj_line, hj_line_point, hj_has_line) and hj_density is
+the density of a set of words. The main theorems are
+
+        HALES_JEWETT, HALES_JEWETT_FINITE, MULTIDIM_HALES_JEWETT
+        FOLKMAN, GRAHAM_ROTHSCHILD_LINES
+        DENSITY_HALES_JEWETT, MULTIDIM_DENSITY_HALES_JEWETT
+        WEIGHTED_SZEMEREDI (progressions mod a large prime)
+        SZEMEREDI_COUNT (Varnavides), SZEMEREDI, ROTH, SZEMEREDI_DENSITY
+        VAN_DER_WAERDEN, MULTIDIM_SZEMEREDI, GALLAI_WITT, CORNERS
+
+for example
+
+  |- !k delta.
+        &0 < delta
+        ==> ?N0. !N A. N0 <= N /\ A SUBSET 1..N /\ delta * &N <= &(CARD A)
+                       ==> ?a d. 0 < d /\ !j. j < k ==> a + j * d IN A
+
+Hales-Jewett is proved by colour focusing, and density Hales-Jewett by the
+density increment argument of Dodos, Kanellopoulos and Tyros ("A simple
+proof of the density Hales-Jewett theorem", IMRN 2014) with
+Graham-Rothschild for lines as the Ramsey input. Szemeredi's theorem in Z_N
+follows from the lines of [k]^n along progressions mod N, and in 1..N by
+working modulo a prime in (2N,4N]; the multidimensional version and the
+corners theorem also come from density Hales-Jewett. The file needs
+Library/prime.ml, Library/products.ml and 100/bertrand.ml. New definitions:
+
+        density_hales_jewett
+        fmean
+        hales_jewett_template
+        hj_concat
+        hj_cube
+        hj_density
+        hj_dlift
+        hj_drop
+        hj_first_wildcard
+        hj_has_line
+        hj_identity
+        hj_insensitive
+        hj_insert
+        hj_join
+        hj_lift
+        hj_line
+        hj_line_point
+        hj_replace
+        hj_subspace
+        hj_subst
+        hj_take
+        hj_tiling
+        hj_tiling_union
+        hj_wildcards
+        hj_wlift
+        hjt_almost_mono
+        hjt_focused
+        hjt_lift
+        hjt_line
+        hjt_mono
+        hjt_prod
+        hjt_subst
+        weighted_szemeredi
+
+Thu  5th Nov 2026       100/bertrand.ml, 100/primerecip.ml, holtest.mk
+
+Replaced the proofs of Bertrand's postulate and of the divergence of the
+series of reciprocals of the primes by elementary ones that need neither
+Multivariate nor Library/analysis.ml and Library/transc.ml. In
+100/bertrand.ml the proof is Erdos's, in natural numbers, using central
+binomial coefficients and Legendre's formula INDEX_FACT_ALT, with the cases
+n < 8192 done by a chain of primes checked by trial division; the file now
+needs only Library/prime.ml, Library/binomial.ml and Library/products.ml,
+so unlike the old one it does not load Library/pocklington.ml and the
+others, and it leaves num rather than real as the number priority.
+BERTRAND is strengthened (previously it had n <= p) to
+
+  |- !n. ~(n = 0) ==> ?p. prime p /\ n < p /\ p <= 2 * n
+
+Everything else in the old file has been removed, notably the definitions
+ISQRT, primepow, aprimedivisor, mangoldt, psi, theta and pii and the results
+about them such as BIG_BERTRAND, LANDAU_TRICK, PII_LBOUND and PII_UBOUND_5,
+so 100/bertrand.ml no longer clashes with Examples/mangoldt.ml. In
+100/primerecip.ml the proof is Erdos's counting argument, and the file now
+needs only Library/prime.ml and Library/products.ml. PRIMERECIP_DIVERGES
+and PRIMERECIP_DIVERGES_NUMSEG keep their names but state the divergence
+directly, as HARMONIC_DIVERGES does in 100/divharmonic.ml, instead of with
+"convergent" from Library/analysis.ml:
+
+  |- ~(?s. !e. &0 < e
+               ==> ?N. !n. N <= n
+                           ==> abs(sum {p | prime p /\ p <= n} (\p. &1 / &p) -
+                                   s) < e)
+
+They come with PRIMERECIP_BLOCK, the lower bound 1/2 for the sum of 1/p
+over the primes in (m,4^(m+1)], and PRIMERECIP_UNBOUNDED. The old
+INDUCTION_FROM_1, SUM_CONV, PRIMERECIP_HARMONIC_LBOUND, PRIMERECIP_LBOUND
+and UNBOUNDED_DIVERGENT have been removed. No other file in the
+distribution used any of the removed material. holtest.mk now tests the two
+files separately, and also tests Library/szemeredi.ml.
+
 Tue 27th Oct 2026       100/unsolvability.ml [new file]
 
 Proved the unsolvability of the quintic by radicals, number 16 of the 100
@@ -511,7 +615,7 @@ the presence of type annotations.
 Fri  2nd Oct 2026       Help/passim
 
 Made several fixes to the Help files reported by Chris Walton, uncovered
-during the creation of HoLLean, a new project now available as
+during the creation of HolLean, a new project now available as
 https://github.com/hol-light-family/HolLean/.
 
 Sun  6th Sep 2026       Autoformalization/hilbert_waring.ml [new file], Autoformalization/planar_graph.ml [new file]
