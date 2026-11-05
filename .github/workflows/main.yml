@@ -44,6 +44,9 @@ jobs:
           cd hol-light
           eval $(opam env)
           make
+          ./hol.sh -version
+          ./hol.sh -version | grep -F "(commit $(git rev-parse HEAD))"
+          ./hol.sh -help
           (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version" log.txt
@@ -70,6 +73,9 @@ jobs:
           make switch
           eval $(opam env)
           make
+          ./hol.sh -version
+          ./hol.sh -version | grep -F "(commit $(git rev-parse HEAD))"
+          ./hol.sh -help
           (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
@@ -83,17 +89,13 @@ jobs:
           make clean
           export HOLLIGHT_USE_MODULE=1
           make
+          ./hol.sh -version
+          ./hol.sh -version | grep -F "(commit $(git rev-parse HEAD))"
+          ./hol.sh -help
           ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./UnitTests/basic_tests.byte
-          ./UnitTests/basic_tests.native
-          ./UnitTests/printer_tests.byte
-          ./UnitTests/printer_tests.native
-          ./UnitTests/parser_tests.byte
-          ./UnitTests/parser_tests.native
-          ./UnitTests/records.byte
-          ./UnitTests/records.native
+          for t in UnitTests/*.byte UnitTests/*.native; do ./$t; done
 
   test3:
     runs-on: ubuntu-22.04
@@ -117,6 +119,9 @@ jobs:
           make switch-5
           eval $(opam env)
           make
+          ./hol.sh -version
+          ./hol.sh -version | grep -F "(commit $(git rev-parse HEAD))"
+          ./hol.sh -help
           (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
@@ -130,15 +135,11 @@ jobs:
           make clean
           export HOLLIGHT_USE_MODULE=1
           make
+          ./hol.sh -version
+          ./hol.sh -version | grep -F "(commit $(git rev-parse HEAD))"
+          ./hol.sh -help
           (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
           grep "Error" log.txt && exit 1
           grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./UnitTests/basic_tests.byte
-          ./UnitTests/basic_tests.native
-          ./UnitTests/printer_tests.byte
-          ./UnitTests/printer_tests.native
-          ./UnitTests/parser_tests.byte
-          ./UnitTests/parser_tests.native
-          ./UnitTests/records.byte
-          ./UnitTests/records.native
+          for t in UnitTests/*.byte UnitTests/*.native; do ./$t; done
 

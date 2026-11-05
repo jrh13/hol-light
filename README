@@ -264,23 +264,24 @@ checkpointing programs.
 
                          COMPILING HOL LIGHT
 
-Running 'HOLLIGHT_USE_MODULE=1 make' will compile hol_lib.ml and generate
-hol_lib.cmo/hol_lib.cmx. This will also create hol.sh which will configure
-hol.ml to use the compiled hol_lib.cmo (but not hol_lib.cmx). Compiling
-HOL Light will only work on OCaml 4.14 or above.
+Running 'make HOLLIGHT_USE_MODULE=1' (or 'HOLLIGHT_USE_MODULE=1 make') will
+compile hol_lib.ml and generate hol_lib.cmo/hol_lib.cmx. This will also create
+hol.sh which will configure hol.ml to use the compiled hol_lib.cmo (but not
+hol_lib.cmx). Compiling HOL Light will only work on OCaml 4.14 or above.
+The setting is saved in 'config.mk', so later runs of plain 'make' keep using
+it; pass 'HOLLIGHT_USE_MODULE=0' to switch back, or run 'make distclean'.
 
 To compile an OCaml file that opens Hol_lib using OCaml native compiler,
 use the following commands:
 
-    hol.sh compile <input.ml> <output.cmx>
-    hol.sh link <output.cmx> <output.native>
+    hol.sh compile <input.ml>          (produces <input.cmx>)
+    hol.sh link <input.cmx> -o <output.native>
 
 To compile an OCaml file that opens Hol_lib using OCaml bytecode compiler,
-use the following command.
+use the following commands:
 
-    ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
-      -I (HOL dir) (HOL dir)/bignum.cmo (HOL dir)/hol_loader.cmo \
-      (HOL dir)/hol_lib.cmo (input.ml) -o (output)
+    hol.sh compile-byte <input.ml>     (produces <input.cmo>)
+    hol.sh link-byte <input.cmo> -o <output.byte>
 
 The load functions (loads/loadt/needs) are not available anymore in this
 approach. Please use 'ocaml inline_loads.ml <input.ml> <output.ml>' to inline
