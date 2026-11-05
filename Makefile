@@ -43,32 +43,36 @@ OCAML_UNARY_VERSION=`ocamlc -version | cut -c1`
 # 'make HOLLIGHT_USE_MODULE=1' (or 'HOLLIGHT_USE_MODULE=1 make') records it,
 # and later plain 'make' invocations reuse it until a different value is given
 # explicitly. 'make distclean' forgets it.
+#
+# config.mk is only read here (it is not included as a makefile), and it is
+# only written by the recipe of the 'config.mk' target below, so previewing or
+# querying a build ('make -n', 'make -q') never changes the saved setting.
 
 CONFIG_FILE=config.mk
 
 ifeq ($(origin HOLLIGHT_USE_MODULE),undefined)
--include $(CONFIG_FILE)
-else
-# Given explicitly: save it, touching the file only if the value has changed
-# so that hol.sh is rebuilt exactly when the setting changes.
-$(shell echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" | cmp -s - $(CONFIG_FILE) || \
-        echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" > $(CONFIG_FILE))
+HOLLIGHT_USE_MODULE:=$(shell sed -n 's/^HOLLIGHT_USE_MODULE=//p' $(CONFIG_FILE) 2>/dev/null)
+ifeq ($(HOLLIGHT_USE_MODULE),)
+HOLLIGHT_USE_MODULE:=0
 endif
-
-HOLLIGHT_USE_MODULE?=0
+endif
 
 # The version (from the opam file) and the git commit printed by 'hol.sh -version'
 
 HOLLIGHT_VERSION:=$(shell sed -n 's/^version: *"\(.*\)"/\1/p' opam)
-HOLLIGHT_COMMIT:=$(shell h=`test -e .git && git rev-parse HEAD 2>/dev/null` && echo "commit $$h" || echo "release tarball")
+HOLLIGHT_COMMIT:=$(shell h=`test -e .git && git rev-parse HEAD 2>/dev/null` && echo "commit $$h" || echo "commit unknown")
 
 # Main target
 
 default: update_database.ml pa_j.cmo hol.sh;
 
-# Save the configuration if it has not been saved yet
+# Save the configuration, writing config.mk only if the value has changed.
 
-$(CONFIG_FILE):; echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" > $(CONFIG_FILE)
+$(CONFIG_FILE): FORCE
+	@echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" | cmp -s - $(CONFIG_FILE) || \
+	  echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" > $(CONFIG_FILE)
+
+FORCE:
 
 # Create a local OPAM switch and install dependencies on it.
 # This will use the latest OCaml version that fully supports features of
@@ -154,9 +158,19 @@ hol_lib.cmxa: hol_lib.cmx hol_loader.cmx bignum.cmx ; \
         ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx hol_loader.cmx hol_lib.cmx
 
 # Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
+#
+# hol.sh records the HOLLIGHT_USE_MODULE setting it was generated with. It is
+# regenerated whenever that differs from the current setting. This compares
+# the values themselves rather than timestamps, which may be too coarse to
+# order config.mk and hol.sh when the setting is changed quickly.
 
-hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml $(CONFIG_FILE) \
-        hol_4.sh hol_4.14.sh opam
+HOLSH_USE_MODULE:=$(shell sed -n 's/^export HOLLIGHT_USE_MODULE=//p' hol.sh 2>/dev/null)
+ifneq ($(HOLSH_USE_MODULE),$(HOLLIGHT_USE_MODULE))
+hol.sh: FORCE
+endif
+
+hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml \
+        hol_4.sh hol_4.14.sh $(wildcard opam) | $(CONFIG_FILE)
 	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
 		if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; then \
 			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo hol_loader.cmo ; \
@@ -309,4 +323,4 @@ clean:; \
 
 distclean: clean; rm -f $(CONFIG_FILE)
 
-.PHONY: default switch switch-5 all install clean distclean
+.PHONY: default switch switch-5 all install clean distclean FORCE

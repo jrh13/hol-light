@@ -71,7 +71,7 @@ if [ "$#" -gt 1 ]; then
   if [ "$1" == "inline-load" ]; then
     # Do the inlining.
     shift
-    ocaml ${HOLLIGHT_DIR}/inline_load.ml $@
+    ocaml "${HOLLIGHT_DIR}/inline_load.ml" "$@"
     exit $?
 
   elif [ "$1" == "compile" ]; then
@@ -80,29 +80,29 @@ if [ "$#" -gt 1 ]; then
     OCAMLRUNPARAM=l=2000000000 ocamlopt.byte \
         -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I \"${HOLLIGHT_DIR}\" pa_j.cmo" \
         -I "${HOLLIGHT_DIR}" -I +unix -c \
-        hol_lib.cmxa $@
+        hol_lib.cmxa "$@"
     exit $?
 
   elif [ "$1" == "link" ]; then
     # Link the native module
     shift
     ocamlfind ocamlopt -package zarith,unix -linkpkg hol_lib.cmxa \
-        -I "${HOLLIGHT_DIR}" $@
+        -I "${HOLLIGHT_DIR}" "$@"
     exit $?
 
   elif [ "$1" == "compile-byte" ]; then
     # Compile the source code to OCaml bytecode using ocamlc.
     shift
-    ocamlfind ocamlc -package zarith \
+    ocamlfind ocamlc -package zarith,unix \
         -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I \"${HOLLIGHT_DIR}\" pa_j.cmo" \
-        -I "${HOLLIGHT_DIR}" -c $@
+        -I "${HOLLIGHT_DIR}" -c "$@"
     exit $?
 
   elif [ "$1" == "link-byte" ]; then
     # Link the bytecode module
     shift
     ocamlfind ocamlc -package zarith,unix -linkpkg hol_lib.cma \
-        -I "${HOLLIGHT_DIR}" $@
+        -I "${HOLLIGHT_DIR}" "$@"
     exit $?
 
   fi
