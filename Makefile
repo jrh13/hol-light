@@ -38,12 +38,47 @@ OCAML_UNARY_VERSION=`ocamlc -version | cut -c1`
 # an HOL Light proof and replaces the loads/loadt/needs function invocations
 # with their actual contents. Please turn this flag on only if having this
 # additional trusted base is considered okay.
+#
+# The setting is remembered in 'config.mk', so it only has to be given once:
+# 'make HOLLIGHT_USE_MODULE=1' (or 'HOLLIGHT_USE_MODULE=1 make') records it,
+# and later plain 'make' invocations reuse it until a different value is given
+# explicitly. 'make distclean' forgets it.
+#
+# config.mk is only read here (it is not included as a makefile), and it is
+# only written by the recipe of the 'config.mk' target below, so previewing or
+# querying a build ('make -n', 'make -q') never changes the saved setting.
 
-HOLLIGHT_USE_MODULE?=0
+CONFIG_FILE=config.mk
+
+ifeq ($(origin HOLLIGHT_USE_MODULE),undefined)
+HOLLIGHT_USE_MODULE:=$(shell sed -n 's/^HOLLIGHT_USE_MODULE=//p' $(CONFIG_FILE) 2>/dev/null)
+ifeq ($(HOLLIGHT_USE_MODULE),)
+HOLLIGHT_USE_MODULE:=0
+endif
+endif
+
+# The version (from the opam file) and the git commit printed by 'hol.sh -version'
+
+HOLLIGHT_VERSION:=$(shell sed -n 's/^version: *"\(.*\)"/\1/p' opam)
+HOLLIGHT_COMMIT:=$(shell h=`test -e .git && git rev-parse HEAD 2>/dev/null` && echo "commit $$h" || echo "commit unknown")
 
 # Main target
 
 default: update_database.ml pa_j.cmo hol.sh;
+
+# Save the configuration. config.mk is (re)written only when it is missing or
+# holds a different value, so that when nothing has changed make has no recipe
+# to run: 'make -q' reports up to date and 'make' says there is nothing to do.
+
+CONFIG_USE_MODULE:=$(shell sed -n 's/^HOLLIGHT_USE_MODULE=//p' $(CONFIG_FILE) 2>/dev/null)
+ifneq ($(CONFIG_USE_MODULE),$(HOLLIGHT_USE_MODULE))
+$(CONFIG_FILE): FORCE
+endif
+
+$(CONFIG_FILE):
+	echo "HOLLIGHT_USE_MODULE=$(HOLLIGHT_USE_MODULE)" > $(CONFIG_FILE)
+
+FORCE:
 
 # Create a local OPAM switch and install dependencies on it.
 # This will use the latest OCaml version that fully supports features of
@@ -129,15 +164,26 @@ hol_lib.cmxa: hol_lib.cmx hol_loader.cmx bignum.cmx ; \
         ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx hol_loader.cmx hol_lib.cmx
 
 # Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
+#
+# hol.sh records the HOLLIGHT_USE_MODULE setting it was generated with. It is
+# regenerated whenever that differs from the current setting. This compares
+# the values themselves rather than timestamps, which may be too coarse to
+# order config.mk and hol.sh when the setting is changed quickly.
 
-hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml
+HOLSH_USE_MODULE:=$(shell sed -n 's/^export HOLLIGHT_USE_MODULE=//p' hol.sh 2>/dev/null)
+ifneq ($(HOLSH_USE_MODULE),$(HOLLIGHT_USE_MODULE))
+hol.sh: FORCE
+endif
+
+hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml \
+        hol_4.sh hol_4.14.sh $(wildcard opam) | $(CONFIG_FILE)
 	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
 		if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; then \
 			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo hol_loader.cmo ; \
-			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g" hol_4.14.sh > hol.sh ; \
+			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g; s^__VERSION__^$(HOLLIGHT_VERSION)^g; s^__COMMIT__^$(HOLLIGHT_COMMIT)^g" hol_4.14.sh > hol.sh ; \
 		else \
 			ocamlmktop -o ocaml-hol nums.cma bignum.cmo hol_loader.cmo ; \
-			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g" hol_4.sh > hol.sh ; \
+			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g; s^__VERSION__^$(HOLLIGHT_VERSION)^g; s^__COMMIT__^$(HOLLIGHT_COMMIT)^g" hol_4.sh > hol.sh ; \
 		fi ; \
 		chmod +x hol.sh ; \
 	else \
@@ -145,66 +191,36 @@ hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml
 	fi
 
 # If HOLLIGHT_USE_MODULE is set, add hol_lib.cmo to dependency of hol.sh
-# Also, build the test suites in UnitTests/ using both OCaml bytecode compiler
-# and OCaml native compiler. Native builds go via `hol.sh compile/link`;
-# bytecode builds invoke ocamlfind directly because hol.sh has no byte mode.
+# Also, build every test suite UnitTests/<name>.ml using both the OCaml
+# bytecode compiler (UnitTests/<name>.byte) and the OCaml native compiler
+# (UnitTests/<name>.native), through 'hol.sh compile/link' and
+# 'hol.sh compile-byte/link-byte' respectively.
+
+UNIT_TESTS=$(patsubst %.ml,%,$(filter-out %_inlined.ml,$(wildcard UnitTests/*.ml)))
 
 ifeq ($(HOLLIGHT_USE_MODULE),1)
 hol.sh: hol_lib.cmo
 
-# UnitTests/basic_tests.ml: general HOL Light correctness checks.
-UnitTests/basic_tests_inlined.ml: UnitTests/basic_tests.ml inline_load.ml hol.sh ; \
-        ./hol.sh inline-load UnitTests/basic_tests.ml UnitTests/basic_tests_inlined.ml
-UnitTests/basic_tests.byte: UnitTests/basic_tests_inlined.ml hol_lib.cmo hol.sh ; \
-        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
-        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
-        UnitTests/basic_tests_inlined.ml -o UnitTests/basic_tests.byte
-UnitTests/basic_tests.native: UnitTests/basic_tests_inlined.cmx hol_lib.cmxa hol.sh ; \
-        ./hol.sh link UnitTests/basic_tests_inlined.cmx -o UnitTests/basic_tests.native
-UnitTests/basic_tests_inlined.cmx: UnitTests/basic_tests_inlined.ml hol_lib.cmxa hol.sh ; \
-        ./hol.sh compile UnitTests/basic_tests_inlined.ml
+UnitTests/%_inlined.ml: UnitTests/%.ml inline_load.ml hol.sh ; \
+        ./hol.sh inline-load $< $@
+UnitTests/%_inlined.cmx: UnitTests/%_inlined.ml hol_lib.cmxa hol.sh ; \
+        ./hol.sh compile $<
+# Both compilers write UnitTests/<name>_inlined.cmi; serialize them so that
+# a parallel make does not run the two at the same time.
+UnitTests/%_inlined.cmo: UnitTests/%_inlined.ml hol_lib.cma hol.sh | UnitTests/%_inlined.cmx ; \
+        ./hol.sh compile-byte $<
+UnitTests/%.native: UnitTests/%_inlined.cmx hol_lib.cmxa hol.sh ; \
+        ./hol.sh link $< -o $@
+UnitTests/%.byte: UnitTests/%_inlined.cmo hol_lib.cma hol.sh ; \
+        ./hol.sh link-byte $< -o $@
 
-# UnitTests/printer_tests.ml: pp_print_term output verification.
-UnitTests/printer_tests_inlined.ml: UnitTests/printer_tests.ml inline_load.ml hol.sh ; \
-        ./hol.sh inline-load UnitTests/printer_tests.ml UnitTests/printer_tests_inlined.ml
-UnitTests/printer_tests.byte: UnitTests/printer_tests_inlined.ml hol_lib.cmo hol.sh ; \
-        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
-        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
-        UnitTests/printer_tests_inlined.ml -o UnitTests/printer_tests.byte
-UnitTests/printer_tests.native: UnitTests/printer_tests_inlined.cmx hol_lib.cmxa hol.sh ; \
-        ./hol.sh link UnitTests/printer_tests_inlined.cmx -o UnitTests/printer_tests.native
-UnitTests/printer_tests_inlined.cmx: UnitTests/printer_tests_inlined.ml hol_lib.cmxa hol.sh ; \
-        ./hol.sh compile UnitTests/printer_tests_inlined.ml
-
-# UnitTests/parser_tests.ml: parsing and typechecking of quotations.
-UnitTests/parser_tests_inlined.ml: UnitTests/parser_tests.ml inline_load.ml hol.sh ; \
-        ./hol.sh inline-load UnitTests/parser_tests.ml UnitTests/parser_tests_inlined.ml
-UnitTests/parser_tests.byte: UnitTests/parser_tests_inlined.ml hol_lib.cmo hol.sh ; \
-        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
-        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
-        UnitTests/parser_tests_inlined.ml -o UnitTests/parser_tests.byte
-UnitTests/parser_tests.native: UnitTests/parser_tests_inlined.cmx hol_lib.cmxa hol.sh ; \
-        ./hol.sh link UnitTests/parser_tests_inlined.cmx -o UnitTests/parser_tests.native
-UnitTests/parser_tests_inlined.cmx: UnitTests/parser_tests_inlined.ml hol_lib.cmxa hol.sh ; \
-        ./hol.sh compile UnitTests/parser_tests_inlined.ml
-
-# UnitTests/records.ml: record type (Library/records.ml) checks.
-UnitTests/records_inlined.ml: UnitTests/records.ml inline_load.ml hol.sh ; \
-        ./hol.sh inline-load UnitTests/records.ml UnitTests/records_inlined.ml
-UnitTests/records.byte: UnitTests/records_inlined.ml hol_lib.cmo hol.sh ; \
-        ocamlfind ocamlc -package zarith -linkpkg -pp "`./hol.sh -pp`" \
-        -I . bignum.cmo hol_loader.cmo hol_lib.cmo \
-        UnitTests/records_inlined.ml -o UnitTests/records.byte
-UnitTests/records.native: UnitTests/records_inlined.cmx hol_lib.cmxa hol.sh ; \
-        ./hol.sh link UnitTests/records_inlined.cmx -o UnitTests/records.native
-UnitTests/records_inlined.cmx: UnitTests/records_inlined.ml hol_lib.cmxa hol.sh ; \
-        ./hol.sh compile UnitTests/records_inlined.ml
+# Keep the intermediate files of the rules above.
+.SECONDARY: $(addsuffix _inlined.ml,$(UNIT_TESTS)) \
+            $(addsuffix _inlined.cmx,$(UNIT_TESTS)) \
+            $(addsuffix _inlined.cmo,$(UNIT_TESTS))
 
 default: hol_lib.cma hol_lib.cmxa \
-         UnitTests/basic_tests.byte UnitTests/basic_tests.native \
-         UnitTests/printer_tests.byte UnitTests/printer_tests.native \
-         UnitTests/parser_tests.byte UnitTests/parser_tests.native \
-         UnitTests/records.byte UnitTests/records.native
+         $(addsuffix .byte,$(UNIT_TESTS)) $(addsuffix .native,$(UNIT_TESTS))
 endif
 
 # Build a standalone hol image called "hol" (needs Linux and DMTCP)
@@ -302,16 +318,15 @@ clean:; \
          update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
          hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
          hol_loader.c* hol_loader.o \
-         UnitTests/basic_tests_inlined.* \
-         UnitTests/basic_tests.byte UnitTests/basic_tests.native \
-         UnitTests/printer_tests_inlined.* \
-         UnitTests/printer_tests.byte UnitTests/printer_tests.native \
-         UnitTests/parser_tests_inlined.* \
-         UnitTests/parser_tests.byte UnitTests/parser_tests.native \
-         UnitTests/records_inlined.* \
-         UnitTests/records.byte UnitTests/records.native \
+         UnitTests/*_inlined.* UnitTests/*.byte UnitTests/*.native \
          ocaml-hol hol.sh hol hol.ckpt \
          hol.multivariate hol.multivariate.ckpt \
          hol.sosa hol.sosa.ckpt \
          hol.card hol.card.ckpt \
          hol.complex hol.complex.ckpt
+
+# Also forget the configuration saved in config.mk
+
+distclean: clean; rm -f $(CONFIG_FILE)
+
+.PHONY: default switch switch-5 all install clean distclean FORCE

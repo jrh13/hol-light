@@ -15,14 +15,48 @@ on:
       - master
 
 jobs:
-  test1:
+  test:
     runs-on: ubuntu-22.04
-    name: OCaml 4.06, Camlp5 7.10
+    name: ${{ matrix.name }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 'switch' is the Makefile target creating the local OPAM switch,
+          # or 'legacy' for an old OCaml from the opam archive repo.
+          # 'banner' is the Camlp5 banner hol.sh must print.
+          # 'module' also tests the HOLLIGHT_USE_MODULE=1 build.
+          - name: OCaml 4.06, Camlp5 7.10
+            switch: legacy
+            banner: Camlp5 parsing version
+            module: false
+          - name: OCaml 4.14, Camlp5 8.03 (make switch)
+            switch: switch
+            banner: Camlp5 parsing version (HOL-Light)
+            module: true
+          - name: OCaml 5.5, Camlp5 8.05 (make switch-5)
+            switch: switch-5
+            banner: Camlp5 parsing version (HOL-Light)
+            module: true
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: hol-light
 
     steps:
-      - name: Install dependency
+      - name: Checkout this repo
+        uses: actions/checkout@v7
+        with:
+          path: hol-light
+
+      - name: Install OPAM
+        run: sudo apt update && sudo apt install -y opam xdot
+
+      - name: Set up OCaml 4.06 (opam archive repo)
+        if: matrix.switch == 'legacy'
         run: |
-          sudo apt update && sudo apt install -y opam
           # Old OCaml versions live in the opam archive repo, so add it as a
           # default repository before creating the switch.
           opam init -n --disable-sandboxing --bare
@@ -33,112 +67,39 @@ jobs:
           opam pin -y add camlp5 7.10
           opam install -y num ledit camlp-streams ocamlfind
 
-      - name: Checkout this repo
-        uses: actions/checkout@v7
-        with:
-          path: hol-light
-
-      - name: Run
+      - name: Set up OCaml (make ${{ matrix.switch }})
+        if: matrix.switch != 'legacy'
         run: |
-          set -xe
-          cd hol-light
-          eval $(opam env)
-          make
-          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
-          grep "Error" log.txt && exit 1
-          grep "Camlp5 parsing version" log.txt
-
-  test2:
-    runs-on: ubuntu-22.04
-    name: OCaml 4.14, Camlp5 8.03 (make switch)
-
-    steps:
-      - name: Install dependency
-        run: |
-          sudo apt update && sudo apt install -y opam xdot
           opam init --disable-sandboxing
+          make ${{ matrix.switch }}
 
-      - name: Checkout this repo
-        uses: actions/checkout@v7
-        with:
-          path: hol-light
+      - name: Build
+        run: opam exec -- make
 
-      - name: Run
+      - name: Check hol.sh -version and -help
+        run: opam exec -- .github/ci/check-hol-sh.sh
+
+      - name: Load HOL Light
+        run: opam exec -- .github/ci/check-load.sh "${{ matrix.banner }}"
+
+      - name: Build (HOLLIGHT_USE_MODULE=1)
+        if: matrix.module
         run: |
-          set -xe
-          cd hol-light
-          make switch
-          eval $(opam env)
-          make
-          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
-          grep "Error" log.txt && exit 1
-          grep "Camlp5 parsing version (HOL-Light)" log.txt
-          cd ..
+          opam exec -- make clean
+          HOLLIGHT_USE_MODULE=1 opam exec -- make
 
-      - name: Run (HOLLIGHT_USE_MODULE=1)
-        run: |
-          set -xe
-          cd hol-light
-          eval $(opam env)
-          make clean
-          export HOLLIGHT_USE_MODULE=1
-          make
-          ./hol.sh 2>&1 | tee log.txt
-          grep "Error" log.txt && exit 1
-          grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./UnitTests/basic_tests.byte
-          ./UnitTests/basic_tests.native
-          ./UnitTests/printer_tests.byte
-          ./UnitTests/printer_tests.native
-          ./UnitTests/parser_tests.byte
-          ./UnitTests/parser_tests.native
-          ./UnitTests/records.byte
-          ./UnitTests/records.native
+      - name: Check hol.sh -version and -help (HOLLIGHT_USE_MODULE=1)
+        if: matrix.module
+        run: opam exec -- .github/ci/check-hol-sh.sh 1
 
-  test3:
-    runs-on: ubuntu-22.04
-    name: OCaml 5.5, Camlp5 8.05 (make switch-5)
+      - name: Load HOL Light (HOLLIGHT_USE_MODULE=1)
+        if: matrix.module
+        run: opam exec -- .github/ci/check-load.sh "${{ matrix.banner }}"
 
-    steps:
-      - name: Install dependency
-        run: |
-          sudo apt update && sudo apt install -y opam xdot
-          opam init --disable-sandboxing
+      - name: Run unit tests
+        if: matrix.module
+        run: for t in UnitTests/*.byte UnitTests/*.native; do opam exec -- ./$t; done
 
-      - name: Checkout this repo
-        uses: actions/checkout@v7
-        with:
-          path: hol-light
-
-      - name: Run
-        run: |
-          set -xe
-          cd hol-light
-          make switch-5
-          eval $(opam env)
-          make
-          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
-          grep "Error" log.txt && exit 1
-          grep "Camlp5 parsing version (HOL-Light)" log.txt
-          cd ..
-
-      - name: Run (HOLLIGHT_USE_MODULE=1)
-        run: |
-          set -xe
-          cd hol-light
-          eval $(opam env)
-          make clean
-          export HOLLIGHT_USE_MODULE=1
-          make
-          (echo 'loadt "update_database.ml";;') | ./hol.sh 2>&1 | tee log.txt
-          grep "Error" log.txt && exit 1
-          grep "Camlp5 parsing version (HOL-Light)" log.txt
-          ./UnitTests/basic_tests.byte
-          ./UnitTests/basic_tests.native
-          ./UnitTests/printer_tests.byte
-          ./UnitTests/printer_tests.native
-          ./UnitTests/parser_tests.byte
-          ./UnitTests/parser_tests.native
-          ./UnitTests/records.byte
-          ./UnitTests/records.native
-
+      - name: Check that HOLLIGHT_USE_MODULE is remembered correctly
+        if: matrix.module
+        run: opam exec -- .github/ci/check-config.sh

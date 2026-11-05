@@ -1,0 +1,39 @@
+\DOC check_axioms
+
+\TYPE {check_axioms : unit -> unit}
+
+\SYNOPSIS
+Checks that no axioms other than the three basic ones have been asserted.
+
+\DESCRIBE
+A call {check_axioms()} examines the current list of axioms, as returned by
+{axioms()}, and succeeds (returning {()}) if every one of them is one of the
+three axioms of the HOL Light core, namely the axiom of infinity
+{INFINITY_AX}, the axiom of choice {SELECT_AX} and the extensionality axiom
+{ETA_AX}. This gives a simple way of confirming that a development has been
+carried out purely by definitional extension, for example at the end of a
+proof script.
+
+\FAILURE
+Fails if any other axiom has been introduced, e.g. by {new_axiom}. The failure
+message lists the extra axioms.
+
+\EXAMPLE
+In a fresh HOL Light session, the check succeeds:
+{
+  # check_axioms();;
+  val it : unit = ()
+}
+\noindent but after asserting an axiom it fails:
+{
+  # new_axiom `x = 1`;;
+  val it : thm = |- x = 1
+
+  # check_axioms();;
+  Exception: Failure "check_axioms: [|- x = 1]".
+}
+
+\SEEALSO
+axioms, new_axiom, mk_thm.
+
+\ENDDOC
