@@ -120,6 +120,7 @@ EXTENDED_EXAMPLES:=\
 	RichterHilbertAxiomGeometry/miz3/make \
 	RichterHilbertAxiomGeometry/HilbertAxiom_read \
 	Rqe/make \
+	Sieve/make \
 	Unity/make \
 	WZ/make \
 	Multivariate/cross \

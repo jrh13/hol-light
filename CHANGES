@@ -8,6 +8,49 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu  5th Nov 2026       Sieve/* [new directory], holtest.mk
+
+Added a directory of sieve methods and their applications to the primes,
+leading to Chen's theorem in both of its forms, CHEN and CHEN_TWIN_INFINITE:
+every large even number is a prime plus a P2 (a prime or a product of two
+primes), and there are infinitely many primes p with p + 2 a P2:
+
+  |- ?N0. !N. EVEN N /\ N0 <= N
+              ==> ?p q. prime p /\ almost_prime 2 q /\ p + q = N
+
+  |- INFINITE {p | prime p /\ almost_prime 2 (p + 2)}
+
+with the lower bounds CHEN_GOLDBACH, CHEN_TWIN and CHEN_SHIFT (any
+positive even shift). The sieve framework is Rosser's beta-sieve with the
+Jurkat-Richert theorem for the linear sieve (JURKAT_RICHERT), with Selberg's
+and Brun's sieves and Chen's weighted sieve. The analytic input is proved
+on top of 100/pnt.ml and 100/dirichlet.ml: primitive characters and
+L-functions, Siegel's theorem, a zero-free region, a smoothed Perron
+formula, Vaughan's identity, the large sieve, SIEGEL_WALFISZ and
+BOMBIERI_VINOGRADOV. The other main theorems are
+
+        BRUN, PNT_AP, BRUN_TITCHMARSH, ERDOS_PRIME_PLUS_POW2, ROMANOV,
+        TITCHMARSH_DIVISOR, HARDY_RAMANUJAN
+        MAYNARD_TAO, BOUNDED_GAPS (bounded gaps between primes)
+        VINOGRADOV (three primes), GOLDBACH_ALMOST_ALL
+        WARING_HARDY_LITTLEWOOD (G(k) <= 2^k + 1), HILBERT_WARING
+        LINNIK_NONRESIDUE, BARBAN_DAVENPORT_HALBERSTAM,
+        HUA_FIVE_PRIME_SQUARES, SQUARE_PLUS_ONE_P4, SQUARE_PLUS_ONE_P3
+        VAN_DER_CORPUT (three-term progressions of primes)
+        GREEN_TAO, GREEN_TAO_COUNT, GREEN_TAO_DENSE, GREEN_TAO_DENSE_COUNT
+
+the last ones by the Green-Tao majorant, the transference with the dense
+model theorem and the relative Szemeredi theorem (RELATIVE_SZEMEREDI), and
+WEIGHTED_SZEMEREDI from Library/szemeredi.ml. Sieve/make.ml loads
+everything (Sieve/base.ml first: Multivariate/cauchy.ml,
+Library/multiplicative.ml, 100/pnt.ml, 100/dirichlet.ml,
+Examples/schnirelmann.ml and Library/szemeredi.ml); Sieve/README.md
+describes the results, the files and the sources. Each development file
+sets the parse priorities it was written with (complex, then real, then
+num) after its needs lines. Most topic-specific constants have prefixes
+(sieve_, rosser_, selberg_, chen_, maynard_, col_, bv_, waring_, hua_,
+goldbach_, lf_, zn_, ...). holtest.mk now tests Sieve/make.ml.
+
 Thu  5th Nov 2026       Library/szemeredi.ml [new file]
 
 Added Szemeredi's theorem and related results of Ramsey theory, all derived
