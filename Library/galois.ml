@@ -1135,6 +1135,44 @@ let ARTIN_FIXED_FIELD = prove
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN
   ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC);;
 
+(* Artin for a group G of automorphisms with finite orbits, not necessarily  *)
+(* finite: every element of l is separable over the fixed field of G with    *)
+(* split minimal polynomial (MINIMAL_POLYNOMIAL_FINITE_ORBIT), so l is       *)
+(* Galois over it. The Galois group is then the closure of G in the Krull    *)
+(* topology (ARTIN_FIXED_FIELD_FINITE_ORBITS in                              *)
+(* Multivariate/infinite_galois.ml).                                         *)
+let GALOIS_EXTENSION_FIXED_FIELD_FINITE_ORBITS = prove
+ (`!(l:B ring) G.
+        field l /\ G subgroup_of symmetric_group(ring_carrier l) /\
+        (!f. f IN G ==> ring_automorphism l f) /\
+        (!x. x IN ring_carrier l ==> FINITE {f x | f IN G})
+        ==> galois_extension(subfield_generated l (fixed_field l G),l) I`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `fixed_field l (G:(B->B)->bool) subfield_of l` ASSUME_TAC THENL
+   [MATCH_MP_TAC SUBFIELD_OF_FIXED_FIELD THEN
+    ASM_MESON_TAC[RING_AUTOMORPHISM_IMP_ENDOMORPHISM];
+    ALL_TAC] THEN
+  ABBREV_TAC `K = subfield_generated l (fixed_field l (G:(B->B)->bool))` THEN
+  SUBGOAL_THEN `ring_carrier K = fixed_field l (G:(B->B)->bool)`
+  ASSUME_TAC THENL
+   [EXPAND_TAC "K" THEN ASM_SIMP_TAC[CARRIER_SUBFIELD_GENERATED_SUBFIELD];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `field_extension(K,l) (I:B->B)` ASSUME_TAC THENL
+   [EXPAND_TAC "K" THEN ASM_REWRITE_TAC[FIELD_EXTENSION_SUBFIELD_GENERATED];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!a:B. a IN ring_carrier l
+          ==> algebraic_over(K,l) I a /\ separable_element(K,l) I a /\
+              poly_splits_over(K,l) I (minimal_polynomial(K,l) I a)`
+  ASSUME_TAC THENL
+   [X_GEN_TAC `a:B` THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`I:B->B`; `K:B ring`; `l:B ring`; `G:(B->B)->bool`; `a:B`]
+      MINIMAL_POLYNOMIAL_FINITE_ORBIT) THEN
+    ASM_SIMP_TAC[IMAGE_I; SUBSET_REFL];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[galois_extension; NORMAL_EXTENSION_EQ_MINIMAL_POLYNOMIALS_SPLIT;
+               separable_extension; algebraic_extension]);;
+
 let GALOIS_EXTENSION_EQ_FIXED_FIELD = prove
  (`!(h:A->B) k l.
         algebraic_extension(k,l) h
@@ -1225,6 +1263,136 @@ let GALOIS_GROUP_EQ_ON_GENERATORS = prove
     DISCH_TAC] THEN
   MATCH_MP_TAC PERMUTES_EQ THEN EXISTS_TAC `ring_carrier l:B->bool` THEN
   ASM_MESON_TAC[GALOIS_GROUP_PERMUTES]);;
+
+(* In a finite Galois extension l = k(a): f(a) = a for f in G only if f = I, *)
+(* and Df(a) is the product of the a - g(a), g in G, g <> I.                 *)
+let GALOIS_PRIMITIVE_ELEMENT_DERIVATIVE = prove
+ (`!(h:A->B) k l a.
+        finite_extension(k,l) h /\ galois_extension(k,l) h /\
+        a IN ring_carrier l /\
+        subring_generated l (a INSERT IMAGE h (ring_carrier k)) = l
+        ==> (!f g. f IN group_carrier(galois_group(k,l) h) /\
+                   g IN group_carrier(galois_group(k,l) h) /\ f a = g a
+                   ==> f = g) /\
+            poly_extend (k,l) h (\v. a)
+              (poly_deriv k (minimal_polynomial (k,l) h a)) =
+            ring_product l (group_carrier(galois_group(k,l) h) DELETE I)
+              (\f. ring_sub l a (f a))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  ABBREV_TAC `G = group_carrier(galois_group(k,l) (h:A->B))` THEN
+  ABBREV_TAC `f = minimal_polynomial (k,l) (h:A->B) a` THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP FINITE_IMP_FIELD_EXTENSION) THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [field_extension]) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP RING_MONOMORPHISM_IMP_HOMOMORPHISM) THEN
+  SUBGOAL_THEN `algebraic_over (k,l) (h:A->B) a` ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP FINITE_IMP_ALGEBRAIC_EXTENSION) THEN
+    REWRITE_TAC[algebraic_extension] THEN
+    DISCH_THEN(MATCH_MP_TAC o CONJUNCT2) THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `FINITE(G:(B->B)->bool)` ASSUME_TAC THENL
+   [EXPAND_TAC "G" THEN ASM_SIMP_TAC[FINITE_GALOIS_GROUP]; ALL_TAC] THEN
+  SUBGOAL_THEN `(I:B->B) IN G` ASSUME_TAC THENL
+   [EXPAND_TAC "G" THEN REWRITE_TAC[GALOIS_GROUP_I]; ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!g:B->B. g IN G
+             ==> ring_homomorphism(l,l) g /\
+                 (!x. x IN ring_carrier k ==> g((h:A->B) x) = h x) /\
+                 g a IN ring_carrier l`
+  ASSUME_TAC THENL
+   [EXPAND_TAC "G" THEN X_GEN_TAC `g:B->B` THEN DISCH_TAC THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP GALOIS_GROUP_RING_HOMOMORPHISM) THEN
+    ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+     [UNDISCH_TAC `g IN group_carrier(galois_group(k,l) (h:A->B))` THEN
+      SIMP_TAC[IN_GALOIS_GROUP];
+      MATCH_MP_TAC RING_HOMOMORPHISM_IN_CARRIER THEN
+      EXISTS_TAC `l:B ring` THEN ASM_REWRITE_TAC[]];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!f g:B->B. f IN G /\ g IN G /\ f a = g a ==> f = g`
+  ASSUME_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`f1:B->B`; `g1:B->B`] THEN STRIP_TAC THEN
+    REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `x:B` THEN
+    ASM_CASES_TAC `(x:B) IN ring_carrier l` THENL
+     [ALL_TAC;
+      SUBGOAL_THEN
+       `(f1:B->B) permutes ring_carrier l /\ (g1:B->B) permutes ring_carrier l`
+      MP_TAC THENL
+       [UNDISCH_TAC `(f1:B->B) IN G` THEN UNDISCH_TAC `(g1:B->B) IN G` THEN
+        EXPAND_TAC "G" THEN MESON_TAC[GALOIS_GROUP_PERMUTES];
+        REWRITE_TAC[permutes] THEN
+        DISCH_THEN(CONJUNCTS_THEN (MP_TAC o SPEC `x:B` o CONJUNCT1)) THEN
+        ASM_REWRITE_TAC[] THEN SIMP_TAC[]]] THEN
+    MP_TAC(ISPECL [`f1:B->B`; `g1:B->B`; `l:B ring`; `l:B ring`;
+                   `(a:B) INSERT IMAGE (h:A->B) (ring_carrier k)`]
+      RING_HOMOMORPHISMS_EQ_FROM_SUBRING_GENERATED) THEN
+    ASM_SIMP_TAC[] THEN ANTS_TAC THENL
+     [REWRITE_TAC[IN_INSERT; IN_IMAGE] THEN
+      X_GEN_TAC `y:B` THEN STRIP_TAC THEN ASM_SIMP_TAC[];
+      DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[]];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `poly_deg k (f:(1->num)->A) = CARD(G:(B->B)->bool)`
+  ASSUME_TAC THENL
+   [MP_TAC(ISPECL [`h:A->B`; `k:A ring`; `l:B ring`]
+      GALOIS_EXTENSION_EQ_CARD) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+    MP_TAC(ISPECL [`h:A->B`; `k:A ring`; `l:B ring`; `a:B`]
+      SUBFIELD_GENERATED_SIMPLE_ALGEBRAIC) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 (ASSUME_TAC o SYM) MP_TAC) THEN
+    ASM_REWRITE_TAC[] THEN STRIP_TAC THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `ring_polynomial k (f:(1->num)->A) /\ monic k f`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "f" THEN
+    ASM_SIMP_TAC[RING_POLYNOMIAL; MINIMAL_POLYNOMIAL_IN_CARRIER;
+                 MINIMAL_POLYNOMIAL_MONIC];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `poly_extend (k,l) (h:A->B) (\v. a) (poly_deriv k f) =
+    poly_eval l (poly_deriv l ((h:A->B) o (f:(1->num)->A))) a`
+  SUBST1_TAC THENL
+   [ASM_SIMP_TAC[POLY_EXTEND_EVALUATE; poly_eval] THEN AP_THM_TAC THEN
+    AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC POLY_DERIV_HOMOMORPHIC_IMAGE THEN
+    ASM_SIMP_TAC[RING_POLYNOMIAL_IMP_POWERSERIES];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `(h:A->B) o (f:(1->num)->A) =
+    ring_product (poly_ring l (:1)) G
+      (\g:B->B. poly_sub l (poly_var l one) (poly_const l (g a)))`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC MONIC_POLY_EQ_ROOTS_PRODUCT THEN REWRITE_TAC[] THEN
+    REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC FIELD_IMP_INTEGRAL_DOMAIN THEN ASM_REWRITE_TAC[];
+      REWRITE_TAC[GSYM RING_POLYNOMIAL] THEN
+      MATCH_MP_TAC RING_POLYNOMIAL_COMPOSE THEN EXISTS_TAC `k:A ring` THEN
+      ASM_REWRITE_TAC[];
+      MP_TAC(ISPECL [`k:A ring`; `l:B ring`; `h:A->B`; `f:(1->num)->A`]
+        MONIC_HOMOMORPHIC_IMAGE) THEN
+      ASM_REWRITE_TAC[GSYM RING_POLYNOMIAL] THEN
+      ASM_SIMP_TAC[FIELD_IMP_NONTRIVIAL_RING];
+      ASM_REWRITE_TAC[];
+      MP_TAC(ISPECL [`k:A ring`; `l:B ring`; `h:A->B`; `f:(1->num)->A`]
+        POLY_DEG_MONOMORPHIC_IMAGE) THEN
+      ASM_REWRITE_TAC[];
+      X_GEN_TAC `g:B->B` THEN DISCH_TAC THEN
+      FIRST_ASSUM(STRIP_ASSUME_TAC o C MATCH_MP (ASSUME `(g:B->B) IN G`)) THEN
+      ASM_REWRITE_TAC[] THEN
+      MP_TAC(ISPECL [`h:A->B`; `g:B->B`; `k:A ring`; `l:B ring`; `l:B ring`;
+                     `a:B`] MINIMAL_POLYNOMIAL_VANISHES_HOMOMORPHIC_IMAGE) THEN
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+      AP_THM_TAC THEN AP_TERM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+      REWRITE_TAC[FUN_EQ_THM; o_THM] THEN X_GEN_TAC `u:1->num` THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      UNDISCH_TAC `ring_polynomial k (f:(1->num)->A)` THEN
+      SIMP_TAC[ring_polynomial; ring_powerseries];
+      FIRST_ASSUM MATCH_ACCEPT_TAC];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPECL [`l:B ring`; `\g:B->B. g a`; `G:(B->B)->bool`; `I:B->B`]
+    POLY_EVAL_DERIV_RING_PRODUCT_X_MINUS) THEN
+  ASM_SIMP_TAC[I_THM]);;
 
 let ISOMORPHIC_GALOIS_GROUPS = prove
  (`!(h:A->B) (h':A->C) (f:B->C) k l l'.
@@ -2062,6 +2230,94 @@ let GALOIS_EXTENSION_NORMAL_SUBGROUP = prove
                FIELD_EXTENSION_INTO_SUBFIELD_GENERATED;
                FIELD_EXTENSION_SUBFIELD_GENERATED]);;
 
+(* In a finite Galois extension the subfield generated by the conjugates of  *)
+(* a subset s containing the image of k, the images of s under the Galois    *)
+(* group, is finite and Galois over k (the normal closure of s).             *)
+let GALOIS_EXTENSION_GENERATED_CONJUGATES = prove
+ (`!(h:A->B) k l s.
+        finite_extension(k,l) h /\ galois_extension(k,l) h /\
+        s SUBSET ring_carrier l /\ IMAGE h (ring_carrier k) SUBSET s
+        ==> finite_extension
+             (k,subfield_generated l
+               (UNIONS {IMAGE f s | f IN group_carrier(galois_group(k,l) h)}))
+             h /\
+            galois_extension
+             (k,subfield_generated l
+               (UNIONS {IMAGE f s | f IN group_carrier(galois_group(k,l) h)}))
+             h`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  ABBREV_TAC
+   `X = UNIONS {IMAGE f s | f IN group_carrier(galois_group(k,l) (h:A->B))}`
+  THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP FINITE_IMP_FIELD_EXTENSION) THEN
+  SUBGOAL_THEN `field(l:B ring)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[field_extension]; ALL_TAC] THEN
+  SUBGOAL_THEN `(s:B->bool) SUBSET X /\ X SUBSET ring_carrier l`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "X" THEN CONJ_TAC THENL
+     [REWRITE_TAC[SUBSET; IN_UNIONS; EXISTS_IN_GSPEC] THEN
+      X_GEN_TAC `y:B` THEN DISCH_TAC THEN EXISTS_TAC `I:B->B` THEN
+      ASM_REWRITE_TAC[GALOIS_GROUP_I; IMAGE_I];
+      REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC; SUBSET; FORALL_IN_IMAGE] THEN
+      ASM_MESON_TAC[GALOIS_GROUP_IN_CARRIER; SUBSET]];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!f. f IN group_carrier(galois_group(k,l) (h:A->B))
+        ==> IMAGE f X SUBSET X`
+  ASSUME_TAC THENL
+   [X_GEN_TAC `f:B->B` THEN DISCH_TAC THEN EXPAND_TAC "X" THEN
+    REWRITE_TAC[IMAGE_UNIONS; SUBSET; FORALL_IN_UNIONS; IMP_CONJ;
+                RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
+    X_GEN_TAC `g:B->B` THEN DISCH_TAC THEN X_GEN_TAC `y:B` THEN DISCH_TAC THEN
+    REWRITE_TAC[IN_UNIONS; EXISTS_IN_GSPEC] THEN
+    EXISTS_TAC `(f:B->B) o (g:B->B)` THEN
+    ASM_SIMP_TAC[GALOIS_GROUP_COMPOSE] THEN
+    REWRITE_TAC[IN_IMAGE; o_THM] THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `IMAGE (h:A->B) (ring_carrier k) SUBSET X` ASSUME_TAC THENL
+   [ASM SET_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[FINITE_EXTENSION_SUBFIELD_GENERATED] THEN
+  SUBGOAL_THEN
+   `normal_extension(k,subfield_generated l X) (h:A->B)`
+  ASSUME_TAC THENL
+   [MP_TAC(ISPECL [`h:A->B`; `k:A ring`; `l:B ring`;
+                   `ring_carrier(subfield_generated l (X:B->bool))`]
+      NORMAL_EXTENSION_EQ_GALOIS_STABLE) THEN
+    ASM_SIMP_TAC[GALOIS_IMP_NORMAL_EXTENSION; SUBFIELD_SUBFIELD_GENERATED;
+                 SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED] THEN
+    ANTS_TAC THENL
+     [TRANS_TAC SUBSET_TRANS `X:B->bool` THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC SUBSET_CARRIER_SUBFIELD_GENERATED THEN
+      ASM_REWRITE_TAC[SUBSET_REFL];
+      DISCH_THEN SUBST1_TAC] THEN
+    X_GEN_TAC `f:B->B` THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`l:B ring`; `l:B ring`; `f:B->B`; `X:B->bool`]
+      SUBFIELD_GENERATED_BY_MONOMORPHIC_IMAGE) THEN
+    ASM_SIMP_TAC[FIELD_SUBFIELD_GENERATED] THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[GALOIS_GROUP_RING_MONOMORPHISM]; ALL_TAC] THEN
+    DISCH_THEN(SUBST1_TAC o SYM) THEN MATCH_MP_TAC SUBFIELD_GENERATED_MONO THEN
+    ASM_SIMP_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `IMAGE (h:A->B) (ring_carrier k) SUBSET
+    ring_carrier(subfield_generated l X)`
+  ASSUME_TAC THENL
+   [TRANS_TAC SUBSET_TRANS `X:B->bool` THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC SUBSET_CARRIER_SUBFIELD_GENERATED THEN
+    ASM_REWRITE_TAC[SUBSET_REFL];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`h:A->B`; `k:A ring`; `l:B ring`;
+                 `ring_carrier(subfield_generated l (X:B->bool))`]
+    GALOIS_CORRESPONDENCE_NORMAL) THEN
+  ASM_SIMP_TAC[SUBFIELD_SUBFIELD_GENERATED;
+               SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`h:A->B`; `k:A ring`; `l:B ring`;
+                 `ring_carrier(subfield_generated l (X:B->bool))`]
+    GALOIS_EXTENSION_NORMAL_SUBGROUP) THEN
+  ASM_SIMP_TAC[SUBFIELD_SUBFIELD_GENERATED;
+               SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The fundamental theorem of Galois theory for a finite Galois extension,   *)
 (* collecting the correspondence, the order reversal in both directions, the *)
@@ -2134,6 +2390,74 @@ let FUNDAMENTAL_THEOREM_OF_GALOIS_THEORY = prove
       GALOIS_CORRESPONDENCE_NORMAL) THEN
     ASM_REWRITE_TAC[] THEN DISCH_THEN(ACCEPT_TAC o CONJUNCT1);
     MATCH_MP_TAC GALOIS_GROUP_QUOTIENT THEN ASM_REWRITE_TAC[]]);;
+
+(* A cyclic Galois group has one intermediate field of each degree.          *)
+let GALOIS_CYCLIC_INTERMEDIATE_UNIQUE = prove
+ (`!(h:A->B) k l s t.
+        finite_extension(k,l) h /\ galois_extension(k,l) h /\
+        cyclic_group(galois_group(k,l) h) /\
+        s subfield_of l /\ IMAGE h (ring_carrier k) SUBSET s /\
+        t subfield_of l /\ IMAGE h (ring_carrier k) SUBSET t /\
+        extension_degree(k,subfield_generated l s) h =
+        extension_degree(k,subfield_generated l t) h
+        ==> s = t`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`h:A->B`; `k:A ring`; `l:B ring`]
+    FUNDAMENTAL_THEOREM_OF_GALOIS_THEORY) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(fun th ->
+    let th2 = CONJUNCT1(CONJUNCT2 th)
+    and th5 = CONJUNCT1(funpow 4 CONJUNCT2 th) in
+    MP_TAC(CONJ (SPEC `s:B->bool` th2) (SPEC `t:B->bool` th2)) THEN
+    MP_TAC(CONJ (SPEC `s:B->bool` th5) (SPEC `t:B->bool` th5))) THEN
+  ASM_REWRITE_TAC[] THEN
+  ABBREV_TAC
+   `Hs = group_carrier(galois_group(subfield_generated l s,l) (I:B->B))` THEN
+  ABBREV_TAC
+   `Ht = group_carrier(galois_group(subfield_generated l t,l) (I:B->B))` THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(Hs:(B->B)->bool) = Ht` (fun th ->
+    ASM_MESON_TAC[th]) THEN
+  SUBGOAL_THEN `FINITE(group_carrier(galois_group(k,l) (h:A->B)))`
+  ASSUME_TAC THENL [ASM_SIMP_TAC[FINITE_GALOIS_GROUP]; ALL_TAC] THEN
+  SUBGOAL_THEN `CARD(Hs:(B->B)->bool) = CARD(Ht:(B->B)->bool)`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC(MESON[EQ_MULT_LCANCEL]
+     `!a x y:num. ~(a = 0) /\ a * x = a * y ==> x = y`) THEN
+    EXISTS_TAC `extension_degree(k,subfield_generated l t) (h:A->B)` THEN
+    CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+    DISCH_TAC THEN
+    MP_TAC(ISPEC `galois_group(k,l) (h:A->B)` GROUP_CARRIER_NONEMPTY) THEN
+    ASM_SIMP_TAC[CARD_EQ_0; GSYM MEMBER_NOT_EMPTY] THEN
+    ASM_MESON_TAC[MULT_CLAUSES; CARD_EQ_0];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `CARD(Ht:(B->B)->bool) divides
+                CARD(group_carrier(galois_group(k,l) (h:A->B)))`
+  ASSUME_TAC THENL
+   [REWRITE_TAC[divides] THEN
+    EXISTS_TAC `extension_degree(k,subfield_generated l t) (h:A->B)` THEN
+    ASM_MESON_TAC[MULT_SYM];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`galois_group(k,l) (h:A->B)`; `CARD(Ht:(B->B)->bool)`]
+    COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `FINITE {H | H subgroup_of galois_group(k,l) (h:A->B) /\
+                CARD H = CARD(Ht:(B->B)->bool)}`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC FINITE_SUBSET THEN
+    EXISTS_TAC `{H | H SUBSET group_carrier(galois_group(k,l) (h:A->B))}` THEN
+    ASM_SIMP_TAC[FINITE_POWERSET] THEN
+    SIMP_TAC[SUBSET; IN_ELIM_THM; subgroup_of];
+    ALL_TAC] THEN
+  MP_TAC(ISPEC `{H | H subgroup_of galois_group(k,l) (h:A->B) /\
+                     CARD H = CARD(Ht:(B->B)->bool)}` CARD_LE_1) THEN
+  ASM_REWRITE_TAC[LE_REFL] THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_SING] THEN
+  DISCH_THEN(X_CHOOSE_TAC `H0:(B->B)->bool`) THEN
+  FIRST_X_ASSUM(fun th -> MP_TAC(SPEC `Hs:(B->B)->bool` th) THEN
+                          MP_TAC(SPEC `Ht:(B->B)->bool` th)) THEN
+  ASM_REWRITE_TAC[] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The lattice of intermediate fields and conjugation. The Galois group of l *)
@@ -3092,6 +3416,107 @@ let FINITE_GALOIS_SUBFIELDS_FINITE = prove
    [ASM_MESON_TAC[GALOIS_IMP_FIELD_EXTENSION; field_extension];
     MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]]);;
 
+(* Conversely, for any field extension, a subfield s containing the image of *)
+(* k in which every element lies in a finite Galois subextension contained   *)
+(* in s is Galois over k.                                                    *)
+let GALOIS_EXTENSION_UNION_FINITE_GALOIS_SUBFIELDS = prove
+ (`!(h:A->B) k l s.
+        field_extension(k,l) h /\ s subfield_of l /\
+        IMAGE h (ring_carrier k) SUBSET s /\
+        (!x. x IN s
+             ==> ?e. e IN finite_galois_subfields(k,l) h /\
+                     e SUBSET s /\ x IN e)
+        ==> galois_extension(k,subfield_generated l s) h`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `ring_carrier(subfield_generated l s) = s /\
+    field_extension(k,subfield_generated l s) (h:A->B)`
+  STRIP_ASSUME_TAC THENL
+   [ASM_SIMP_TAC[CARRIER_SUBFIELD_GENERATED_SUBFIELD] THEN
+    MATCH_MP_TAC FIELD_EXTENSION_INTO_SUBFIELD_GENERATED THEN
+    ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  ABBREV_TAC `m = subfield_generated l (s:B->bool)` THEN
+  SUBGOAL_THEN
+   `!x. x IN s
+        ==> ?e. ring_carrier(subfield_generated m e) = e /\ x IN e /\
+                ring_homomorphism(k,subfield_generated m e) (h:A->B) /\
+                finite_extension(k,subfield_generated m e) h /\
+                galois_extension(k,subfield_generated m e) h /\
+                ring_monomorphism(subfield_generated m e,m) I`
+  ASSUME_TAC THENL
+   [X_GEN_TAC `x:B` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:B`) THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:B->bool` THEN
+    REWRITE_TAC[IN_FINITE_GALOIS_SUBFIELDS] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `ring_monomorphism(subfield_generated m e,m) (I:B->B)`
+    ASSUME_TAC THENL
+     [MATCH_MP_TAC FIELD_EXTENSION_IMP_MONOMORPHISM THEN
+      REWRITE_TAC[FIELD_EXTENSION_SUBFIELD_GENERATED] THEN
+      ASM_MESON_TAC[field_extension];
+      ALL_TAC] THEN
+    SUBGOAL_THEN `subfield_generated m e = subfield_generated l (e:B->bool)`
+    SUBST_ALL_TAC THENL
+     [EXPAND_TAC "m" THEN MATCH_MP_TAC SUBFIELD_GENERATED_IDEMPOT_GEN THEN
+      ASM_REWRITE_TAC[];
+      ALL_TAC] THEN
+    ASM_SIMP_TAC[CARRIER_SUBFIELD_GENERATED_SUBFIELD] THEN
+    ASM_MESON_TAC[FINITE_IMP_FIELD_EXTENSION;
+                  FIELD_EXTENSION_IMP_HOMOMORPHISM];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `algebraic_extension(k,m) (h:A->B)` ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[algebraic_extension] THEN X_GEN_TAC `x:B` THEN
+    DISCH_TAC THEN FIRST_ASSUM(MP_TAC o C MATCH_MP (ASSUME `(x:B) IN s`)) THEN
+    DISCH_THEN(X_CHOOSE_THEN `e:B->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPECL [`h:A->B`; `I:B->B`; `k:A ring`;
+                   `subfield_generated m (e:B->bool)`; `m:B ring`; `x:B`]
+      ALGEBRAIC_OVER_MONOMORPHIC_IMAGE) THEN
+    ASM_REWRITE_TAC[I_O_ID; I_THM] THEN DISCH_THEN SUBST1_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP FINITE_IMP_ALGEBRAIC_EXTENSION) THEN
+    ASM_SIMP_TAC[algebraic_extension];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[galois_extension; separable_extension] THEN CONJ_TAC THENL
+   [ASM_REWRITE_TAC[normal_extension] THEN X_GEN_TAC `p:(1->num)->A` THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+     (X_CHOOSE_THEN `a:B` STRIP_ASSUME_TAC)) THEN
+    FIRST_ASSUM(MP_TAC o C MATCH_MP (ASSUME `(a:B) IN s`)) THEN
+    DISCH_THEN(X_CHOOSE_THEN `e:B->bool` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `p IN ring_carrier(poly_ring (k:A ring) (:1))` ASSUME_TAC
+    THENL [ASM_MESON_TAC[ring_irreducible]; ALL_TAC] THEN
+    SUBGOAL_THEN
+     `((h:A->B) o p) IN
+      ring_carrier(poly_ring (subfield_generated m (e:B->bool)) (:1))`
+    ASSUME_TAC THENL
+     [MATCH_MP_TAC IN_RING_POLYNOMIAL_CARRIER_COMPOSE THEN
+      EXISTS_TAC `k:A ring` THEN ASM_REWRITE_TAC[];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `poly_splits_over (k,subfield_generated m e) (h:A->B) p`
+    MP_TAC THENL
+     [FIRST_ASSUM(MP_TAC o CONJUNCT2 o GEN_REWRITE_RULE I [normal_extension] o
+        MATCH_MP GALOIS_IMP_NORMAL_EXTENSION) THEN
+      DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+      EXISTS_TAC `a:B` THEN ASM_REWRITE_TAC[] THEN
+      MP_TAC(ISPECL [`subfield_generated m (e:B->bool)`; `m:B ring`; `a:B`;
+                     `I:B->B`; `(h:A->B) o (p:(1->num)->A)`]
+        POLY_EVAL_HOMOMORPHIC_IMAGE) THEN
+      ASM_SIMP_TAC[RING_MONOMORPHISM_IMP_HOMOMORPHISM; I_THM; I_O_ID] THEN
+      REWRITE_TAC[SUBFIELD_GENERATED];
+      REWRITE_TAC[poly_splits_over] THEN DISCH_TAC THEN
+      MP_TAC(ISPECL [`subfield_generated m (e:B->bool)`; `m:B ring`;
+                     `I:B->B`; `(h:A->B) o (p:(1->num)->A)`]
+        POLY_SPLITS_HOMOMORPHIC_IMAGE) THEN
+      ASM_SIMP_TAC[RING_MONOMORPHISM_IMP_HOMOMORPHISM; I_O_ID]];
+    X_GEN_TAC `x:B` THEN DISCH_TAC THEN
+    FIRST_ASSUM(MP_TAC o C MATCH_MP (ASSUME `(x:B) IN s`)) THEN
+    DISCH_THEN(X_CHOOSE_THEN `e:B->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPECL [`h:A->B`; `I:B->B`; `k:A ring`;
+                   `subfield_generated m (e:B->bool)`; `m:B ring`; `x:B`]
+      SEPARABLE_ELEMENT_MONOMORPHIC_IMAGE) THEN
+    ASM_REWRITE_TAC[I_O_ID; I_THM] THEN DISCH_THEN SUBST1_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP GALOIS_IMP_SEPARABLE_EXTENSION) THEN
+    ASM_SIMP_TAC[separable_extension]]);;
+
 let FINITE_GALOIS_SUBFIELD_RESTRICTION_EQ = prove
  (`!(h:A->B) k l e.
         field_extension(k,l) h /\ e IN finite_galois_subfields(k,l) h
@@ -3874,6 +4299,19 @@ let GALOIS_GROUP_POW_RING_POW = prove
   REWRITE_TAC[FUN_EQ_THM; I_THM; o_THM; EXP] THEN X_GEN_TAC `x:B` THEN
   ASM_CASES_TAC `(x:B) IN ring_carrier l` THEN
   ASM_SIMP_TAC[RING_POW_1; RING_POW; RING_POW_POW; MULT_SYM]);;
+
+(* Likewise at one element: if f(z) = z^c then f^d(z) = z^(c^d).             *)
+let GALOIS_GROUP_POW_ROOT = prove
+ (`!(h:A->B) k l f z c d.
+        f IN group_carrier(galois_group(k,l) h) /\ z IN ring_carrier l /\
+        f z = ring_pow l z c
+        ==> group_pow (galois_group(k,l) h) f d z = ring_pow l z (c EXP d)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP GALOIS_GROUP_RING_HOMOMORPHISM) THEN
+  SPEC_TAC(`d:num`,`d:num`) THEN INDUCT_TAC THEN
+  ASM_SIMP_TAC[group_pow; GALOIS_GROUP; I_THM; EXP; RING_POW_1; o_THM] THEN
+  MP_TAC(ISPECL [`l:B ring`; `l:B ring`; `f:B->B`] RING_HOMOMORPHISM_POW) THEN
+  ASM_SIMP_TAC[RING_POW_POW]);;
 
 (* If the d-th power of the Frobenius map is the identity, all |k|^[l:k]     *)
 (* elements of l satisfy x^(q^d) = x, so [l:k] <= d                          *)

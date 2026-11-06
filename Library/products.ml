@@ -546,6 +546,20 @@ let IPRODUCT_ABS = prove
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[IPRODUCT_CLAUSES; INT_ABS_MUL; INT_ABS_NUM]);;
 
+let IPRODUCT_ABS_BOUND = prove
+ (`!s (f:A->int) c.
+        FINITE s /\ (!x. x IN s ==> abs(f x) <= c)
+        ==> abs(iproduct s f) <= c pow (CARD s)`,
+  GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ] THEN SPEC_TAC(`s:A->bool`,`s:A->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; CARD_CLAUSES; INT_ABS_NUM; INT_POW;
+           INT_LE_REFL; FORALL_IN_INSERT] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_TAC THEN REWRITE_TAC[INT_ABS_MUL] THEN
+  MATCH_MP_TAC INT_LE_MUL2 THEN ASM_REWRITE_TAC[INT_ABS_POS]);;
+
 let IPRODUCT_CLOSED = prove
  (`!P f:A->int s.
         P(&1) /\ (!x y. P x /\ P y ==> P(x * y)) /\ (!a. a IN s ==> P(f a))
@@ -949,6 +963,57 @@ let PRODUCT_REFLECT = prove
 let PRODUCT_DELETE = prove
  (`!f s a. FINITE s /\ a IN s ==> f(a) * product(s DELETE a) f = product s f`,
   SIMP_TAC[product; ITERATE_DELETE; MONOIDAL_REAL_MUL]);;
+
+let PRODUCT_LT_1 = prove
+ (`!f s a:A.
+        FINITE s /\ (!x. x IN s ==> &0 <= f x /\ f x <= &1) /\
+        a IN s /\ f a < &1
+        ==> product s f < &1`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->real`; `s:A->bool`; `a:A`] PRODUCT_DELETE) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  MATCH_MP_TAC(REAL_ARITH `x * y <= x * &1:real /\ x < &1 ==> x * y < &1`) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+  ASM_SIMP_TAC[PRODUCT_LE_1; FINITE_DELETE; IN_DELETE]);;
+
+let PRODUCT_FACTOR_BOUND = prove
+ (`!f s (a:A) b c.
+        FINITE s /\ a IN s /\ (!x. x IN s ==> &0 <= f x) /\
+        product s f <= c /\
+        (!x. x IN s /\ ~(x = a) ==> &1 <= b * f x)
+        ==> f a <= c * b pow (CARD s - 1)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->real`; `s:A->bool`; `a:A`] PRODUCT_DELETE) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  ABBREV_TAC `p = product (s DELETE (a:A)) f` THEN
+  ABBREV_TAC `q:real = b pow (CARD(s:A->bool) - 1)` THEN
+  SUBGOAL_THEN `&0 <= (p:real)` ASSUME_TAC THENL
+   [EXPAND_TAC "p" THEN MATCH_MP_TAC PRODUCT_POS_LE THEN
+    ASM_SIMP_TAC[FINITE_DELETE; IN_DELETE];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `&1 <= (q:real) * p` ASSUME_TAC THENL
+   [SUBGOAL_THEN
+     `product (s DELETE (a:A)) (\x. &1) <=
+      product (s DELETE a) (\x. b * f x)`
+    MP_TAC THENL
+     [MATCH_MP_TAC PRODUCT_LE THEN
+      ASM_SIMP_TAC[FINITE_DELETE; IN_DELETE; REAL_POS];
+      MAP_EVERY EXPAND_TAC ["p"; "q"] THEN
+      ASM_SIMP_TAC[PRODUCT_ONE; PRODUCT_MUL; FINITE_DELETE; PRODUCT_CONST;
+                   CARD_DELETE; ETA_AX]];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `&0 <= (q:real)` ASSUME_TAC THENL
+   [REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`--q:real`; `p:real`] REAL_LE_MUL) THEN
+    ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  TRANS_TAC REAL_LE_TRANS `(f:A->real) a * (q * p)` THEN CONJ_TAC THENL
+   [GEN_REWRITE_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN ASM_SIMP_TAC[];
+    ALL_TAC] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `x * q * p:real = q * x * p`] THEN
+  ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN
+  MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[]);;
 
 let PRODUCT_DELTA = prove
  (`!s a. product s (\x. if x = a then b else &1) =

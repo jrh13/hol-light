@@ -8,6 +8,308 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  6th Nov 2026       ANT/* [new directory], holtest.mk
+
+Added a library of algebraic number theory in the new subdirectory ANT,
+produced by Claude. It covers Dedekind domains in general (factorization,
+valuations, DVRs, localization, valuation rings and the Chevalley extension
+theorem, fractional ideals and the characterizations of Dedekind domains,
+Euler and Fermat for ideals), integral closure with lying over and going
+up, the Hensel lemma, number fields as abstract fields of characteristic 0
+finite over their prime subfield, rings of integers, the finiteness of the
+class group, the splitting of primes with the fundamental identity,
+discriminants and the index formula, the different and its exponents, the
+Dedekind-Kummer theorem, Eisenstein polynomials, quadratic fields, the
+relative ideal norm, different and discriminant of an extension of number
+fields with their tower formulas, the Hilbert theory of Galois extensions
+(decomposition and inertia groups and fields, Frobenius elements, the Artin
+symbol, higher ramification groups and the Hilbert formula for the
+different), infinitely many totally split primes, units and S-units (the
+Dirichlet unit theorem and the S-unit theorem with the ranks, the
+regulator, roots of unity, quadratic units and the Pell equation, rings of
+S-integers), extensions unramified outside a set of primes and the maximal
+one, Minkowski theory (the class bound sqrt|d_K|, |d_K| > 1 for k <> Q, the
+Hermite finiteness theorem), the Stickelberger theorem, cyclotomic fields
+(the ring of integers, the discriminant, the decomposition law, the Galois
+group, subfields, cyclotomic units, Gauss sums), complex conjugation and
+the cyclotomic character, absolute values (the approximation theorem of
+Artin and Whaples, the Ostrowski theorem for Q and the number fields of
+degree 1, the places of a number field, the product formula), and the
+Dedekind zeta function for Re s > 1 with Dirichlet densities, their
+elementary laws and the Frobenius density theorem.
+
+Extensions are given by ring homomorphisms, as in Library/fieldtheory.ml,
+and the results are stated for extensions of number fields (k,l) h; the
+classical absolute forms are the case of the prime subfield. A Galois
+extension is assumed as galois_extension(k,l) h alone, which implies
+field k, field l and ring_homomorphism(k,l) h (GALOIS_IMP_FIELD_EXTENSION).
+For a ring extension, unramified is the textbook notion (ramification
+index 1 and separable residue extensions at the primes above the ideal);
+weakly_unramified asks only for ramification index 1. The two agree for
+the nonzero primes of rings of integers of number fields
+(NUMBER_FIELD_UNRAMIFIED_EQ_WEAKLY_UNRAMIFIED): the results on number
+fields use unramified, those on general ring extensions weakly_unramified.
+The maximal extension unramified outside S of a number field inside any
+field extension l is Galois over it (GALOIS_MAXIMAL_UNRAMIFIED_OUTSIDE).
+ANT/README describes the organization and the conventions; loadt
+"ANT/make.ml" loads it all, needs "ANT/x.ml" one file with its
+prerequisites. New definitions:
+
+        absolute_value
+        class_group
+        class_number
+        complex_embeddings
+        cyclotomic_character
+        cyclotomic_poly
+        decomposition_group
+        dedekind_domain
+        dedekind_valuation
+        dedekind_zeta
+        DVR
+        fractional_ideal
+        fractional_ideal_group
+        fractional_ideal_inv
+        fractional_ideal_valuation
+        frobenius_element
+        has_dirichlet_density
+        ideal_class
+        ideal_classes
+        ideal_norm
+        ideal_of_valuations
+        ideal_pow
+        ideal_prod
+        ideal_product
+        ideal_quotient
+        ideal_valuation
+        inert
+        inertia_group
+        infinite_places
+        int_cosets
+        int_lattice
+        int_matrix_image
+        integral_element
+        integrally_closed
+        maximal_unramified_outside
+        nonarchimedean_absolute_value
+        number_field
+        number_field_codifferent
+        number_field_different
+        number_field_discriminant
+        number_field_ideal_norm
+        number_field_regulator
+        ramification_index
+        real_embeddings
+        residue_degree
+        ring_of_integers
+        ring_of_s_integers
+        s_unit_group
+        totally_ramified
+        totally_split
+        unramified
+        unramified_outside
+        valuation_ring
+        valuation_subring
+        weakly_unramified
+
+Some of the main theorems include:
+
+        ABSOLUTE_VALUE_WEAK_APPROXIMATION
+        CYCLOTOMIC_FIELD_GALOIS_GROUP
+        CYCLOTOMIC_FIELD_RING_OF_INTEGERS
+        DEDEKIND_EQ_IDEALS_INVERTIBLE
+        DEDEKIND_IDEAL_FACTORIZATION
+        DEDEKIND_INTEGRAL_CLOSURE
+        DEDEKIND_RING_OF_INTEGERS
+        DEDEKIND_ZETA_EULER_PRODUCT
+        GALOIS_MAXIMAL_UNRAMIFIED_OUTSIDE
+        HENSEL_LEMMA
+        IDEAL_EULER
+        IDEAL_NORM_FERMAT
+        NUMBER_FIELD_CLASS_GROUP_FINITE
+        NUMBER_FIELD_DEDEKIND_KUMMER
+        NUMBER_FIELD_DIFFERENT_HILBERT_FORMULA
+        NUMBER_FIELD_DIFFERENT_TOWER
+        NUMBER_FIELD_DISCRIMINANT_ABS_GT_1
+        NUMBER_FIELD_DISCRIMINANT_MOD_4
+        NUMBER_FIELD_DISCRIMINANT_TOWER
+        NUMBER_FIELD_EISENSTEIN
+        NUMBER_FIELD_FROBENIUS_DENSITY
+        NUMBER_FIELD_FROBENIUS_ELEMENT
+        NUMBER_FIELD_FUNDAMENTAL_IDENTITY
+        NUMBER_FIELD_FUNDAMENTAL_UNITS
+        NUMBER_FIELD_HERMITE
+        NUMBER_FIELD_IDEAL_MINKOWSKI
+        NUMBER_FIELD_INERTIA_GROUPS_GENERATE
+        NUMBER_FIELD_PRODUCT_FORMULA
+        NUMBER_FIELD_RAMIFIED_DISCRIMINANT
+        NUMBER_FIELD_REGULATOR
+        NUMBER_FIELD_TOTALLY_SPLIT_INFINITE
+        NUMBER_FIELD_UNRAMIFIED_EQ_WEAKLY_UNRAMIFIED
+        OSTROWSKI
+        OSTROWSKI_RATIONAL
+        PELL_EQUATION_INFINITE
+        QUADRATIC_GAUSS_SUM
+        VALUATION_SUBRING_DOMINATES
+
+Added ANT/make, Multivariate/complex_ring, Multivariate/complex_field,
+Multivariate/infinite_galois and Library/normal_basis to holtest.mk.
+
+Fri  6th Nov 2026       Library/ringtheory.ml, Library/fieldtheory.ml, Library/ring_det.ml, Library/galois.ml, Library/grouptheory.ml, Library/ring_groups.ml, Library/isum.ml, Library/products.ml, Library/prime.ml, Library/pocklington.ml, Library/multiplicative.ml, Library/primitive.ml, Library/jacobi.ml, Library/modmul_group.ml, Library/floor.ml, Multivariate/transcendentals.ml, Multivariate/realanalysis.ml, Library/normal_basis.ml [new file], Multivariate/profinite_groups.ml [new file], Multivariate/infinite_galois.ml [new file]
+
+Added general lemmas used by the algebraic number theory library ANT,
+each in the library file of its subject:
+
+  Library/ringtheory.ml: units modulo an ideal
+  (RING_UNIT_QUOTIENT_RING_COSET, RING_UNIT_QUOTIENT_RING_COSET_EQ,
+  RING_UNIT_QUOTIENT_RING_COSET_MUL, RING_UNIT_QUOTIENT_RING_COSET_POW,
+  RING_UNIT_QUOTIENT_RING_MAXIMAL, RING_UNIT_QUOTIENT_RING_RADICAL),
+  polynomials with coefficients in an ideal (RING_IDEAL_POLY_COEFF,
+  POLY_DIVISION_COEFF_IDEAL), values of polynomials (POLY_EVAL_TAYLOR,
+  POLY_EVAL_SUB_IN_IDEAL, POLY_EXTEND_MONIC_UNIVARIATE,
+  RING_MONIC_RELATION_FACTOR, FIELD_POLY_COFACTOR_COEFFS,
+  SUBRING_GENERATED_MONIC_ROOT_SPAN), Lagrange interpolation over a field
+  (POLY_LAGRANGE_INTERPOLATION, RING_SUM_LAGRANGE_COEFF,
+  COEFF_POLY_MUL_X_MINUS), common roots of the images of an ideal of r[X]
+  (POLY_DEG_PSEUDO_DIVISION_STEP, RING_IDEAL_POLY_LEAST_DEGREE_ROOT,
+  IDEAL_GENERATED_ADJOIN_ROOT_UNIT), finite sums over roots of unity and
+  residues (RING_GEOMETRIC_SUM, RING_SUM_ROOT_OF_UNITY_POWERS,
+  RING_SUM_MOD_MULT_REINDEX), integer_mod_ring
+  (RING_EPIMORPHISM_INTEGER_MOD_RING, RING_KERNEL_INTEGER_MOD_RING,
+  POLY_RING_INTEGER_MOD_RING_OF_INT, RING_OF_INT_REM_CHAR_DIVIDES,
+  RING_CHAR_QUOTIENT_RING_DIVIDES), and
+  INTEGER_RING_SUB, NOETHERIAN_RING_FINITELY_GENERATED_ALGEBRA,
+  FIELD_ADD_INV_EQ, FIELD_DIV_EQ_MUL, ROOT_OF_UNITY_IN_SUBRING_GENERATED,
+  IDEAL_GENERATED_PAIR_EQ, IDEAL_GENERATED_INSERT_EQ,
+  QUOTIENT_RING_LINCOMB_LIFT, IN_RING_IDEAL_SUB_SUM_RESTRICT,
+  IN_RING_IDEAL_SUB_SYM, RING_POW_ADD_SQUARE_CONGRUENCE,
+  IMAGE_HOMOMORPHISM_MUL, FIELD_OF_FRACTIONS_IMP_MONOMORPHISM,
+  PID_ANNIHILATOR_ATTAINED, UFD_DIVISOR_PRIME_POW_SUC.
+
+  Library/fieldtheory.ml: generated subfields (SUBFIELD_GENERATED_SUBSET_EQ,
+  FIELD_EXTENSION_SUBFIELD_GENERATED_SUBSET, SUBFIELD_GENERATED_ROOT_OF_UNITY,
+  SUBFIELD_GENERATED_ROOT_OF_UNITY_EQ, SUBFIELD_GENERATED_SING_ALGEBRAIC,
+  RING_SUM_SUBFIELD_GENERATED), degrees (EXTENSION_DEGREE_SUBFIELD_TOWER,
+  EXTENSION_DEGREE_LE_SPANNING, FINITE_EXTENSION_SIMPLE_EQ), spans and
+  setwise products (RING_SPAN_MINIMAL, RING_SPAN_EQ_SELF,
+  RING_SPAN_SETMUL_SPAN, RING_SPAN_SETMUL_ASSOC, RING_SPAN_SETMUL_SYM,
+  RING_SETMUL_SING_LEFT, RING_SETMUL_IMAGE_MUL, RING_SPAN_IMAGE_MUL,
+  RING_SPAN_SETMUL_IMAGE_MUL, RING_SPAN_SING_IMAGE,
+  RING_SPAN_IMAGE_IDEAL_GENERATED), modules over a Noetherian ring
+  (NOETHERIAN_RING_SPAN_SUBMODULE, NOETHERIAN_RING_FINITE_ALGEBRA), the
+  cyclic vector theorem (POLY_ITER_MODULE, CYCLIC_VECTOR_EXISTS), and the
+  common roots of the images of an ideal of r[X] in an algebraically closed
+  field (RING_IDEAL_POLY_COMMON_ROOT).
+
+  Library/ring_det.ml: linear systems over any ring with a unit
+  determinant (RING_MATRIX_SOLVE), the Cramer rule through cofactors
+  (RING_DET_CRAMER, RING_DET_CRAMER_SUBRING, RING_COFACTOR_SUBRING), the
+  minors of a matrix whose rows sum to zero (RING_DET_ROW_NEG_SUM,
+  RING_DET_ROWS_SAME_IMAGE, RING_DET_ROWS_OMIT), diagonal dominance
+  (RING_DET_REAL_DIAGONALLY_DOMINANT, the Levy-Desplanques theorem), traces
+  and discriminants of free bases (ALGEBRA_TRACE_FREE_BASIS_MATRIX,
+  BASIS_DISCRIMINANT_MUL, ALGEBRA_TRACE_DUAL_BASIS_EXISTS, FREE_BASIS_SCALE),
+  RING_DET_DIAGONAL_CONGRUENCE, RING_SUM_PRODUCT_INDEX,
+  RING_SUM_NUMSEG_DIV_SLICE, ADD_MULT_LT_MULT.
+
+  Library/galois.ml: a subfield that is a union of finite Galois
+  subextensions is Galois (GALOIS_EXTENSION_UNION_FINITE_GALOIS_SUBFIELDS),
+  Artin for groups of automorphisms with finite orbits
+  (GALOIS_EXTENSION_FIXED_FIELD_FINITE_ORBITS),
+  GALOIS_CYCLIC_INTERMEDIATE_UNIQUE, GALOIS_EXTENSION_GENERATED_CONJUGATES,
+  GALOIS_GROUP_POW_ROOT, GALOIS_PRIMITIVE_ELEMENT_DERIVATIVE.
+
+  Library/grouptheory.ml: cyclic subgroups, their torsion subgroups and
+  conjugates (CYCLIC_SUBGROUP_TORSION_SUBGROUP, CYCLIC_SUBGROUP_GENERATED_EQ,
+  CYCLIC_SUBGROUP_CONJUGATE, GROUP_CONJUGATION_SUBGROUP_GENERATED_SING,
+  CARD_RESTRICT_POW_EQ_ID, CARD_CONJUGATES_IN_TORSION,
+  CARD_CONJUGATES_IN_TORSION_NSUM, CARD_CONJUGATES_IN_ORDER,
+  CARD_CONJUGATES_INTO_CYCLIC, CARD_CONJUGATES_INTO_CYCLIC_GENERATORS,
+  CARD_CYCLIC_SUBGROUP_DIVISION), CARD_IMAGE_SUBGROUP_KERNEL,
+  FINITELY_GENERATED_ABELIAN_GROUP_POW, NORMAL_PGROUP_SUBSET_COPRIME_INDEX,
+  SUBGROUP_COMPLEMENT_RIGHT_COSETS.
+
+  Library/ring_groups.ml: positive real multiplicative functions on groups
+  (GROUP_REAL_MULTIPLICATIVE_ID_INV_POW, GROUP_REAL_MULTIPLICATIVE_ZPOW,
+  GROUP_REAL_MULTIPLICATIVE_SUM), FINITELY_GENERATED_UNIT_GROUP,
+  CARD_UNITS_PROD_RING, ISOMORPHIC_RING_CARD_UNITS,
+  RING_ISOMORPHISM_IMAGE_UNITS, UNIT_GROUP_ZPOW_RING_NEG.
+
+  Library/isum.ml: ISUM_DELTA_GEN, HAS_SIZE_INT_ABS_LE. Library/products.ml:
+  IPRODUCT_ABS_BOUND, PRODUCT_LT_1, PRODUCT_FACTOR_BOUND. Library/prime.ml:
+  INDEX_NPRODUCT. Library/pocklington.ml: the integer forms of squarefree
+  (INT_SQUAREFREE_DIVPOW, INT_SQUAREFREE_MUL_SQUARE,
+  INT_SQUAREFREE_DECOMPOSITION). Library/multiplicative.ml:
+  MULTIPLICATIVE_LCM_GCD, PHI_LCM_GCD. Library/primitive.ml:
+  INT_QUADRATIC_RESIDUE_MODULO_POWER_2. Library/jacobi.ml:
+  JACOBI_SUM_RESIDUES. Library/modmul_group.ml: MODMUL_GROUP_CONG_EQ.
+  Library/floor.ml: REAL_NUM_FRACTION_BETWEEN, REAL_NUM_FRACTIONS_EQ.
+
+  Multivariate/transcendentals.ml: REAL_EXP_LE_INV_1_SUB,
+  REAL_INV_1_SUB_LE_EXP, LOG_ZPOW, REAL_ZPOW_RPOW, RPOW_ADD_LE, CX_RPOW,
+  CPOW_NUM_EXP, CPOW_NPRODUCT, LIM_CPRODUCT, CPRODUCT_VSUM_POW.
+  Multivariate/realanalysis.ml: REAL_SERIES_FINITE_SUM,
+  REAL_SUMMABLE_POS_PARTIAL_BOUND, DIRICHLET_SERIES_FINITE_PERTURBATION,
+  REAL_POW_EVENTUALLY_LT, RPOW_TELESCOPE_BOUNDS, REAL_INFSUM_ZETA_BOUNDS
+  (1 / (s - 1) <= zeta(s) <= s / (s - 1)), TRIVIAL_LIMIT_ATREAL_RIGHT.
+
+Added topological and profinite groups in the new file
+Multivariate/profinite_groups.ml (new definitions topological_group and
+profinite_group), and infinite Galois theory in
+Multivariate/infinite_galois.ml: with the Krull topology, taken as the
+pointwise topology on the automorphisms, the Galois group of a Galois
+extension is profinite (PROFINITE_GROUP_GALOIS_GROUP), and intermediate
+fields correspond to closed subgroups (INFINITE_GALOIS_CORRESPONDENCE,
+INFINITE_GALOIS_CORRESPONDENCE_INDEX, INFINITE_GALOIS_CORRESPONDENCE_NORMAL);
+also ARTIN_FIXED_FIELD_FINITE_ORBITS (the Galois group of l over the fixed
+field of a group with finite orbits is its closure), and Galois groups as
+inverse limits of their finite quotients.
+
+Added the normal basis theorem for finite Galois extensions over any
+field (NORMAL_BASIS_THEOREM, with NORMAL_BASIS_RING_BASIS,
+NORMAL_BASIS_FREE_BASIS, FINITE_FIELD_NORMAL_BASIS and the determinant
+criterion NORMAL_BASIS_DETERMINANT) in the new file
+Library/normal_basis.ml.
+
+Fri  6th Nov 2026       Multivariate/complex_algebra.ml [new file], Multivariate/complex_ring.ml [new file], Multivariate/complex_field.ml [new file], Multivariate/complexes.ml, 100/transcendence.ml, 100/unsolvability.ml
+
+Split Multivariate/complexes.ml: the algebra of the complex numbers (about
+2000 lines, all but 12 theorems) is now in the new file
+Multivariate/complex_algebra.ml, which needs only Multivariate/vectors.ml.
+complexes.ml loads it and keeps the results on orthogonal transformations,
+segments, convexity and the interior of the reals, and
+COMPLEX_POLYFUN_EXTREMAL, so that every file loading complexes.ml sees the
+same theorems as before. COMPLEX_POLYFUN_ROOTBOUND has a new algebraic
+proof, so that it and COMPLEX_POLYFUN_FINITE_ROOTS, COMPLEX_POLYFUN_EQ_0
+and COMPLEX_POLYFUN_EQ_CONST are in the light file.
+
+The new file Multivariate/complex_ring.ml defines complex_ring, the
+complex numbers as a ring, and proves its basic properties
+(COMPLEX_RING_CLAUSES, FIELD_COMPLEX_RING, INTEGRAL_DOMAIN_COMPLEX_RING,
+RING_CHAR_COMPLEX_RING, COMPLEX_RING_OF_NUM, COMPLEX_RING_OF_INT,
+COMPLEX_RING_SUB, COMPLEX_RING_INV, COMPLEX_RING_DIV, COMPLEX_RING_POW,
+COMPLEX_RING_SUM, COMPLEX_RING_PRODUCT, POLY_EVAL_COMPLEX_RING, and
+complex conjugation as a ring automorphism, RING_HOMOMORPHISM_CNJ and
+RING_AUTOMORPHISM_CNJ); it needs only Library/ringtheory.ml and
+complex_algebra.ml. The new file Multivariate/complex_field.ml proves that
+complex_ring is algebraically closed (ALGEBRAICALLY_CLOSED_FIELD_COMPLEX_RING,
+from the fundamental theorem of algebra of Multivariate/cauchy.ml).
+100/transcendence.ml, 100/unsolvability.ml and ANT share these files. In
+100/transcendence.ml the lemmas complex_ring_clauses, field_complex,
+integral_domain_complex, ring_pow_complex, ring_sub_complex,
+ring_div_complex, ring_char_complex and ring_inv_complex are replaced by
+COMPLEX_RING_CLAUSES, FIELD_COMPLEX_RING, INTEGRAL_DOMAIN_COMPLEX_RING,
+COMPLEX_RING_POW, COMPLEX_RING_SUB, COMPLEX_RING_DIV, RING_CHAR_COMPLEX_RING
+and COMPLEX_RING_INV, with the same statements, vsum_ring_sum_complex and
+cproduct_ring_product_complex by COMPLEX_RING_SUM and COMPLEX_RING_PRODUCT
+(the same equations reversed), the abbreviations complex_of_num and
+complex_of_int by Cx(&n) and Cx(real_of_int n), and ring_of_num_complex and
+ring_of_int_complex by COMPLEX_RING_OF_NUM and COMPLEX_RING_OF_INT; the 35
+statements that mentioned the abbreviations, including the definitions of
+ZinC and QinC, are the old ones with the abbreviations expanded. In
+100/unsolvability.ml COMPLEX_RING_CHAR is replaced by
+RING_CHAR_COMPLEX_RING, RING_AUTOMORPHISM_CNJ has moved to complex_ring.ml
+and ALGEBRAICALLY_CLOSED_FIELD_COMPLEX_RING to complex_field.ml.
+
 Thu  5th Nov 2026       Sieve/* [new directory], holtest.mk
 
 Added a directory of sieve methods and their applications to the primes,

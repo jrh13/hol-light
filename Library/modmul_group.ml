@@ -101,6 +101,14 @@ let TRIVIAL_MODMUL_GROUP = prove
   CONJ_TAC THENL [ALL_TAC; MATCH_MP_TAC PHI_LOWERBOUND_2] THEN
   ASM_ARITH_TAC);;
 
+let MODMUL_GROUP_CONG_EQ = prove
+ (`!n a b. a IN group_carrier(modmul_group n) /\
+           b IN group_carrier(modmul_group n) /\ (a == b) (mod n)
+           ==> a = b`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[MODMUL_GROUP] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[IN_SING; IN_ELIM_THM] THEN
+  MESON_TAC[CONG_IMP_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Chinese remainder theorem in group-theoretic language.                    *)
 (* ------------------------------------------------------------------------- *)

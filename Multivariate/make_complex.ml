@@ -34,6 +34,7 @@ loadt "Multivariate/measure.ml";;       (* Lebesgue measure                 *)
 (* Complex numbers (as R^2), complex analysis and some more topology.        *)
 (* ------------------------------------------------------------------------- *)
 
+loadt "Multivariate/complex_algebra.ml";; (* Basic complex numbers          *)
 loadt "Multivariate/complexes.ml";;       (* Complex numbers                *)
 loadt "Multivariate/canal.ml";;           (* Complex analysis               *)
 loadt "Multivariate/transcendentals.ml";; (* Real & complex transcendentals *)

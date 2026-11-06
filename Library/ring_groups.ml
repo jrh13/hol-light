@@ -21,6 +21,15 @@
 (* into the units of an integral domain are linearly independent             *)
 (* (GROUP_HOMOMORPHISMS_UNITS_INDEPENDENT, Dedekind's independence of        *)
 (* characters).                                                              *)
+(*                                                                           *)
+(* Also: the unit group is finitely generated iff every unit is a product of *)
+(* natural powers of finitely many units (FINITELY_GENERATED_UNIT_GROUP);    *)
+(* isomorphic finite rings have equally many units and a product of two      *)
+(* finite rings has the product of their numbers of units                    *)
+(* (ISOMORPHIC_RING_CARD_UNITS, CARD_UNITS_PROD_RING); positive real         *)
+(* multiplicative functions on a group respect the identity, inverses,       *)
+(* powers and finite products (GROUP_REAL_MULTIPLICATIVE_ID_INV_POW,         *)
+(* GROUP_REAL_MULTIPLICATIVE_ZPOW, GROUP_REAL_MULTIPLICATIVE_SUM).           *)
 (* ========================================================================= *)
 
 needs "Library/ringtheory.ml";;
@@ -140,6 +149,77 @@ let UNIT_GROUP_SUM = prove
            RING_PRODUCT_CLAUSES; UNIT_GROUP; IN_ELIM_THM;
            RING_UNIT_IN_CARRIER]);;
 
+(* An integer power of the negative of a unit in the unit group is the same  *)
+(* power of the unit or its negative (UNIT_GROUP_ZPOW_RING_NEG). The unit    *)
+(* group is finitely generated iff every unit is a product of natural powers *)
+(* of finitely many units (FINITELY_GENERATED_UNIT_GROUP).                   *)
+let UNIT_GROUP_ZPOW_RING_NEG = prove
+ (`!r (x:A) n.
+        ring_unit r x
+        ==> group_zpow (unit_group r) (ring_neg r x) n =
+            group_zpow (unit_group r) x n \/
+            group_zpow (unit_group r) (ring_neg r x) n =
+            ring_neg r (group_zpow (unit_group r) x n)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `group_zpow (unit_group r) (ring_neg r (ring_1 r)) n = ring_1 r \/
+    group_zpow (unit_group r) (ring_neg r (ring_1 r)) n =
+    ring_neg r (ring_1 (r:A ring))`
+  MP_TAC THENL
+   [SPEC_TAC(`n:int`,`n:int`) THEN
+    REWRITE_TAC[FORALL_INT_CASES; GROUP_ZPOW_POW; UNIT_GROUP_POW] THEN
+    SIMP_TAC[RING_POW_NEG; RING_1; RING_POW_ONE; UNIT_GROUP] THEN
+    CONJ_TAC THEN GEN_TAC THEN COND_CASES_TAC THEN
+    REWRITE_TAC[RING_INV_1] THEN DISJ2_TAC THEN
+    MATCH_MP_TAC RING_RINV_UNIQUE THEN
+    SIMP_TAC[RING_MUL_LNEG; RING_MUL_RNEG; RING_NEG_NEG; RING_MUL_LID;
+             RING_1; RING_NEG];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `ring_neg r x = ring_mul r (ring_neg r (ring_1 r)) (x:A)`
+  SUBST1_TAC THENL
+   [ASM_SIMP_TAC[RING_MUL_LNEG; RING_MUL_LID; RING_UNIT_IN_CARRIER; RING_1];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`unit_group r:A group`; `ring_neg r (ring_1 r):A`; `x:A`;
+                 `n:int`] ABELIAN_GROUP_MUL_ZPOW) THEN
+  REWRITE_TAC[ABELIAN_UNIT_GROUP; UNIT_GROUP; IN_ELIM_THM] THEN
+  ASM_SIMP_TAC[RING_UNIT_NEG; RING_UNIT_1] THEN DISCH_THEN SUBST1_TAC THEN
+  SUBGOAL_THEN `group_zpow (unit_group r) (x:A) n IN ring_carrier r`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC RING_UNIT_IN_CARRIER THEN
+    MP_TAC(ISPECL [`unit_group r:A group`; `x:A`; `n:int`] GROUP_ZPOW) THEN
+    ASM_REWRITE_TAC[UNIT_GROUP; IN_ELIM_THM];
+    ALL_TAC] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC[RING_MUL_LID; RING_MUL_LNEG; RING_1]);;
+
+let FINITELY_GENERATED_UNIT_GROUP = prove
+ (`!r:A ring.
+        finitely_generated_group(unit_group r) <=>
+        ?t. FINITE t /\ (!u. u IN t ==> ring_unit r u) /\
+            !u. ring_unit r u
+                ==> ?n. u = ring_product r t (\v. ring_pow r v (n v))`,
+  GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN MP_TAC(ISPEC `unit_group(r:A ring)`
+      FINITELY_GENERATED_ABELIAN_GROUP_POW) THEN
+    ASM_REWRITE_TAC[ABELIAN_UNIT_GROUP; UNIT_GROUP; SUBSET; IN_ELIM_THM] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `t:A->bool` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `u:A` THEN
+    DISCH_THEN(fun th -> FIRST_X_ASSUM(MP_TAC o C MATCH_MP th)) THEN
+    ASM_SIMP_TAC[UNIT_GROUP_POW; UNIT_GROUP_SUM; RING_UNIT_POW];
+    REWRITE_TAC[finitely_generated_group; SUBGROUP_GENERATED_SUPERSET] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `t:A->bool` THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[SUBSET; UNIT_GROUP; IN_ELIM_THM] THEN
+    X_GEN_TAC `u:A` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(X_CHOOSE_THEN `n:A->num` SUBST1_TAC o C MATCH_MP
+     (ASSUME `ring_unit r (u:A)`)) THEN
+    W(MP_TAC o PART_MATCH (rand o rand) UNIT_GROUP_SUM o lhand o snd) THEN
+    ASM_SIMP_TAC[RING_UNIT_POW] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+    MATCH_MP_TAC IN_SUBGROUP_SUM THEN
+    REWRITE_TAC[SUBGROUP_SUBGROUP_GENERATED; GSYM UNIT_GROUP_POW] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC IN_SUBGROUP_POW THEN
+    ASM_SIMP_TAC[SUBGROUP_SUBGROUP_GENERATED; SUBGROUP_GENERATED_INC_GEN;
+                 UNIT_GROUP; IN_ELIM_THM]]);;
+
 let FIELD_UNIT_GROUP = prove
  (`!k:A ring.
         field k
@@ -152,6 +232,60 @@ let SUBGROUP_POSITIVE_REALS = prove
   REWRITE_TAC[subgroup_of; UNIT_GROUP; REAL_RING_INV; SUBSET; IN_ELIM_THM] THEN
   SIMP_TAC[FIELD_UNIT; FIELD_REAL_RING; REAL_RING_CLAUSES; IN_UNIV] THEN
   SIMP_TAC[REAL_LT_IMP_NZ; REAL_LT_01; REAL_LT_INV; REAL_LT_MUL]);;
+
+(* Positive real multiplicative functions on a group (with values in the     *)
+(* subgroup of SUBGROUP_POSITIVE_REALS) map the identity to 1, inverses to   *)
+(* inverses and powers to powers (GROUP_REAL_MULTIPLICATIVE_ID_INV_POW,      *)
+(* GROUP_REAL_MULTIPLICATIVE_ZPOW), and finite products in an abelian group  *)
+(* to products of reals (GROUP_REAL_MULTIPLICATIVE_SUM).                     *)
+let GROUP_REAL_MULTIPLICATIVE_ID_INV_POW = prove
+ (`!G (g:A->real).
+        (!x. x IN group_carrier G ==> &0 < g x) /\
+        (!x y. x IN group_carrier G /\ y IN group_carrier G
+               ==> g(group_mul G x y) = g x * g y)
+        ==> g(group_id G) = &1 /\
+            (!x. x IN group_carrier G ==> g(group_inv G x) = inv(g x)) /\
+            (!x n. x IN group_carrier G ==> g(group_pow G x n) = g x pow n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q /\ r) ==> p /\ q /\ r`) THEN CONJ_TAC THENL
+   [MATCH_MP_TAC(REAL_FIELD `&0:real < x /\ x * x = x ==> x = &1`) THEN
+    ASM_MESON_TAC[GROUP_ID; GROUP_MUL_LID];
+    DISCH_TAC THEN CONJ_TAC THEN REPEAT GEN_TAC THEN DISCH_TAC THENL
+     [MATCH_MP_TAC(REAL_FIELD `x * y = &1 ==> y = inv x`) THEN
+      ASM_MESON_TAC[GROUP_INV; GROUP_MUL_RINV];
+      SPEC_TAC(`n:num`,`n:num`) THEN INDUCT_TAC THEN
+      ASM_SIMP_TAC[group_pow; real_pow; GROUP_POW]]]);;
+
+let GROUP_REAL_MULTIPLICATIVE_ZPOW = prove
+ (`!G (g:A->real) x n.
+        (!x. x IN group_carrier G ==> &0 < g x) /\
+        (!x y. x IN group_carrier G /\ y IN group_carrier G
+               ==> g(group_mul G x y) = g x * g y) /\
+        x IN group_carrier G
+        ==> g(group_zpow G x n) = g x zpow n`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`G:A group`; `g:A->real`]
+    GROUP_REAL_MULTIPLICATIVE_ID_INV_POW) THEN
+  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN SPEC_TAC(`n:int`,`n:int`) THEN
+  REWRITE_TAC[FORALL_INT_CASES; GROUP_ZPOW_POW; REAL_ZPOW_POW] THEN
+  ASM_SIMP_TAC[GROUP_POW]);;
+
+let GROUP_REAL_MULTIPLICATIVE_SUM = prove
+ (`!G (g:A->real) (x:K->A) t.
+        abelian_group G /\
+        (!x y. x IN group_carrier G /\ y IN group_carrier G
+               ==> g(group_mul G x y) = g x * g y) /\
+        g(group_id G) = &1 /\
+        FINITE t /\ (!i. i IN t ==> x i IN group_carrier G)
+        ==> g(group_sum G t x) = product t (\i. g(x i))`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC
+   (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC))) THEN
+  REWRITE_TAC[IMP_CONJ] THEN SPEC_TAC(`t:K->bool`,`t:K->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[CONJUNCT1(SPEC_ALL GROUP_SUM_CLAUSES_EXISTS); PRODUCT_CLAUSES;
+               ABELIAN_GROUP_SUM_CLAUSES; FINITE_RESTRICT; FORALL_IN_INSERT;
+               GROUP_SUM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Homomorphisms and subrings.                                               *)
@@ -187,8 +321,12 @@ let UNIT_GROUP_SUBRING_GENERATED = prove
                UNIT_GROUP; SUBSET_REFL]);;
 
 (* The units of the image of a monomorphism are the images of the units      *)
-(* (RING_MONOMORPHISM_UNITS_IMAGE), and the units of a binary product are    *)
-(* the pairs of units (RING_UNIT_PROD_RING, UNIT_GROUP_PROD_RING).           *)
+(* (RING_MONOMORPHISM_UNITS_IMAGE), an isomorphism maps the units onto the   *)
+(* units (RING_ISOMORPHISM_IMAGE_UNITS), so isomorphic finite rings have     *)
+(* equally many units (ISOMORPHIC_RING_CARD_UNITS), and the units of a       *)
+(* binary product are the pairs of units (RING_UNIT_PROD_RING,               *)
+(* UNIT_GROUP_PROD_RING), so for finite rings their number is the product of *)
+(* the numbers of units (CARD_UNITS_PROD_RING).                              *)
 let RING_MONOMORPHISM_UNITS_IMAGE = prove
  (`!r r' (f:A->B).
         ring_monomorphism(r,r') f
@@ -228,6 +366,32 @@ let RING_MONOMORPHISM_UNITS_IMAGE = prove
       FIRST_ASSUM(fun th ->
         ASM_SIMP_TAC[MATCH_MP RING_HOMOMORPHISM_INV th])]]);;
 
+let RING_ISOMORPHISM_IMAGE_UNITS = prove
+ (`!r r' (f:A->B).
+        ring_isomorphism(r,r') f
+        ==> IMAGE f {x | ring_unit r x} = {y | ring_unit r' y}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ring_isomorphism; ring_isomorphisms] THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:B->A` STRIP_ASSUME_TAC) THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+  X_GEN_TAC `y:B` THEN EQ_TAC THENL
+   [ASM_MESON_TAC[RING_UNIT_HOMOMORPHIC_IMAGE];
+    DISCH_TAC THEN EXISTS_TAC `(g:B->A) y` THEN
+    ASM_MESON_TAC[RING_UNIT_HOMOMORPHIC_IMAGE; RING_UNIT_IN_CARRIER]]);;
+
+let ISOMORPHIC_RING_CARD_UNITS = prove
+ (`!r r'.
+        (r:A ring) isomorphic_ring (r':B ring) /\ FINITE(ring_carrier r)
+        ==> CARD {y | ring_unit r' y} = CARD {x | ring_unit r x}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[isomorphic_ring] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (X_CHOOSE_TAC `f:A->B`) ASSUME_TAC) THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP RING_ISOMORPHISM_IMAGE_UNITS) THEN
+  MATCH_MP_TAC CARD_IMAGE_INJ THEN CONJ_TAC THENL
+   [REWRITE_TAC[IN_ELIM_THM] THEN
+    ASM_MESON_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM;
+                  RING_MONOMORPHISM_INJECTIVE_EQ; RING_UNIT_IN_CARRIER];
+    MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `ring_carrier r:A->bool` THEN
+    ASM_REWRITE_TAC[SUBSET; IN_ELIM_THM; RING_UNIT_IN_CARRIER]]);;
+
 let RING_UNIT_PROD_RING = prove
  (`!(r:A ring) (r':B ring) x y.
         ring_unit (prod_ring r r') (x,y) <=> ring_unit r x /\ ring_unit r' y`,
@@ -245,6 +409,24 @@ let UNIT_GROUP_PROD_RING = prove
   REWRITE_TAC[EXTENSION; SUBSET; FORALL_PAIR_THM; IN_ELIM_THM; IN_CROSS;
               RING_UNIT_PROD_RING] THEN
   MESON_TAC[]);;
+
+let CARD_UNITS_PROD_RING = prove
+ (`!(r:A ring) (r':B ring).
+        FINITE(ring_carrier r) /\ FINITE(ring_carrier r')
+        ==> CARD {z | ring_unit (prod_ring r r') z} =
+            CARD {x | ring_unit r x} * CARD {y | ring_unit r' y}`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `{z | ring_unit (prod_ring r r') z} =
+    {x:A | ring_unit r x} CROSS {y:B | ring_unit r' y}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_CROSS; IN_ELIM_THM;
+                RING_UNIT_PROD_RING];
+    MATCH_MP_TAC CARD_CROSS THEN CONJ_TAC THEN
+    MATCH_MP_TAC FINITE_SUBSET THENL
+     [EXISTS_TAC `ring_carrier r:A->bool`;
+      EXISTS_TAC `ring_carrier r':B->bool`] THEN
+    ASM_REWRITE_TAC[SUBSET; IN_ELIM_THM; RING_UNIT_IN_CARRIER]]);;
 
 let UNIT_GROUP_PRODUCT_RING = prove
  (`!k (r:K->A ring).

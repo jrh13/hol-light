@@ -677,6 +677,21 @@ let REAL_SERIES_NEG = prove
  (`!x x0 s. (x real_sums x0) s ==> ((\n. --(x n)) real_sums (--x0)) s`,
   SIMP_TAC[real_sums; FINITE_INTER_NUMSEG; SUM_NEG; REALLIM_NEG]);;
 
+let REAL_SERIES_FINITE_SUM = prove
+ (`!(f:A->num->real) l k s.
+        FINITE k /\ (!i. i IN k ==> (f i real_sums l i) s)
+        ==> ((\n. sum k (\i. f i n)) real_sums (sum k l)) s`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; REAL_SERIES_0; IN_INSERT] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_SERIES_ADD THEN CONJ_TAC THENL
+   [REWRITE_TAC[ETA_AX] THEN FIRST_X_ASSUM(MATCH_MP_TAC o check (fun th ->
+      is_forall(concl th) && is_disj(lhand(snd(dest_forall(concl th)))))) THEN
+    REWRITE_TAC[];
+    FIRST_X_ASSUM(MATCH_MP_TAC o check (fun th ->
+      is_forall(concl th) && free_in `sum k (l:A->real)` (concl th))) THEN
+    ASM_SIMP_TAC[]]);;
+
 let REAL_SUMS_IFF = prove
  (`!f g k. (!x. x IN k ==> f x = g x)
            ==> ((f real_sums l) k <=> (g real_sums l) k)`,
@@ -1160,6 +1175,39 @@ let REAL_SUMMABLE_POS_SUBSET = prove
   COND_CASES_TAC THEN REWRITE_TAC[REAL_ABS_0] THEN
   ASM_SIMP_TAC[REAL_ARITH `abs x <= x <=> &0 <= x`]);;
 
+let REAL_SUMMABLE_POS_PARTIAL_BOUND = prove
+ (`!f:num->real k B.
+        (!n. k <= n ==> &0 <= f n) /\ (!n. sum(k..n) f <= B)
+        ==> real_summable (from k) f /\ real_infsum (from k) f <= B`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `!n. &0 <= sum(k..n) (f:num->real)` ASSUME_TAC THENL
+   [GEN_TAC THEN MATCH_MP_TAC SUM_POS_LE_NUMSEG THEN ASM_SIMP_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPEC `\n. sum(k..n) (f:num->real)`
+    CONVERGENT_REAL_BOUNDED_MONOTONE) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[REAL_BOUNDED_POS; FORALL_IN_IMAGE; IN_UNIV] THEN
+    CONJ_TAC THENL
+     [EXISTS_TAC `abs B + &1:real` THEN CONJ_TAC THENL
+       [REAL_ARITH_TAC;
+        X_GEN_TAC `n:num` THEN
+        FIRST_X_ASSUM(MP_TAC o SPEC `n:num` o check (fun th ->
+          free_in `B:real` (concl th))) THEN
+        FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN REAL_ARITH_TAC];
+      DISJ1_TAC THEN X_GEN_TAC `n:num` THEN
+      REWRITE_TAC[SUM_CLAUSES_NUMSEG] THEN COND_CASES_TAC THEN
+      ASM_SIMP_TAC[REAL_LE_ADDR; REAL_LE_REFL]];
+    ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_TAC `l:real`) THEN
+  SUBGOAL_THEN `((f:num->real) real_sums l) (from k)` ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[REAL_SERIES_FROM]; ALL_TAC] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[real_summable]; ALL_TAC] THEN
+  FIRST_ASSUM(SUBST1_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
+  MATCH_MP_TAC(ISPEC `sequentially` REALLIM_UBOUND) THEN
+  EXISTS_TAC `\n. sum(k..n) (f:num->real)` THEN
+  ASM_REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY; EVENTUALLY_SEQUENTIALLY] THEN
+  MESON_TAC[]);;
+
 let REAL_SERIES_RATIO = prove
  (`!c a s N.
       c < &1 /\
@@ -1233,6 +1281,65 @@ let REAL_SUMMABLE_ZETA_INTEGER = prove
  (`!n m. 2 <= m ==> real_summable (from n) (\k. inv(&k pow m))`,
   REWRITE_TAC[REAL_SUMMABLE_COMPLEX; CX_INV; CX_POW;
               SUMMABLE_ZETA_INTEGER; o_DEF]);;
+
+let DIRICHLET_SERIES_FINITE_PERTURBATION = prove
+ (`!(a:num->real) b t B s.
+        FINITE t /\ (!m. ~(m IN t) ==> a m = b m) /\
+        (!m. abs(a m - b m) <= B) /\ &0 <= s /\
+        real_summable (from 1) (\m. a m / &m rpow s)
+        ==> real_summable (from 1) (\m. b m / &m rpow s) /\
+            abs(real_infsum (from 1) (\m. a m / &m rpow s) -
+                real_infsum (from 1) (\m. b m / &m rpow s))
+            <= B * &(CARD t)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `((\m. (a m - b m) / &m rpow s) real_sums
+     sum (t INTER from 1) (\m. (a m - b m) / &m rpow s)) (from 1)`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC REAL_SUMS_EQ THEN
+    EXISTS_TAC `\m. if 1 <= m then ((a:num->real) m - b m) / &m rpow s
+                    else &0` THEN
+    CONJ_TAC THENL [SIMP_TAC[IN_FROM]; ALL_TAC] THEN
+    SUBGOAL_THEN
+     `sum (t INTER from 1) (\m. ((a:num->real) m - b m) / &m rpow s) =
+      sum (t INTER from 1)
+          (\m. if 1 <= m then (a m - b m) / &m rpow s else &0)`
+    SUBST1_TAC THENL
+     [MATCH_MP_TAC SUM_EQ THEN SIMP_TAC[IN_INTER; IN_FROM]; ALL_TAC] THEN
+    MATCH_MP_TAC REAL_SERIES_FINITE_SUPPORT THEN
+    ASM_SIMP_TAC[FINITE_INTER; IN_INTER; IN_FROM] THEN
+    X_GEN_TAC `m:num` THEN COND_CASES_TAC THEN
+    ASM_SIMP_TAC[REAL_SUB_REFL; real_div; REAL_MUL_LZERO];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `(\m. b m / &m rpow s) = (\m. a m / &m rpow s - (a m - b m) / &m rpow s)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP REAL_SUMS_SUMMABLE) THEN
+  ASM_SIMP_TAC[REAL_SUMMABLE_SUB; REAL_INFSUM_SUB] THEN
+  FIRST_ASSUM(SUBST1_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
+  REWRITE_TAC[REAL_ARITH `abs((x:real) - (x - y)) = abs y`] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `sum (t INTER from 1) (\m:num. B)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_ABS_LE THEN ASM_SIMP_TAC[FINITE_INTER] THEN
+    X_GEN_TAC `m:num` THEN REWRITE_TAC[IN_INTER; IN_FROM] THEN STRIP_TAC THEN
+    REWRITE_TAC[REAL_ABS_DIV] THEN
+    SUBGOAL_THEN `&1 <= abs(&m rpow s)` ASSUME_TAC THENL
+     [MATCH_MP_TAC(REAL_ARITH `&1 <= (x:real) ==> &1 <= abs x`) THEN
+      MATCH_MP_TAC RPOW_LE_1 THEN ASM_REWRITE_TAC[REAL_OF_NUM_LE];
+      ALL_TAC] THEN
+    ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_ARITH `&1 <= (x:real) ==> &0 < x`] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `B:real` THEN
+    ASM_REWRITE_TAC[] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+    ASM_MESON_TAC[REAL_ABS_POS; REAL_LE_TRANS];
+    ASM_SIMP_TAC[SUM_CONST; FINITE_INTER] THEN
+    GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[REAL_OF_NUM_LE] THEN MATCH_MP_TAC CARD_SUBSET THEN
+      ASM_REWRITE_TAC[INTER_SUBSET];
+      ASM_MESON_TAC[REAL_ABS_POS; REAL_LE_TRANS]]]);;
 
 let REAL_ABEL_LEMMA = prove
  (`!a M r r0.
@@ -1343,6 +1450,14 @@ let EVENTUALLY_WITHINREAL_LE = prove
   REWRITE_TAC[EVENTUALLY_WITHINREAL] THEN
   ONCE_REWRITE_TAC[TAUT `a /\ b /\ c ==> d <=> c ==> a /\ b ==> d`] THEN
   REWRITE_TAC[APPROACHABLE_LT_LE]);;
+
+let TRIVIAL_LIMIT_ATREAL_RIGHT = prove
+ (`!a. ~trivial_limit(atreal a within {x | a < x})`,
+  REWRITE_TAC[trivial_limit; EVENTUALLY_WITHINREAL; IN_ELIM_THM] THEN
+  REWRITE_TAC[NOT_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real`; `d:real`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC `a + d / &2`)) THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Usual limit results with real domain and either vector or real range.     *)
@@ -4470,6 +4585,17 @@ let REALLIM_POWN = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_POWN THEN
   ASM_REWRITE_TAC[COMPLEX_NORM_CX]);;
 
+let REAL_POW_EVENTUALLY_LT = prove
+ (`!(x:real) (e:real). &0 <= x /\ x < &1 /\ &0 < e
+         ==> eventually (\n. x pow n < e) sequentially`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+  MP_TAC(ISPECL [`x:real`; `e:real`] REAL_ARCH_POW_INV) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `N:num` THEN DISCH_TAC THEN X_GEN_TAC `n:num` THEN
+  DISCH_TAC THEN TRANS_TAC REAL_LET_TRANS `(x:real) pow N` THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_POW_MONO_INV THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
+
 let REALLIM_X_TIMES_LOG = prove
  (`((\x. x * log x) ---> &0) (atreal(&0) within {x | &0 <= x})`,
   MP_TAC LIM_Z_TIMES_CLOG THEN
@@ -6943,6 +7069,115 @@ let REAL_SUM_INTEGRAL_BOUNDS_DECREASING = prove
   TRY(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_REAL_INTERVAL])) THEN
   REWRITE_TAC[SUBSET; IN_REAL_INTERVAL] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN ASM_REAL_ARITH_TAC);;
+
+let RPOW_TELESCOPE_BOUNDS = prove
+ (`!x s. &0 < x /\ &1 < s
+         ==> inv((x + &1) rpow s) <=
+             (x rpow (&1 - s) - (x + &1) rpow (&1 - s)) / (s - &1) /\
+             (x rpow (&1 - s) - (x + &1) rpow (&1 - s)) / (s - &1) <=
+             inv(x rpow s)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`\y:real. y rpow (&1 - s)`;
+                 `\y:real. (&1 - s) * y rpow ((&1 - s) - &1)`;
+                 `x:real`; `x + &1:real`] REAL_MVT_SIMPLE) THEN
+  ANTS_TAC THENL
+   [CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+    X_GEN_TAC `y:real` THEN REWRITE_TAC[IN_REAL_INTERVAL] THEN STRIP_TAC THEN
+    MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+    MATCH_MP_TAC HAS_REAL_DERIVATIVE_RPOW THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  REWRITE_TAC[IN_REAL_INTERVAL; REAL_ARITH `(x + &1) - x = &1:real`;
+              REAL_MUL_RID; REAL_ARITH `(&1 - s) - &1 = --s:real`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `y:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `(x rpow (&1 - s) - (x + &1) rpow (&1 - s)) / (s - &1) = inv(y rpow s)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[GSYM RPOW_NEG] THEN
+    FIRST_X_ASSUM(MP_TAC o check (fun th -> is_eq(concl th))) THEN
+    UNDISCH_TAC `&1 < s:real` THEN CONV_TAC REAL_FIELD;
+    ALL_TAC] THEN
+  CONJ_TAC THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+  (CONJ_TAC THENL [MATCH_MP_TAC RPOW_POS_LT; MATCH_MP_TAC RPOW_LE2]) THEN
+  ASM_REAL_ARITH_TAC);;
+
+let REAL_INFSUM_ZETA_BOUNDS = prove
+ (`!s. &1 < s
+       ==> inv(s - &1) <= real_infsum (from 1) (\m. inv(&m rpow s)) /\
+           real_infsum (from 1) (\m. inv(&m rpow s)) <= s / (s - &1)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  MP_TAC(SPECL [`1`; `s:real`] REAL_SUMMABLE_ZETA) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_SUMS_INFSUM]) THEN
+  REWRITE_TAC[REAL_SERIES_FROM] THEN
+  ABBREV_TAC `Z = real_infsum (from 1) (\m. inv(&m rpow s))` THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN
+   `!n. 1 <= n
+        ==> sum(1..n) (\m. inv(&m rpow s)) <=
+            &1 + (&1 - &n rpow (&1 - s)) / (s - &1)`
+  ASSUME_TAC THENL
+   [INDUCT_TAC THEN REWRITE_TAC[ARITH_RULE `~(1 <= 0)`] THEN
+    ASM_CASES_TAC `n = 0` THENL
+     [ASM_REWRITE_TAC[SUM_SING_NUMSEG; ARITH] THEN
+      REWRITE_TAC[RPOW_ONE; REAL_INV_1] THEN REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    ASM_SIMP_TAC[SUM_CLAUSES_NUMSEG; ARITH_RULE `1 <= SUC n`;
+                 ARITH_RULE `~(n = 0) ==> 1 <= n`] THEN
+    FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
+    ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 1 <= n`] THEN
+    MP_TAC(SPECL [`&n:real`; `s:real`] RPOW_TELESCOPE_BOUNDS) THEN
+    ASM_SIMP_TAC[REAL_OF_NUM_LT; LT_NZ; GSYM REAL_OF_NUM_SUC] THEN
+    REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!n. (&1 - (&n + &1) rpow (&1 - s)) / (s - &1) <=
+        sum(1..n) (\m. inv(&m rpow s))`
+  ASSUME_TAC THENL
+   [INDUCT_TAC THENL
+     [REWRITE_TAC[SUM_CLAUSES_NUMSEG; ARITH; REAL_ADD_LID; RPOW_ONE] THEN
+      REWRITE_TAC[REAL_SUB_REFL; real_div; REAL_MUL_LZERO; REAL_LE_REFL];
+      ALL_TAC] THEN
+    REWRITE_TAC[SUM_CLAUSES_NUMSEG; ARITH_RULE `1 <= SUC n`] THEN
+    MP_TAC(SPECL [`&n + &1:real`; `s:real`] RPOW_TELESCOPE_BOUNDS) THEN
+    ASM_REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
+    ANTS_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o check (is_binary "real_le" o concl)) THEN
+    REWRITE_TAC[REAL_ARITH `(n + &1) + &1 = n + &2:real`] THEN
+    REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC(ISPEC `sequentially` REALLIM_LE) THEN
+    EXISTS_TAC `\n. (&1 - (&n + &1) rpow (&1 - s)) / (s - &1)` THEN
+    EXISTS_TAC `\n. sum(1..n) (\m. inv(&m rpow s))` THEN
+    ASM_REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY; EVENTUALLY_TRUE] THEN
+    REWRITE_TAC[real_div; REAL_MUL_LID] THEN
+    GEN_REWRITE_TAC LAND_CONV [REAL_ARITH `inv x = (&1 - &0) * inv x`] THEN
+    MATCH_MP_TAC REALLIM_RMUL THEN MATCH_MP_TAC REALLIM_SUB THEN
+    REWRITE_TAC[REALLIM_CONST] THEN
+    MP_TAC(ISPECL [`sequentially`; `\n. inv(&n + &1)`; `&0:real`; `s - &1:real`]
+      REALLIM_RPOW) THEN
+    REWRITE_TAC[REALLIM_1_OVER_N_OFFSET; RPOW_ZERO] THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    ASM_SIMP_TAC[REAL_ARITH `&1 < s:real ==> ~(s - &1 = &0)`] THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_THM_TAC THEN
+    AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `n:num` THEN
+    REWRITE_TAC[RPOW_INV; GSYM RPOW_NEG] THEN AP_TERM_TAC THEN
+    REAL_ARITH_TAC;
+    MATCH_MP_TAC(ISPEC `sequentially` REALLIM_UBOUND) THEN
+    EXISTS_TAC `\n. sum(1..n) (\m. inv(&m rpow s))` THEN
+    ASM_REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY; EVENTUALLY_SEQUENTIALLY] THEN
+    EXISTS_TAC `1` THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `n:num` o check (fun th ->
+      is_forall(concl th) && is_imp(snd(dest_forall(concl th))))) THEN
+    ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(REAL_ARITH `y <= z ==> x <= y ==> x <= z:real`) THEN
+    SUBGOAL_THEN `s / (s - &1) = &1 + &1 / (s - &1)` SUBST1_TAC THENL
+     [UNDISCH_TAC `&1 < s:real` THEN CONV_TAC REAL_FIELD; ALL_TAC] THEN
+    MATCH_MP_TAC(REAL_ARITH
+     `&0 <= x / d ==> &1 + (&1 - x) / d <= &1 + &1 / d`) THEN
+    MATCH_MP_TAC REAL_LE_DIV THEN
+    ASM_SIMP_TAC[RPOW_POS_LE; REAL_POS; REAL_ARITH
+                 `&1 < s:real ==> &0 <= s - &1`]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some variants with real derivatives.                                      *)

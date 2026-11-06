@@ -231,6 +231,7 @@ needs "Library/ringtheory.ml";;
 needs "Library/fieldtheory.ml";;
 prioritize_real();;
 needs "Multivariate/cauchy.ml";;
+needs "Multivariate/complex_ring.ml";;
 
 prioritize_real();; (* to ensure portability *)
 
@@ -9461,117 +9462,19 @@ let deg_scaled_pow_newton_rightside = prove(`
   qed[POLY_DEG_MUL_LE;ARITH_RULE `d <= d1 + d2 /\ d1 <= e:num /\ d2 <= C ==> d <= e + C`]
 );;
 
-(* ===== the ring of complex numbers *)
-
-let complex_ring = new_definition `
-  complex_ring = ring((:complex),Cx(&0),Cx(&1),( -- ),( + ),( * ))
-`;;
-
-let complex_of_num = new_definition `
-  complex_of_num(n:num) = Cx(real_of_num n)
-`;;
-
-let complex_of_int = new_definition `
-  complex_of_int(n:int) = Cx(real_of_int n)
-`;;
-
-let complex_ring_clauses = prove
- (`ring_carrier complex_ring = (:complex) /\
-   ring_0 complex_ring = Cx(&0) /\
-   ring_1 complex_ring = Cx(&1) /\
-   ring_neg complex_ring = ( -- ) /\
-   ring_add complex_ring = ( + ) /\
-   ring_mul complex_ring = ( * )`,
-  PURE_REWRITE_TAC
-   [GSYM PAIR_EQ; ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul;
-    BETA_THM; PAIR] THEN
-  PURE_REWRITE_TAC[complex_ring; GSYM(CONJUNCT2 ring_tybij)] THEN
-  REWRITE_TAC[IN_UNIV] THEN CONV_TAC COMPLEX_RING);;
+(* ===== the ring of complex numbers: see Multivariate/complex_ring.ml *)
 
 let in_complex_ring = prove(`
   !z.
   z IN ring_carrier complex_ring
 `,
-  qed[complex_ring_clauses;IN_UNIV]
-);;
-
-let field_complex = prove(`
-  field complex_ring
-`,
-  rw[field;complex_ring_clauses;IN_UNIV] THEN
-  qed[CX_INJ;COMPLEX_MUL_RINV;REAL_ARITH `~(&1 = &0:real)`]
-);;
-
-let integral_domain_complex = prove(`
-  integral_domain complex_ring
-`,
-  qed[field_complex;FIELD_IMP_INTEGRAL_DOMAIN]
-);;
-
-let ring_of_num_complex = prove(`
-  ring_of_num complex_ring = complex_of_num
-`,
-  rw[FUN_EQ_THM;complex_of_num] THEN
-  INDUCT_TAC THEN
-  simp[ring_of_num;complex_ring_clauses] THEN
-  rw[GSYM CX_ADD;REAL_OF_NUM_SUC]
-);;
-
-let ring_of_int_complex = prove(`
-  ring_of_int complex_ring = complex_of_int
-`,
-  rw[FUN_EQ_THM] THEN
-  rw[FORALL_INT_CASES;RING_OF_INT_CASES] THEN
-  rw[ring_of_num_complex;complex_of_num] THEN
-  rw[complex_of_int;int_of_num_th;int_neg_th;CX_NEG] THEN
-  rw[complex_ring_clauses]
-);;
-
-let ring_char_complex = prove(`
-  ring_char complex_ring = 0
-`,
-  rw[RING_CHAR_EQ_0;ring_of_num_complex;complex_of_num;complex_ring_clauses;CX_INJ;REAL_OF_NUM_EQ]
-);;
-
-let ring_sub_complex = prove(`
-  ring_sub complex_ring = (-)
-`,
-  rw[FUN_EQ_THM;ring_sub;complex_ring_clauses;complex_sub]
+  qed[COMPLEX_RING_CLAUSES;IN_UNIV]
 );;
 
 (* from Complex/complexnumbers.ml *)
 let COMPLEX_MUL_RINV_UNIQ = prove
  (`!w z. w * z = Cx(&1) ==> inv w = z`,
   CONV_TAC COMPLEX_FIELD);;
-
-let ring_inv_complex = prove(`
-  ring_inv complex_ring = inv
-`,
-  rw[FUN_EQ_THM;ring_inv;complex_ring_clauses] THEN
-  simp[FIELD_UNIT;field_complex;complex_ring_clauses;IN_UNIV;COND_SWAP] THEN
-  intro THEN
-  case `x = Cx(&0)` THENL [
-    qed[COMPLEX_INV_0]
-  ;
-    qed[COMPLEX_MUL_RINV;COMPLEX_MUL_RINV_UNIQ]
-  ]
-);;
-
-let ring_div_complex = prove(`
-  ring_div complex_ring = (/)
-`,
-  rw[FUN_EQ_THM;ring_div;complex_ring_clauses;ring_inv_complex;complex_div]
-);;
-
-let ring_pow_complex = prove(`
-  ring_pow complex_ring = (pow)
-`,
-  rw[FUN_EQ_THM] THEN
-  GEN_TAC THEN
-  INDUCT_TAC THEN
-  simp[ring_pow;complex_ring_clauses] THEN
-  qed[complex_pow]
-);;
 
 let complex_field_clauses = prove
  (`ring_carrier complex_ring = (:complex) /\
@@ -9580,46 +9483,12 @@ let complex_field_clauses = prove
    ring_neg complex_ring = ( -- ) /\
    ring_add complex_ring = ( + ) /\
    ring_mul complex_ring = ( * ) /\
-   ring_of_num complex_ring = complex_of_num /\
+   ring_of_num complex_ring = (\n. Cx(&n)) /\
    ring_sub complex_ring = (-) /\
    ring_inv complex_ring = inv /\
    ring_div complex_ring = (/) /\
    ring_pow complex_ring = (pow)`,
-  rw[complex_ring_clauses;ring_of_num_complex;ring_sub_complex;ring_inv_complex;ring_div_complex;ring_pow_complex]);;
-
-let vsum_ring_sum_complex = prove(`
-  !(f:X->complex) S.
-  FINITE S ==>
-  vsum S f =
-  ring_sum complex_ring S f
-`,
-  GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    rw[VSUM_CLAUSES;RING_SUM_CLAUSES] THEN
-    rw[complex_ring_clauses;COMPLEX_VEC_0]
-  ;
-    simp[VSUM_CLAUSES;RING_SUM_CLAUSES;in_complex_ring] THEN
-    rw[complex_ring_clauses]
-  ]
-);;
-
-let cproduct_ring_product_complex = prove(`
-  !(f:X->complex) S.
-  FINITE S ==>
-  cproduct S f =
-  ring_product complex_ring S f
-`,
-  GEN_TAC THEN
-  sufficesby FINITE_INDUCT_STRONG THEN
-  intro THENL [
-    rw[CPRODUCT_CLAUSES;RING_PRODUCT_CLAUSES] THEN
-    rw[complex_ring_clauses]
-  ;
-    simp[CPRODUCT_CLAUSES;RING_PRODUCT_CLAUSES;in_complex_ring] THEN
-    rw[complex_ring_clauses]
-  ]
-);;
+  rw[COMPLEX_RING_CLAUSES;COMPLEX_RING_OF_NUM;COMPLEX_RING_SUB;COMPLEX_RING_INV;COMPLEX_RING_DIV;COMPLEX_RING_POW]);;
 
 let vsum_delta_complex = prove(`
   !(S:X->bool) t a.
@@ -9634,7 +9503,7 @@ let vsum_delta_complex = prove(`
 let ring_1_0_complex = prove(`
   ~(ring_1 complex_ring = ring_0 complex_ring)
 `,
-  qed[integral_domain_complex;integral_domain]
+  qed[INTEGRAL_DOMAIN_COMPLEX_RING;integral_domain]
 );;
 
 (* ===== \C[x] *)
@@ -9652,7 +9521,7 @@ let complex_coeff_x_pow_times = prove(`
   coeff e (poly_mul complex_ring (x_pow complex_ring d) p)
   = if e < d then Cx(&0) else coeff (e - d) p
 `,
-  qed[coeff_x_pow_times;series_complex;complex_ring_clauses]
+  qed[coeff_x_pow_times;series_complex;COMPLEX_RING_CLAUSES]
 );;
 
 let poly_1_0_complex = prove(`
@@ -9665,7 +9534,7 @@ let poly_1_0_complex = prove(`
 (* ===== copy of \Z inside \C *)
 
 let ZinC = new_definition `
-  ZinC = {z:complex | ?i:int. z = complex_of_int i}
+  ZinC = {z:complex | ?i:int. z = Cx(real_of_int i)}
 `;;
 
 let ZinC_ring = new_definition `
@@ -9675,7 +9544,7 @@ let ZinC_ring = new_definition `
 let ii_not_in_ZinC = prove(`
   ~(ii IN ZinC)
 `,
-  rw[ZinC;IN_ELIM_THM;complex_of_int] THEN
+  rw[ZinC;IN_ELIM_THM] THEN
   rw[ii;COMPLEX_EQ;CX_DEF;IM] THEN
   ARITH_TAC
 );;
@@ -9683,7 +9552,7 @@ let ii_not_in_ZinC = prove(`
 let half_not_in_ZinC = prove(`
   ~(Cx(&1 / &2) IN ZinC)
 `,
-  rw[ZinC;IN_ELIM_THM;complex_of_int] THEN
+  rw[ZinC;IN_ELIM_THM] THEN
   rw[CX_INJ] THEN
   intro THEN
   int_linear_fact `&1 / &2 = real_of_int i ==> &1 = &2 * (real_of_int i)` THEN
@@ -9709,13 +9578,13 @@ let num_in_ZinC = prove(`
   !d. Cx(&d) IN ZinC
 `,
   intro THEN
-  rw[ZinC;IN_ELIM_THM;complex_of_int] THEN
+  rw[ZinC;IN_ELIM_THM] THEN
   witness `&d:int` THEN
   rw[int_of_num_th]
 );;
 
 let int_in_ZinC = prove(`
-  !i. complex_of_int i IN ZinC
+  !i. Cx(real_of_int i) IN ZinC
 `,
   SET_TAC[ZinC]
 );;
@@ -9736,7 +9605,7 @@ let neg_in_ZinC = prove(`
   !x:complex.
   x IN ZinC ==> --x IN ZinC
 `,
-  rw[ZinC;IN_ELIM_THM;complex_of_int] THEN
+  rw[ZinC;IN_ELIM_THM] THEN
   intro THEN
   witness `int_neg i` THEN
   rw[GSYM REAL_OF_INT_CLAUSES;CX_NEG] THEN
@@ -9747,7 +9616,7 @@ let add_in_ZinC = prove(`
   !x:complex y:complex.
   x IN ZinC /\ y IN ZinC ==> x+y IN ZinC
 `,
-  rw[ZinC;IN_ELIM_THM;complex_of_int] THEN
+  rw[ZinC;IN_ELIM_THM] THEN
   intro THEN
   witness `i+i':int` THEN
   rw[GSYM REAL_OF_INT_CLAUSES;CX_ADD] THEN
@@ -9758,7 +9627,7 @@ let mul_in_ZinC = prove(`
   !x:complex y:complex.
   x IN ZinC /\ y IN ZinC ==> x*y IN ZinC
 `,
-  rw[ZinC;IN_ELIM_THM;complex_of_int] THEN
+  rw[ZinC;IN_ELIM_THM] THEN
   intro THEN
   witness `i*i':int` THEN
   rw[GSYM REAL_OF_INT_CLAUSES;CX_MUL] THEN
@@ -9784,7 +9653,7 @@ let ZinC_subring_complex = prove(`
   ZinC subring_of complex_ring
 `,
   rw[subring_of] THEN
-  rw[complex_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES] THEN
   rw[ZinC_0;ZinC_1;neg_in_ZinC;add_in_ZinC;mul_in_ZinC;SUBSET_UNIV]
 );;
 
@@ -9795,14 +9664,14 @@ let ZinC_subring_generated_carrier = prove(`
   rw[ZinC;IN_ELIM_THM;EXTENSION] THEN
   intro THEN
   splitiff THENL [
-    rw[GSYM ring_of_int_complex] THEN
+    rw[GSYM(REWRITE_RULE[FUN_EQ_THM] COMPLEX_RING_OF_INT)] THEN
     qed[int_in_subring]
   ;
     intro THEN
     have `ZinC subring_of complex_ring` [ZinC_subring_complex] THEN
     have `x IN ZinC` [] THEN
-    have `x IN {z | ?i. z = complex_of_int i}` [ZinC] THEN
-    set_fact `x IN {z | ?i. z = complex_of_int i} ==> ?i. x = complex_of_int i` THEN
+    have `x IN {z | ?i. z = Cx(real_of_int i)}` [ZinC] THEN
+    set_fact `x IN {z | ?i. z = Cx(real_of_int i)} ==> ?i. x = Cx(real_of_int i)` THEN
     qed[]
   ]
 );;
@@ -9818,14 +9687,14 @@ let subring_complex_empty = prove(`
   subring_generated complex_ring {} = ZinC_ring
 `,
   rw[subring_generated] THEN
-  rw[complex_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES] THEN
   rw[ZinC_ring;subring_complex_empty_lemma]
 );;
 
 let ring_char_ZinC = prove(`
   ring_char ZinC_ring = 0
 `,
-  recall ring_char_complex THEN
+  recall RING_CHAR_COMPLEX_RING THEN
   specialize[`complex_ring`;`{}:complex->bool`]RING_CHAR_SUBRING_GENERATED THEN
   qed[subring_complex_empty]
 );;
@@ -9841,14 +9710,14 @@ let subring_complex_ZinC = prove(`
   subring_generated complex_ring ZinC = ZinC_ring
 `,
   rw[subring_generated] THEN
-  rw[complex_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES] THEN
   rw[ZinC_ring;subring_complex_ZinC_lemma]
 );;
 
 let ring_of_num_ZinC = prove(`
-  ring_of_num ZinC_ring = complex_of_num
+  ring_of_num ZinC_ring = (\n. Cx(&n))
 `,
-  rw[FUN_EQ_THM;complex_of_num] THEN
+  rw[FUN_EQ_THM] THEN
   INDUCT_TAC THEN
   simp[ring_of_num;ZinC_ring_clauses] THEN
   rw[GSYM CX_ADD;REAL_OF_NUM_SUC]
@@ -9857,13 +9726,13 @@ let ring_of_num_ZinC = prove(`
 let ring_pow_ZinC = prove(`
   ring_pow ZinC_ring = (pow)
 `,
-  qed[RING_POW_SUBRING_GENERATED;ring_pow_complex;subring_complex_empty]
+  qed[RING_POW_SUBRING_GENERATED;COMPLEX_RING_POW;subring_complex_empty]
 );;
 
 let integral_domain_ZinC = prove(`
   integral_domain ZinC_ring
 `,
-  qed[integral_domain_complex;INTEGRAL_DOMAIN_SUBRING_GENERATED;subring_complex_empty]
+  qed[INTEGRAL_DOMAIN_COMPLEX_RING;INTEGRAL_DOMAIN_SUBRING_GENERATED;subring_complex_empty]
 );;
 
 (* ===== \Z[x] *)
@@ -9875,7 +9744,7 @@ let poly_complex_if_poly_ZinC = prove(`
 `,
   rw[ring_polynomial] THEN
   rw[ring_powerseries] THEN
-  rw[complex_ring_clauses;ZinC_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES;ZinC_ring_clauses] THEN
   qed[IN_UNIV]
 );;
 
@@ -9883,7 +9752,7 @@ let poly_0_ZinC_eq_poly_0_complex = prove(`
   poly_0 ZinC_ring = (poly_0 complex_ring):(V->num)->complex
 `,
   rw[poly_0;poly_const] THEN
-  rw[ZinC_ring_clauses;complex_ring_clauses]
+  rw[ZinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let zero_if_ZinC_norm_lt1 = prove(`
@@ -9893,10 +9762,10 @@ let zero_if_ZinC_norm_lt1 = prove(`
   z = Cx(&0)
 `,
   intro THEN
-  have `z IN {z | ?i. z = complex_of_int i}` [ZinC] THEN
-  set_fact `z IN {z | ?i. z = complex_of_int i} ==> ?i. z = complex_of_int i` THEN
-  choose `i:int` `z = complex_of_int i` [ZinC] THEN
-  have `z = Cx(real_of_int i)` [complex_of_int] THEN
+  have `z IN {z | ?i. z = Cx(real_of_int i)}` [ZinC] THEN
+  set_fact `z IN {z | ?i. z = Cx(real_of_int i)} ==> ?i. z = Cx(real_of_int i)` THEN
+  choose `i:int` `z = Cx(real_of_int i)` [ZinC] THEN
+  have `z = Cx(real_of_int i)` [] THEN
   have `norm(z:complex) = abs(real_of_int i)` [COMPLEX_NORM_CX] THEN
   choose `n:num` `abs(real_of_int i) = &n` [INTEGER_REAL_OF_INT;integer] THEN
   proven_if `n = 0` [REAL_ABS_ZERO] THEN
@@ -9928,7 +9797,7 @@ let zero_if_ZinC_scale_bound = prove(`
 (* ===== copy of \Q inside \C *)
 
 let QinC = new_definition `
-  QinC = {z:complex | ?i:int d:num. ~(d = 0) /\ Cx(&d) * z = complex_of_int i}
+  QinC = {z:complex | ?i:int d:num. ~(d = 0) /\ Cx(&d) * z = Cx(real_of_int i)}
 `;;
 
 let QinC_ring = new_definition `
@@ -9968,7 +9837,6 @@ let neg_in_QinC = prove(`
   !z. z IN QinC ==> --z IN QinC
 `,
   rw[QinC;IN_ELIM_THM] THEN
-  rw[complex_of_int] THEN
   intro THEN
   witness `--i:int` THEN
   witness `d:num` THEN
@@ -9983,7 +9851,6 @@ let add_in_QinC = prove(`
   y+z IN QinC
 `,
   rw[QinC;IN_ELIM_THM] THEN
-  rw[complex_of_int] THEN
   intro THEN
   witness `i * &d'+i' * &d:int` THEN
   witness `d*d':num` THEN
@@ -10003,7 +9870,6 @@ let mul_in_QinC = prove(`
   y*z IN QinC
 `,
   rw[QinC;IN_ELIM_THM] THEN
-  rw[complex_of_int] THEN
   intro THEN
   witness `i*i':int` THEN
   witness `d*d':num` THEN
@@ -10042,7 +9908,7 @@ let QinC_subring_complex = prove(`
   QinC subring_of complex_ring
 `,
   rw[subring_of] THEN
-  rw[complex_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES] THEN
   rw[QinC_0;QinC_1;neg_in_QinC;add_in_QinC;mul_in_QinC;SUBSET_UNIV]
 );;
 
@@ -10074,7 +9940,7 @@ let poly_complex_if_poly_QinC = prove(`
 `,
   rw[ring_polynomial] THEN
   rw[ring_powerseries] THEN
-  rw[complex_ring_clauses;QinC_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES;QinC_ring_clauses] THEN
   qed[IN_UNIV]
 );;
 
@@ -10084,7 +9950,7 @@ let series_complex_if_series_QinC = prove(`
   ring_powerseries complex_ring p
 `,
   rw[ring_powerseries] THEN
-  rw[complex_ring_clauses;QinC_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES;QinC_ring_clauses] THEN
   qed[IN_UNIV]
 );;
 
@@ -10092,14 +9958,14 @@ let poly_0_QinC_eq_poly_0_complex = prove(`
   poly_0 QinC_ring = (poly_0 complex_ring):(V->num)->complex
 `,
   rw[poly_0;poly_const] THEN
-  rw[QinC_ring_clauses;complex_ring_clauses]
+  rw[QinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let poly_1_QinC_eq_poly_1_complex = prove(`
   poly_1 QinC_ring = (poly_1 complex_ring):(V->num)->complex
 `,
   rw[poly_1;poly_const] THEN
-  rw[QinC_ring_clauses;complex_ring_clauses]
+  rw[QinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let poly_neg_QinC_eq_poly_neg_complex = prove(`
@@ -10108,7 +9974,7 @@ let poly_neg_QinC_eq_poly_neg_complex = prove(`
   = poly_neg complex_ring p
 `,
   rw[poly_neg] THEN
-  rw[QinC_ring_clauses;complex_ring_clauses]
+  rw[QinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let poly_add_QinC_eq_poly_add_complex = prove(`
@@ -10117,7 +9983,7 @@ let poly_add_QinC_eq_poly_add_complex = prove(`
   = poly_add complex_ring p q
 `,
   rw[poly_add] THEN
-  rw[QinC_ring_clauses;complex_ring_clauses]
+  rw[QinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let x_pow_QinC_eq_x_pow_complex = prove(`
@@ -10126,7 +9992,7 @@ let x_pow_QinC_eq_x_pow_complex = prove(`
 `,
   intro THEN
   sufficesby eq_coeff THEN
-  rw[coeff_x_pow;QinC_ring_clauses;complex_ring_clauses]
+  rw[coeff_x_pow;QinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let poly_0_ZinC_eq_poly_0_QinC = prove(`
@@ -10136,9 +10002,9 @@ let poly_0_ZinC_eq_poly_0_QinC = prove(`
 );;
 
 let ring_of_num_QinC = prove(`
-  ring_of_num QinC_ring = complex_of_num
+  ring_of_num QinC_ring = (\n. Cx(&n))
 `,
-  rw[FUN_EQ_THM;complex_of_num] THEN
+  rw[FUN_EQ_THM] THEN
   INDUCT_TAC THEN
   simp[ring_of_num;QinC_ring_clauses] THEN
   rw[GSYM CX_ADD;REAL_OF_NUM_SUC]
@@ -10147,7 +10013,9 @@ let ring_of_num_QinC = prove(`
 let num_in_QinC = prove(`
   !n. Cx(&n) IN QinC
 `,
-  rw[GSYM complex_of_num;GSYM ring_of_num_QinC;GSYM QinC_ring_clauses;RING_OF_NUM]
+  GEN_TAC THEN
+  MP_TAC(ISPECL[`QinC_ring`;`n:num`]RING_OF_NUM) THEN
+  rw[ring_of_num_QinC;QinC_ring_clauses]
 );;
 
 let num_over_num_in_QinC = prove(`
@@ -10158,7 +10026,7 @@ let num_over_num_in_QinC = prove(`
   case `d = 0` THENL [
     witness `&0:int` THEN
     witness `1:num` THEN
-    rw[complex_of_int;GSYM REAL_OF_INT_CLAUSES] THEN
+    rw[GSYM REAL_OF_INT_CLAUSES] THEN
     simp[complex_div] THEN
     rw[COMPLEX_INV_0] THEN
     rw[COMPLEX_MUL_RZERO] THEN
@@ -10166,7 +10034,7 @@ let num_over_num_in_QinC = prove(`
   ;
     witness `&n:int` THEN
     witness `d:num` THEN
-    rw[complex_of_int;GSYM REAL_OF_INT_CLAUSES] THEN
+    rw[GSYM REAL_OF_INT_CLAUSES] THEN
     have `~(d = 0) ==> ~(&d = &0:real)` [REAL_OF_NUM_EQ] THEN
     have `~(Cx(&d) = Cx(&0))` [CX_INJ] THEN
     complex_field_fact `~(Cx (&d) = Cx (&0)) ==> Cx (&d) * Cx (&n) / Cx (&d) = Cx (&n)` THEN
@@ -10188,12 +10056,12 @@ let field_QinC = prove(`
   intro THENL [
     qed[CX_INJ;REAL_ARITH `~(&1 = &0:real)`]
   ;
-    choose2 `i:int` `d:num` `~(d = 0) /\ Cx(&d) * x = complex_of_int i` [QinC;IN_ELIM_THM] THEN
+    choose2 `i:int` `d:num` `~(d = 0) /\ Cx(&d) * x = Cx(real_of_int i)` [QinC;IN_ELIM_THM] THEN
     choose `n:num` `real_of_int i = &n \/ real_of_int i = -- &n` [dest_int_rep] THEN
     case `n = 0` THENL [
       num_linear_fact `-- &0 = &0:real` THEN
       have `real_of_int i = &0` [] THEN
-      have `complex_of_int i = Cx(&0)` [complex_of_int] THEN
+      have `Cx(real_of_int i) = Cx(&0)` [] THEN
       have `Cx(&d) * x = Cx(&0)` [] THEN
       complex_field_fact `~(x = Cx(&0)) /\ Cx(&d) * x = Cx(&0) ==> Cx(&d) = Cx(&0)` THEN
       have `&d = &0:real` [CX_INJ] THEN
@@ -10203,14 +10071,14 @@ let field_QinC = prove(`
     have `~(n = 0) ==> ~(&n = &0:real)` [REAL_OF_NUM_EQ] THEN
     have `~(Cx(&n) = Cx(&0))` [CX_INJ] THEN
     case `real_of_int i = &n` THENL [
-      have `complex_of_int i = Cx(&n)` [complex_of_int] THEN
+      have `Cx(real_of_int i) = Cx(&n)` [] THEN
       witness `Cx(&d) / Cx(&n)` THEN
       have `Cx(&d) * x = Cx(&n)` [] THEN
       complex_field_fact `Cx(&d)*x = Cx(&n) ==> ~(Cx(&n) = Cx(&0)) ==> x * Cx(&d) / Cx(&n) = Cx(&1)` THEN
       qed[num_over_num_in_QinC]
     ;
       have `real_of_int i = -- &n` [] THEN
-      have `complex_of_int i = Cx(-- &n)` [complex_of_int] THEN
+      have `Cx(real_of_int i) = Cx(-- &n)` [] THEN
       witness `-- (Cx(&d) / Cx(&n))` THEN
       have `Cx(&d) * x = -- Cx(&n)` [CX_NEG] THEN
       complex_field_fact `Cx(&d)*x = -- Cx(&n) ==> ~(Cx(&n) = Cx(&0)) ==> x * -- (Cx(&d) / Cx(&n)) = Cx(&1)` THEN
@@ -10304,21 +10172,21 @@ let subring_complex_QinC = prove(`
   subring_generated complex_ring QinC = QinC_ring
 `,
   rw[subring_generated] THEN
-  rw[complex_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES] THEN
   rw[QinC_ring;subring_complex_QinC_lemma]
 );;
 
 let ring_char_QinC = prove(`
   ring_char QinC_ring = 0
 `,
-  qed[ring_char_complex;RING_CHAR_SUBRING_GENERATED;subring_complex_QinC]
+  qed[RING_CHAR_COMPLEX_RING;RING_CHAR_SUBRING_GENERATED;subring_complex_QinC]
 );;
 
 let ring_hasQ_QinC = prove(`
   ring_hasQ QinC_ring
 `,
   rw[ring_hasQ;ring_char_QinC] THEN
-  rw[ring_of_num_QinC;complex_of_num;ring_unit] THEN
+  rw[ring_of_num_QinC;ring_unit] THEN
   GEN_TAC THEN DISCH_TAC THEN
   have `Cx(&n) IN ring_carrier QinC_ring` [num_in_QinC;QinC_ring_clauses] THEN
   simp[] THEN
@@ -10339,9 +10207,9 @@ let x_minus_const_QinC_eq_x_minus_const_complex = prove(`
   intro THEN
   rw[x_minus_const] THEN
   rw[poly_sub;poly_const] THEN
-  rw[ring_sub_QinC;ring_sub_complex] THEN
+  rw[ring_sub_QinC;COMPLEX_RING_SUB] THEN
   rw[x_pow_QinC_eq_x_pow_complex] THEN
-  rw[QinC_ring_clauses;complex_ring_clauses]
+  rw[QinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let subring_QinC_empty_lemma = prove(`
@@ -10380,7 +10248,7 @@ let ring_1_0_QinC = prove(`
 let ring_pow_QinC = prove(`
   ring_pow QinC_ring = (pow)
 `,
-  qed[RING_POW_SUBRING_GENERATED;ring_pow_complex;subring_complex_QinC]
+  qed[RING_POW_SUBRING_GENERATED;COMPLEX_RING_POW;subring_complex_QinC]
 );;
 
 let sum_QinC_eq_sum_complex = prove(`
@@ -10409,7 +10277,7 @@ let poly_mul_QinC_eq_poly_mul_complex = prove(`
     sufficesby RING_SUM_EQ THEN
     intro THEN
     rw[LAMBDA_PAIR;BETA_THM] THEN
-    qed[QinC_ring_clauses;complex_ring_clauses]
+    qed[QinC_ring_clauses;COMPLEX_RING_CLAUSES]
   ; pass
   ] THEN
   simp[] THEN
@@ -10419,7 +10287,7 @@ let poly_mul_QinC_eq_poly_mul_complex = prove(`
   simp[FST;SND] THEN
   have `p(m1:V->num) IN ring_carrier(QinC_ring)` [ring_powerseries] THEN
   have `q(m2:V->num) IN ring_carrier(QinC_ring)` [ring_powerseries] THEN
-  qed[RING_MUL;QinC_ring_clauses;complex_ring_clauses]
+  qed[RING_MUL;QinC_ring_clauses;COMPLEX_RING_CLAUSES]
 );;
 
 let ring_divides_poly_complex_if_ring_divides_poly_QinC = prove(`
@@ -10508,7 +10376,7 @@ let x_poly_ZinC_denominator_is_QinC_v2_lemma = prove(`
   rw[coeff_series_from_coeffs] THEN
   have `Cx(&1) / Cx(&e) IN ring_carrier complex_ring` [in_complex_ring] THEN
   simp[coeff_poly_const_times] THEN
-  rw[complex_ring_clauses] THEN
+  rw[COMPLEX_RING_CLAUSES] THEN
   CONV_TAC COMPLEX_FIELD
 );;
 
@@ -10624,7 +10492,7 @@ let x_poly_QinC_is_ZinC_denominator_v2_lemma = prove(`
   rw[coeff_series_from_coeffs] THEN
   have `Cx(&e) IN ring_carrier complex_ring` [in_complex_ring] THEN
   simp[coeff_poly_const_times] THEN
-  rw[complex_ring_clauses]
+  rw[COMPLEX_RING_CLAUSES]
 );;
 
 let x_poly_QinC_is_ZinC_denominator_v2_lemma2 = prove(`
@@ -10668,7 +10536,7 @@ let ring_hasQ_subring_series_complex = prove(`
   intro THENL [
     rw[RING_CHAR_SUBRING_GENERATED] THEN
     rw[ring_char_x_series] THEN
-    rw[ring_char_complex]
+    rw[RING_CHAR_COMPLEX_RING]
   ;
     rw[ring_unit] THEN
     intro THENL [
@@ -10688,9 +10556,9 @@ let ring_hasQ_subring_series_complex = prove(`
         rw[ring_of_num_x_series] THEN
         rw[GSYM x_series_use] THEN
         rw[poly_const_QinC_poly_const_complex] THEN
-        rw[ring_of_num_complex;complex_of_num] THEN
+        rw[COMPLEX_RING_OF_NUM] THEN
         simp[GSYM POLY_CONST_MUL;in_complex_ring] THEN
-        rw[complex_ring_clauses;poly_1] THEN
+        rw[COMPLEX_RING_CLAUSES;poly_1] THEN
         have `~(&n = &0:real)` [REAL_OF_NUM_EQ] THEN
         have `~(Cx(&n) = Cx(&0))` [CX_INJ] THEN
         complex_field_fact `~(Cx(&n) = Cx(&0)) ==> Cx (&n) * Cx (&1) / Cx (&n) = Cx(&1)` THEN
@@ -10789,7 +10657,7 @@ let algebraic_number_ii = prove(`
   simp[ARITH_RULE `~(0 = 2)`;ARITH_RULE `~(0 = 1)`;
     RING_ADD_LZERO;RING_ADD_RZERO;RING_MUL_LID;RING_MUL_LZERO;
     RING_CLAUSES] THEN
-  rw[ring_pow_complex;complex_ring_clauses] THEN
+  rw[COMPLEX_RING_POW;COMPLEX_RING_CLAUSES] THEN
   simp[COMPLEX_POW_II_2;complex_pow] THEN
   CONV_TAC COMPLEX_FIELD
 );;
@@ -10801,7 +10669,7 @@ let algebraic_number_half = prove(`
   intro THEN
   witness `poly_sub ZinC_ring (const_x_pow ZinC_ring (Cx(&2)) 1) (x_pow ZinC_ring 0)` THEN
   intro THENL [
-    have `Cx(&2) IN ring_carrier ZinC_ring` [complex_of_num;RING_OF_NUM;ring_of_num_ZinC] THEN
+    have `Cx(&2) IN ring_carrier ZinC_ring` [RING_OF_NUM;ring_of_num_ZinC] THEN
     qed[x_pow_poly;const_x_pow_poly;RING_POLYNOMIAL_SUB]
   ;
     have `coeff 0 (const_x_pow ZinC_ring (Cx(&2)) 1) = ring_0 ZinC_ring` [coeff_const_x_pow;ARITH_RULE `~(1 = 0)`] THEN
@@ -10839,7 +10707,7 @@ let algebraic_number_half = prove(`
   simp[ARITH_RULE `~(0 = 1)`;
     RING_ADD_LZERO;RING_ADD_RZERO;RING_MUL_LID;RING_MUL_LZERO;
     RING_CLAUSES] THEN
-  rw[ring_pow_complex;complex_ring_clauses;ring_sub_complex] THEN
+  rw[COMPLEX_RING_POW;COMPLEX_RING_CLAUSES;COMPLEX_RING_SUB] THEN
   simp[complex_pow;COMPLEX_POW_1] THEN
   CONV_TAC COMPLEX_FIELD
 );;
@@ -10862,11 +10730,11 @@ let algebraic_number_if_monic_vanishing_at = prove(`
     have `monic complex_ring (poly_0 ZinC_ring)` [] THEN
     have `monic complex_ring (poly_0 complex_ring)` [poly_0_ZinC_eq_poly_0_complex] THEN
     have `ring_1 complex_ring = ring_0 complex_ring` [monic_poly_0] THEN
-    qed[field_complex;field]
+    qed[FIELD_COMPLEX_RING;field]
   ;
     have `!s:X. s IN S ==> c s IN ring_carrier complex_ring` [in_complex_ring] THEN
     simp[eval_monic_vanishing_at_refl] THEN
-    rw[complex_ring_clauses]
+    rw[COMPLEX_RING_CLAUSES]
   ]
 );;
 
@@ -10910,7 +10778,7 @@ let algebraic_number_root_QinC_poly = prove(`
       have `z IN ring_carrier complex_ring` [in_complex_ring] THEN
       have `ring_polynomial complex_ring (poly_const QinC_ring (Cx(&e)):(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
       have `ring_polynomial complex_ring (p:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
-      simp[POLY_EVAL_MUL;complex_ring_clauses] THEN
+      simp[POLY_EVAL_MUL;COMPLEX_RING_CLAUSES] THEN
       qed[COMPLEX_MUL_RZERO;POLY_EVAL]
     ]
   ]
@@ -10934,11 +10802,11 @@ let algebraic_number_if_monic_vanishing_at_QinC = prove(`
     have `monic complex_ring (poly_0 QinC_ring)` [] THEN
     have `monic complex_ring (poly_0 complex_ring)` [poly_0_QinC_eq_poly_0_complex] THEN
     have `ring_1 complex_ring = ring_0 complex_ring` [monic_poly_0] THEN
-    qed[field_complex;field]
+    qed[FIELD_COMPLEX_RING;field]
   ;
     have `!s:X. s IN S ==> c s IN ring_carrier complex_ring` [in_complex_ring] THEN
     simp[eval_monic_vanishing_at_refl] THEN
-    rw[complex_ring_clauses]
+    rw[COMPLEX_RING_CLAUSES]
   ]
 );;
 
@@ -10989,9 +10857,9 @@ let algebraic_number_is_root_irreducible_QinC_poly = prove(`
   have `ring_polynomial complex_ring (p:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
   have `ring_polynomial complex_ring (c:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
   have `poly_eval complex_ring qprod z = ring_mul complex_ring (poly_eval complex_ring p z) (poly_eval complex_ring c z)` [POLY_EVAL_MUL] THEN
-  have `poly_eval complex_ring qprod z = ring_mul complex_ring (ring_0 complex_ring) (poly_eval complex_ring c z)` [complex_ring_clauses] THEN
+  have `poly_eval complex_ring qprod z = ring_mul complex_ring (ring_0 complex_ring) (poly_eval complex_ring c z)` [COMPLEX_RING_CLAUSES] THEN
   have `poly_eval complex_ring qprod z = ring_0 complex_ring` [RING_MUL_LZERO;POLY_EVAL] THEN
-  have `poly_eval complex_ring qprod z = Cx(&0)` [complex_ring_clauses] THEN
+  have `poly_eval complex_ring qprod z = Cx(&0)` [COMPLEX_RING_CLAUSES] THEN
   have `FINITE (1..n)` [FINITE_NUMSEG] THEN
   have `!i. i IN 1..n ==> 1 <= i /\ i <= n` [IN_NUMSEG] THEN
   have `!i. i IN 1..n ==> q i IN ring_carrier(x_poly QinC_ring)` [ring_prime] THEN
@@ -11004,7 +10872,7 @@ let algebraic_number_is_root_irreducible_QinC_poly = prove(`
   specialize[`complex_ring`;`QinC`;`q:num->(1->num)->complex`;`1..n`]poly_product_subring THEN
   have `qprod = poly_product complex_ring (1..n) q` [subring_complex_QinC] THEN
   have `ring_product complex_ring (1..n) (\i. poly_eval complex_ring (q i) z) = ring_0 complex_ring` [] THEN
-  have `integral_domain complex_ring` [integral_domain_complex] THEN
+  have `integral_domain complex_ring` [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
   specialize[`complex_ring`;`1..n`;`\i. poly_eval complex_ring (q(i:num)) z`]INTEGRAL_DOMAIN_PRODUCT_EQ_0 THEN
   choose `i:num` `i IN 1..n /\ poly_eval complex_ring (q i) z = ring_0 complex_ring` [] THEN
   witness `q(i:num):(1->num)->complex` THEN
@@ -11058,7 +10926,7 @@ let algebraic_number_is_root_monic_irreducible_QinC_poly = prove(`
   have `ring_polynomial complex_ring (p:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
   have `ring_polynomial complex_ring (w:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
   specialize[`complex_ring`;`p:(1->num)->complex`;`w:(1->num)->complex`;`z:complex`]POLY_EVAL_MUL THEN
-  qed[COMPLEX_MUL_LZERO;complex_ring_clauses]
+  qed[COMPLEX_MUL_LZERO;COMPLEX_RING_CLAUSES]
 );;
 
 let coprimes_sharing_root = prove(`
@@ -11139,8 +11007,8 @@ let algebraic_number_is_root_unique_monic_irreducible_QinC_poly_lemma = prove(`
   have `QinC_ring = subring_generated complex_ring QinC` [subring_complex_QinC] THEN
   have `field QinC_ring` [field_QinC] THEN
   have `z IN ring_carrier complex_ring` [in_complex_ring] THEN
-  have `poly_eval complex_ring p z = ring_0 complex_ring` [complex_ring_clauses] THEN
-  have `poly_eval complex_ring q z = ring_0 complex_ring` [complex_ring_clauses] THEN
+  have `poly_eval complex_ring p z = ring_0 complex_ring` [COMPLEX_RING_CLAUSES] THEN
+  have `poly_eval complex_ring q z = ring_0 complex_ring` [COMPLEX_RING_CLAUSES] THEN
   specialize[`complex_ring`;`QinC_ring`;`QinC`;`p:(1->num)->complex`;`q:(1->num)->complex`;`z:complex`]coprimes_sharing_root THEN
   qed[]
 );;
@@ -11234,7 +11102,7 @@ let algebraic_number_QinC = prove(`
 
 let FIELD_EXTENSION_QINC_COMPLEX = prove
  (`field_extension (QinC_ring,complex_ring) I`,
-  REWRITE_TAC[field_extension; field_QinC; field_complex] THEN
+  REWRITE_TAC[field_extension; field_QinC; FIELD_COMPLEX_RING] THEN
   REWRITE_TAC[GSYM subring_complex_QinC; I_DEF; RING_MONOMORPHISM_INCLUSION]);;
 
 let POLY_EXTEND_QINC_COMPLEX = prove
@@ -11246,7 +11114,7 @@ let POLY_EXTEND_QINC_COMPLEX = prove
 let ALGEBRAIC_OVER_QINC_COMPLEX = prove
  (`!z. algebraic_over (QinC_ring,complex_ring) I z <=> algebraic_number z`,
   REWRITE_TAC[algebraic_over; algebraic_number_root_QinC_poly;
-              POLY_EXTEND_QINC_COMPLEX; complex_ring_clauses; IN_UNIV;
+              POLY_EXTEND_QINC_COMPLEX; COMPLEX_RING_CLAUSES; IN_UNIV;
               GSYM x_poly; GSYM x_poly_use]);;
 
 let MINIMAL_POLYNOMIAL_QINC_COMPLEX = prove
@@ -11259,7 +11127,7 @@ let MINIMAL_POLYNOMIAL_QINC_COMPLEX = prove
                  poly_eval complex_ring p z = Cx(&0))
        else poly_0 QinC_ring`,
   REWRITE_TAC[minimal_polynomial; ALGEBRAIC_OVER_QINC_COMPLEX;
-              POLY_EXTEND_QINC_COMPLEX; complex_ring_clauses;
+              POLY_EXTEND_QINC_COMPLEX; COMPLEX_RING_CLAUSES;
               GSYM x_poly; GSYM x_poly_use]);;
 
 let algebraic_has_minimal_polynomial = prove(`
@@ -11289,7 +11157,7 @@ let maybe_algebraic_minimal_polynomial = prove(`
     qed[algebraic_has_minimal_polynomial]
   ;
     have `minimal_polynomial (QinC_ring,complex_ring) I z = poly_0 QinC_ring` [MINIMAL_POLYNOMIAL_QINC_COMPLEX] THEN
-    qed[POLY_EVAL_0;complex_ring_clauses;poly_0_QinC_eq_poly_0_complex]
+    qed[POLY_EVAL_0;COMPLEX_RING_CLAUSES;poly_0_QinC_eq_poly_0_complex]
   ]
 );;
 
@@ -11316,11 +11184,11 @@ let poly_eval_vsum_lemma = prove(`
 `,
   intro THEN
   have `FINITE (0..n)` [FINITE_NUMSEG] THEN
-  simp[vsum_ring_sum_complex] THEN
+  simp[GSYM COMPLEX_RING_SUM] THEN
   sufficesby RING_SUM_EQ THEN
   intro THEN
   rw[BETA_THM] THEN
-  rw[complex_ring_clauses;ring_pow_complex]
+  rw[COMPLEX_RING_CLAUSES;COMPLEX_RING_POW]
 );;
 
 let poly_eval_vsum = prove(`
@@ -11349,7 +11217,7 @@ let nonconstant_complex_root = prove(`
     have `n IN 1..n` [IN_NUMSEG;ARITH_RULE `n <= n:num`] THEN
     have `~(p = poly_0 complex_ring:(1->num)->complex)` [POLY_DEG_0;ARITH_RULE `~(1 <= 0)`] THEN
     have `~(coeff n p = ring_0 complex_ring)` [topcoeff_nonzero] THEN
-    qed[complex_ring_clauses]
+    qed[COMPLEX_RING_CLAUSES]
   ;
     specialize_assuming[`\i. coeff i p:complex`;`n:num`]FTA THEN
     choose `z:complex` `vsum(0..n) (\i. coeff i p * z pow i) = Cx(&0)` [] THEN
@@ -11366,7 +11234,7 @@ let nonconstant_complex_x_minus_root = prove(`
 `,
   intro THEN
   choose `z:complex` `poly_eval complex_ring p z = Cx(&0)` [nonconstant_complex_root] THEN
-  have `poly_eval complex_ring p z = ring_0 complex_ring` [complex_ring_clauses] THEN
+  have `poly_eval complex_ring p z = ring_0 complex_ring` [COMPLEX_RING_CLAUSES] THEN
   have `z IN ring_carrier complex_ring` [in_complex_ring] THEN
   have `p IN ring_carrier(poly_ring complex_ring (:1))` [x_poly;x_poly_use] THEN
   specialize[`complex_ring`;`z:complex`;`p:(1->num)->complex`]POLY_DIVIDES_X_MINUS_ROOT THEN
@@ -11394,7 +11262,7 @@ let associates_monic_vanishing_at_if_complex_lemma = prove(`
     rw[monic_vanishing_at_empty] THEN
     choose `c:complex` `c IN ring_carrier complex_ring /\ p = poly_const complex_ring c:(1->num)->complex` [POLY_DEG_EQ_0] THEN
     have `~(c = ring_0 complex_ring)` [poly_0] THEN
-    have `field complex_ring` [field_complex] THEN
+    have `field complex_ring` [FIELD_COMPLEX_RING] THEN
     have `ring_unit complex_ring c` [FIELD_UNIT] THEN
     have `ring_unit(x_poly complex_ring) p` [RING_UNIT_POLY_CONST;x_poly] THEN
     have `ring_associates(x_poly complex_ring) p (ring_1(x_poly complex_ring))` [RING_ASSOCIATES_1] THEN
@@ -11405,11 +11273,11 @@ let associates_monic_vanishing_at_if_complex_lemma = prove(`
     choose2 `z:complex` `q:(1->num)->complex` `ring_polynomial complex_ring q /\ p = poly_mul complex_ring (x_minus_const complex_ring z) q` [nonconstant_complex_x_minus_root] THEN
     have `z IN ring_carrier complex_ring` [in_complex_ring] THEN
     have `ring_polynomial complex_ring (x_minus_const complex_ring z)` [x_minus_const_poly] THEN
-    have `integral_domain complex_ring` [integral_domain_complex] THEN
+    have `integral_domain complex_ring` [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
     have `~(x_minus_const complex_ring z = poly_0 complex_ring)` [x_minus_const_nonzero;integral_domain] THEN
     have `~(q = poly_0 complex_ring:(1->num)->complex)` [POLY_MUL_0;x_poly_use;x_minus_const_poly] THEN
     specialize_assuming[`complex_ring`;`x_minus_const complex_ring z`;`q:(1->num)->complex`]POLY_DEG_MUL THEN
-    have `poly_deg complex_ring (p:(1->num)->complex) = poly_deg complex_ring (x_minus_const complex_ring z) + poly_deg complex_ring (q:(1->num)->complex)` [integral_domain_complex;x_poly_use] THEN
+    have `poly_deg complex_ring (p:(1->num)->complex) = poly_deg complex_ring (x_minus_const complex_ring z) + poly_deg complex_ring (q:(1->num)->complex)` [INTEGRAL_DOMAIN_COMPLEX_RING;x_poly_use] THEN
     have `SUC n = 1 + poly_deg complex_ring (q:(1->num)->complex)` [deg_x_minus_const;integral_domain] THEN
     num_linear_fact `SUC n = 1 + poly_deg complex_ring (q:(1->num)->complex) ==> poly_deg complex_ring q = n` THEN
     have `x_minus_const complex_ring z IN ring_carrier(x_poly complex_ring)` [x_poly_use] THEN
@@ -11451,13 +11319,13 @@ let monic_vanishing_at_if_monic_complex = prove(`
   ?c. p = monic_vanishing_at complex_ring {i | i < poly_deg complex_ring p} c
 `,
   intro THEN
-  have `~(p:(1->num)->complex = poly_0 complex_ring)` [monic_poly_0;field_complex;field] THEN
+  have `~(p:(1->num)->complex = poly_0 complex_ring)` [monic_poly_0;FIELD_COMPLEX_RING;field] THEN
   specialize[`p:(1->num)->complex`]associates_monic_vanishing_at_if_complex THEN
   choose `c:num->complex` `ring_associates (x_poly complex_ring) p (monic_vanishing_at complex_ring {i | i < poly_deg complex_ring p} c)` [] THEN
   have `!i. i IN {i | i < poly_deg complex_ring (p:(1->num)->complex)} ==> c i IN ring_carrier complex_ring` [in_complex_ring] THEN
   specialize[`poly_deg complex_ring (p:(1->num)->complex)`]FINITE_NUMSEG_LT THEN
   have `monic complex_ring (monic_vanishing_at complex_ring {i | i < poly_deg complex_ring (p:(1->num)->complex)} c)` [monic_vanishing_at_monic] THEN
-  qed[monic_associates;field_complex]
+  qed[monic_associates;FIELD_COMPLEX_RING]
 );;
 
 let monic_QinC_squarefree_complex_squarefree_lemma = prove(`
@@ -11524,7 +11392,7 @@ let monic_QinC_squarefree_complex_squarefree = prove(`
     have `ring_polynomial complex_ring (x:(1->num)->complex)` [ring_polynomial_if_subring] THEN
     have `ring_polynomial complex_ring (y:(1->num)->complex)` [ring_polynomial_if_subring] THEN
     have `ring_coprime (x_poly complex_ring) (p,x_derivative complex_ring p)` [] THEN
-    qed[squarefree_if_coprime_derivative;field_complex]
+    qed[squarefree_if_coprime_derivative;FIELD_COMPLEX_RING]
   ;
     intro THEN
     proven_if `ring_coprime(x_poly QinC_ring) (p,x_derivative QinC_ring p)` [squarefree_if_coprime_derivative;field_QinC] THEN
@@ -11600,11 +11468,11 @@ let monic_QinC_squarefree_complex_squarefree = prove(`
     have `x_derivative QinC_ring p = ring_mul(x_poly complex_ring) d p'd` [ring_polynomial;x_poly_use;poly_mul_subring] THEN
     have `ring_divides(x_poly complex_ring) d (x_derivative QinC_ring p)` [ring_divides] THEN
     have `ring_divides(x_poly complex_ring) (x_minus_const complex_ring z) (x_derivative QinC_ring p)` [RING_DIVIDES_TRANS] THEN
-    have `integral_domain(x_poly complex_ring)` [integral_domain_x_poly_field;field_complex] THEN
-    have `~(monic complex_ring (poly_0 complex_ring))` [monic_poly_0;field;field_complex] THEN
+    have `integral_domain(x_poly complex_ring)` [integral_domain_x_poly_field;FIELD_COMPLEX_RING] THEN
+    have `~(monic complex_ring (poly_0 complex_ring))` [monic_poly_0;field;FIELD_COMPLEX_RING] THEN
     have `~(p = ring_0(x_poly complex_ring))` [x_poly_use] THEN
     have `x_minus_const complex_ring z IN ring_carrier(x_poly complex_ring)` [x_poly_use] THEN
-    have  `~ring_unit(x_poly complex_ring) (x_minus_const complex_ring z)` [x_minus_const_not_unit;integral_domain_complex] THEN
+    have  `~ring_unit(x_poly complex_ring) (x_minus_const complex_ring z)` [x_minus_const_not_unit;INTEGRAL_DOMAIN_COMPLEX_RING] THEN
     specialize_assuming[`x_poly complex_ring`;`p:(1->num)->complex`;`x_minus_const complex_ring z:(1->num)->complex`]not_squarefree_if_divisible_by_square THEN
     have `p = ring_mul(x_poly complex_ring) (poly_mul complex_ring (x_minus_const complex_ring z) (x_minus_const complex_ring z)) (poly_sub complex_ring qp'd (x_derivative complex_ring qpd))` [x_poly_use] THEN
     have `p = ring_mul(x_poly complex_ring) (ring_mul(x_poly complex_ring) (x_minus_const complex_ring z) (x_minus_const complex_ring z)) (poly_sub complex_ring qp'd (x_derivative complex_ring qpd))` [x_poly_use] THEN
@@ -11663,10 +11531,10 @@ let monic_squarefree_complex_roots = prove(`
     ; pass
     ] THEN
     specialize[`x_poly complex_ring`;`d:num->(1->num)->complex`;`\i:num. x_minus_const complex_ring (c i):(1->num)->complex`;`S:num->bool`]ring_product_divides_factor_by_factor THEN
-    have `integral_domain(x_poly complex_ring)` [integral_domain_x_poly_field;field_complex] THEN
-    have `~(monic complex_ring (poly_0 complex_ring))` [monic_poly_0;field;field_complex] THEN
+    have `integral_domain(x_poly complex_ring)` [integral_domain_x_poly_field;FIELD_COMPLEX_RING] THEN
+    have `~(monic complex_ring (poly_0 complex_ring))` [monic_poly_0;field;FIELD_COMPLEX_RING] THEN
     have `~(p = ring_0(x_poly complex_ring))` [x_poly_use] THEN
-    have `~ring_unit(x_poly complex_ring) (x_minus_const complex_ring (c(e:num)))` [x_minus_const_not_unit;integral_domain_complex] THEN
+    have `~ring_unit(x_poly complex_ring) (x_minus_const complex_ring (c(e:num)))` [x_minus_const_not_unit;INTEGRAL_DOMAIN_COMPLEX_RING] THEN
     proven_if `e = f:num` [] THEN
     have `ring_product (x_poly complex_ring) (S:num->bool) d = ring_mul (x_poly complex_ring) (x_minus_const complex_ring (c e)) (x_minus_const complex_ring (c(e:num)))` [] THEN
     have `!s:num. s IN S ==> c s IN ring_carrier complex_ring` [in_complex_ring] THEN
@@ -11717,7 +11585,7 @@ let complex_root_ring = prove(`
   complex_root p z
   <=> poly_eval complex_ring p z = ring_0 complex_ring
 `,
-  qed[complex_root;complex_ring_clauses]
+  qed[complex_root;COMPLEX_RING_CLAUSES]
 );;
 
 let complex_root_divides = prove(`
@@ -11756,13 +11624,13 @@ let complex_root_le_deg = prove(`
   )
 `,
   GEN_TAC THEN REPEAT DISCH_TAC THEN
-  recall integral_domain_complex THEN
+  recall INTEGRAL_DOMAIN_COMPLEX_RING THEN
   have `p IN ring_carrier(poly_ring complex_ring (:1))` [x_poly_use;x_poly] THEN
   have `~(p = ring_0(poly_ring complex_ring (:1)))` [x_poly_use;x_poly] THEN
   specialize[`complex_ring`;`p:(1->num)->complex`]POLY_ROOT_BOUND THEN
   subgoal `complex_root p = { x | x IN ring_carrier complex_ring /\ poly_eval complex_ring p x = ring_0 complex_ring}` THENL [
     rw[EXTENSION;IN;IN_ELIM_THM;complex_root_ring] THEN
-    qed[complex_ring_clauses;UNIV]
+    qed[COMPLEX_RING_CLAUSES;UNIV]
   ; qed[]
   ]
 );;
@@ -11780,7 +11648,7 @@ let complex_root_monic_vanishing_at = prove(`
     have `x IN ring_carrier complex_ring` [in_complex_ring] THEN
     have `!s. s IN S ==> I s IN ring_carrier complex_ring` [in_complex_ring] THEN
     specialize[`complex_ring`;`S:complex->bool`;`I:complex->complex`;`x:complex`]eval_monic_vanishing_at THEN
-    recall integral_domain_complex THEN
+    recall INTEGRAL_DOMAIN_COMPLEX_RING THEN
     have `ring_product complex_ring S (\s. ring_sub complex_ring x (I s)) = ring_0 complex_ring` [] THEN
     choose `s:complex` `s IN S /\ ring_sub complex_ring x (I s) = ring_0 complex_ring` [INTEGRAL_DOMAIN_PRODUCT_EQ_0] THEN
     have `x = I s:complex` [RING_SUB_EQ_0;in_complex_ring] THEN
@@ -11821,7 +11689,7 @@ let complex_root_if_x_minus_const_divides = prove(`
   simp[complex_root] THEN
   simp[eval_x_minus_const_refl;in_complex_ring] THEN
   simp[RING_MUL_LZERO;POLY_EVAL] THEN
-  qed[complex_ring_clauses]
+  qed[COMPLEX_RING_CLAUSES]
 );;
 
 let complex_root_x_pow = prove(`
@@ -11834,14 +11702,14 @@ let complex_root_x_pow = prove(`
   case `n = 0` THENL [
     simp[EXTENSION;EMPTY;IN_ELIM_THM;IN;complex_root] THEN
     simp[eval_x_pow;in_complex_ring;RING_POW_0] THEN
-    qed[ring_1_0_complex;complex_ring_clauses]
+    qed[ring_1_0_complex;COMPLEX_RING_CLAUSES]
   ; pass
   ] THEN
   simp[EXTENSION;IN_SING] THEN
   simp[IN;complex_root] THEN
   intro THEN
   simp[eval_x_pow;in_complex_ring] THEN
-  qed[COMPLEX_POW_EQ_0;ring_pow_complex]
+  qed[COMPLEX_POW_EQ_0;COMPLEX_RING_POW]
 );;
 
 let complex_root_x_minus_const = prove(`
@@ -11852,7 +11720,7 @@ let complex_root_x_minus_const = prove(`
   intro THEN
   rw[EXTENSION;IN_SING;IN;complex_root] THEN
   intro THEN
-  simp[eval_x_minus_const;in_complex_ring;complex_ring_clauses;ring_sub_complex] THEN
+  simp[eval_x_minus_const;in_complex_ring;COMPLEX_RING_CLAUSES;COMPLEX_RING_SUB] THEN
   CONV_TAC COMPLEX_FIELD
 );;
 
@@ -11883,21 +11751,21 @@ let not_coprime_QinC_if_shared_complex_root = prove(`
     `x:(1->num)->complex`;
     `z:complex`
   ]POLY_EVAL_MUL THEN
-  have `poly_eval complex_ring (poly_mul complex_ring p x) z = Cx(&0)` [complex_root;complex_ring_clauses;COMPLEX_MUL_LZERO] THEN
+  have `poly_eval complex_ring (poly_mul complex_ring p x) z = Cx(&0)` [complex_root;COMPLEX_RING_CLAUSES;COMPLEX_MUL_LZERO] THEN
   specialize[
     `complex_ring`;
     `q:(1->num)->complex`;
     `y:(1->num)->complex`;
     `z:complex`
   ]POLY_EVAL_MUL THEN
-  have `poly_eval complex_ring (poly_mul complex_ring q y) z = Cx(&0)` [complex_root;complex_ring_clauses;COMPLEX_MUL_LZERO] THEN
+  have `poly_eval complex_ring (poly_mul complex_ring q y) z = Cx(&0)` [complex_root;COMPLEX_RING_CLAUSES;COMPLEX_MUL_LZERO] THEN
   specialize[
     `complex_ring`;
     `poly_mul complex_ring p x:(1->num)->complex`;
     `poly_mul complex_ring q y:(1->num)->complex`;
     `z:complex`
   ]POLY_EVAL_ADD THEN
-  have `poly_eval complex_ring (poly_add complex_ring (poly_mul complex_ring p x) (poly_mul complex_ring q y)) z = Cx(&0)` [COMPLEX_ADD_LID;complex_ring_clauses] THEN
+  have `poly_eval complex_ring (poly_add complex_ring (poly_mul complex_ring p x) (poly_mul complex_ring q y)) z = Cx(&0)` [COMPLEX_ADD_LID;COMPLEX_RING_CLAUSES] THEN
   have `poly_mul complex_ring p x = poly_mul QinC_ring p x:(1->num)->complex` [poly_mul_subring;subring_complex_QinC;ring_polynomial] THEN
   have `poly_mul complex_ring q y = poly_mul QinC_ring q y:(1->num)->complex` [poly_mul_subring;subring_complex_QinC;ring_polynomial] THEN
   have `poly_add complex_ring (poly_mul complex_ring p x) (poly_mul complex_ring q y) = poly_add QinC_ring (poly_mul QinC_ring p x) (poly_mul QinC_ring q y):(1->num)->complex` [poly_add_subring;subring_complex_QinC;ring_polynomial] THEN
@@ -11908,7 +11776,7 @@ let not_coprime_QinC_if_shared_complex_root = prove(`
   ; pass
   ] THEN
   have `poly_eval complex_ring (poly_1 complex_ring) z = Cx(&0)` [] THEN
-  have `poly_eval complex_ring (poly_1 complex_ring) z = Cx(&1)` [POLY_EVAL_1;complex_ring_clauses] THEN
+  have `poly_eval complex_ring (poly_1 complex_ring) z = Cx(&1)` [POLY_EVAL_1;COMPLEX_RING_CLAUSES] THEN
   complex_field_fact `~(Cx(&0) = Cx(&1))` THEN
   qed[]
 );;
@@ -11967,7 +11835,7 @@ let complex_root_powersums_ring = prove(`
   complex_root_powersums p n
   = ring_sum complex_ring (complex_root p) (\z. ring_pow complex_ring z n)
 `,
-  rw[complex_root_powersums;ring_pow_complex]
+  rw[complex_root_powersums;COMPLEX_RING_POW]
 );;
 
 let complex_root_powersums_QinC_monic_irreducible_QinC = prove(`
@@ -12022,24 +11890,25 @@ let complex_root_powersums_QinC_monic_irreducible_ZinC = prove(`
   recall subring_complex_empty THEN
   choose `S:complex->bool` `FINITE S /\ p = monic_vanishing_at complex_ring S I` [QinC_monic_irreducible_complex_roots] THEN
   have `complex_root p = S` [complex_root_monic_vanishing_at] THEN
-  have `~(ring_1 complex_ring = ring_0 complex_ring)` [field_complex;field] THEN
+  have `~(ring_1 complex_ring = ring_0 complex_ring)`
+    [FIELD_COMPLEX_RING;field] THEN
   have `ring_polynomial complex_ring (p:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
   recall subring_complex_QinC THEN
   have `monic complex_ring (p:(1->num)->complex)` [monic_subring] THEN
-  have `~(p:(1->num)->complex = poly_0 complex_ring)` [monic_poly_0;field_complex;field] THEN
+  have `~(p:(1->num)->complex = poly_0 complex_ring)` [monic_poly_0;FIELD_COMPLEX_RING;field] THEN
   have `FINITE (complex_root p)` [complex_root_le_deg] THEN
   have `poly_deg complex_ring (p:(1->num)->complex) = CARD(S:complex->bool)` [deg_monic_vanishing_at;in_complex_ring] THEN
   have `!s. s IN complex_root p ==> I s IN ring_carrier complex_ring` [in_complex_ring] THEN
   subgoal `!n. ring_mul complex_ring (ring_pow complex_ring D n) (coeff (CARD(complex_root p) - n) (monic_vanishing_at complex_ring (complex_root p) I)) IN ring_carrier(subring_generated complex_ring {})` THENL [
-    simp[complex_ring_clauses;ring_pow_complex;ZinC_ring_clauses] THEN
+    simp[COMPLEX_RING_CLAUSES;COMPLEX_RING_POW;ZinC_ring_clauses] THEN
     qed[]
   ; pass
   ] THEN
   have `D IN ring_carrier complex_ring` [in_complex_ring] THEN
   specialize[`complex_ring`;`{}:complex->bool`;`complex_root p`;`I:complex->complex`;`D:complex`;`n:num`]powersums_subring_if_poly_subring_denominators THEN
-  have `(D pow n) * (ring_sum complex_ring (complex_root p) (\s. ring_pow complex_ring (I s) n)) IN ring_carrier (subring_generated complex_ring {})` [complex_ring_clauses;ring_pow_complex] THEN
+  have `(D pow n) * (ring_sum complex_ring (complex_root p) (\s. ring_pow complex_ring (I s) n)) IN ring_carrier (subring_generated complex_ring {})` [COMPLEX_RING_CLAUSES;COMPLEX_RING_POW] THEN
   have `(D pow n) * (ring_sum complex_ring (complex_root p) (\s. ring_pow complex_ring (I s) n)) IN ZinC` [ZinC_ring_clauses] THEN
-  have `!s. ring_pow complex_ring (I s) n = ring_pow complex_ring s n` [I_DEF;ring_pow_complex] THEN
+  have `!s. ring_pow complex_ring (I s) n = ring_pow complex_ring s n` [I_DEF;COMPLEX_RING_POW] THEN
   qed[RING_SUM_EQ]
 );;
 
@@ -12076,13 +11945,13 @@ let denominator_if_monic_QinC = prove(`
     recall subring_complex_QinC THEN
     have `monic complex_ring (p:(1->num)->complex)` [monic_subring] THEN
     have `coeff (poly_deg complex_ring p) p = ring_1 complex_ring` [monic] THEN
-    qed[complex_ring_clauses;ZinC_1]
+    qed[COMPLEX_RING_CLAUSES;ZinC_1]
   ; pass
   ] THEN
   num_linear_fact `~(i = 0) ==> (i-1)+1 = i` THEN
   have `Cx(&d) pow i = Cx(&d) pow (i-1) * Cx(&d)` [COMPLEX_POW_ADD;COMPLEX_POW_1] THEN
   simp[GSYM COMPLEX_MUL_ASSOC] THEN
-  have `Cx(&d) pow (i-1) IN ZinC` [ring_pow_ZinC;RING_POW;ring_pow_complex;ZinC_ring_clauses] THEN
+  have `Cx(&d) pow (i-1) IN ZinC` [ring_pow_ZinC;RING_POW;COMPLEX_RING_POW;ZinC_ring_clauses] THEN
   subgoal `Cx(&d) * coeff(n-i) p IN ZinC` THENL [
     proven_if `i <= n:num` [IN_NUMSEG_0] THEN
     num_linear_fact `~(i <= n) ==> n - i = n - n:num` THEN
@@ -12091,7 +11960,7 @@ let denominator_if_monic_QinC = prove(`
     qed[]
   ; pass
   ] THEN
-  qed[ZinC_ring_clauses;RING_MUL;complex_ring_clauses]
+  qed[ZinC_ring_clauses;RING_MUL;COMPLEX_RING_CLAUSES]
 );;
 
 let denominator_reverse = prove(`
@@ -12345,7 +12214,7 @@ let distinct_minpolys_card_root = prove(`
   have `!c. c IN complex_root p ==> I c IN ring_carrier complex_ring` [in_complex_ring] THEN
   have `FINITE (complex_root p)` [distinct_minpolys_finite_root] THEN
   specialize[`complex_ring`;`I:complex->complex`;`complex_root p`]deg_monic_vanishing_at THEN
-  qed[deg_monic_vanishing_at;field_complex;field]
+  qed[deg_monic_vanishing_at;FIELD_COMPLEX_RING;field]
 );;
 
 let distinct_minpolys_denominator = prove(`
@@ -12397,7 +12266,7 @@ let weighted_powersums_distinct_minpolys = prove(`
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   D pow n *
   (ring_sum complex_ring P
-     (\p. (complex_of_int(B p)) * complex_root_powersums p n))
+     (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))
   IN ZinC
 `,
   intro THEN
@@ -12411,19 +12280,19 @@ let weighted_powersums_distinct_minpolys = prove(`
     qed[]
   ; pass
   ] THEN
-  have `!p. p IN P ==> (complex_of_int(B p)) * (D pow n * complex_root_powersums p n) IN ZinC` [ZinC_ring_clauses;int_in_ZinC;RING_MUL] THEN
-  have `!p. p IN P ==> ((complex_of_int(B p)) * D pow n) * complex_root_powersums p n IN ZinC` [COMPLEX_MUL_ASSOC] THEN
-  have `!p. p IN P ==> (D pow n * (complex_of_int(B p))) * complex_root_powersums p n IN ZinC` [COMPLEX_MUL_SYM] THEN
-  have `!p. p IN P ==> D pow n * ((complex_of_int(B p)) * complex_root_powersums p n) IN ZinC` [COMPLEX_MUL_ASSOC] THEN
+  have `!p. p IN P ==> (Cx(real_of_int(B p))) * (D pow n * complex_root_powersums p n) IN ZinC` [ZinC_ring_clauses;int_in_ZinC;RING_MUL] THEN
+  have `!p. p IN P ==> ((Cx(real_of_int(B p))) * D pow n) * complex_root_powersums p n IN ZinC` [COMPLEX_MUL_ASSOC] THEN
+  have `!p. p IN P ==> (D pow n * (Cx(real_of_int(B p)))) * complex_root_powersums p n IN ZinC` [COMPLEX_MUL_SYM] THEN
+  have `!p. p IN P ==> D pow n * ((Cx(real_of_int(B p))) * complex_root_powersums p n) IN ZinC` [COMPLEX_MUL_ASSOC] THEN
   have `D pow n IN ring_carrier complex_ring` [in_complex_ring] THEN
-  have `!p. p IN P ==> (complex_of_int(B p)) * complex_root_powersums p n IN ring_carrier complex_ring` [in_complex_ring] THEN
-  specialize[`complex_ring`;`\p. (complex_of_int(B p)) * complex_root_powersums p n`;`(D pow n):complex`;`P:((1->num)->complex)->bool`](GSYM RING_SUM_LMUL) THEN
-  have `(D pow n) * (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n)) = ring_sum complex_ring P (\x. (D pow n) * ((complex_of_int(B x)) * complex_root_powersums x n))` [complex_ring_clauses;RING_SUM_EQ] THEN
+  have `!p. p IN P ==> (Cx(real_of_int(B p))) * complex_root_powersums p n IN ring_carrier complex_ring` [in_complex_ring] THEN
+  specialize[`complex_ring`;`\p. (Cx(real_of_int(B p))) * complex_root_powersums p n`;`(D pow n):complex`;`P:((1->num)->complex)->bool`](GSYM RING_SUM_LMUL) THEN
+  have `(D pow n) * (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n)) = ring_sum complex_ring P (\x. (D pow n) * ((Cx(real_of_int(B x))) * complex_root_powersums x n))` [COMPLEX_RING_CLAUSES;RING_SUM_EQ] THEN
   simp[] THEN
   recall subring_complex_empty THEN
-  have `!p. p IN P ==> D pow n * (complex_of_int(B p)) * complex_root_powersums p n IN ring_carrier(subring_generated complex_ring {})` [ZinC_ring_clauses] THEN
-  specialize[`complex_ring`;`{}:complex->bool`;`P:((1->num)->complex)->bool`;`\x. D pow n * (complex_of_int(B x)) * complex_root_powersums x n`]ring_sum_subring_generated_v2 THEN
-  have `ring_sum complex_ring P (\x. D pow n * (complex_of_int(B x)) * complex_root_powersums x n) = ring_sum ZinC_ring P (\x. D pow n * (complex_of_int(B x)) * complex_root_powersums x n)` [] THEN
+  have `!p. p IN P ==> D pow n * (Cx(real_of_int(B p))) * complex_root_powersums p n IN ring_carrier(subring_generated complex_ring {})` [ZinC_ring_clauses] THEN
+  specialize[`complex_ring`;`{}:complex->bool`;`P:((1->num)->complex)->bool`;`\x. D pow n * (Cx(real_of_int(B x))) * complex_root_powersums x n`]ring_sum_subring_generated_v2 THEN
+  have `ring_sum complex_ring P (\x. D pow n * (Cx(real_of_int(B x))) * complex_root_powersums x n) = ring_sum ZinC_ring P (\x. D pow n * (Cx(real_of_int(B x))) * complex_root_powersums x n)` [] THEN
   qed[RING_SUM;ZinC_ring_clauses]
 );;
 
@@ -12738,13 +12607,13 @@ let coeff_root_bound_1 = prove(`
   intro THEN
   rw[coeff_poly_1] THEN
   case `d = 0` THENL [
-    simp[complex_ring_clauses] THEN
+    simp[COMPLEX_RING_CLAUSES] THEN
     rw[real_pow;binom;COMPLEX_NORM_CX] THEN
     real_field_fact `abs(&1) <= &1 * &1` THEN
     qed[]
   ; pass
   ] THEN
-  simp[complex_ring_clauses] THEN
+  simp[COMPLEX_RING_CLAUSES] THEN
   rw[COMPLEX_NORM_CX] THEN
   num_linear_fact `~(d = 0) ==> 0 < d` THEN
   simp[BINOM_LT] THEN
@@ -12761,20 +12630,20 @@ let coeff_root_bound_one_minus_constx = prove(`
   intro THEN
   simp[coeff_one_minus_constx;in_complex_ring] THEN
   case `d = 0` THENL [
-    simp[complex_ring_clauses] THEN
+    simp[COMPLEX_RING_CLAUSES] THEN
     rw[real_pow;binom;COMPLEX_NORM_CX] THEN
     real_field_fact `abs(&1) <= &1 * &1` THEN
     qed[]
   ; pass
   ] THEN
   case `d = 1` THENL [
-    simp[complex_ring_clauses] THEN
+    simp[COMPLEX_RING_CLAUSES] THEN
     rw[REAL_POW_1;BINOM_REFL;NORM_NEG] THEN
     real_field_fact `A = A * &1:real` THEN
     qed[]
   ; pass
   ] THEN
-  simp[complex_ring_clauses] THEN
+  simp[COMPLEX_RING_CLAUSES] THEN
   rw[COMPLEX_NORM_CX] THEN
   num_linear_fact `~(d = 0) ==> ~(d = 1) ==> 1 < d` THEN
   simp[BINOM_LT] THEN
@@ -12790,8 +12659,8 @@ let coeff_root_bound_mul = prove(`
 `,
   intro THEN
   rw[coeff_poly_mul_oneindex] THEN
-  rw[complex_ring_clauses] THEN
-  simp[GSYM vsum_ring_sum_complex;FINITE_NUMSEG] THEN
+  rw[COMPLEX_RING_CLAUSES] THEN
+  simp[COMPLEX_RING_SUM;FINITE_NUMSEG] THEN
   subgoal `!a. a IN (0..d) ==> norm(coeff a p * coeff (d-a) q) <= A pow d * &(binom(m,a)*binom(n,d-a))` THENL [
     intro THEN
     rw[GSYM REAL_OF_NUM_MUL] THEN
@@ -12963,7 +12832,7 @@ let poly_ord_exists_lemma = prove(`
     choose `c:complex` `(p:(1->num)->complex) = poly_const complex_ring c` [POLY_DEG_EQ_0] THEN
     have `poly_eval complex_ring p z = c` [POLY_EVAL_CONST;in_complex_ring] THEN
     have `~(c = ring_0 complex_ring)` [poly_0] THEN
-    have `~(c = Cx(&0))` [complex_ring_clauses] THEN
+    have `~(c = Cx(&0))` [COMPLEX_RING_CLAUSES] THEN
     qed[complex_root]
   ; pass
   ] THEN
@@ -12975,14 +12844,14 @@ let poly_ord_exists_lemma = prove(`
     simp[POLY_MUL_LID;series_complex]
   ; pass
   ] THEN
-  have `poly_eval complex_ring p z = ring_0 complex_ring` [complex_root;complex_ring_clauses] THEN
+  have `poly_eval complex_ring p z = ring_0 complex_ring` [complex_root;COMPLEX_RING_CLAUSES] THEN
   have `z IN ring_carrier complex_ring` [in_complex_ring] THEN
   have `p IN ring_carrier(poly_ring complex_ring (:1))` [x_poly;x_poly_use] THEN
   specialize[`complex_ring`;`z:complex`;`p:(1->num)->complex`]POLY_DIVIDES_X_MINUS_ROOT THEN
   have `poly_sub complex_ring (poly_var complex_ring one) (poly_const complex_ring z) = x_minus_const complex_ring z` [x_minus_const;x_pow_1] THEN
   have `ring_divides(x_poly complex_ring) (x_minus_const complex_ring z) p` [x_poly] THEN
   choose `q:(1->num)->complex` `q IN ring_carrier(x_poly complex_ring) /\ (p:(1->num)->complex) = ring_mul(x_poly complex_ring) (x_minus_const complex_ring z) q` [ring_divides] THEN
-  have `integral_domain complex_ring` [integral_domain_complex] THEN
+  have `integral_domain complex_ring` [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
   have `poly_deg complex_ring (x_minus_const complex_ring z) = 1` [deg_x_minus_const;integral_domain] THEN
   have `ring_polynomial complex_ring (x_minus_const complex_ring z)` [x_minus_const_poly] THEN
   have `ring_polynomial complex_ring (q:(1->num)->complex)` [x_poly_use] THEN
@@ -13064,14 +12933,14 @@ let poly_ord_unique = prove(`
   REPEAT DISCH_TAC THEN
   subgoal `~((q:(1->num)->complex) = poly_0 complex_ring)` THENL [
     intro THEN
-    have `poly_eval complex_ring q z = Cx(&0)` [POLY_EVAL_0;complex_ring_clauses] THEN
+    have `poly_eval complex_ring q z = Cx(&0)` [POLY_EVAL_0;COMPLEX_RING_CLAUSES] THEN
     qed[complex_root]
   ; pass
   ] THEN
   subgoal `~((p:(1->num)->complex) = poly_0 complex_ring)` THENL [
     intro THEN
     have `p = ring_mul(x_poly complex_ring) (ring_pow(x_poly complex_ring) (x_minus_const complex_ring z) e) q` [x_poly_use;x_poly_use_pow] THEN
-    have `integral_domain(x_poly complex_ring)` [integral_domain_x_poly_field;field_complex] THEN
+    have `integral_domain(x_poly complex_ring)` [integral_domain_x_poly_field;FIELD_COMPLEX_RING] THEN
     have `p = ring_0(x_poly complex_ring)` [x_poly_use] THEN
     have `~(q = ring_0(x_poly complex_ring))` [x_poly_use] THEN
     have `ring_polynomial complex_ring (x_minus_const complex_ring z)` [x_minus_const_poly;in_complex_ring] THEN
@@ -13080,7 +12949,7 @@ let poly_ord_unique = prove(`
     have `ring_pow(x_poly complex_ring) (x_minus_const complex_ring z) e = ring_0(x_poly complex_ring)` [integral_domain;x_poly_use] THEN
     have `x_minus_const complex_ring z = ring_0(x_poly complex_ring)` [INTEGRAL_DOMAIN_POW_EQ_0;x_poly_use] THEN
     have `x_minus_const complex_ring z = poly_0 complex_ring` [x_poly_use] THEN
-    have `poly_deg complex_ring (x_minus_const complex_ring z) = 1` [deg_x_minus_const;integral_domain;integral_domain_complex;in_complex_ring] THEN
+    have `poly_deg complex_ring (x_minus_const complex_ring z) = 1` [deg_x_minus_const;integral_domain;INTEGRAL_DOMAIN_COMPLEX_RING;in_complex_ring] THEN
     have `~(x_minus_const complex_ring z = poly_0 complex_ring)` [POLY_DEG_0;ARITH_RULE `~(0 = 1)`] THEN
     qed[]
   ; pass
@@ -13090,7 +12959,7 @@ let poly_ord_unique = prove(`
   have `ring_polynomial complex_ring (p:(1->num)->complex)` [RING_POLYNOMIAL_MUL] THEN
   specialize[`p:(1->num)->complex`]poly_ord_exists THEN
   choose `f:(1->num)->complex` `ring_polynomial complex_ring f /\ ~(complex_root f z) /\ p = poly_mul complex_ring (poly_pow complex_ring (x_minus_const complex_ring z) (poly_ord p z)) (f)` [] THEN
-  recall field_complex THEN
+  recall FIELD_COMPLEX_RING THEN
   have `poly_deg complex_ring (x_minus_const complex_ring z) = 1` [deg_x_minus_const;field;in_complex_ring] THEN
   have `ring_prime(x_poly complex_ring) (x_minus_const complex_ring z)` [prime_if_deg_1] THEN
   have `integral_domain(x_poly complex_ring)` [integral_domain_x_poly_field] THEN
@@ -13159,9 +13028,9 @@ let poly_ord_1 = prove(`
 `,
   rw[poly_1] THEN
   complex_field_fact `~(Cx(&1) = Cx(&0))` THEN
-  have `~(ring_1 complex_ring = Cx(&0))` [complex_ring_clauses] THEN
+  have `~(ring_1 complex_ring = Cx(&0))` [COMPLEX_RING_CLAUSES] THEN
   specialize[`ring_1 complex_ring`]poly_ord_const THEN
-  qed[poly_1_0_complex;complex_ring_clauses]
+  qed[poly_1_0_complex;COMPLEX_RING_CLAUSES]
 );;
 
 let poly_ord_x_minus_const = prove(`
@@ -13175,12 +13044,12 @@ let poly_ord_x_minus_const = prove(`
   have `ring_polynomial complex_ring (x_minus_const complex_ring c)` [x_minus_const_poly;in_complex_ring] THEN
   case `z = c:complex` THENL [
     specialize_assuming[`x_minus_const complex_ring c`;`poly_1 complex_ring:(1->num)->complex`;`z:complex`]poly_ord_unique_1 THEN
-    have `~complex_root (poly_1 complex_ring) z` [complex_root;POLY_EVAL_1;field_complex;field;complex_ring_clauses] THEN
+    have `~complex_root (poly_1 complex_ring) z` [complex_root;POLY_EVAL_1;FIELD_COMPLEX_RING;field;COMPLEX_RING_CLAUSES] THEN
     have `x_minus_const complex_ring c = poly_mul complex_ring (x_minus_const complex_ring c) (poly_1 complex_ring)` [RING_POLYNOMIAL_1;complex_root;POLY_MUL_SYM;POLY_MUL_LID;series_complex] THEN
     qed[RING_POLYNOMIAL_1]
   ; pass
   ] THEN
-  have `poly_eval complex_ring (x_minus_const complex_ring c) z = z - c` [eval_x_minus_const;in_complex_ring;ring_sub_complex] THEN
+  have `poly_eval complex_ring (x_minus_const complex_ring c) z = z - c` [eval_x_minus_const;in_complex_ring;COMPLEX_RING_SUB] THEN
   complex_field_fact `~(z = c:complex) ==> ~(z - c = Cx(&0))` THEN
   have `~(poly_eval complex_ring (x_minus_const complex_ring c) z = Cx(&0))` [] THEN
   have `~(complex_root(x_minus_const complex_ring c) z)` [complex_root] THEN
@@ -13209,7 +13078,7 @@ let poly_ord_mul = prove(`
     simp[POLY_EVAL_MUL;in_complex_ring] THEN
     have `~(poly_eval complex_ring f z = Cx(&0))` [complex_root] THEN
     have `~(poly_eval complex_ring g z = Cx(&0))` [complex_root] THEN
-    qed[COMPLEX_ENTIRE;complex_ring_clauses]
+    qed[COMPLEX_ENTIRE;COMPLEX_RING_CLAUSES]
   ; pass
   ] THEN
   have `p = ring_mul(x_poly complex_ring) (poly_pow complex_ring (x_minus_const complex_ring z) (poly_ord p z)) f` [x_poly_use] THEN
@@ -13265,7 +13134,7 @@ let poly_ord_product = prove(`
     set_fact `(x:X) IN x INSERT S` THEN
     simp[poly_product_insert;NSUM_CLAUSES] THEN
     have `~(poly_product complex_ring (S:X->bool) p = poly_0(complex_ring))` [poly_product_ring_product_x_poly;x_poly_use] THEN
-    have `~(poly_mul complex_ring (p(x:X)) (poly_product complex_ring S p) = poly_0 complex_ring)` [nonzero_poly_mul;series_complex;integral_domain_complex] THEN
+    have `~(poly_mul complex_ring (p(x:X)) (poly_product complex_ring S p) = poly_0 complex_ring)` [nonzero_poly_mul;series_complex;INTEGRAL_DOMAIN_COMPLEX_RING] THEN
     specialize_assuming[`p(x:X):(1->num)->complex`;`poly_product complex_ring (S:X->bool) p`;`z:complex`]poly_ord_mul THEN
     qed[poly_product_poly]
   ]
@@ -13345,7 +13214,7 @@ let poly_ord_one_minus_constx = prove(`
   have `ring_polynomial complex_ring (one_minus_constx complex_ring c)` [one_minus_constx_poly;in_complex_ring] THEN
   case `c * z = Cx(&1)` THENL [
     specialize_assuming[`one_minus_constx complex_ring c`;`poly_1 complex_ring:(1->num)->complex`;`z:complex`]poly_ord_unique_1 THEN
-    have `~complex_root (poly_1 complex_ring) z` [complex_root;POLY_EVAL_1;field_complex;field;complex_ring_clauses] THEN
+    have `~complex_root (poly_1 complex_ring) z` [complex_root;POLY_EVAL_1;FIELD_COMPLEX_RING;field;COMPLEX_RING_CLAUSES] THEN
     subgoal `one_minus_constx complex_ring c = poly_mul complex_ring (x_minus_const complex_ring z) (poly_const complex_ring (--c))` THENL [
       sufficesby eq_coeff THEN
       intro THEN
@@ -13354,14 +13223,14 @@ let poly_ord_one_minus_constx = prove(`
       simp[coeff_x_minus_const;in_complex_ring] THEN
       case `d = 0` THENL [
         simp[ARITH_RULE `~(0 = 1)`] THEN
-        rw[complex_ring_clauses] THEN
+        rw[COMPLEX_RING_CLAUSES] THEN
         complex_field_fact `c * z = Cx(&1) ==> Cx(&1) = --c * --z` THEN
         qed[]
       ; pass
       ] THEN
       case `d = 1` THENL [
         simp[] THEN
-        rw[complex_ring_clauses] THEN
+        rw[COMPLEX_RING_CLAUSES] THEN
         CONV_TAC COMPLEX_FIELD
       ; pass
       ] THEN
@@ -13379,7 +13248,7 @@ let poly_ord_one_minus_constx = prove(`
     qed[one_minus_constx_poly;in_complex_ring;RING_POLYNOMIAL_CONST]
   ; pass
   ] THEN
-  have `poly_eval complex_ring (one_minus_constx complex_ring c) z = Cx(&1) - c * z` [eval_one_minus_constx;in_complex_ring;ring_sub_complex;complex_ring_clauses] THEN
+  have `poly_eval complex_ring (one_minus_constx complex_ring c) z = Cx(&1) - c * z` [eval_one_minus_constx;in_complex_ring;COMPLEX_RING_SUB;COMPLEX_RING_CLAUSES] THEN
   complex_field_fact `~(c * z = Cx(&1)) ==> ~(Cx(&1) - c * z = Cx(&0))` THEN
   have `~(poly_eval complex_ring (one_minus_constx complex_ring c) z = Cx(&0))` [] THEN
   have `~(complex_root(one_minus_constx complex_ring c) z)` [complex_root] THEN
@@ -13422,7 +13291,7 @@ let poly_ord_x_pow_1 = prove(`
   = if z = Cx(&0) then 1 else 0
 `,
   rw[GSYM x_minus_const_0] THEN
-  qed[poly_ord_x_minus_const;complex_ring_clauses]
+  qed[poly_ord_x_minus_const;COMPLEX_RING_CLAUSES]
 );;
 
 let poly_ord_x_pow = prove(`
@@ -14009,15 +13878,15 @@ let poly_ord_derivative_pole = prove(`
     subgoal `~complex_root (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_mul complex_ring f g)) z` THENL [
       rw[complex_root] THEN
       simp[POLY_EVAL_MUL;POLY_EVAL_SUB;POLY_EVAL_CONST;in_complex_ring;RING_POLYNOMIAL_MUL;RING_POLYNOMIAL_SUB;RING_POLYNOMIAL_CONST] THEN
-      recall integral_domain_complex THEN
+      recall INTEGRAL_DOMAIN_COMPLEX_RING THEN
       have `~(poly_eval complex_ring f z = Cx(&0))` [complex_root] THEN
       have `~(poly_eval complex_ring g z = Cx(&0))` [complex_root] THEN
-      have `~(ring_mul complex_ring (poly_eval complex_ring f z) (poly_eval complex_ring g z) = Cx(&0))` [complex_ring_clauses;COMPLEX_ENTIRE] THEN
+      have `~(ring_mul complex_ring (poly_eval complex_ring f z) (poly_eval complex_ring g z) = Cx(&0))` [COMPLEX_RING_CLAUSES;COMPLEX_ENTIRE] THEN
       num_linear_fact `poly_ord p z < poly_ord q z ==> ~(poly_ord p z = poly_ord q z)` THEN
-      have `~(ring_of_num complex_ring (poly_ord p z) = ring_of_num complex_ring (poly_ord q z))` [ring_of_num_injective;ring_char_complex] THEN
+      have `~(ring_of_num complex_ring (poly_ord p z) = ring_of_num complex_ring (poly_ord q z))` [ring_of_num_injective;RING_CHAR_COMPLEX_RING] THEN
       complex_field_fact `~(ring_of_num complex_ring (poly_ord p z) = ring_of_num complex_ring (poly_ord q z)) ==> ~(ring_of_num complex_ring (poly_ord p z) - ring_of_num complex_ring (poly_ord q z) = Cx(&0))` THEN
-      have `~(ring_sub complex_ring (ring_of_num complex_ring (poly_ord p z)) (ring_of_num complex_ring (poly_ord q z)) = Cx(&0))` [ring_sub_complex] THEN
-      qed[complex_ring_clauses;COMPLEX_ENTIRE]
+      have `~(ring_sub complex_ring (ring_of_num complex_ring (poly_ord p z)) (ring_of_num complex_ring (poly_ord q z)) = Cx(&0))` [COMPLEX_RING_SUB] THEN
+      qed[COMPLEX_RING_CLAUSES;COMPLEX_ENTIRE]
     ; pass
     ] THEN
     subgoal `poly_mul complex_ring (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_pow complex_ring (x_minus_const complex_ring z) ((poly_ord p z + poly_ord q z) - 1))) (poly_mul complex_ring f g) = poly_mul complex_ring (poly_pow complex_ring (x_minus_const complex_ring z) ((poly_ord p z + poly_ord q z) - 1)) (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_mul complex_ring f g))` THENL [
@@ -14242,9 +14111,9 @@ let sum_root_decomposition_if_monic_vanishing_at_factorization_lemma = prove(`
     rw[BETA_THM] THEN
     intro THEN
     have `FINITE(complex_root a)` [distinct_minpolys_finite_root] THEN
-    simp[GSYM vsum_ring_sum_complex] THEN
+    simp[COMPLEX_RING_SUM] THEN
     simp[GSYM VSUM_COMPLEX_LMUL] THEN
-    simp[vsum_ring_sum_complex] THEN
+    simp[GSYM COMPLEX_RING_SUM] THEN
     subgoal `complex_root a SUBSET {y | ~(numpreimages c (S:X->bool) y = 0)}` THENL [
       rw[SUBSET;IN_ELIM_THM] THEN
       intro THEN
@@ -14261,7 +14130,7 @@ let sum_root_decomposition_if_monic_vanishing_at_factorization_lemma = prove(`
       `{y:complex | ~(numpreimages c (S:X->bool) y = 0)}`;
       `\y:complex. ring_mul complex_ring (Cx(&(e(a:(1->num)->complex)))) (g y)`
     ]ring_sum_restrict_subset THEN
-    rw[GSYM complex_ring_clauses] THEN
+    rw[GSYM COMPLEX_RING_CLAUSES] THEN
     qed[]
   ; pass
   ] THEN
@@ -14300,10 +14169,10 @@ let sum_root_decomposition_if_monic_vanishing_at_factorization_lemma = prove(`
   ; pass
   ] THEN
   simp[] THEN
-  rw[GSYM complex_ring_clauses] THEN
+  rw[GSYM COMPLEX_RING_CLAUSES] THEN
   simp[RING_SUM_DELTA] THEN
   rw[in_complex_ring] THEN
-  rw[ring_of_num_complex;complex_of_num] THEN
+  rw[COMPLEX_RING_OF_NUM] THEN
   subgoal `e(q:(1->num)->complex) = numpreimages c S (c(v:X):complex)` THENL [
     rw[GSYM(know `!z. nsum P (\p. if complex_root p z then e p else 0) = numpreimages (c:X->complex) S z`)] THEN
     subgoal `nsum P (\p. if complex_root p (c(v:X)) then e p else 0) = nsum P (\p. if p = q then e q else 0)` THENL [
@@ -14384,7 +14253,7 @@ let sum_root_decomposition_if_monic_vanishing_at_factorization = prove(`
       intro THEN
       simp[IN_ELIM_THM] THEN
       case `e(a:(1->num)->complex) = 0` THENL [
-        rw[complex_ring_clauses] THEN
+        rw[COMPLEX_RING_CLAUSES] THEN
         have `Cx (&0) * ring_sum complex_ring (complex_root a) g = Cx(&0)` [COMPLEX_MUL_LZERO] THEN
         simp[]
       ; pass
@@ -14406,7 +14275,7 @@ let transcendence_v_denom = prove(`
   distinct_minpolys P ==>
   D IN ZinC ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n vn.
   vn = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) ==>
   D pow n * vn IN ZinC
@@ -14418,8 +14287,8 @@ let transcendence_v_denom = prove(`
     have `FINITE (0..n)` [FINITE_NUMSEG] THEN
     have `!i. i IN (0..n) ==> Cx (&(FACT (n - i) * binom (n,i))) * u i IN ring_carrier complex_ring` [in_complex_ring] THEN
     specialize[`complex_ring`;`\i. Cx (&(FACT (n - i) * binom (n,i))) * u i`;`(D:complex) pow n`;`0..n`](GSYM RING_SUM_LMUL) THEN
-    have `D pow n * vn = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow n) (Cx (&(FACT (n - x) * binom (n,x))) * u x))` [complex_ring_clauses] THEN
-    qed[RING_SUM_EQ;complex_ring_clauses]
+    have `D pow n * vn = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow n) (Cx (&(FACT (n - x) * binom (n,x))) * u x))` [COMPLEX_RING_CLAUSES] THEN
+    qed[RING_SUM_EQ;COMPLEX_RING_CLAUSES]
   ; pass
   ] THEN
   recall subring_complex_empty THEN
@@ -14449,7 +14318,7 @@ let transcendence_w_denom = prove(`
   distinct_minpolys P ==>
   D IN ZinC ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n k wn.
   wn = (if k <= n then ring_sum complex_ring (0..n-k) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) else Cx(&0)) ==>
   (D pow (n-k) * wn) / Cx(&(FACT k)) IN ZinC
@@ -14463,8 +14332,8 @@ let transcendence_w_denom = prove(`
       have `FINITE (0..n-k)` [FINITE_NUMSEG] THEN
       have `!i. i IN (0..n-k) ==> Cx (&(FACT (n - i) * binom (n,i))) * u i IN ring_carrier complex_ring` [in_complex_ring] THEN
       specialize[`complex_ring`;`\i. Cx (&(FACT (n - i) * binom (n,i))) * u i`;`(D:complex) pow (n-k) / Cx(&(FACT k))`;`0..n-k`](GSYM RING_SUM_LMUL) THEN
-      have `(D pow (n-k) / Cx(&(FACT k))) * wn = ring_sum complex_ring (0..n-k) (\x. ring_mul complex_ring ((D pow (n-k) / Cx(&(FACT k)))) (Cx (&(FACT (n - x) * binom (n,x))) * u x))` [complex_ring_clauses] THEN
-      qed[RING_SUM_EQ;complex_ring_clauses]
+      have `(D pow (n-k) / Cx(&(FACT k))) * wn = ring_sum complex_ring (0..n-k) (\x. ring_mul complex_ring ((D pow (n-k) / Cx(&(FACT k)))) (Cx (&(FACT (n - x) * binom (n,x))) * u x))` [COMPLEX_RING_CLAUSES] THEN
+      qed[RING_SUM_EQ;COMPLEX_RING_CLAUSES]
     ; pass
     ] THEN
     recall subring_complex_empty THEN
@@ -14672,7 +14541,7 @@ let transcendence_newton_pe = prove(`
   have `ring_polynomial complex_ring (p:(1->num)->complex)` [poly_complex_if_poly_QinC] THEN
   recall subring_complex_QinC THEN
   have `monic complex_ring (p:(1->num)->complex)` [monic_subring] THEN
-  have `~(p:(1->num)->complex = poly_0 complex_ring)` [monic_poly_0;field_complex;field] THEN
+  have `~(p:(1->num)->complex = poly_0 complex_ring)` [monic_poly_0;FIELD_COMPLEX_RING;field] THEN
   have `ring_squarefree(x_poly QinC_ring) p` [squarefree_if_irreducible_over_field;field_QinC] THEN
   have `ring_squarefree(x_poly complex_ring) p` [monic_QinC_squarefree_complex_squarefree] THEN
   have `monic_vanishing_at complex_ring (complex_root p) I = p` [monic_vanishing_at_complex_root] THEN
@@ -14687,7 +14556,7 @@ let transcendence_newton_pe = prove(`
     sufficesby eq_coeff THEN
     intro THEN
     simp[coeff_series_from_coeffs] THEN
-    simp[ring_of_num_complex;complex_of_num;I_THM]
+    simp[COMPLEX_RING_OF_NUM;I_THM]
   ; pass
   ] THEN
   qed[]
@@ -14787,7 +14656,7 @@ let transcendence_newton_Hk_psum = prove(`
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
   (!p. p IN P ==> G p = poly_product complex_ring (P DELETE p) (\q. x_truncreverse QinC_ring (poly_deg complex_ring q) q)) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   e < k ==>
   poly_mul complex_ring (
     poly_pow complex_ring H k
@@ -14799,7 +14668,7 @@ let transcendence_newton_Hk_psum = prove(`
   =
   poly_sum complex_ring P (\p:(1->num)->complex.
     poly_mul complex_ring (
-      poly_const complex_ring ((complex_of_int(B p)))
+      poly_const complex_ring ((Cx(real_of_int(B p))))
     ) (
       poly_mul complex_ring (
         poly_pow complex_ring H (k-(e+1))
@@ -14814,14 +14683,14 @@ let transcendence_newton_Hk_psum = prove(`
   )
 `,
   intro THEN
-  subgoal `series_from_coeffs (\n. Cx(&(FACT(e) * binom(n,e))) * u(n-e)) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx(&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))` THENL [
+  subgoal `series_from_coeffs (\n. Cx(&(FACT(e) * binom(n,e))) * u(n-e)) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx(&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))` THENL [
     sufficesby eq_coeff THEN
     intro THEN
     rw[coeff_series_from_coeffs] THEN
     simp[coeff_poly_sum;series_complex] THEN
     simp[coeff_poly_const_times;series_complex;in_complex_ring] THEN
-    rw[complex_ring_clauses] THEN
-    subgoal `ring_sum complex_ring P (\a. (complex_of_int(B a)) * coeff d (poly_sum complex_ring (complex_root a) (\s. series_from_coeffs (\n. Cx (&(FACT e * binom (n,e))) * ring_pow complex_ring s (n - e))))) = ring_sum complex_ring P (\a. (complex_of_int(B a)) * ring_sum complex_ring (complex_root a) (\s. Cx (&(FACT e * binom (d,e))) * ring_pow complex_ring s (d - e)))` THENL [
+    rw[COMPLEX_RING_CLAUSES] THEN
+    subgoal `ring_sum complex_ring P (\a. (Cx(real_of_int(B a))) * coeff d (poly_sum complex_ring (complex_root a) (\s. series_from_coeffs (\n. Cx (&(FACT e * binom (n,e))) * ring_pow complex_ring s (n - e))))) = ring_sum complex_ring P (\a. (Cx(real_of_int(B a))) * ring_sum complex_ring (complex_root a) (\s. Cx (&(FACT e * binom (d,e))) * ring_pow complex_ring s (d - e)))` THENL [
       sufficesby RING_SUM_EQ THEN
       intro THEN
       have `FINITE(complex_root a)` [distinct_minpolys_finite_root] THEN
@@ -14830,42 +14699,42 @@ let transcendence_newton_Hk_psum = prove(`
     ; pass
     ] THEN
     simp[] THEN
-    subgoal `Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p (d - e)) = ring_sum complex_ring P (\p. Cx (&(FACT e * binom (d,e))) * (complex_of_int(B p)) * complex_root_powersums p (d - e))` THENL [
-      rw[GSYM complex_ring_clauses] THEN
-      specialize_assuming[`complex_ring`;`\p. ring_mul complex_ring ((complex_of_int(B p))) (complex_root_powersums p (d - e))`;`Cx(&(FACT e * binom(d,e)))`;`P:((1->num)->complex)->bool`]RING_SUM_LMUL THEN
+    subgoal `Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p (d - e)) = ring_sum complex_ring P (\p. Cx (&(FACT e * binom (d,e))) * (Cx(real_of_int(B p))) * complex_root_powersums p (d - e))` THENL [
+      rw[GSYM COMPLEX_RING_CLAUSES] THEN
+      specialize_assuming[`complex_ring`;`\p. ring_mul complex_ring ((Cx(real_of_int(B p)))) (complex_root_powersums p (d - e))`;`Cx(&(FACT e * binom(d,e)))`;`P:((1->num)->complex)->bool`]RING_SUM_LMUL THEN
       qed[in_complex_ring]
     ; pass
     ] THEN
     simp[] THEN
     sufficesby RING_SUM_EQ THEN
     intro THEN
-    rw[complex_root_powersums;ring_pow_complex] THEN
+    rw[complex_root_powersums;COMPLEX_RING_POW] THEN
     subgoal `ring_sum complex_ring (complex_root a) (\s. Cx (&(FACT e * binom (d,e))) * s pow (d - e)) = Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring (complex_root a) (\s. s pow (d - e))` THENL [
-      rw[GSYM complex_ring_clauses] THEN
+      rw[GSYM COMPLEX_RING_CLAUSES] THEN
       have `FINITE(complex_root a)` [distinct_minpolys_finite_root] THEN
       specialize_assuming[`complex_ring`;`\s:complex. s pow (d-e)`;`Cx(&(FACT e * binom(d,e)))`;`complex_root a`]RING_SUM_LMUL THEN
       qed[in_complex_ring]
     ; pass
     ] THEN
     simp[] THEN
-    complex_field_fact `Cx (&(FACT e * binom (d,e))) * (complex_of_int(B a)) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e)) = (complex_of_int(B a)) * Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e))` THEN
+    complex_field_fact `Cx (&(FACT e * binom (d,e))) * (Cx(real_of_int(B a))) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e)) = (Cx(real_of_int(B a))) * Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e))` THEN
     qed[]
   ; pass
   ] THEN
-  subgoal `poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))))` THENL [
-    specialize_assuming[`complex_ring`;`\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))`;`poly_pow complex_ring H k:(1->num)->complex`;`P:((1->num)->complex)->bool`]poly_sum_lmul THEN
+  subgoal `poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))))` THENL [
+    specialize_assuming[`complex_ring`;`\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))`;`poly_pow complex_ring H k:(1->num)->complex`;`P:((1->num)->complex)->bool`]poly_sum_lmul THEN
     qed[series_complex]
   ; pass
   ] THEN
-  subgoal `poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` THENL [
+  subgoal `poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` THENL [
     sufficesby poly_sum_eq THEN
     intro THEN
     rw[BETA_THM] THEN
-    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((complex_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))` [POLY_MUL_ASSOC;series_complex] THEN
-    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((complex_of_int(B(s:(1->num)->complex))))) = poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_pow complex_ring H k):(1->num)->complex` [POLY_MUL_SYM;series_complex] THEN
-    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))` [] THEN
-    have `poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))) = poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))` [POLY_MUL_ASSOC;series_complex] THEN
-    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))` [] THEN
+    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((Cx(real_of_int(B s)))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))` [POLY_MUL_ASSOC;series_complex] THEN
+    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((Cx(real_of_int(B(s:(1->num)->complex)))))) = poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_pow complex_ring H k):(1->num)->complex` [POLY_MUL_SYM;series_complex] THEN
+    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))` [] THEN
+    have `poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))) = poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))` [POLY_MUL_ASSOC;series_complex] THEN
+    have `poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))` [] THEN
     have `G(s:(1->num)->complex) = poly_product complex_ring (P DELETE s) (\q. x_truncreverse QinC_ring (poly_deg complex_ring q) q)` [] THEN
     subgoal `poly_product complex_ring (P DELETE s) (\q. x_truncreverse QinC_ring (poly_deg complex_ring q) q) = poly_product complex_ring (P DELETE s) (\q. x_truncreverse complex_ring (poly_deg complex_ring q) q)` THENL [
       sufficesby poly_product_eq THEN
@@ -14947,7 +14816,7 @@ let transcendence_H_main = prove(`
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
   (!p. p IN P ==> G p = poly_product complex_ring (P DELETE p) (\p. x_truncreverse QinC_ring (poly_deg complex_ring p) p)) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   poly_mul complex_ring (
     poly_pow complex_ring H k
   ) (
@@ -14960,7 +14829,7 @@ let transcendence_H_main = prove(`
   = poly_sum complex_ring {e | e < k} (\e:num.
       poly_sum complex_ring P (\p:(1->num)->complex.
         poly_mul complex_ring (
-          poly_const complex_ring ((complex_of_int(B p)))
+          poly_const complex_ring ((Cx(real_of_int(B p))))
         ) (
           poly_mul complex_ring (
             poly_pow complex_ring H (k-(e+1))
@@ -14990,7 +14859,7 @@ let transcendence_Htimes_poly = prove(`
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   ring_polynomial complex_ring (
     poly_mul complex_ring (
       poly_pow complex_ring H k
@@ -15005,13 +14874,13 @@ let transcendence_Htimes_poly = prove(`
 `,
   intro THEN
   def `G:((1->num)->complex)->((1->num)->complex)` `\p. poly_product complex_ring (P DELETE p) (\p. x_truncreverse QinC_ring (poly_deg complex_ring p) p)` THEN
-  have `poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` [transcendence_H_main] THEN
+  have `poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` [transcendence_H_main] THEN
   have `FINITE {e:num | e < k}` [FINITE_NUMSEG_LT] THEN
-  subgoal `!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` THENL [
+  subgoal `!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` THENL [
     intro THEN
-    subgoal `!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` THENL [
+    subgoal `!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` THENL [
       intro THEN
-      have `ring_polynomial complex_ring (poly_const complex_ring ((complex_of_int(B(p:(1->num)->complex)))):(1->num)->complex)` [RING_POLYNOMIAL_CONST;in_complex_ring] THEN
+      have `ring_polynomial complex_ring (poly_const complex_ring ((Cx(real_of_int(B(p:(1->num)->complex))))):(1->num)->complex)` [RING_POLYNOMIAL_CONST;in_complex_ring] THEN
       have `ring_polynomial complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex)` [transcendence_H_poly;poly_pow_poly;poly_complex_if_poly_QinC] THEN
       have `ring_polynomial complex_ring (poly_pow complex_ring (G(p:(1->num)->complex)) (e + 1):(1->num)->complex)` [poly_pow_poly;transcendence_Gp_poly;poly_complex_if_poly_QinC] THEN
       have `FINITE(complex_root p)` [distinct_minpolys_finite_root] THEN
@@ -15173,7 +15042,7 @@ let transcendence_H_deg_overall = prove(`
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   poly_deg complex_ring (
     poly_mul complex_ring (
       poly_pow complex_ring H k
@@ -15188,7 +15057,7 @@ let transcendence_H_deg_overall = prove(`
 `,
   intro THEN
   def `G:((1->num)->complex)->((1->num)->complex)` `\p. poly_product complex_ring (P DELETE p) (\p. x_truncreverse QinC_ring (poly_deg complex_ring p) p)` THEN
-  have `poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` [transcendence_H_main] THEN
+  have `poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` [transcendence_H_main] THEN
   have `FINITE {e:num | e < k}` [FINITE_NUMSEG_LT] THEN
   subgoal `!e p. e IN {e | e < k} ==> p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))` THENL [
     intro THEN
@@ -15199,26 +15068,26 @@ let transcendence_H_deg_overall = prove(`
     qed[RING_POLYNOMIAL_MUL]
   ; pass
   ] THEN
-  subgoal `!e p. e IN {e | e < k} ==> p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` THENL [
+  subgoal `!e p. e IN {e | e < k} ==> p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` THENL [
     intro THEN
-    have `ring_polynomial complex_ring (poly_const complex_ring ((complex_of_int(B(p:(1->num)->complex)))):(1->num)->complex)` [RING_POLYNOMIAL_CONST;in_complex_ring] THEN
+    have `ring_polynomial complex_ring (poly_const complex_ring ((Cx(real_of_int(B(p:(1->num)->complex))))):(1->num)->complex)` [RING_POLYNOMIAL_CONST;in_complex_ring] THEN
     qed[RING_POLYNOMIAL_MUL]
   ; pass
   ] THEN
-  have `!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` [poly_sum_poly] THEN
-  subgoal `!e. e IN {e | e < k} ==> poly_deg complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) <= t*k-1` THENL [
+  have `!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))` [poly_sum_poly] THEN
+  subgoal `!e. e IN {e | e < k} ==> poly_deg complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) <= t*k-1` THENL [
     intro THEN
     set_fact `e IN {e:num | e < k} ==> e < k` THEN
-    have `!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` [] THEN
+    have `!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))` [] THEN
     have `!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))) <= t*k-1` [transcendence_H_deg_HG_simpler] THEN
-    have `!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= poly_deg complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))` [deg_const_mul_le;in_complex_ring] THEN
-    have `!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= t*k-1` [LE_TRANS] THEN
-    specialize[`complex_ring`;`\p:(1->num)->complex. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))`;`t*k-1`;`P:((1->num)->complex)->bool`]poly_deg_sum_le THEN
+    have `!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= poly_deg complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))` [deg_const_mul_le;in_complex_ring] THEN
+    have `!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= t*k-1` [LE_TRANS] THEN
+    specialize[`complex_ring`;`\p:(1->num)->complex. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))`;`t*k-1`;`P:((1->num)->complex)->bool`]poly_deg_sum_le THEN
     qed[]
   ; pass
   ] THEN
-  subgoal `poly_deg complex_ring (poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))) <= t*k-1` THENL [
-    specialize_assuming[`complex_ring`;`\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))`;`t*k-1`;`{e:num | e < k}`]poly_deg_sum_le THEN
+  subgoal `poly_deg complex_ring (poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))) <= t*k-1` THENL [
+    specialize_assuming[`complex_ring`;`\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))`;`t*k-1`;`{e:num | e < k}`]poly_deg_sum_le THEN
     qed[]
   ; pass
   ] THEN
@@ -15253,7 +15122,7 @@ let transcendence_vw_diff = prove(`
     ; pass
     ] THEN
     have `ring_sub complex_ring (ring_sum complex_ring (0..n) (\i. Cx (&(FACT (n - i) * binom (n,i))) * u i)) (ring_sum complex_ring (0..n - k) (\i. Cx (&(FACT (n - i) * binom (n,i))) * u i)) = ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))` [] THEN
-    qed[ring_sub_complex]
+    qed[COMPLEX_RING_SUB]
   ;
     have `wn = Cx(&0)` [] THEN
     complex_field_fact `wn = Cx(&0) ==> vn - wn = vn` THEN
@@ -15279,7 +15148,7 @@ let transcendence_vw_diff = prove(`
       rw[BETA_THM] THEN
       proven_if `a <= n:num` [] THEN
       num_linear_fact `~(a <= n) ==> n < a:num` THEN
-      simp[BINOM_LT;MULT_0;COMPLEX_MUL_LZERO;complex_ring_clauses]
+      simp[BINOM_LT;MULT_0;COMPLEX_MUL_LZERO;COMPLEX_RING_CLAUSES]
     ; pass
     ] THEN
     have `vn - wn = ring_sum complex_ring (0..k - 1) (\a. Cx (&(FACT a * binom (n,a))) * u (n - a))` [] THEN
@@ -15293,7 +15162,7 @@ let transcendence_vw_diff_series = prove(`
   !P B u v w.
   FINITE P ==>
   distinct_minpolys P ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n. w n = if k <= n then ring_sum complex_ring (0..n-k) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) else Cx(&0)) ==>
   poly_sub complex_ring (
@@ -15311,7 +15180,7 @@ let transcendence_vw_diff_series = prove(`
   sufficesby eq_coeff THEN
   intro THEN
   rw[coeff_poly_sub;coeff_series_from_coeffs] THEN
-  rw[ring_sub_complex] THEN
+  rw[COMPLEX_RING_SUB] THEN
   qed[transcendence_vw_diff]
 );;
 
@@ -15321,7 +15190,7 @@ let transcendence_vw_diff_series_H = prove(`
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n. w n = if k <= n then ring_sum complex_ring (0..n-k) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) else Cx(&0)) ==>
   poly_sub complex_ring (
@@ -15357,20 +15226,20 @@ let transcendence_vw_diff_series_H = prove(`
 let transcendence_uv_trivial = prove(`
   !P B u v.
   P = {} ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n. u n = Cx(&0) /\ v n = Cx(&0))
 `,
   REPEAT GEN_TAC THEN
   REPEAT DISCH_TAC THEN
-  have `!d:num. u d = Cx(&0)` [RING_SUM_CLAUSES;complex_ring_clauses] THEN
+  have `!d:num. u d = Cx(&0)` [RING_SUM_CLAUSES;COMPLEX_RING_CLAUSES] THEN
   subgoal `!d:num. ring_sum complex_ring (0..d) (\i. Cx (&(FACT (d - i) * binom (d,i))) * u i) = Cx(&0)` THENL [
     intro THEN
-    rw[GSYM complex_ring_clauses] THEN
+    rw[GSYM COMPLEX_RING_CLAUSES] THEN
     sufficesby RING_SUM_EQ_0 THEN
     intro THEN
     rw[BETA_THM] THEN
-    rw[complex_ring_clauses] THEN
+    rw[COMPLEX_RING_CLAUSES] THEN
     qed[COMPLEX_MUL_RZERO]
   ;
     qed[]
@@ -15383,7 +15252,7 @@ let transcendence_vw_match = prove(`
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. k*t <= n ==>
          (!d. w d = if k <= d then ring_sum complex_ring (0..d-k) (\i. Cx(&(FACT(d-i) * binom(d,i))) * u i) else Cx(&0)) ==>
@@ -15410,13 +15279,13 @@ let transcendence_vw_match = prove(`
     have `!n:num. v n = Cx(&0)` [transcendence_uv_trivial] THEN
     subgoal `!d:num. (if k <= d then ring_sum complex_ring (0..d-k) (\i. Cx (&(FACT (d - i) * binom (d,i))) * u i) else Cx(&0)) = Cx(&0)` THENL [
       intro THEN
-      rw[GSYM complex_ring_clauses] THEN
+      rw[GSYM COMPLEX_RING_CLAUSES] THEN
       rw[COND_ELIM_THM] THEN
       sufficesby (prove(`x:A = y ==> (if p then x else y) = y`,qed[])) THEN
       sufficesby RING_SUM_EQ_0 THEN
       intro THEN
       rw[BETA_THM] THEN
-      rw[complex_ring_clauses] THEN
+      rw[COMPLEX_RING_CLAUSES] THEN
       qed[COMPLEX_MUL_RZERO]
     ; pass
     ] THEN
@@ -15445,7 +15314,7 @@ let transcendence_vw_match = prove(`
     `k:num`
   ]transcendence_vw_diff_series_H THEN
   specialize[`complex_ring`;`poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)`;`poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)`;`n:num`]coeff_poly_sub THEN
-  have `(coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v))) - (coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w))) = coeff n (poly_sub complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)))` [ring_sub_complex] THEN
+  have `(coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v))) - (coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w))) = coeff n (poly_sub complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)))` [COMPLEX_RING_SUB] THEN
   specialize[
     `P:((1->num)->complex)->bool`;
     `B:((1->num)->complex)->int`;
@@ -15463,7 +15332,7 @@ let transcendence_vw_match = prove(`
     `k:num`
   ]transcendence_Htimes_poly THEN
   case `coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))) = ring_0 complex_ring` THENL [
-    have `coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))) = Cx(&0)` [complex_ring_clauses] THEN
+    have `coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))) = Cx(&0)` [COMPLEX_RING_CLAUSES] THEN
     have `coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) - coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)) = Cx(&0)` [] THEN
     qed[COMPLEX_FIELD `a - b = Cx(&0) ==> a = b`]
   ;
@@ -15503,7 +15372,7 @@ let transcendence_Hw_denom = prove(`
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n k. k*t <= n ==>
          (!d. w d = if k <= d then ring_sum complex_ring (0..d-k) (\i. Cx(&(FACT(d-i) * binom(d,i))) * u i) else Cx(&0)) ==>
          (D pow (n-k) / Cx(&(FACT k))) *
@@ -15522,11 +15391,11 @@ let transcendence_Hw_denom = prove(`
   have `FINITE (0..n)` [FINITE_NUMSEG] THEN
   have `!i. i IN 0..n ==> ring_mul complex_ring (coeff i (poly_pow complex_ring H k)) (coeff (n - i) (series_from_coeffs w)) IN ring_carrier complex_ring` [in_complex_ring] THEN
   specialize[`complex_ring`;`(\a. ring_mul complex_ring (coeff a (poly_pow complex_ring H k)) (coeff (n - a) (series_from_coeffs w)))`;`D pow (n-k) / Cx(&(FACT k))`;`0..n`](GSYM RING_SUM_LMUL) THEN
-  have `(D pow (n - k) / Cx(&(FACT k))) * ring_sum complex_ring (0..n) (\a. ring_mul complex_ring (coeff a (poly_pow complex_ring H k)) (coeff (n - a) (series_from_coeffs w))) = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow (n - k) / Cx(&(FACT k))) (ring_mul complex_ring (coeff x (poly_pow complex_ring H k)) (coeff (n - x) (series_from_coeffs w))))` [complex_ring_clauses] THEN
+  have `(D pow (n - k) / Cx(&(FACT k))) * ring_sum complex_ring (0..n) (\a. ring_mul complex_ring (coeff a (poly_pow complex_ring H k)) (coeff (n - a) (series_from_coeffs w))) = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow (n - k) / Cx(&(FACT k))) (ring_mul complex_ring (coeff x (poly_pow complex_ring H k)) (coeff (n - x) (series_from_coeffs w))))` [COMPLEX_RING_CLAUSES] THEN
   subgoal `ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow (n - k) / Cx(&(FACT k))) (ring_mul complex_ring (coeff x (poly_pow complex_ring H k)) (coeff (n - x) (series_from_coeffs w)))) IN ZinC` THENL [
     rw[GSYM ZinC_ring_clauses;GSYM subring_complex_empty;coeff_series_from_coeffs] THEN
     sufficesby ring_sum_in_subring THEN
-    rw[complex_ring_clauses;subring_complex_empty] THEN
+    rw[COMPLEX_RING_CLAUSES;subring_complex_empty] THEN
     intro THEN
     rw[BETA_THM] THEN
     have `s <= n:num` [IN_NUMSEG_0] THEN
@@ -15568,7 +15437,7 @@ let transcendence_Hv_denom = prove(`
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. k*t <= n ==>
          (D pow (n-k) / Cx(&(FACT k))) *
@@ -15611,8 +15480,8 @@ let transcendence_u_tail = prove(`
   FINITE P ==>
   distinct_minpolys P ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n.
   norm(vsum(0..n) (\i. u i / Cx(&(FACT i))))
   <= (sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p))) * exp A * A pow (n + 1) / &(FACT n)
@@ -15649,8 +15518,8 @@ let transcendence_u_tail = prove(`
     sufficesby VSUM_EQ THEN
     intro THEN
     rw[BETA_THM] THEN
-    simp[vsum_ring_sum_complex] THEN
-    rw[complex_div;GSYM complex_ring_clauses] THEN
+    simp[GSYM COMPLEX_RING_SUM] THEN
+    rw[complex_div;GSYM COMPLEX_RING_CLAUSES] THEN
     sufficesby(GSYM RING_SUM_RMUL) THEN
     qed[in_complex_ring]
   ; pass
@@ -15658,61 +15527,61 @@ let transcendence_u_tail = prove(`
   subgoal `!p. p IN P ==> norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. complex_root_powersums p i / Cx(&(FACT i)))) <= &(poly_deg complex_ring p) * exp A * A pow (n+1) / &(FACT n)` THENL [
     intro THEN
     have `FINITE(complex_root p)` [distinct_minpolys_finite_root] THEN
-    simp[vsum_ring_sum_complex] THEN
-    rw[GSYM ring_sub_complex] THEN
+    simp[GSYM COMPLEX_RING_SUM] THEN
+    rw[GSYM COMPLEX_RING_SUB] THEN
     simp[GSYM ring_sum_sub;in_complex_ring] THEN
-    simp[GSYM vsum_ring_sum_complex] THEN
+    simp[COMPLEX_RING_SUM] THEN
     specialize[`complex_root p`]VSUM_NORM_LE THEN
     have `!z. z IN complex_root p ==> norm(cexp z - vsum (0..n) (\i. z pow i / Cx (&(FACT i)))) <= exp A * A pow (n + 1) / &(FACT n)` [IN] THEN
     have `norm(vsum (complex_root p) (\z. cexp z - vsum (0..n) (\i. z pow i / Cx (&(FACT i))))) <= sum (complex_root p) (\z. exp A * A pow (n + 1) / &(FACT n))` [VSUM_NORM_LE] THEN
     specialize[`exp A * A pow (n + 1) / &(FACT n)`;`complex_root p`]SUM_CONST THEN
     have `CARD(complex_root p) = poly_deg complex_ring p` [distinct_minpolys_card_root] THEN
-    rw[ring_sub_complex] THEN
+    rw[COMPLEX_RING_SUB] THEN
     qed[]
   ; pass
   ] THEN
-  subgoal `!p. p IN P ==> norm (complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i)))) <= abs(real_of_int(B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)` THENL [
+  subgoal `!p. p IN P ==> norm (Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) <= abs(real_of_int(B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)` THENL [
     intro THEN
-    subgoal `vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i))) = vsum (0..n) (\i. complex_of_int(B p) * (complex_root_powersums p i / Cx (&(FACT i))))` THENL [
+    subgoal `vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i))) = vsum (0..n) (\i. Cx(real_of_int(B p)) * (complex_root_powersums p i / Cx (&(FACT i))))` THENL [
       sufficesby VSUM_EQ THEN
       rw[complex_div] THEN
       qed[COMPLEX_MUL_ASSOC]
     ; pass
     ] THEN
-    subgoal `vsum (0..n) (\i. complex_of_int(B p) * (complex_root_powersums p i / Cx (&(FACT i)))) = complex_of_int(B p) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))` THENL [
-      specialize[`complex_of_int(B(p:(1->num)->complex))`;`\i. complex_root_powersums p i / Cx (&(FACT i))`]VSUM_COMPLEX_LMUL THEN
+    subgoal `vsum (0..n) (\i. Cx(real_of_int(B p)) * (complex_root_powersums p i / Cx (&(FACT i)))) = Cx(real_of_int(B p)) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))` THENL [
+      specialize[`Cx(real_of_int(B(p:(1->num)->complex)))`;`\i. complex_root_powersums p i / Cx (&(FACT i))`]VSUM_COMPLEX_LMUL THEN
       qed[FINITE_NUMSEG]
     ; pass
     ] THEN
-    have `vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i))) = complex_of_int(B p) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))` [] THEN
-    have `complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i))) = complex_of_int(B p) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))` [COMPLEX_SUB_LDISTRIB] THEN
-    have `norm(complex_of_int(B p) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = norm(complex_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))` [COMPLEX_NORM_MUL] THEN
-    have `norm(complex_of_int(B(p:(1->num)->complex))) = abs(real_of_int(B p))` [complex_of_int;COMPLEX_NORM_CX] THEN
-    have `norm(complex_of_int(B p) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = abs(real_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))` [] THEN
+    have `vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i))) = Cx(real_of_int(B p)) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))` [] THEN
+    have `Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i))) = Cx(real_of_int(B p)) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))` [COMPLEX_SUB_LDISTRIB] THEN
+    have `norm(Cx(real_of_int(B p)) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = norm(Cx(real_of_int(B p))) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))` [COMPLEX_NORM_MUL] THEN
+    have `norm(Cx(real_of_int(B(p:(1->num)->complex)))) = abs(real_of_int(B p))` [COMPLEX_NORM_CX] THEN
+    have `norm(Cx(real_of_int(B p)) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = abs(real_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))` [] THEN
     have `abs(real_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))) <= abs(real_of_int(B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)` [REAL_ABS_POS;REAL_LE_LMUL] THEN
     qed[REAL_LE_TRANS]
   ; pass
   ] THEN
-  subgoal `norm(vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))) <= sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n))` THENL [
-    specialize[`P:((1->num)->complex)->bool`;`\p. (complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))`;`\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)`]VSUM_NORM_LE THEN
-    specialize[`\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp`;`\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))`;`P:((1->num)->complex)->bool`]VSUM_SUB THEN
-    have `vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp) - vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))` [] THEN
-    have `vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))) = -- vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))` [vsum_ring_sum_complex;COMPLEX_SUB_LZERO] THEN
-    have `norm(vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))) = norm(vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))))` [NORM_NEG] THEN
+  subgoal `norm(vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))) <= sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n))` THENL [
+    specialize[`P:((1->num)->complex)->bool`;`\p. (Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))`;`\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)`]VSUM_NORM_LE THEN
+    specialize[`\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp`;`\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))`;`P:((1->num)->complex)->bool`]VSUM_SUB THEN
+    have `vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp) - vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))` [] THEN
+    have `vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) = -- vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))` [GSYM COMPLEX_RING_SUM;COMPLEX_SUB_LZERO] THEN
+    have `norm(vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))) = norm(vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))))` [NORM_NEG] THEN
     qed[]
   ; pass
   ] THEN
-  subgoal `vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum(0..n) (\i. u i / Cx(&(FACT i)))` THENL [
+  subgoal `vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum(0..n) (\i. u i / Cx(&(FACT i)))` THENL [
     have `FINITE (0..n)` [FINITE_NUMSEG] THEN
-    specialize[`\p i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))`;`P:((1->num)->complex)->bool`;`0..n`]VSUM_SWAP THEN
+    specialize[`\p i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))`;`P:((1->num)->complex)->bool`;`0..n`]VSUM_SWAP THEN
     simp[] THEN
     sufficesby VSUM_EQ THEN
     intro THEN
     rw[BETA_THM] THEN
-    simp[vsum_ring_sum_complex] THEN
+    simp[GSYM COMPLEX_RING_SUM] THEN
     rw[complex_div] THEN
-    specialize_assuming[`complex_ring`;`\p. ring_mul complex_ring (complex_of_int (B p)) (complex_root_powersums p x)`;`inv(Cx(&(FACT x)))`;`P:((1->num)->complex)->bool`]RING_SUM_RMUL THEN
-    simp[GSYM complex_ring_clauses] THEN
+    specialize_assuming[`complex_ring`;`\p. ring_mul complex_ring (Cx(real_of_int (B p))) (complex_root_powersums p x)`;`inv(Cx(&(FACT x)))`;`P:((1->num)->complex)->bool`]RING_SUM_RMUL THEN
+    simp[GSYM COMPLEX_RING_CLAUSES] THEN
     qed[in_complex_ring]
   ; pass
   ] THEN
@@ -15736,8 +15605,8 @@ let transcendence_v_bound = prove(`
   FINITE P ==>
   distinct_minpolys P ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n vn.
   vn = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) ==>
   norm vn
@@ -15746,7 +15615,7 @@ let transcendence_v_bound = prove(`
   intro THEN
   subgoal `ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) = Cx(&(FACT n)) * vsum(0..n) (\i. u i / Cx(&(FACT i)))` THENL [
     have `FINITE(0..n)` [FINITE_NUMSEG] THEN
-    simp[GSYM vsum_ring_sum_complex] THEN
+    simp[COMPLEX_RING_SUM] THEN
     simp[GSYM VSUM_COMPLEX_LMUL] THEN
     sufficesby VSUM_EQ THEN
     intro THEN
@@ -15768,7 +15637,7 @@ let transcendence_v_bound = prove(`
     have `~(Cx(&(FACT(x))) = Cx(&0))` [CX_INJ] THEN
     rw[CX_MUL;CX_DIV] THEN
     rw[GSYM complex_div] THEN
-    complex_field_fact `~(Cx(&(FACT x)) = Cx(&0)) ==> ~(Cx(&(FACT(n-x))) = Cx(&0)) ==> (Cx (&(FACT (n - x))) * Cx (&(FACT n)) / (Cx (&(FACT (n - x))) * Cx (&(FACT x)))) * complex_of_int (B x') * complex_root_powersums x' x = Cx (&(FACT n)) * (complex_of_int (B x') * complex_root_powersums x' x) / Cx (&(FACT x))` THEN
+    complex_field_fact `~(Cx(&(FACT x)) = Cx(&0)) ==> ~(Cx(&(FACT(n-x))) = Cx(&0)) ==> (Cx (&(FACT (n - x))) * Cx (&(FACT n)) / (Cx (&(FACT (n - x))) * Cx (&(FACT x)))) * Cx(real_of_int (B x')) * complex_root_powersums x' x = Cx (&(FACT n)) * (Cx(real_of_int (B x')) * complex_root_powersums x' x) / Cx (&(FACT x))` THEN
     qed[]
   ; pass
   ] THEN
@@ -15867,11 +15736,11 @@ let transcendence_Hv_bound = prove(`
   !P A B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. norm (
            coeff n (
@@ -15885,7 +15754,7 @@ let transcendence_Hv_bound = prove(`
   )
 `,
   intro THEN
-  rw[coeff_poly_mul_oneindex;complex_ring_clauses;coeff_series_from_coeffs] THEN
+  rw[coeff_poly_mul_oneindex;COMPLEX_RING_CLAUSES;coeff_series_from_coeffs] THEN
   specialize[`P:((1->num)->complex)->bool`;`A:real`;`t:num`]transcendence_Hk_bound THEN
   have `!d. norm(coeff d (poly_pow complex_ring H k)) <= A pow d * &(binom(k*t,d))` [] THEN
   specialize[`P:((1->num)->complex)->bool`;`A:real`;`B:((1->num)->complex)->int`;`u:num->complex`]transcendence_v_bound THEN
@@ -15932,7 +15801,7 @@ let transcendence_Hv_bound = prove(`
   ; pass
   ] THEN
   have `sum (0..n) (\d. &(binom (k * t,d))) * sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1) <= &2 pow (k * t) * sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1)` [REAL_LE_RMUL] THEN
-  have `norm (ring_sum complex_ring (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a))) = norm (vsum (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a)))` [vsum_ring_sum_complex] THEN
+  have `norm (ring_sum complex_ring (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a))) = norm (vsum (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a)))` [GSYM COMPLEX_RING_SUM] THEN
   qed[REAL_LE_TRANS]
 );;
 
@@ -15940,14 +15809,14 @@ let transcendence_Hv_zero = prove(`
   !P A D B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. k*t <= n ==>
          norm(D pow (n-k) / Cx(&(FACT k))) * &2 pow (k * t) * sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1) < &1 ==>
@@ -15987,7 +15856,7 @@ let transcendence_Hv_zero = prove(`
 let transcendence_Hv_zero_Ptrivial = prove(`
   !P H u v.
   P = {} ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. coeff n (
            poly_mul complex_ring (
@@ -16000,9 +15869,9 @@ let transcendence_Hv_zero_Ptrivial = prove(`
 `,
   intro THEN
   have `!n:num. v n = Cx(&0)` [transcendence_uv_trivial] THEN
-  have `!n:num. v n = ring_0 complex_ring` [complex_ring_clauses] THEN
+  have `!n:num. v n = ring_0 complex_ring` [COMPLEX_RING_CLAUSES] THEN
   rw[coeff_poly_mul_oneindex;coeff_series_from_coeffs] THEN
-  rw[GSYM complex_ring_clauses] THEN
+  rw[GSYM COMPLEX_RING_CLAUSES] THEN
   sufficesby RING_SUM_EQ_0 THEN
   intro THEN
   rw[BETA_THM] THEN
@@ -16019,14 +15888,14 @@ let transcendence_Hv_zero_k0 = prove(`
   !P A D B t H u v k0.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   1 <= k0 ==>
   norm(D) pow (10*t) * &2 pow t * max (&1) (sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A) * (max (&1) A) pow (10*t+1) * exp(&1) < &k0 ==>
@@ -16147,14 +16016,14 @@ let transcendence_Hv_induction = prove(`
   !P A D B t H u v k0.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   1 <= k0 ==>
   norm(D) pow (10*t) * &2 pow t * max (&1) (sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A) * (max (&1) A) pow (10*t+1) * exp(&1) < &k0 ==>
@@ -16215,7 +16084,7 @@ let transcendence_Hv_induction = prove(`
     sufficesby RING_SUM_EQ THEN
     intro THEN
     rw[BETA_THM] THEN
-    proven_if `a = 0` [ARITH_RULE `n-0 = n`;complex_ring_clauses] THEN
+    proven_if `a = 0` [ARITH_RULE `n-0 = n`;COMPLEX_RING_CLAUSES] THEN
     case `a <= t:num` THENL [
       num_linear_fact `~(a = 0) ==> (10*k*t+j+1)-a <= 10*k*t+j` THEN
       have `n-a <= 10*k*t+j` [] THEN
@@ -16223,7 +16092,7 @@ let transcendence_Hv_induction = prove(`
       have `k*t <= (10*k)*t-1*t` [LE_MULT2;LE_REFL;RIGHT_SUB_DISTRIB] THEN
       num_linear_fact `a <= t ==> k*t <= (10*k)*t-1*t ==> k*t <= (10*k*t+j+1)-a` THEN
       have `k*t <= n-a:num` [] THEN
-      have `coeff (n-a) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) = ring_0 complex_ring` [complex_ring_clauses] THEN
+      have `coeff (n-a) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) = ring_0 complex_ring` [COMPLEX_RING_CLAUSES] THEN
       qed[RING_MUL_RZERO;in_complex_ring]
     ; pass
     ] THEN
@@ -16253,14 +16122,14 @@ let transcendence_Hv_noupperbound = prove(`
   !P A D B t H u v k0.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   1 <= k0 ==>
   norm(D) pow (10*t) * &2 pow t * max (&1) (sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A) * (max (&1) A) pow (10*t+1) * exp(&1) < &k0 ==>
@@ -16292,14 +16161,14 @@ let transcendence_Hv_kexists = prove(`
   !P A D B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   ?k. 1 <= k /\
   !n. k*t <= n ==>
@@ -16338,10 +16207,10 @@ let transcendence_Hv_kexists_v2 = prove(`
   !P B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   ?k. 1 <= k /\
   !n. k*t <= n ==>
@@ -16393,10 +16262,10 @@ let transcendence_Hv_poly = prove(`
   !P B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   ?k. 1 <= k /\
   ring_polynomial complex_ring (
@@ -16418,7 +16287,7 @@ let transcendence_Hv_poly = prove(`
   ]transcendence_Hv_kexists_v2 THEN
   choose `k:num` `1 <= k /\ !n. k*t <= n ==> coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) = Cx(&0)` [] THEN
   witness `k:num` THEN
-  qed[poly_if_coeff;series_complex;complex_ring_clauses]
+  qed[poly_if_coeff;series_complex;COMPLEX_RING_CLAUSES]
 );;
 
 let transcendence_uv_diffeq = prove(`
@@ -16447,7 +16316,7 @@ let transcendence_uv_diffeq = prove(`
   intro THEN
   sufficesby eq_coeff THEN
   intro THEN
-  rw[coeff_series_from_coeffs;coeff_poly_sub;complex_coeff_x_pow_times;coeff_x_derivative;complex_ring_clauses;ring_sub_complex;ring_of_num_complex;complex_of_num] THEN
+  rw[coeff_series_from_coeffs;coeff_poly_sub;complex_coeff_x_pow_times;coeff_x_derivative;COMPLEX_RING_CLAUSES;COMPLEX_RING_SUB;COMPLEX_RING_OF_NUM] THEN
   simp[] THEN
   case `d = 0` THENL [
     simp[ARITH_RULE `0 < 1`;ARITH_RULE `0 < 2`] THEN
@@ -16459,7 +16328,7 @@ let transcendence_uv_diffeq = prove(`
   case `d = 1` THENL [
     simp[ARITH_RULE `1 < 2`;ARITH_RULE `1 - 1 = 0`] THEN
     rw[RING_SUM_CLAUSES_NUMSEG;ARITH_RULE `1 = SUC 0`;in_complex_ring;ARITH_RULE `0 <= SUC 0`] THEN
-    rw[ARITH_RULE `SUC 0 = 1`;ARITH_RULE `1 - 0 = 1`;ARITH_RULE `1 - 1 = 0`;ARITH_RULE `0 - 0 = 0`;FACT;binom;ARITH_RULE `0 + 1 = 1`;ARITH_RULE `x * 1 = x`;complex_ring_clauses;fact_1] THEN
+    rw[ARITH_RULE `SUC 0 = 1`;ARITH_RULE `1 - 0 = 1`;ARITH_RULE `1 - 1 = 0`;ARITH_RULE `0 - 0 = 0`;FACT;binom;ARITH_RULE `0 + 1 = 1`;ARITH_RULE `x * 1 = x`;COMPLEX_RING_CLAUSES;fact_1] THEN
     CONV_TAC COMPLEX_FIELD
   ; pass
   ] THEN
@@ -16468,7 +16337,7 @@ let transcendence_uv_diffeq = prove(`
   num_linear_fact `d - 1 <= d` THEN
   specialize[`complex_ring`;`d-1`;`d:num`]ring_sum_numseg_le_expand THEN
   simp[] THEN
-  simp[GSYM vsum_ring_sum_complex;FINITE_NUMSEG;complex_ring_clauses] THEN
+  simp[COMPLEX_RING_SUM;FINITE_NUMSEG;COMPLEX_RING_CLAUSES] THEN
   simp[GSYM VSUM_COMPLEX_LMUL;FINITE_NUMSEG] THEN
   simp[GSYM VSUM_SUB;FINITE_NUMSEG] THEN
   subgoal `vsum (0..d) (\x. Cx (&(FACT (d - x) * binom (d,x))) * u x - (if x <= d - 1 then Cx (&(FACT (d - 1 - x) * binom (d - 1,x))) * u x else Cx (&0)) - Cx (&(d - 1)) * (if x <= d - 1 then Cx (&(FACT (d - 1 - x) * binom (d - 1,x))) * u x else Cx (&0))) = vsum (0..d) (\i. if i = d then u d else Cx(&0))` THENL [
@@ -16505,17 +16374,17 @@ let ord_product_one_minus_constx_I = prove(`
   )
 `,
   REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN
-  have `~(poly_product complex_ring S (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)` [nonzero_poly_product;integral_domain_complex;nonzero_one_minus_constx;in_complex_ring;integral_domain] THEN
+  have `~(poly_product complex_ring S (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)` [nonzero_poly_product;INTEGRAL_DOMAIN_COMPLEX_RING;nonzero_one_minus_constx;in_complex_ring;integral_domain] THEN
   case `(y:complex) IN S` THENL [
     specialize_assuming[`complex_ring`;`S:complex->bool`;`y:complex`;`\z. one_minus_constx complex_ring (I z)`]poly_product_delete THEN
     have `poly_product complex_ring (S) (\z. one_minus_constx complex_ring (I z)) = poly_mul complex_ring (one_minus_constx complex_ring y) (poly_product complex_ring ((S) DELETE y) (\z. one_minus_constx complex_ring (I z)))` [series_complex;IN;I_THM] THEN
     have `FINITE (S DELETE (y:complex))` [FINITE_DELETE] THEN
     subgoal `~(poly_eval complex_ring (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv = Cx(&0))` THENL [
-      simp[eval_poly_product;in_complex_ring;one_minus_constx_poly;eval_one_minus_constx;I_THM;complex_ring_clauses;ring_sub_complex] THEN
+      simp[eval_poly_product;in_complex_ring;one_minus_constx_poly;eval_one_minus_constx;I_THM;COMPLEX_RING_CLAUSES;COMPLEX_RING_SUB] THEN
       intro THEN
-      have `ring_product complex_ring (S DELETE y) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring` [complex_ring_clauses] THEN
-      choose `a:complex` `a IN S DELETE y /\ Cx (&1) - a * yinv = ring_0 complex_ring` [INTEGRAL_DOMAIN_PRODUCT_EQ_0;integral_domain_complex] THEN
-      have `Cx(&1) - a*yinv = Cx(&0)` [complex_ring_clauses] THEN
+      have `ring_product complex_ring (S DELETE y) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring` [COMPLEX_RING_CLAUSES] THEN
+      choose `a:complex` `a IN S DELETE y /\ Cx (&1) - a * yinv = ring_0 complex_ring` [INTEGRAL_DOMAIN_PRODUCT_EQ_0;INTEGRAL_DOMAIN_COMPLEX_RING] THEN
+      have `Cx(&1) - a*yinv = Cx(&0)` [COMPLEX_RING_CLAUSES] THEN
       complex_field_fact `y*yinv = Cx(&1) ==> Cx(&1) - a*yinv = Cx(&0) ==> a = y` THEN
       qed[IN_DELETE]
     ; pass
@@ -16525,7 +16394,7 @@ let ord_product_one_minus_constx_I = prove(`
     specialize[`poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))`;`yinv:complex`]poly_ord_unique_0 THEN
     have `poly_ord (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv = 0` [] THEN
     have `poly_ord (one_minus_constx complex_ring y) yinv = 1` [poly_ord_one_minus_constx] THEN
-    have `~(one_minus_constx complex_ring y = poly_0 complex_ring)` [nonzero_one_minus_constx;field;field_complex;in_complex_ring] THEN
+    have `~(one_minus_constx complex_ring y = poly_0 complex_ring)` [nonzero_one_minus_constx;field;FIELD_COMPLEX_RING;in_complex_ring] THEN
     have `ring_polynomial complex_ring (one_minus_constx complex_ring y)` [one_minus_constx_poly;in_complex_ring] THEN
     have `ring_polynomial complex_ring (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)))` [poly_product_poly;FINITE_DELETE;one_minus_constx_poly;in_complex_ring] THEN
     have `~(poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)) = poly_0(complex_ring))` [poly_product_ring_product_x_poly;x_poly_use] THEN
@@ -16537,11 +16406,11 @@ let ord_product_one_minus_constx_I = prove(`
   ; pass
   ] THEN
   subgoal `~(poly_eval complex_ring (poly_product complex_ring S (\z. one_minus_constx complex_ring (I z))) yinv = Cx(&0))` THENL [
-    simp[eval_poly_product;in_complex_ring;one_minus_constx_poly;eval_one_minus_constx;I_THM;complex_ring_clauses;ring_sub_complex] THEN
+    simp[eval_poly_product;in_complex_ring;one_minus_constx_poly;eval_one_minus_constx;I_THM;COMPLEX_RING_CLAUSES;COMPLEX_RING_SUB] THEN
     intro THEN
-    have `ring_product complex_ring (S) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring` [complex_ring_clauses] THEN
-    choose `a:complex` `a IN S /\ Cx (&1) - a * yinv = ring_0 complex_ring` [INTEGRAL_DOMAIN_PRODUCT_EQ_0;integral_domain_complex] THEN
-    have `Cx(&1) - a*yinv = Cx(&0)` [complex_ring_clauses] THEN
+    have `ring_product complex_ring (S) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring` [COMPLEX_RING_CLAUSES] THEN
+    choose `a:complex` `a IN S /\ Cx (&1) - a * yinv = ring_0 complex_ring` [INTEGRAL_DOMAIN_PRODUCT_EQ_0;INTEGRAL_DOMAIN_COMPLEX_RING] THEN
+    have `Cx(&1) - a*yinv = Cx(&0)` [COMPLEX_RING_CLAUSES] THEN
     complex_field_fact `y*yinv = Cx(&1) ==> Cx(&1) - a*yinv = Cx(&0) ==> a = y` THEN
     qed[]
   ; pass
@@ -16594,7 +16463,7 @@ let ord_sum_product_one_minus_constx_I = prove(`
     qed[ARITH_RULE `1 <= 1`;FINITE_DELETE]
   ; pass
   ] THEN
-  have `~(poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)` [nonzero_poly_product;integral_domain_complex;nonzero_one_minus_constx;integral_domain;in_complex_ring] THEN
+  have `~(poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)` [nonzero_poly_product;INTEGRAL_DOMAIN_COMPLEX_RING;nonzero_one_minus_constx;integral_domain;in_complex_ring] THEN
   specialize[
     `S DELETE(y:complex)`;
     `y:complex`;
@@ -16689,7 +16558,7 @@ let transcendence_ord_Hk = prove(`
   intro THEN
   have `ring_polynomial complex_ring (H:(1->num)->complex)` [transcendence_H_poly] THEN
   have `coeff 0 (H:(1->num)->complex) = Cx(&1)` [transcendence_H_botcoeff1] THEN
-  have `~(H = poly_0 complex_ring:(1->num)->complex)` [coeff_poly_0;complex_ring_clauses;ring_1_0_complex] THEN
+  have `~(H = poly_0 complex_ring:(1->num)->complex)` [coeff_poly_0;COMPLEX_RING_CLAUSES;ring_1_0_complex] THEN
   specialize[`H:(1->num)->complex`;`k:num`;`yinv:complex`]poly_ord_pow THEN
   have `poly_ord H yinv = 1` [transcendence_ord_H] THEN
   qed[ARITH_RULE `k * 1 = k`]
@@ -16701,7 +16570,7 @@ let transcendence_ord_Hu = prove(`
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!q y yinv.
     q IN P ==>
     ~(B q = &0) ==>
@@ -16749,10 +16618,10 @@ let transcendence_ord_Hu = prove(`
     rw[poly_pow_0;poly_ord_1]
   ; pass
   ] THEN
-  def `Z:((1->num)->complex)->((1->num)->complex)` `\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))` THEN
+  def `Z:((1->num)->complex)->((1->num)->complex)` `\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))` THEN
   subgoal `ring_polynomial complex_ring (Z q) /\ ~(Z q = poly_0 complex_ring) /\ poly_ord(Z(q:(1->num)->complex)) yinv = 0` THENL [
-    subgoal `ring_polynomial complex_ring (poly_const complex_ring (complex_of_int (B q)):(1->num)->complex) /\ ~(poly_const complex_ring (complex_of_int (B(q:(1->num)->complex))) = poly_0 complex_ring:(1->num)->complex) /\ poly_ord(poly_const complex_ring (complex_of_int (B(q:(1->num)->complex)))) yinv = 0` THENL [
-      have `~(complex_of_int (B(q:(1->num)->complex)) = Cx(&0))` [complex_of_int;CX_INJ;int_eq;REAL_OF_INT_CLAUSES] THEN
+    subgoal `ring_polynomial complex_ring (poly_const complex_ring (Cx(real_of_int (B q))):(1->num)->complex) /\ ~(poly_const complex_ring (Cx(real_of_int (B(q:(1->num)->complex)))) = poly_0 complex_ring:(1->num)->complex) /\ poly_ord(poly_const complex_ring (Cx(real_of_int (B(q:(1->num)->complex))))) yinv = 0` THENL [
+      have `~(Cx(real_of_int (B(q:(1->num)->complex))) = Cx(&0))` [CX_INJ;int_eq;REAL_OF_INT_CLAUSES] THEN
       qed[poly_ord_const]
     ; pass
     ] THEN
@@ -16797,13 +16666,13 @@ let transcendence_ord_Hu = prove(`
     ] THEN
     specialize_assuming_nosplit[`poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex`;`scaled_pow_newton_rightside complex_ring I (complex_root q) e`;`yinv:complex`]poly_ord_mul_0 THEN
     specialize_assuming_nosplit[`poly_pow complex_ring H (k - (e + 1)):(1->num)->complex`;`poly_mul complex_ring (poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root q) e)`;`yinv:complex`]poly_ord_mul_0 THEN
-    specialize_assuming_nosplit[`poly_const complex_ring (complex_of_int (B(q:(1->num)->complex))):(1->num)->complex`;`poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex) (poly_mul complex_ring (poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root q) e))`;`yinv:complex`]poly_ord_mul_0 THEN
+    specialize_assuming_nosplit[`poly_const complex_ring (Cx(real_of_int (B(q:(1->num)->complex)))):(1->num)->complex`;`poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex) (poly_mul complex_ring (poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root q) e))`;`yinv:complex`]poly_ord_mul_0 THEN
     qed[]
   ; pass
   ] THEN
   subgoal `!p:(1->num)->complex. p IN P ==> ~(p = q) ==> (ring_polynomial complex_ring (Z p) /\ (Z p = poly_0 complex_ring \/ 1 <= poly_ord (Z p:(1->num)->complex) yinv))` THENL [
     GEN_TAC THEN REPEAT DISCH_TAC THEN
-    have `ring_polynomial complex_ring (poly_const complex_ring (complex_of_int (B(p:(1->num)->complex))):(1->num)->complex)` [RING_POLYNOMIAL_CONST;in_complex_ring] THEN
+    have `ring_polynomial complex_ring (poly_const complex_ring (Cx(real_of_int (B(p:(1->num)->complex)))):(1->num)->complex)` [RING_POLYNOMIAL_CONST;in_complex_ring] THEN
     subgoal `ring_polynomial complex_ring (scaled_pow_newton_rightside complex_ring I (complex_root p) e)` THENL [
       rw[scaled_pow_newton_rightside] THEN
       simp[FACT;RING_OF_NUM_1;ARITH_RULE `0+1 = 1`;const_1_x_pow] THEN
@@ -16858,11 +16727,11 @@ let transcendence_ord_Hu = prove(`
       `yinv:complex`;
       `1`
     ]poly_ord_mul_ge0_ge THEN
-    have `ring_polynomial complex_ring (poly_const complex_ring (complex_of_int (B(p:(1->num)->complex))):(1->num)->complex)` [] THEN
+    have `ring_polynomial complex_ring (poly_const complex_ring (Cx(real_of_int (B(p:(1->num)->complex)))):(1->num)->complex)` [] THEN
     have `ring_polynomial complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))` [] THEN
     have `poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)) = poly_0 complex_ring \/ 1 <= poly_ord (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))) yinv` [] THEN
     specialize[
-      `poly_const complex_ring (complex_of_int (B(p:(1->num)->complex):int)):(1->num)->complex`;
+      `poly_const complex_ring (Cx(real_of_int (B(p:(1->num)->complex):int))):(1->num)->complex`;
       `poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex) (poly_mul complex_ring (poly_pow complex_ring (G(p:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))`;
       `yinv:complex`;
       `1`
@@ -16870,7 +16739,7 @@ let transcendence_ord_Hu = prove(`
     qed[]
   ; pass
   ] THEN
-  subgoal `ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) /\ ~(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) = poly_0 complex_ring) /\ poly_ord(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) yinv = 0` THENL [
+  subgoal `ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) /\ ~(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) = poly_0 complex_ring) /\ poly_ord(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) yinv = 0` THENL [
     have `!s:(1->num)->complex. s IN P ==> ring_polynomial complex_ring (Z s:(1->num)->complex)` [] THEN
     have `!s:(1->num)->complex. s IN P ==> ~(s = q) ==> Z s = poly_0 complex_ring \/ 1 <= poly_ord (Z s) yinv` [] THEN
     have `~(Z(q:(1->num)->complex) = poly_0 complex_ring:(1->num)->complex)` [] THEN
@@ -16888,7 +16757,7 @@ let transcendence_ord_Hku = prove(`
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   1 <= k ==>
   (!q y yinv.
     q IN P ==>
@@ -16930,10 +16799,10 @@ let transcendence_ord_Hku = prove(`
   have `poly_ord (poly_pow complex_ring H (k-1)) yinv = k-1` [transcendence_ord_Hk] THEN
   have `ring_polynomial complex_ring (H:(1->num)->complex)` [transcendence_H_poly] THEN
   have `coeff 0 (H:(1->num)->complex) = Cx(&1)` [transcendence_H_botcoeff1] THEN
-  have `~(H = poly_0 complex_ring:(1->num)->complex)` [coeff_poly_0;complex_ring_clauses;ring_1_0_complex] THEN
+  have `~(H = poly_0 complex_ring:(1->num)->complex)` [coeff_poly_0;COMPLEX_RING_CLAUSES;ring_1_0_complex] THEN
   have `ring_polynomial complex_ring (poly_pow complex_ring H (k - 1):(1->num)->complex)` [poly_pow_poly] THEN
   have `ring_polynomial complex_ring (poly_mul complex_ring H (series_from_coeffs u))` [] THEN
-  have `~(poly_pow complex_ring H (k - 1) = poly_0 complex_ring:(1->num)->complex)` [nonzero_poly_pow;integral_domain_complex;series_complex] THEN
+  have `~(poly_pow complex_ring H (k - 1) = poly_0 complex_ring:(1->num)->complex)` [nonzero_poly_pow;INTEGRAL_DOMAIN_COMPLEX_RING;series_complex] THEN
   have `~(poly_mul complex_ring H (series_from_coeffs u) = poly_0 complex_ring)` [] THEN
   specialize[`poly_pow complex_ring H (k-1):(1->num)->complex`;`poly_mul complex_ring H (series_from_coeffs u)`;`yinv:complex`]poly_ord_mul THEN
   have `poly_ord (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs u)) yinv = poly_ord (poly_pow complex_ring H (k - 1)) yinv + poly_ord (poly_mul complex_ring H (series_from_coeffs u)) yinv` [] THEN
@@ -17114,7 +16983,7 @@ let transcendence_mostly_0 = prove(`
   !P B q y.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   q IN P ==>
   ~(B q = &0) ==>
   complex_root q y ==>
@@ -17123,8 +16992,8 @@ let transcendence_mostly_0 = prove(`
   intro THEN
   def `t:num` `nsum P (\p. poly_deg complex_ring (p:(1->num)->complex))` THEN
   def `H:(1->num)->complex` `x_truncreverse QinC_ring t (poly_product QinC_ring P I):(1->num)->complex` THEN
-  def `u:num->complex` `\n. ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n)` THEN
-  have `!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))` [] THEN
+  def `u:num->complex` `\n. ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n)` THEN
+  have `!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))` [] THEN
   def `v:num->complex` `\n. ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)` THEN
   have `!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)` [] THEN
   case `~(y = Cx(&0))` THENL [
@@ -17156,8 +17025,8 @@ let transcendence_mostly_0 = prove(`
     have `ring_polynomial complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) V:(1->num)->complex)` [] THEN
     have `ring_polynomial complex_ring (poly_pow complex_ring H k:(1->num)->complex)` [poly_pow_poly;transcendence_H_poly] THEN
     have `coeff 0 (H:(1->num)->complex) = Cx(&1)` [transcendence_H_botcoeff1] THEN
-    have `~(H = poly_0 complex_ring:(1->num)->complex)` [coeff_poly_0;complex_ring_clauses;ring_1_0_complex] THEN
-    have `~(poly_pow complex_ring H k = poly_0 complex_ring:(1->num)->complex)` [nonzero_poly_pow;integral_domain_complex;series_complex] THEN
+    have `~(H = poly_0 complex_ring:(1->num)->complex)` [coeff_poly_0;COMPLEX_RING_CLAUSES;ring_1_0_complex] THEN
+    have `~(poly_pow complex_ring H k = poly_0 complex_ring:(1->num)->complex)` [nonzero_poly_pow;INTEGRAL_DOMAIN_COMPLEX_RING;series_complex] THEN
     have `~(poly_mul complex_ring (poly_pow complex_ring H k) U = poly_0 complex_ring:(1->num)->complex)` [] THEN
     have `poly_ord (poly_pow complex_ring H k) yinv = k` [transcendence_ord_Hk] THEN
     have `poly_ord (poly_mul complex_ring (poly_pow complex_ring H k) U) yinv = k-1` [] THEN
@@ -17182,7 +17051,7 @@ let transcendence_mostly_0_x = prove(`
   !P B q.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   q IN P ==>
   ~(B q = &0) ==>
   q = x_pow QinC_ring 1
@@ -17202,36 +17071,36 @@ let transcendence_all_0 = prove(`
   !P B.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!q. q IN P ==> B q = &0)
 `,
   intro THEN
   case `q = x_pow QinC_ring 1` THENL [
-    subgoal `ring_sum complex_ring P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then complex_of_int (B(x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring)` THENL [
+    subgoal `ring_sum complex_ring P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then Cx(real_of_int (B(x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring)` THENL [
       sufficesby RING_SUM_EQ THEN
       intro THEN
       rw[BETA_THM] THEN
       proven_if `a = x_pow QinC_ring 1` [] THEN
       have `B(a:(1->num)->complex) = &0:int` [transcendence_mostly_0_x] THEN
-      simp[complex_of_int;GSYM REAL_OF_INT_CLAUSES] THEN
-      qed[COMPLEX_MUL_LZERO;complex_ring_clauses]
+      simp[GSYM REAL_OF_INT_CLAUSES] THEN
+      qed[COMPLEX_MUL_LZERO;COMPLEX_RING_CLAUSES]
     ; pass
     ] THEN
-    have `ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then complex_of_int (B(x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring) = Cx(&0)` [] THEN
+    have `ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then Cx(real_of_int (B(x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring) = Cx(&0)` [] THEN
     specialize[
       `complex_ring`;
       `P:((1->num)->complex)->bool`;
       `x_pow QinC_ring 1`;
-      `complex_of_int (B (x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp`
+      `Cx(real_of_int (B (x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp`
     ]RING_SUM_DELTA THEN
-    have `complex_of_int (B (x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp = Cx(&0)` [in_complex_ring] THEN
+    have `Cx(real_of_int (B (x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp = Cx(&0)` [in_complex_ring] THEN
     subgoal `ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp = Cx(&1)` THENL [
       rw[complex_root_x_pow;ARITH_RULE `~(1 = 0)`;RING_SUM_SING;in_complex_ring;CEXP_0]
     ; pass
     ] THEN
-    have `complex_of_int (B (x_pow QinC_ring 1)) * Cx(&1) = Cx(&0)` [] THEN
-    have `complex_of_int (B (x_pow QinC_ring 1)) = Cx(&0)` [COMPLEX_MUL_RID] THEN
-    have `real_of_int (B (x_pow QinC_ring 1)) = &0` [complex_of_int;CX_INJ] THEN
+    have `Cx(real_of_int (B (x_pow QinC_ring 1))) * Cx(&1) = Cx(&0)` [] THEN
+    have `Cx(real_of_int (B (x_pow QinC_ring 1))) = Cx(&0)` [COMPLEX_MUL_RID] THEN
+    have `real_of_int (B (x_pow QinC_ring 1)) = &0` [CX_INJ] THEN
     qed[REAL_OF_INT_CLAUSES]
   ; pass
   ] THEN
@@ -17247,27 +17116,27 @@ let transcendence_all_0_ZinC = prove(`
   (!p. p IN P ==> B p = Cx(&0))
 `,
   intro THEN
-  def `intB:((1->num)->complex)->int` `\p:(1->num)->complex. @i. B p = complex_of_int i` THEN
-  subgoal `!q:(1->num)->complex. q IN P ==> B q = complex_of_int(intB q)` THENL [
+  def `intB:((1->num)->complex)->int` `\p:(1->num)->complex. @i. B p = Cx(real_of_int i)` THEN
+  subgoal `!q:(1->num)->complex. q IN P ==> B q = Cx(real_of_int(intB q))` THENL [
     intro THEN
     simp[] THEN
     have `B(q:(1->num)->complex) IN ZinC` [] THEN
     qed[ZinC;IN_ELIM_THM]
   ; pass
   ] THEN
-  subgoal `ring_sum complex_ring P (\p. complex_of_int (intB p) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. B p * ring_sum complex_ring (complex_root p) cexp)` THENL [
+  subgoal `ring_sum complex_ring P (\p. Cx(real_of_int (intB p)) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. B p * ring_sum complex_ring (complex_root p) cexp)` THENL [
     sufficesby RING_SUM_EQ THEN
     qed[]
   ; pass
   ] THEN
-  have `ring_sum complex_ring P (\p. complex_of_int (intB p) * ring_sum complex_ring (complex_root p) cexp) = Cx (&0)` [] THEN
+  have `ring_sum complex_ring P (\p. Cx(real_of_int (intB p)) * ring_sum complex_ring (complex_root p) cexp) = Cx (&0)` [] THEN
   specialize_assuming[
     `P:((1->num)->complex)->bool`;
     `intB:((1->num)->complex)->int`
   ]transcendence_all_0 THEN
   have `intB(p:(1->num)->complex) = &0:int` [] THEN
-  have `B(p:(1->num)->complex) = complex_of_int(&0)` [] THEN
-  qed[complex_of_int;REAL_OF_INT_CLAUSES]
+  have `B(p:(1->num)->complex) = Cx(real_of_int(&0))` [] THEN
+  qed[REAL_OF_INT_CLAUSES]
 );;
 
 let transcendence_all_0_QinC = prove(`
@@ -17284,9 +17153,9 @@ let transcendence_all_0_QinC = prove(`
   have `!p:(1->num)->complex. p IN P ==> C p IN ZinC` [] THEN
   subgoal `ring_sum complex_ring P (\p. C p * ring_sum complex_ring (complex_root p) cexp) = Cx(&0)` THENL [
     simp[GSYM COMPLEX_MUL_ASSOC] THEN
-    simp[GSYM vsum_ring_sum_complex] THEN
+    simp[COMPLEX_RING_SUM] THEN
     simp[VSUM_COMPLEX_LMUL] THEN
-    simp[vsum_ring_sum_complex] THEN
+    simp[GSYM COMPLEX_RING_SUM] THEN
     simp[COMPLEX_MUL_RZERO]
   ; pass
   ] THEN
@@ -17381,7 +17250,7 @@ let transcendence_all_0_QinC_monic_vanishing_at = prove(`
             `cexp a`;
             `{x:X | x IN S /\ c x = a:complex}`
           ]ring_sum_const THEN
-          qed[ring_of_num_complex;complex_of_num;complex_ring_clauses]
+          qed[COMPLEX_RING_OF_NUM;COMPLEX_RING_CLAUSES]
         ; pass
         ] THEN
         simporqed
@@ -17400,11 +17269,10 @@ let transcendence_all_0_QinC_monic_vanishing_at = prove(`
         sufficesby RING_SUM_EQ THEN
         rw[BETA_THM] THEN
         intro THEN
-        simp[GSYM vsum_ring_sum_complex] THEN
+        simp[COMPLEX_RING_SUM] THEN
         simp[VSUM_COMPLEX_RMUL] THEN
-        simp[vsum_ring_sum_complex] THEN
-        rw[GSYM complex_of_num] THEN
-        rw[GSYM ring_of_num_complex] THEN
+        simp[GSYM COMPLEX_RING_SUM] THEN
+        rw[GSYM(REWRITE_RULE[FUN_EQ_THM] COMPLEX_RING_OF_NUM)] THEN
         simp[ring_sum_num]
       ; pass
       ] THEN
@@ -17429,7 +17297,7 @@ let transcendence_all_0_QinC_monic_vanishing_at = prove(`
       sufficesby RING_SUM_EQ THEN
       rw[BETA_THM;IN] THEN
       intro THEN
-      rw[complex_ring_clauses] THEN
+      rw[COMPLEX_RING_CLAUSES] THEN
       qed[COMPLEX_MUL_LZERO]
     ; pass
     ] THEN
@@ -17472,7 +17340,7 @@ let transcendence_all_0_QinC_monic_vanishing_at = prove(`
       intro THEN
       simp[] THEN
       have `FINITE(complex_root a)` [distinct_minpolys_finite_root] THEN
-      simp[GSYM vsum_ring_sum_complex] THEN
+      simp[COMPLEX_RING_SUM] THEN
       simp[VSUM_COMPLEX_LMUL]
     ; pass
     ] THEN
@@ -17544,7 +17412,7 @@ let transcendence_weighted_QinC_monic_vanishing_at = prove(`
   have `distinct_minpolys P` [] THEN
   subgoal `ring_sum complex_ring P (\p. B p * ring_sum complex_ring (complex_root p) cexp) = Cx (&0)` THENL [
     simp[] THEN
-    simp[GSYM vsum_ring_sum_complex] THEN
+    simp[COMPLEX_RING_SUM] THEN
     simp[GSYM VSUM_COMPLEX_RMUL] THEN
     specialize_assuming[
       `\p s:X. (b s * Cx(&(e s p))) * ring_sum complex_ring (complex_root p) cexp`;
@@ -17555,7 +17423,7 @@ let transcendence_weighted_QinC_monic_vanishing_at = prove(`
     rw[GSYM COMPLEX_MUL_ASSOC] THEN
     simp[VSUM_COMPLEX_LMUL] THEN
     subgoal `!s:X. s IN S ==> vsum P (\p. (Cx (&(e s p))) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring (f s:Y->bool) (cexp o c)` THENL [
-      simp[vsum_ring_sum_complex] THEN
+      simp[GSYM COMPLEX_RING_SUM] THEN
       intro THEN
       have `FINITE(f(s:X):Y->bool)` [] THEN
       have `poly_product QinC_ring P (\p. poly_pow QinC_ring p (e s p)) = monic_vanishing_at complex_ring (f(s:X):Y->bool) c` [] THEN
@@ -17570,7 +17438,7 @@ let transcendence_weighted_QinC_monic_vanishing_at = prove(`
     ; pass
     ] THEN
     simp[] THEN
-    qed[vsum_ring_sum_complex]
+    qed[GSYM COMPLEX_RING_SUM]
   ; pass
   ] THEN
   subgoal `!p:(1->num)->complex. p IN P ==> B p = Cx(&0)` THENL [
@@ -17615,7 +17483,7 @@ let transcendence_weighted_QinC_monic_vanishing_at = prove(`
     ; pass
     ] THEN
     simp[] THEN
-    rw[GSYM complex_ring_clauses] THEN
+    rw[GSYM COMPLEX_RING_CLAUSES] THEN
     rw[RING_SUM_0]
   ; pass
   ] THEN
@@ -17679,7 +17547,7 @@ let e_is_irrational = prove(`
     rw[RING_SUM_SING;in_complex_ring] THEN
     have_rw `B (x_minus_const QinC_ring (Cx (&0))) = --cexp(Cx(&1))` [] THEN
     have_rw `B (x_minus_const QinC_ring (Cx (&1))) = Cx(&1)` [ARITH_RULE `~(0 = 1)`] THEN
-    rw[complex_ring_clauses;CEXP_0] THEN
+    rw[COMPLEX_RING_CLAUSES;CEXP_0] THEN
     CONV_TAC COMPLEX_FIELD
   ; pass
   ] THEN
@@ -17747,7 +17615,7 @@ let e_is_transcendental = prove(`
       sufficesby RING_SUM_EQ THEN
       intro THEN
       rw[BETA_THM;o_THM] THEN
-      rw[complex_ring_clauses;ring_pow_complex] THEN
+      rw[COMPLEX_RING_CLAUSES;COMPLEX_RING_POW] THEN
       rw[complex_root_x_minus_const;x_minus_const_QinC_eq_x_minus_const_complex] THEN
       rw[GSYM CEXP_N;COMPLEX_MUL_RID] THEN
       have `B (x_minus_const QinC_ring (Cx (&a))) = coeff a p:complex` [] THEN
@@ -17801,7 +17669,7 @@ let algebraic_number_mul = prove(`
     subgoal `!d. ring_sum complex_ring (complex_root p CROSS complex_root q) (\s. ring_pow complex_ring ((\(y,z). y * z) s) d) IN ring_carrier (subring_generated complex_ring QinC)` THENL [
       intro THEN
       rw[subring_complex_QinC] THEN
-      rw[GSYM complex_ring_clauses] THEN
+      rw[GSYM COMPLEX_RING_CLAUSES] THEN
       rw[LAMBDA_PAIR] THEN
       simp[RING_MUL_POW;in_complex_ring] THEN
       rw[GSYM LAMBDA_PAIR] THEN
@@ -17815,7 +17683,7 @@ let algebraic_number_mul = prove(`
         `\y. ring_pow complex_ring y d`
       ]ring_sum_cross_mul THEN
       simp[] THEN
-      rw[ring_pow_complex;complex_ring_clauses;GSYM complex_root_powersums;QinC_ring_clauses] THEN
+      rw[COMPLEX_RING_POW;COMPLEX_RING_CLAUSES;GSYM complex_root_powersums;QinC_ring_clauses] THEN
       qed[mul_in_QinC]
     ; pass
     ] THEN
@@ -17869,7 +17737,7 @@ let algebraic_number_add = prove(`
     have `ring_hasQ (subring_generated complex_ring QinC)` [ring_hasQ_QinC;subring_complex_QinC] THEN
     subgoal `!d. ring_sum complex_ring (complex_root p CROSS complex_root q) (\s. ring_pow complex_ring ((\(y,z). y + z) s) d) IN ring_carrier (subring_generated complex_ring QinC)` THENL [
       intro THEN
-      rw[GSYM complex_ring_clauses] THEN
+      rw[GSYM COMPLEX_RING_CLAUSES] THEN
       rw[LAMBDA_PAIR] THEN
       simp[RING_MUL_POW;in_complex_ring] THEN
       rw[GSYM LAMBDA_PAIR] THEN
@@ -17936,8 +17804,8 @@ let algebraic_number_add = prove(`
         `\y. ring_pow complex_ring y (d - s)`
       ]ring_sum_cross_mul THEN
       simp[] THEN
-      rw[ring_of_num_complex;ring_pow_complex;complex_ring_clauses;GSYM complex_root_powersums;QinC_ring_clauses;subring_complex_QinC] THEN
-      qed[mul_in_QinC;num_in_QinC;complex_of_num]
+      rw[COMPLEX_RING_OF_NUM;COMPLEX_RING_POW;COMPLEX_RING_CLAUSES;GSYM complex_root_powersums;QinC_ring_clauses;subring_complex_QinC] THEN
+      qed[mul_in_QinC;num_in_QinC]
     ; pass
     ] THEN
     specialize_assuming[
@@ -17958,7 +17826,7 @@ let algebraic_number_subring = prove(`
   algebraic_number subring_of complex_ring
 `,
   rw[subring_of] THEN
-  rw[complex_ring_clauses;IN;SUBSET] THEN
+  rw[COMPLEX_RING_CLAUSES;IN;SUBSET] THEN
   qed[IN_UNIV;IN;algebraic_number_ZinC;ZinC_0;ZinC_1;algebraic_number_neg;algebraic_number_add;algebraic_number_mul]
 );;
 
@@ -17971,13 +17839,13 @@ let algebraic_number_sum = prove(`
   GEN_TAC THEN
   sufficesby FINITE_INDUCT_STRONG THEN
   intro THENL [
-    rw[RING_SUM_CLAUSES;complex_ring_clauses] THEN
+    rw[RING_SUM_CLAUSES;COMPLEX_RING_CLAUSES] THEN
     qed[algebraic_number_ZinC;num_in_ZinC]
   ;
     set_fact `(x:X) IN x INSERT S` THEN
     set_fact `!s:X. s IN S ==> s IN x INSERT S` THEN
     simp[RING_SUM_CLAUSES;in_complex_ring] THEN
-    rw[complex_ring_clauses] THEN
+    rw[COMPLEX_RING_CLAUSES] THEN
     qed[algebraic_number_add]
   ]
 );;
@@ -17998,9 +17866,9 @@ let mul_expformal = prove(`
   sufficesby eq_coeff THEN
   intro THEN
   rw[coeff_poly_mul_oneindex;expformal;coeff_series_from_coeffs] THEN
-  rw[GSYM ring_pow_complex;GSYM complex_ring_clauses] THEN
+  rw[GSYM COMPLEX_RING_POW;GSYM COMPLEX_RING_CLAUSES] THEN
   simp[RING_BINOMIAL_THEOREM;in_complex_ring] THEN
-  simp[GSYM vsum_ring_sum_complex;FINITE_NUMSEG] THEN
+  simp[COMPLEX_RING_SUM;FINITE_NUMSEG] THEN
   rw[complex_div] THEN
   simp[GSYM VSUM_COMPLEX_RMUL;FINITE_NUMSEG] THEN
   rw[GSYM complex_div] THEN
@@ -18012,8 +17880,8 @@ let mul_expformal = prove(`
   have `FACT(d-x) * FACT x * binom(d,x) = FACT d` [BINOM_FACT] THEN
   have `&(FACT(d-x)) * &(FACT x) * &(binom(d,x)) = &(FACT d):real` [REAL_OF_NUM_MUL] THEN
   have `Cx(&(FACT(d-x))) * Cx(&(FACT x)) * Cx(&(binom(d,x))) = Cx(&(FACT d))` [CX_MUL] THEN
-  rw[complex_ring_clauses;ring_pow_complex] THEN
-  rw[ring_of_num_complex;complex_of_num] THEN
+  rw[COMPLEX_RING_CLAUSES;COMPLEX_RING_POW] THEN
+  rw[COMPLEX_RING_OF_NUM] THEN
   have `~(Cx(&(FACT d)) = Cx(&0))` [CX_INJ;REAL_OF_NUM_EQ;FACT_NZ] THEN
   complex_field_fact `
     ~(Cx(&(FACT d)) = Cx(&0)) ==>
@@ -18026,7 +17894,7 @@ let expformal_0 = prove(`
   expformal(Cx(&0)) = poly_1 complex_ring
 `,
   sufficesby eq_coeff THEN
-  rw[expformal;coeff_series_from_coeffs;coeff_poly_1;complex_ring_clauses] THEN
+  rw[expformal;coeff_series_from_coeffs;coeff_poly_1;COMPLEX_RING_CLAUSES] THEN
   rw[COMPLEX_POW_ZERO] THEN
   intro THEN
   case `d = 0` THENL [
@@ -18062,12 +17930,12 @@ let product_expformal = prove(`
   sufficesby FINITE_INDUCT_STRONG THEN
   intro THENL [
     rw[poly_product_empty;RING_SUM_CLAUSES] THEN
-    rw[expformal_0;complex_ring_clauses]
+    rw[expformal_0;COMPLEX_RING_CLAUSES]
   ;
     set_fact `(x:X) IN x INSERT S` THEN
     set_fact `!s:X. s IN S ==> s IN x INSERT S` THEN
     simp[poly_product_insert;RING_SUM_CLAUSES;in_complex_ring;series_complex] THEN
-    qed[mul_expformal;complex_ring_clauses]
+    qed[mul_expformal;COMPLEX_RING_CLAUSES]
   ]
 );;
 
@@ -18093,7 +17961,7 @@ let expformal_powersums_QinC = prove(`
   GEN_TAC THEN GEN_TAC THEN DISCH_TAC THEN
   rw[coeff_series_in_ring] THEN
   simp[coeff_poly_sum;series_complex;expformal;coeff_series_from_coeffs;QinC_ring_clauses] THEN
-  simp[GSYM vsum_ring_sum_complex] THEN
+  simp[COMPLEX_RING_SUM] THEN
   rw[complex_div] THEN
   simp[VSUM_COMPLEX_RMUL] THEN
   rw[GSYM complex_div] THEN
@@ -18118,9 +17986,9 @@ let pow_expformal_powersums_QinC = prove(`
   intro THEN
   subgoal `!n. ring_sum complex_ring S (\z. (Cx(&m) * z) pow n) IN QinC` THENL [
     rw[COMPLEX_POW_MUL] THEN
-    simp[GSYM vsum_ring_sum_complex] THEN
+    simp[COMPLEX_RING_SUM] THEN
     simp[VSUM_COMPLEX_LMUL] THEN
-    simp[vsum_ring_sum_complex] THEN
+    simp[GSYM COMPLEX_RING_SUM] THEN
     intro THEN
     have `Cx(&m) IN QinC` [num_in_QinC] THEN
     have `Cx(&m) pow n IN QinC` [ring_pow_QinC;RING_POW;QinC_ring_clauses] THEN
@@ -18243,7 +18111,7 @@ let symfun_expformal_powersums_QinC_v3 = prove(`
   have `ring_sum complex_ring {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC` [] THEN
   have `Cx(&(FACT d)) IN QinC` [num_in_QinC] THEN
   have `Cx(&(FACT d)) * ring_sum complex_ring {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC` [mul_in_QinC] THEN
-  have `Cx(&(FACT d)) * vsum {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC` [vsum_ring_sum_complex] THEN
+  have `Cx(&(FACT d)) * vsum {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC` [GSYM COMPLEX_RING_SUM] THEN
   subgoal `Cx(&(FACT d)) * vsum {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) = vsum {U | U SUBSET S /\ CARD U = m} (\U. Cx(&(FACT d)) * ((ring_sum complex_ring U I) pow d / Cx (&(FACT d))))` THENL [
     simp[VSUM_COMPLEX_LMUL]
   ; pass
@@ -18260,7 +18128,7 @@ let symfun_expformal_powersums_QinC_v3 = prove(`
     qed[]
   ; pass
   ] THEN
-  qed[vsum_ring_sum_complex]
+  qed[GSYM COMPLEX_RING_SUM]
 );;
 
 let resolvent_if_powersums_QinC = prove(`
@@ -18278,7 +18146,7 @@ let resolvent_if_powersums_QinC = prove(`
   specialize[`S:complex->bool`;`m:num`]finite_subsets_card THEN
   have `!s. s IN {U | U SUBSET S /\ CARD U = m} ==> ring_sum complex_ring s I IN ring_carrier complex_ring` [in_complex_ring] THEN
   subgoal `!d. ring_sum complex_ring {U | U SUBSET S /\ CARD U = m} (\s. ring_pow complex_ring (ring_sum complex_ring s I) d) IN ring_carrier (subring_generated complex_ring QinC)` THENL [
-    rw[ring_pow_complex] THEN
+    rw[COMPLEX_RING_POW] THEN
     qed[symfun_expformal_powersums_QinC_v3;QinC_ring_clauses;subring_complex_QinC]
   ; pass
   ] THEN
@@ -18318,7 +18186,7 @@ let resolvent_if_poly_QinC = prove(`
     have `ring_sum complex_ring S (\s. ring_pow complex_ring (I s) n) IN ring_carrier (subring_generated complex_ring QinC)` [in_complex_ring] THEN
     subgoal `ring_sum complex_ring S (\s. ring_pow complex_ring (I s) n) = ring_sum complex_ring S (\z. z pow n)` THENL [
       sufficesby RING_SUM_EQ THEN
-      rw[BETA_THM;I_THM;ring_pow_complex]
+      rw[BETA_THM;I_THM;COMPLEX_RING_POW]
     ; pass
     ] THEN
     qed[subring_complex_QinC;QinC_ring_clauses]
@@ -18400,11 +18268,11 @@ let pi_is_transcendental = prove(`
       `\z. Cx(&1) + cexp z`
     ]ring_product_delete THEN
     have `ring_product complex_ring (complex_root f) (\z. Cx (&1) + cexp z) = ring_mul complex_ring (Cx (&1) + cexp (ii * Cx pi)) (ring_product complex_ring (complex_root f DELETE (ii * Cx pi)) (\z. Cx (&1) + cexp z))` [IN;in_complex_ring] THEN
-    simp[complex_ring_clauses;COMPLEX_MUL_LZERO]
+    simp[COMPLEX_RING_CLAUSES;COMPLEX_MUL_LZERO]
   ; pass
   ] THEN
   subgoal `ring_product complex_ring (complex_root f) (\z. Cx(&1) + cexp z) = ring_sum complex_ring {S | S SUBSET complex_root f} (\S. ring_product complex_ring S cexp)` THENL [
-    rw[GSYM complex_ring_clauses] THEN
+    rw[GSYM COMPLEX_RING_CLAUSES] THEN
     specialize_assuming[
       `complex_ring`;
       `cexp`;
@@ -18419,7 +18287,7 @@ let pi_is_transcendental = prove(`
     rw[BETA_THM;IN_ELIM_THM] THEN
     intro THEN
     have `FINITE(a:complex->bool)` [FINITE_SUBSET] THEN
-    simp[GSYM vsum_ring_sum_complex;GSYM cproduct_ring_product_complex;CEXP_VSUM;I_THM]
+    simp[COMPLEX_RING_SUM;COMPLEX_RING_PRODUCT;CEXP_VSUM;I_THM]
   ; pass
   ] THEN
   have `ring_sum complex_ring {S | S SUBSET complex_root f} (\S. cexp (ring_sum complex_ring S I)) = Cx(&0)` [] THEN
@@ -21796,7 +21664,7 @@ let minimal_squarefree_from_algebraic_set = prove(`
     ; pass
     ] THEN
     subgoal `poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) u) x = (poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) x) * (poly_eval complex_ring u x)` THENL [
-      rw[GSYM complex_ring_clauses] THEN
+      rw[GSYM COMPLEX_RING_CLAUSES] THEN
       specialize_assuming[
         `complex_ring`;
         `minimal_polynomial (QinC_ring,complex_ring) I x`;
@@ -21896,7 +21764,7 @@ let squarefree_from_algebraic_set_avoiding_0 = prove(`
     have `poly_eval complex_ring (x_minus_const complex_ring (Cx(&0))) s = Cx(&0)` [maybe_algebraic_minimal_polynomial] THEN
     have `poly_eval complex_ring (x_minus_const complex_ring (Cx(&0))) s = ring_sub complex_ring s (Cx(&0))` [eval_x_minus_const;in_complex_ring] THEN
     have `ring_sub complex_ring s (Cx(&0)) = Cx(&0)` [] THEN
-    have `s - (Cx(&0)) = Cx(&0)` [ring_sub_complex] THEN
+    have `s - (Cx(&0)) = Cx(&0)` [COMPLEX_RING_SUB] THEN
     complex_field_fact `s - (Cx(&0)) = Cx(&0) ==> s = Cx(&0)` THEN
     qed[]
   ; pass
@@ -22328,7 +22196,7 @@ let expformal_linearly_independent = prove(`
   intro THEN
   subgoal `!d. ring_sum complex_ring S (\z:complex. B z * z pow d) = Cx(&0)` THENL [
     intro THEN
-    have `coeff d (poly_0 complex_ring) = Cx(&0)` [coeff_poly_0;complex_ring_clauses] THEN
+    have `coeff d (poly_0 complex_ring) = Cx(&0)` [coeff_poly_0;COMPLEX_RING_CLAUSES] THEN
     subgoal `coeff d (poly_sum complex_ring S (\z. poly_mul complex_ring (poly_const complex_ring (B z)) (expformal z))) = ring_sum complex_ring S (\z. coeff d (poly_mul complex_ring (poly_const complex_ring (B z)) (expformal z)))` THENL [
       specialize[
         `complex_ring`;
@@ -22342,12 +22210,12 @@ let expformal_linearly_independent = prove(`
       rw[BETA_THM] THEN
       intro THEN
       simp[coeff_poly_const_times;series_complex;in_complex_ring] THEN
-      rw[expformal;coeff_series_from_coeffs;complex_ring_clauses] THEN
+      rw[expformal;coeff_series_from_coeffs;COMPLEX_RING_CLAUSES] THEN
       CONV_TAC COMPLEX_FIELD
     ; pass
     ] THEN
     subgoal `ring_sum complex_ring S (\z. (B z * z pow d) / Cx(&(FACT d))) = ring_sum complex_ring S (\z. B z * z pow d) / Cx(&(FACT d))` THENL [
-      simp[GSYM vsum_ring_sum_complex] THEN
+      simp[COMPLEX_RING_SUM] THEN
       rw[complex_div] THEN
       specialize[
         `inv(Cx(&(FACT d)))`;
@@ -22365,12 +22233,12 @@ let expformal_linearly_independent = prove(`
     qed[]
   ; pass
   ] THEN
-  recall integral_domain_complex THEN
+  recall INTEGRAL_DOMAIN_COMPLEX_RING THEN
   have `!s:complex. s IN S ==> B s IN ring_carrier complex_ring` [in_complex_ring] THEN
   have `!s:complex. s IN S ==> I s IN ring_carrier complex_ring` [in_complex_ring] THEN
   have `!s t:complex. s IN S ==> t IN S ==> I s = I t ==> s = t` [I_THM] THEN
   subgoal `!e. e < CARD S ==> ring_sum complex_ring S (\s. ring_mul complex_ring (B s) (ring_pow complex_ring (I s) e)) = ring_0 complex_ring` THENL [
-    rw[I_THM;ring_pow_complex;complex_ring_clauses] THEN
+    rw[I_THM;COMPLEX_RING_POW;COMPLEX_RING_CLAUSES] THEN
     qed[]
   ; pass
   ] THEN
@@ -22380,7 +22248,7 @@ let expformal_linearly_independent = prove(`
     `B:complex->complex`;
     `I:complex->complex`
   ]vandermonde_indep THEN
-  qed[complex_ring_clauses]
+  qed[COMPLEX_RING_CLAUSES]
 );;
 
 let expformal_perm_linearly_independent = prove(`
@@ -22566,8 +22434,8 @@ let product_perm_sum_mul_cexp_expand = prove(`
   )
 `,
   intro THEN
-  rw[GSYM ring_pow_complex] THEN
-  rw[GSYM complex_ring_clauses] THEN
+  rw[GSYM COMPLEX_RING_POW] THEN
+  rw[GSYM COMPLEX_RING_CLAUSES] THEN
   specialize_assuming[
     `complex_ring`;
     `complex_ring`;
@@ -22575,7 +22443,7 @@ let product_perm_sum_mul_cexp_expand = prove(`
     `c:complex->complex`;
     `S:complex->bool`
   ]ring_product_perm_sum_mul_exp_expand THEN
-  qed[in_complex_ring;CEXP_0;CEXP_ADD;SUBSET;complex_ring_clauses]
+  qed[in_complex_ring;CEXP_0;CEXP_ADD;SUBSET;COMPLEX_RING_CLAUSES]
 );;
 
 let product_perm_sum_mul_expformal_expand = prove(`
@@ -22611,7 +22479,7 @@ let product_perm_sum_mul_expformal_expand = prove(`
     `c:complex->(1->num)->complex`;
     `S:complex->bool`
   ]ring_product_perm_sum_mul_exp_expand THEN
-  qed[complex_ring_clauses;in_complex_ring;series_complex;x_series_use;expformal_0;mul_expformal;SUBSET]
+  qed[COMPLEX_RING_CLAUSES;in_complex_ring;series_complex;x_series_use;expformal_0;mul_expformal;SUBSET]
 );;
 
 let product_perm_sum_mul_expformal_expand_v2 = prove(`
@@ -22748,7 +22616,7 @@ let product_perm_sum_mul_expformal_expand_v3 = prove(`
       `ring_product complex_ring {z | ~(s z = 0)} (\z:complex. c z pow s z)`;
       `Cx(&(numpreimages (\f. ring_sum complex_ring (perm S) (\i. i (f i))) {f | f IN functions (perm S) S /\ numpreimages f (perm S) = s} a))`
     ]POLY_CONST_MUL THEN
-    rw[GSYM complex_ring_clauses] THEN
+    rw[GSYM COMPLEX_RING_CLAUSES] THEN
     simp[] THEN
     subgoal `FINITE {z:complex | ~(s z = 0)}` THENL [
       choose `f:(complex->complex)->complex` `s:complex->num = (\f. numpreimages f (perm S)) f /\ f IN functions (perm S) S` [IN_IMAGE] THEN
@@ -22774,7 +22642,7 @@ let product_perm_sum_mul_expformal_expand_v3 = prove(`
       rw[BETA_THM] THEN
       intro THEN
       have `c(a':complex) IN ring_carrier complex_ring` [in_complex_ring] THEN
-      rw[GSYM ring_pow_complex] THEN
+      rw[GSYM COMPLEX_RING_POW] THEN
       simp[poly_const_pow;x_series_use_pow]
     ; pass
     ] THEN
@@ -22806,7 +22674,7 @@ let product_perm_sum_mul_expformal_expand_v3 = prove(`
   ]RING_MUL_ASSOC THEN
   simp[] THEN
   rw[ring_of_num_x_series] THEN
-  rw[ring_of_num_complex;complex_of_num]
+  rw[COMPLEX_RING_OF_NUM]
 );;
 
 (* ===== more general transcendence results, part 1: alpha symmetrization *)
@@ -22860,7 +22728,7 @@ let zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums = prove(`
       `d:num`
     ]poly_evaluate_pow THEN
     simp[] THEN
-    rw[ring_pow_complex] THEN
+    rw[COMPLEX_RING_POW] THEN
     subgoal `poly_evaluate complex_ring (ring_sum (poly_ring complex_ring (:real^2)) (perm (complex_root p)) (\i. poly_var complex_ring (i (a i)))) I = ring_sum complex_ring (perm (complex_root p)) (\i. i (a i))` THENL [
       have `!s. s IN perm (complex_root p) ==> ring_polynomial complex_ring (poly_var complex_ring (s (a s)))` [RING_POLYNOMIAL_VAR] THEN
       specialize[
@@ -23133,7 +23001,7 @@ let zero_sum_QinC_exp_squarefree_roots_lemma_sym_coeff_poly = prove(`
       `p:(1->num)->complex`;
       `e:complex->num`
     ]zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums THEN
-    rw[ring_pow_complex] THEN
+    rw[COMPLEX_RING_POW] THEN
     qed[]
   ; pass
   ] THEN
@@ -23228,7 +23096,7 @@ let zero_sum_QinC_exp_squarefree_roots_lemma_denouement = prove(`
       `S:complex->bool`
     ]product_perm_sum_mul_expformal_expand_v3 THEN
     simp[] THEN
-    rw[GSYM complex_ring_clauses;POLY_CONST_0] THEN
+    rw[GSYM COMPLEX_RING_CLAUSES;POLY_CONST_0] THEN
     subgoal `ring_sum (x_series complex_ring) (IMAGE (\f. ring_sum complex_ring (perm S) (\i. i (f i))) (functions (perm S) S)) (\a. poly_mul complex_ring (poly_0 complex_ring) (expformal a)) = ring_sum (x_series complex_ring) (IMAGE (\f. ring_sum complex_ring (perm S) (\i. i (f i))) (functions (perm S) S)) (\a. ring_0(x_series complex_ring))` THENL [
       sufficesby RING_SUM_EQ THEN
       intro THEN
@@ -23240,7 +23108,7 @@ let zero_sum_QinC_exp_squarefree_roots_lemma_denouement = prove(`
     simp[RING_SUM_0]
   ; pass
   ] THEN
-  have `integral_domain complex_ring` [integral_domain_complex] THEN
+  have `integral_domain complex_ring` [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
   have `integral_domain(x_series complex_ring)` [INTEGRAL_DOMAIN_POWSER_RING;x_series] THEN
   have `FINITE(perm(S:complex->bool))` [finite_perm] THEN
   choose `i:complex->complex` `i IN perm(S:complex->bool) /\ ring_sum (x_series complex_ring) S (\z. poly_mul complex_ring (poly_const complex_ring (B z)) (expformal (i z))) = ring_0 (x_series complex_ring)` [INTEGRAL_DOMAIN_PRODUCT_EQ_0] THEN
@@ -23275,7 +23143,7 @@ let zero_sum_QinC_exp_squarefree_roots = prove(`
       `complex_root p`
     ](GSYM product_perm_sum_mul_cexp_expand) THEN
     simp[] THEN
-    rw[complex_ring_clauses] THEN
+    rw[COMPLEX_RING_CLAUSES] THEN
     have `I IN perm(complex_root p)` [IN;perm;PERMUTES_I] THEN
     subgoal `ring_sum complex_ring (complex_root p) (\z. (B z) * cexp (I z)) = Cx(&0)` THENL [
       rw[I_THM] THEN
@@ -23290,7 +23158,7 @@ let zero_sum_QinC_exp_squarefree_roots = prove(`
       `\i. ring_sum complex_ring (complex_root p) (\z. (B z) * cexp (i z))`
     ]ring_product_delete THEN
     simp[] THEN
-    rw[complex_ring_clauses] THEN
+    rw[COMPLEX_RING_CLAUSES] THEN
     CONV_TAC COMPLEX_FIELD
   ; pass
   ] THEN
@@ -23304,7 +23172,7 @@ let zero_sum_QinC_exp_squarefree_roots = prove(`
     sufficesby ring_product_in_subring THEN
     rw[IN_ELIM_THM;BETA_THM] THEN
     intro THEN
-    rw[GSYM ring_pow_complex] THEN
+    rw[GSYM COMPLEX_RING_POW] THEN
     sufficesby ring_pow_in_subring THEN
     rw[QinC_ring_clauses;subring_complex_QinC] THEN
     subgoal `s' IN {y:complex | ~(numpreimages x (perm(complex_root p)) y = 0)}` THENL [
@@ -23379,7 +23247,7 @@ let zero_sum_QinC_exp_algebraic = prove(`
         rw[BETA_THM] THEN
         intro THEN
         rw[know `C = (\z:complex. if z IN S then B z else Cx(&0))`] THEN
-        rw[complex_ring_clauses] THEN
+        rw[COMPLEX_RING_CLAUSES] THEN
         qed[COMPLEX_MUL_LZERO]
       ; pass
       ] THEN
@@ -23462,7 +23330,7 @@ let transcendental_if_exp_nonzero_algebraic = prove(`
       ; pass
       ] THEN
       rw[know `(@i. Cx(&a')*a = Cx(&i)*a) = a'`] THEN
-      rw[complex_ring_clauses;ring_pow_complex] THEN
+      rw[COMPLEX_RING_CLAUSES;COMPLEX_RING_POW] THEN
       rw[coeff_x_monomial;x_monomial;CEXP_N]
     ; pass
     ] THEN
@@ -23647,8 +23515,8 @@ let product_functions_sum_mul_cexp_expand = prove(`
     have `Y SUBSET ring_carrier complex_ring` [SUBSET;in_complex_ring] THEN
     have `Z SUBSET ring_carrier complex_ring` [SUBSET;in_complex_ring] THEN
     have `!x. x IN ring_carrier complex_ring ==> cexp x IN ring_carrier complex_ring` [in_complex_ring] THEN
-    have `cexp (ring_0 complex_ring) = ring_1 complex_ring` [CEXP_0;complex_ring_clauses] THEN
-    have `!x y. cexp (ring_add complex_ring x y) = ring_mul complex_ring (cexp x) (cexp y)` [CEXP_ADD;complex_ring_clauses] THEN
+    have `cexp (ring_0 complex_ring) = ring_1 complex_ring` [CEXP_0;COMPLEX_RING_CLAUSES] THEN
+    have `!x y. cexp (ring_add complex_ring x y) = ring_mul complex_ring (cexp x) (cexp y)` [CEXP_ADD;COMPLEX_RING_CLAUSES] THEN
     have `IMAGE I Z SUBSET ring_carrier complex_ring` [IMAGE_I;SUBSET;in_complex_ring] THEN
     specialize[
       `complex_ring`;
@@ -23662,7 +23530,7 @@ let product_functions_sum_mul_cexp_expand = prove(`
   ] THEN
   simp[] THEN
   sufficesby RING_SUM_EQ THEN
-  rw[complex_ring_clauses]
+  rw[COMPLEX_RING_CLAUSES]
 );;
 
 let product_functions_sum_mul_expformal_expand = prove(`
@@ -23695,8 +23563,8 @@ let product_functions_sum_mul_expformal_expand = prove(`
 `,
   intro THEN
   have `!x. x IN ring_carrier complex_ring ==> expformal x IN ring_carrier (x_series complex_ring)` [series_complex;x_series_use] THEN
-  have `expformal (ring_0 complex_ring) = ring_1 (x_series complex_ring)` [expformal_0;complex_ring_clauses;x_series_use] THEN
-  have `!x y. expformal (ring_add complex_ring x y) = ring_mul (x_series complex_ring) (expformal x) (expformal y)` [mul_expformal;complex_ring_clauses;x_series_use] THEN
+  have `expformal (ring_0 complex_ring) = ring_1 (x_series complex_ring)` [expformal_0;COMPLEX_RING_CLAUSES;x_series_use] THEN
+  have `!x y. expformal (ring_add complex_ring x y) = ring_mul (x_series complex_ring) (expformal x) (expformal y)` [mul_expformal;COMPLEX_RING_CLAUSES;x_series_use] THEN
   have `Y SUBSET ring_carrier complex_ring` [SUBSET;in_complex_ring] THEN
   have `IMAGE (\c. poly_const complex_ring c) Z SUBSET ring_carrier (x_series complex_ring)` [SUBSET;series_complex;x_series_use] THEN
   specialize[
@@ -24047,14 +23915,14 @@ let zero_sum_nonzero_algebraic_exp_algebraic = prove(`
     subgoal `ring_sum complex_ring S (\y. ring_mul complex_ring (if y IN S then B y else ARB) (cexp y)) = Cx(&0)` THENL [
       subgoal `ring_sum complex_ring S (\y. ring_mul complex_ring (if y IN S then B y else ARB) (cexp y)) = ring_sum complex_ring S (\s. B s * cexp s)` THENL [
         sufficesby RING_SUM_EQ THEN
-        qed[complex_ring_clauses]
+        qed[COMPLEX_RING_CLAUSES]
       ; pass
       ] THEN
       qed[]
     ; pass
     ] THEN
     simp[] THEN
-    rw[complex_ring_clauses] THEN
+    rw[COMPLEX_RING_CLAUSES] THEN
     CONV_TAC COMPLEX_FIELD
   ; pass
   ] THEN
@@ -24090,12 +23958,12 @@ let zero_sum_nonzero_algebraic_exp_algebraic = prove(`
     simp[] THEN
     sufficesby RING_SUM_EQ_0 THEN
     rw[IN_IMAGE;BETA_THM] THEN
-    rw[GSYM x_series_use;GSYM complex_ring_clauses] THEN
+    rw[GSYM x_series_use;GSYM COMPLEX_RING_CLAUSES] THEN
     rw[GSYM poly_0] THEN
     qed[POWSER_MUL_0;series_complex]
   ; pass
   ] THEN
-  have `integral_domain (x_series complex_ring)` [INTEGRAL_DOMAIN_POWSER_RING;integral_domain_complex;x_series] THEN
+  have `integral_domain (x_series complex_ring)` [INTEGRAL_DOMAIN_POWSER_RING;INTEGRAL_DOMAIN_COMPLEX_RING;x_series] THEN
   choose `f:complex->complex` `f:complex->complex IN functions S (complex_root p) /\ ring_sum (x_series complex_ring) S (\y. ring_mul (x_series complex_ring) (poly_const complex_ring (f y)) (expformal y)) = ring_0 (x_series complex_ring)` [INTEGRAL_DOMAIN_PRODUCT_EQ_0] THEN
   subgoal `poly_sum complex_ring S (\y. poly_mul complex_ring (poly_const complex_ring (f y)) (expformal y)) = poly_0 complex_ring` THENL [
     rw[x_series_use;poly_sum] THEN
@@ -24121,7 +23989,7 @@ let zero_sum_algebraic_exp_algebraic = prove(`
   intro THEN
   set_fact `{s:complex | s IN S /\ ~(B s = ring_0 complex_ring)} SUBSET S` THEN
   subgoal `ring_sum complex_ring {s | s IN S /\ ~(B s = ring_0 complex_ring)} (\s. B s * cexp s) = Cx(&0)` THENL [
-    rw[GSYM complex_ring_clauses] THEN
+    rw[GSYM COMPLEX_RING_CLAUSES] THEN
     specialize[
       `complex_ring`;
       `{s:complex | s IN S /\ ~(B s = ring_0 complex_ring)}`;
@@ -24133,12 +24001,12 @@ let zero_sum_algebraic_exp_algebraic = prove(`
       sufficesby RING_SUM_EQ THEN
       rw[BETA_THM;IN_ELIM_THM] THEN
       intro THEN
-      rw[complex_ring_clauses] THEN
+      rw[COMPLEX_RING_CLAUSES] THEN
       simp[] THEN
       CONV_TAC COMPLEX_FIELD
     ; pass
     ] THEN
-    qed[complex_ring_clauses]
+    qed[COMPLEX_RING_CLAUSES]
   ; pass
   ] THEN
   specialize[
@@ -24149,14 +24017,14 @@ let zero_sum_algebraic_exp_algebraic = prove(`
   have `!s:complex. s IN {s | s IN S /\ ~(B s = ring_0 complex_ring)} ==> algebraic_number (B s)` [SUBSET] THEN
   subgoal `!s:complex. s IN {s | s IN S /\ ~(B s = ring_0 complex_ring)} ==> ~(B s = Cx (&0))` THENL [
     rw[IN_ELIM_THM] THEN
-    qed[complex_ring_clauses]
+    qed[COMPLEX_RING_CLAUSES]
   ; pass
   ] THEN
   specialize[
     `{s:complex | s IN S /\ ~(B s = ring_0 complex_ring)}`;
     `B:complex->complex`
   ]zero_sum_nonzero_algebraic_exp_algebraic THEN
-  ASM SET_TAC[complex_ring_clauses]
+  ASM SET_TAC[COMPLEX_RING_CLAUSES]
 );;
 
 (* ===== re-print highlighted theorems *)

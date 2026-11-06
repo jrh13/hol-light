@@ -1080,6 +1080,67 @@ let SQUAREFREE_DECOMPOSITION = prove
     CONJ_TAC THENL [ARITH_TAC; ALL_TAC] THEN
     REWRITE_TAC[EXP_EXP; GSYM EXP_ADD] THEN AP_TERM_TAC THEN ARITH_TAC]);;
 
+(* Integer forms, for squarefree(num_of_int(abs d)) with d an integer.       *)
+let INT_SQUAREFREE_DIVPOW = prove
+ (`!n d x:int.
+        squarefree(num_of_int(abs d)) /\ d divides x pow n ==> d divides x`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`n:num`; `num_of_int(abs d)`; `num_of_int(abs x)`]
+    SQUAREFREE_DIVEXP) THEN
+  ASM_REWRITE_TAC[num_divides; GSYM INT_OF_NUM_POW] THEN
+  ASM_SIMP_TAC[INT_OF_NUM_OF_INT; INT_ABS_POS; GSYM INT_ABS_POW;
+               INT_DIVIDES_ABS]);;
+
+let INT_SQUAREFREE_MUL_SQUARE = prove
+ (`!d e n:int.
+        squarefree(num_of_int(abs d)) /\ squarefree(num_of_int(abs e)) /\
+        d * e = n pow 2
+        ==> d = e`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(d:int) divides n` MP_TAC THENL
+   [MATCH_MP_TAC INT_SQUAREFREE_DIVPOW THEN EXISTS_TAC `2` THEN
+    ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+    CONV_TAC INTEGER_RULE;
+    REWRITE_TAC[int_divides] THEN
+    DISCH_THEN(X_CHOOSE_THEN `t:int` SUBST_ALL_TAC)] THEN
+  SUBGOAL_THEN `~(d:int = &0)` ASSUME_TAC THENL
+   [DISCH_THEN SUBST_ALL_TAC THEN
+    UNDISCH_TAC `squarefree(num_of_int(abs(&0:int)))` THEN
+    REWRITE_TAC[INT_ABS_NUM; NUM_OF_INT_OF_NUM; SQUAREFREE_0];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `e:int = d * t pow 2` SUBST_ALL_TAC THENL
+   [UNDISCH_TAC `d * e = (d * t:int) pow 2` THEN
+    REWRITE_TAC[INT_ARITH `(d * t:int) pow 2 = d * d * t pow 2`] THEN
+    ASM_REWRITE_TAC[INT_EQ_MUL_LCANCEL];
+    ALL_TAC] THEN
+  UNDISCH_TAC `squarefree(num_of_int(abs(d * (t:int) pow 2)))` THEN
+  REWRITE_TAC[squarefree] THEN
+  DISCH_THEN(MP_TAC o SPEC `num_of_int(abs(t:int))`) THEN
+  SIMP_TAC[num_divides; GSYM INT_OF_NUM_POW; INT_OF_NUM_OF_INT; INT_ABS_POS;
+           INT_DIVIDES_ABS; INT_POW2_ABS] THEN
+  REWRITE_TAC[INTEGER_RULE `!a b:int. a divides b * a`] THEN
+  DISCH_THEN(MP_TAC o AP_TERM `int_of_num`) THEN
+  SIMP_TAC[INT_OF_NUM_OF_INT; INT_ABS_POS] THEN
+  ONCE_REWRITE_TAC[GSYM INT_POW2_ABS] THEN SIMP_TAC[] THEN INT_ARITH_TAC);;
+
+let INT_SQUAREFREE_DECOMPOSITION = prove
+ (`!m:int. ~(m = &0)
+           ==> ?d c. squarefree(num_of_int(abs d)) /\ ~(c = 0) /\
+                     m = d * &c pow 2`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC `num_of_int(abs m)` SQUAREFREE_DECOMPOSITION) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`s:num`; `c:num`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o AP_TERM `int_of_num`)) THEN
+  SIMP_TAC[GSYM INT_OF_NUM_MUL; GSYM INT_OF_NUM_POW; INT_OF_NUM_OF_INT;
+           INT_ABS_POS] THEN
+  DISCH_TAC THEN
+  MAP_EVERY EXISTS_TAC [`if &0 <= (m:int) then &s else -- &s:int`; `c:num`] THEN
+  ASM_REWRITE_TAC[COND_RAND; INT_ABS_NEG; INT_ABS_NUM; NUM_OF_INT_OF_NUM;
+                  COND_ID] THEN
+  CONJ_TAC THENL [DISCH_THEN SUBST_ALL_TAC; COND_CASES_TAC] THEN
+  ASM_INT_ARITH_TAC);;
+
 let CONG_MOD_SQUAREFREE = prove
  (`!n a b. squarefree n /\
            (!p. prime p /\ p divides n ==> (a == b) (mod p))

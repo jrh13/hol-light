@@ -4,6 +4,8 @@
 
 needs "Multivariate/cauchy.ml";;
 needs "Library/galois.ml";;
+needs "Multivariate/complex_ring.ml";;
+needs "Multivariate/complex_field.ml";;
 
 prioritize_complex();;
 
@@ -18,99 +20,11 @@ prioritize_complex();;
 (* ------------------------------------------------------------------------- *)
 
 (* ------------------------------------------------------------------------- *)
-(* The field of complex numbers as a ring. The definition is the same as in  *)
-(* 100/transcendence.ml, so loading both files is a benign redefinition.     *)
+(* The field of complex numbers as a ring (complex_ring and its arithmetic,  *)
+(* with complex conjugation an automorphism RING_AUTOMORPHISM_CNJ, are in    *)
+(* Multivariate/complex_ring.ml): algebraic closure is proved in             *)
+(* Multivariate/complex_field.ml; conjugation permutes the complex numbers.  *)
 (* ------------------------------------------------------------------------- *)
-
-let complex_ring = new_definition
- `complex_ring = ring((:complex),Cx(&0),Cx(&1),( -- ),( + ),( * ))`;;
-
-let COMPLEX_RING_CLAUSES = prove
- (`ring_carrier complex_ring = (:complex) /\
-   ring_0 complex_ring = Cx(&0) /\
-   ring_1 complex_ring = Cx(&1) /\
-   ring_neg complex_ring = ( -- ) /\
-   ring_add complex_ring = ( + ) /\
-   ring_mul complex_ring = ( * )`,
-  PURE_REWRITE_TAC
-   [GSYM PAIR_EQ; ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul;
-    BETA_THM; PAIR] THEN
-  PURE_REWRITE_TAC[complex_ring; GSYM(CONJUNCT2 ring_tybij)] THEN
-  REWRITE_TAC[IN_UNIV] THEN CONV_TAC COMPLEX_RING);;
-
-let FIELD_COMPLEX_RING = prove
- (`field complex_ring`,
-  REWRITE_TAC[field; COMPLEX_RING_CLAUSES; IN_UNIV; CX_INJ] THEN
-  CONV_TAC REAL_RAT_REDUCE_CONV THEN MESON_TAC[COMPLEX_MUL_RINV]);;
-
-let COMPLEX_RING_OF_NUM = prove
- (`ring_of_num complex_ring = \n. Cx(&n)`,
-  REWRITE_TAC[FUN_EQ_THM] THEN INDUCT_TAC THEN
-  ASM_REWRITE_TAC[ring_of_num; COMPLEX_RING_CLAUSES; GSYM REAL_OF_NUM_SUC;
-                  CX_ADD]);;
-
-let COMPLEX_RING_OF_INT = prove
- (`ring_of_int complex_ring = \n. Cx(real_of_int n)`,
-  REWRITE_TAC[FUN_EQ_THM; RING_OF_INT_CASES; FORALL_INT_CASES] THEN
-  REWRITE_TAC[int_neg_th; int_of_num_th; COMPLEX_RING_OF_NUM] THEN
-  REWRITE_TAC[COMPLEX_RING_CLAUSES; CX_NEG]);;
-
-let COMPLEX_RING_CHAR = prove
- (`ring_char complex_ring = 0`,
-  REWRITE_TAC[RING_CHAR_EQ_0; COMPLEX_RING_OF_NUM; COMPLEX_RING_CLAUSES;
-              CX_INJ; REAL_OF_NUM_EQ]);;
-
-let COMPLEX_RING_INV = prove
- (`ring_inv complex_ring = inv`,
-  REWRITE_TAC[FUN_EQ_THM; ring_inv; COMPLEX_RING_CLAUSES] THEN
-  SIMP_TAC[FIELD_UNIT; FIELD_COMPLEX_RING; COMPLEX_RING_CLAUSES;
-           IN_UNIV; COND_SWAP] THEN
-  GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[COMPLEX_INV_0] THEN
-  MATCH_MP_TAC SELECT_UNIQUE THEN POP_ASSUM MP_TAC THEN
-  CONV_TAC COMPLEX_FIELD);;
-
-let COMPLEX_RING_POW = prove
- (`ring_pow complex_ring = (pow)`,
-  REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN INDUCT_TAC THEN
-  ASM_REWRITE_TAC[ring_pow; complex_pow; COMPLEX_RING_CLAUSES]);;
-
-let COMPLEX_RING_SUM = prove
- (`!s (f:A->complex). FINITE s ==> ring_sum complex_ring s f = vsum s f`,
-  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[RING_SUM_CLAUSES; VSUM_CLAUSES; COMPLEX_RING_CLAUSES; IN_UNIV;
-           COMPLEX_VEC_0]);;
-
-let POLY_EVAL_COMPLEX_RING = prove
- (`!p z. p IN ring_carrier(poly_ring complex_ring (:1))
-         ==> poly_eval complex_ring p z =
-             vsum(0..poly_deg complex_ring p) (\i. coeff i p * z pow i)`,
-  SIMP_TAC[POLY_EVAL_EXPAND; COMPLEX_RING_CLAUSES; IN_UNIV;
-           COMPLEX_RING_SUM; FINITE_NUMSEG; COMPLEX_RING_POW]);;
-
-let ALGEBRAICALLY_CLOSED_FIELD_COMPLEX_RING = prove
- (`algebraically_closed_field complex_ring`,
-  REWRITE_TAC[algebraically_closed_field; FIELD_COMPLEX_RING] THEN
-  X_GEN_TAC `p:(1->num)->complex` THEN STRIP_TAC THEN
-  MP_TAC(ISPECL [`complex_ring`; `p:(1->num)->complex`] POLY_TOP_NONZERO) THEN
-  ANTS_TAC THENL
-   [ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
-    UNDISCH_TAC `~(poly_deg complex_ring (p:(1->num)->complex) = 0)` THEN
-    ASM_REWRITE_TAC[POLY_RING_CLAUSES; POLY_DEG_0];
-    REWRITE_TAC[COMPLEX_RING_CLAUSES] THEN DISCH_TAC] THEN
-  ASM_SIMP_TAC[POLY_EVAL_COMPLEX_RING; COMPLEX_RING_CLAUSES; IN_UNIV] THEN
-  MP_TAC(ISPECL [`\i. coeff i (p:(1->num)->complex)`;
-                 `poly_deg complex_ring (p:(1->num)->complex)`] FTA) THEN
-  REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN DISJ2_TAC THEN
-  DISCH_THEN(MP_TAC o SPEC `poly_deg complex_ring (p:(1->num)->complex)`) THEN
-  ASM_SIMP_TAC[IN_NUMSEG; LE_REFL; LE_1]);;
-
-let RING_AUTOMORPHISM_CNJ = prove
- (`ring_automorphism complex_ring cnj`,
-  REWRITE_TAC[ring_automorphism; ring_isomorphism; ring_isomorphisms] THEN
-  EXISTS_TAC `cnj` THEN
-  REWRITE_TAC[ring_homomorphism; COMPLEX_RING_CLAUSES; SUBSET_UNIV;
-              IN_UNIV] THEN
-  REWRITE_TAC[CNJ_NEG; CNJ_ADD; CNJ_MUL; CNJ_CX; CNJ_CNJ]);;
 
 let PERMUTES_CNJ = prove
  (`cnj permutes (:complex)`,
@@ -151,7 +65,7 @@ let POLY_SPLITS_OVER_IRREDUCIBLE_ROOT_COUNT = prove
 let RING_CHAR_FIELD_EXTENSION_COMPLEX_RING = prove
  (`!(h:A->complex) k. field_extension (k,complex_ring) h ==> ring_char k = 0`,
   REWRITE_TAC[field_extension] THEN
-  MESON_TAC[RING_CHAR_MONOMORPHIC_IMAGE; COMPLEX_RING_CHAR]);;
+  MESON_TAC[RING_CHAR_MONOMORPHIC_IMAGE; RING_CHAR_COMPLEX_RING]);;
 
 let COMPLEX_ROOTS_IRREDUCIBLE = prove
  (`!(h:A->complex) k p.
@@ -399,7 +313,7 @@ let QUINTIC_RATIONAL_IRREDUCIBLE = prove
   SUBGOAL_THEN
    `ring_monomorphism(integer_ring,complex_ring) (ring_of_int complex_ring)`
   ASSUME_TAC THENL
-   [REWRITE_TAC[RING_MONOMORPHISM_INTEGER_RING_OF_INT; COMPLEX_RING_CHAR];
+   [REWRITE_TAC[RING_MONOMORPHISM_INTEGER_RING_OF_INT; RING_CHAR_COMPLEX_RING];
     ALL_TAC] THEN
   W(MP_TAC o PART_MATCH (lhand o rand) POLY_EVAL_COMPLEX_RING o
     lhand o snd) THEN

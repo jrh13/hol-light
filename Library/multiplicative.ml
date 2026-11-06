@@ -197,6 +197,58 @@ let PHI_EXPAND = prove
   ASM_SIMP_TAC[INDEX_EQ_0] THEN MESON_TAC[PRIME_1]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Values at the lcm and the gcd.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let MULTIPLICATIVE_LCM_GCD = prove
+ (`!f m n.
+        multiplicative f /\ ~(m = 0) /\ ~(n = 0)
+        ==> f m * f n = f(lcm(m,n)) * f(gcd(m,n))`,
+  REPEAT STRIP_TAC THEN
+  ABBREV_TAC `P = {p | prime p /\ p divides (m * n)}` THEN
+  SUBGOAL_THEN `FINITE(P:num->bool)` ASSUME_TAC THENL
+   [EXPAND_TAC "P" THEN MATCH_MP_TAC FINITE_SPECIAL_DIVISORS THEN
+    ASM_REWRITE_TAC[MULT_EQ_0];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!N. ~(N = 0) /\ N divides (m * n)
+        ==> (f:num->num) N = nproduct P (\p. f(p EXP index p N))`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MP_TAC(ISPECL [`f:num->num`; `N:num`] MULTIPLICATIVE_EXPAND) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC NPRODUCT_SUPERSET THEN
+    EXPAND_TAC "P" THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[DIVIDES_TRANS]; ALL_TAC] THEN
+    X_GEN_TAC `p:num` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `index p N = 0` SUBST1_TAC THENL
+     [MATCH_MP_TAC INDEX_ZERO THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+    REWRITE_TAC[EXP] THEN ASM_MESON_TAC[multiplicative];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `~(lcm(m,n) = 0) /\ lcm(m,n) divides (m * n) /\
+    ~(gcd(m,n) = 0) /\ gcd(m,n) divides (m * n) /\
+    m divides (m * n) /\ n divides (m * n)`
+  STRIP_ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[LCM_ZERO; GCD_ZERO] THEN
+    REWRITE_TAC[LCM_DIVIDES] THEN CONV_TAC NUMBER_RULE;
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[] THEN ASM_SIMP_TAC[GSYM NPRODUCT_MUL] THEN
+  MATCH_MP_TAC NPRODUCT_EQ THEN
+  X_GEN_TAC `p:num` THEN EXPAND_TAC "P" THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[INDEX_LCM; INDEX_GCD] THEN
+  REWRITE_TAC[MAX; MIN] THEN COND_CASES_TAC THEN
+  REWRITE_TAC[MULT_SYM]);;
+
+let PHI_LCM_GCD = prove
+ (`!m n. phi m * phi n = phi(lcm(m,n)) * phi(gcd(m,n))`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[PHI_0; LCM_0; MULT_CLAUSES] THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[PHI_0; LCM_0; MULT_CLAUSES] THEN
+  MATCH_MP_TAC MULTIPLICATIVE_LCM_GCD THEN
+  ASM_REWRITE_TAC[MULTIPLICATIVE_PHI]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Uniqueness of multiplicative functions if equal on prime powers.          *)
 (* ------------------------------------------------------------------------- *)
 

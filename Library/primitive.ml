@@ -1267,6 +1267,46 @@ let QUADRATIC_RESIDUE_MODULO_POWER_2 = prove
   REPEAT CONJ_TAC THEN
   CONV_TAC EXPAND_CASES_CONV THEN CONV_TAC NUM_REDUCE_CONV);;
 
+let INT_QUADRATIC_RESIDUE_MODULO_POWER_2 = prove
+ (`!a:int k.
+        ~(&2 divides a) /\ 3 <= k
+        ==> ((?x:int. (x pow 2 == a) (mod (&2 pow k))) <=> (a == &1) (mod &8))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`a:int`; `(&2:int) pow k`] INT_CONG_NUM_EXISTS) THEN
+  REWRITE_TAC[INT_POW_EQ_0; INT_OF_NUM_EQ; ARITH_EQ] THEN
+  DISCH_THEN(X_CHOOSE_TAC `m:num`) THEN
+  SUBGOAL_THEN `(&8:int) divides &2 pow k /\ (&2:int) divides &2 pow k`
+  STRIP_ASSUME_TAC THENL
+   [SUBGOAL_THEN `&8:int = &2 pow 3` SUBST1_TAC THENL
+     [CONV_TAC INT_REDUCE_CONV;
+      GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [GSYM INT_POW_1] THEN
+      CONJ_TAC THEN MATCH_MP_TAC INT_DIVIDES_POW_LE_IMP THEN
+      ASM_ARITH_TAC];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `((?x:int. (x pow 2 == a) (mod (&2 pow k))) <=>
+     (?x:int. (x pow 2 == &m) (mod (&2 pow k)))) /\
+    ((a == &1) (mod &8) <=> (&m:int == &1) (mod &8)) /\
+    ODD m`
+  (CONJUNCTS_THEN2 SUBST1_TAC (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC)) THENL
+   [REWRITE_TAC[GSYM NOT_EVEN; GSYM DIVIDES_2; num_divides] THEN
+    REPEAT CONJ_TAC THENL
+     [AP_TERM_TAC THEN ABS_TAC THEN
+      UNDISCH_TAC `(&m:int == a) (mod (&2 pow k))` THEN CONV_TAC INTEGER_RULE;
+      MATCH_MP_TAC(INTEGER_RULE
+       `!m a b n d:int. d divides n /\ (m == a) (mod n)
+                        ==> ((a == b) (mod d) <=> (m == b) (mod d))`) THEN
+      EXISTS_TAC `(&2:int) pow k` THEN ASM_REWRITE_TAC[];
+      UNDISCH_TAC `~(&2 divides (a:int))` THEN
+      MATCH_MP_TAC(TAUT `(p <=> q) ==> ~q ==> ~p`) THEN
+      MATCH_MP_TAC(INTEGER_RULE
+       `!m a n d:int. d divides n /\ (m == a) (mod n)
+                      ==> (d divides m <=> d divides a)`) THEN
+      EXISTS_TAC `(&2:int) pow k` THEN ASM_REWRITE_TAC[]];
+    REWRITE_TAC[INT_OF_NUM_POW; GSYM INT_OF_NUM_POWER_RESIDUE;
+                GSYM num_congruent] THEN
+    ASM_SIMP_TAC[QUADRATIC_RESIDUE_MODULO_POWER_2]]);;
+
 let GENERALIZED_EULER_CRITERION = prove
  (`!n a k.
         (n = 0 \/ n = 1 \/ n = 2 \/ n = 4 \/

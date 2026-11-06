@@ -761,6 +761,52 @@ let RATIONAL_BETWEEN_EQ = prove
  (`!a b. (?q. rational q /\ a < q /\ q < b) <=> a < b`,
   MESON_TAC[RATIONAL_BETWEEN; REAL_LT_TRANS]);;
 
+let REAL_NUM_FRACTION_BETWEEN = prove
+ (`!(a:real) (b:real). &0 <= a /\ a < b
+         ==> ?m n. ~(n = 0) /\ &n * a < &m /\ &m < &n * b`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`a:real`; `b:real`] RATIONAL_BETWEEN) THEN
+  ASM_REWRITE_TAC[RATIONAL_ALT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `q:real` MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `m:num` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `n:num` THEN
+  SUBGOAL_THEN `abs (q:real) = q` SUBST1_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM SUBST_ALL_TAC THEN
+  SUBGOAL_THEN `(&0:real) < &n` ASSUME_TAC THENL
+   [ASM_SIMP_TAC[REAL_OF_NUM_LT; LE_1]; ALL_TAC] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o check (free_in `&m / &n` o concl))) THEN
+  ASM_SIMP_TAC[REAL_LT_LDIV_EQ; REAL_LT_RDIV_EQ] THEN REAL_ARITH_TAC);;
+
+let REAL_NUM_FRACTIONS_EQ = prove
+ (`!(x:real) (y:real). &0 < x /\
+         (!m n. &n * x < &m ==> &n * y < &m) /\
+         (!m n. &m < &n * x ==> &m < &n * y)
+         ==> y = x`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+   (CONJUNCTS_THEN2 (LABEL_TAC "h1") (LABEL_TAC "h2"))) THEN
+  MATCH_MP_TAC(REAL_ARITH `~((x:real) < y) /\ ~(y < x) ==> x = y`) THEN
+  CONJ_TAC THEN DISCH_TAC THENL
+   [MP_TAC(ISPECL [`max (&0) (y:real)`; `x:real`]
+     REAL_NUM_FRACTION_BETWEEN) THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    REWRITE_TAC[NOT_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN STRIP_TAC THEN
+    REMOVE_THEN "h2" (MP_TAC o SPECL [`m:num`; `n:num`]) THEN
+    ASM_REWRITE_TAC[REAL_NOT_LT] THEN
+    TRANS_TAC REAL_LE_TRANS `&n * max (&0) (y:real)` THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+    REAL_ARITH_TAC;
+    MP_TAC(ISPECL [`x:real`; `y:real`] REAL_NUM_FRACTION_BETWEEN) THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    REWRITE_TAC[NOT_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN STRIP_TAC THEN
+    REMOVE_THEN "h1" (MP_TAC o SPECL [`m:num`; `n:num`]) THEN
+    ASM_REWRITE_TAC[REAL_NOT_LT] THEN ASM_SIMP_TAC[REAL_LT_IMP_LE]]);;
+
 let RATIONAL_APPROXIMATION_STRADDLE = prove
  (`!x e. &0 < e
          ==> ?a b. rational a /\ rational b /\

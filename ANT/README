@@ -1,0 +1,283 @@
+                    ALGEBRAIC NUMBER THEORY
+
+This directory is a library of algebraic number theory: Dedekind domains,
+number fields and their rings of integers, ideal class groups, the
+splitting of primes, discriminants and differents, the Hilbert theory of
+Galois extensions, units and S-units, Minkowski theory, quadratic and
+cyclotomic fields, absolute values and places, and the Dedekind zeta
+function with the Frobenius density theorem.
+
+Load all of it with
+
+  loadt "ANT/make.ml";;
+
+or just one file, together with what it needs, with
+
+  needs "ANT/x.ml";;
+
+Each file starts with needs lines for its prerequisites. The files before
+the needs line of Multivariate/cauchy.ml in ANT/make.ml use only files of
+Library/; the others also use the complex numbers (Multivariate/cauchy.ml,
+for the fundamental theorem of algebra), and the files on absolute values,
+the Dedekind zeta function and densities also need
+Multivariate/transcendentals.ml or Multivariate/realanalysis.ml. The files
+contain no priority settings and load under any of prioritize_num(),
+prioritize_int(), prioritize_real() and prioritize_complex() (the library
+files they need leave one of these). From a fresh hol.ml, loadt
+"ANT/make.ml" takes about 56 minutes of CPU time: the files before the
+needs line of Multivariate/cauchy.ml about 18 minutes with the library
+files they load, Multivariate/cauchy.ml and its prerequisites about 35
+minutes, and the rest of ANT about 3 minutes.
+
+CONVENTIONS
+
+Number fields are abstract: number_field k for a ring k : A ring means
+that k is a field of characteristic 0 that is a finite extension of its
+prime subfield Q = subfield_generated k {ring_0 k}. Nothing requires k to
+be a subfield of the complex numbers; embeddings into C are a separate
+notion (complex_embeddings k). The ring of integers ring_of_integers k is
+the subring of the elements integral over Z, that is over integer_ring
+along ring_of_int k.
+
+Extensions are given by ring homomorphisms, as in Library/fieldtheory.ml
+and Library/galois.ml: an extension of number fields is (k,l) h with
+field k, number_field l and ring_homomorphism(k,l) h. The relative notions
+take these arguments (number_field_different (k,l) h,
+number_field_ideal_norm (k,l) h, ramification_index (r,s) h P,
+residue_degree (r,s) h P, decomposition_group (k,l) h b Q, ...), and the
+absolute ones are their instances over the prime subfield,
+(subfield_generated k {ring_0 k},k) I. Theorems carry the plain names in
+the general form. An absolute form is a separate theorem only when it is
+not a one-step instance of the general one; it then has a suffix naming
+the instantiation, _Q for the base Q (or Z) and _IN_C for subfields of C.
+
+Dedekind domains are treated in general (dedekind_domain r), with
+valuations dedekind_valuation (r,k) h P on a field of fractions k of r
+along h (field_of_fractions (r,k) h); the ideal norm ideal_norm r j is the
+cardinality of r/j, for any ring.
+
+Dedekind domains include fields; DVR excludes fields. Fractional ideals
+are nonzero, and fractional_ideal (r,k) h J includes the condition
+field_of_fractions (r,k) h. The valuation functions have their intended
+meaning at nonzero prime ideals and nonzero elements or ideals. Their
+definitions use choice, so values outside the stated hypotheses are
+unspecified. In particular, dedekind_valuation does not represent the
+value infinity at zero. The numerical ideal norm is used as an index
+when the quotient is finite; CARD has no cardinality interpretation for
+infinite quotients.
+
+An infinite place is the absolute value x |-> norm(g x), one for each
+real embedding or pair of conjugate complex embeddings. The local
+weights are 1 and 2 respectively. The product formula uses all complex
+embeddings, and the regulator uses the local weights on infinite places,
+giving the usual factor 2 on the complex logarithms.
+
+At a finite prime P the product formula uses N(P)^(-v_P(x)).
+The absolute values extended to Q-bar in valuation_rank_one.ml instead
+normalize |p| to 1/p, using p^(-v_P(x)/e_P) on finite subfields.
+These are the usual two normalizations; their powers differ by the local
+degree e_P f_P.
+
+An integer lattice is a subgroup of the integer coordinate vectors
+supported on an index set s. The finite-dimensional lattice results
+assume FINITE s.
+
+For a ring extension h : r -> s and an ideal p of r, unramified (r,s) h
+p is the textbook notion (Neukirch, Algebraic Number Theory, I.8): every
+prime P of s containing h(p) has ramification index 1 and a separable
+residue extension, s/P over the image of r. This residue ring is a field
+only for maximal P, so the condition fails at a prime above p that is not
+maximal; above the nonzero primes of rings of integers every such P is
+maximal. weakly_unramified (r,s) h p asks only for ramification index 1
+(weakly unramified in the Stacks Project, Definition 09E4; Example 09EX
+has e = 1 and an inseparable residue extension). Both hold vacuously when
+no prime contains h(p). An unramified ideal is weakly unramified, and the
+two agree when the residue rings above p are finite
+(UNRAMIFIED_EQ_WEAKLY_UNRAMIFIED_FINITE) or when p is maximal with r/p
+perfect and the residue extensions are algebraic
+(UNRAMIFIED_EQ_WEAKLY_UNRAMIFIED_PERFECT); so they agree for the nonzero
+primes of rings of integers of number fields
+(NUMBER_FIELD_UNRAMIFIED_EQ_WEAKLY_UNRAMIFIED, its form _Q over Z, and
+RING_OF_INTEGERS_UNRAMIFIED_EQ_WEAKLY_UNRAMIFIED). Results on general
+ring extensions are stated with weakly_unramified, those on number fields
+with unramified. The definitions of the splitting types and their
+conventions are detailed in splitting_types.ml.
+
+A Galois extension is assumed as galois_extension(k,l) h alone (with
+number_field l for extensions of number fields): it implies field k,
+field l and ring_homomorphism(k,l) h (GALOIS_IMP_FIELD_EXTENSION), as in
+Library/galois.ml.
+
+The set maximal_unramified_outside (k,l) h S is the union of finite
+Galois subextensions of the supplied ambient field l unramified outside
+S. It is a subfield of l, Galois over k for every ambient field l
+(GALOIS_MAXIMAL_UNRAMIFIED_OUTSIDE). Taking l to be an algebraic closure
+gives the usual maximal extension. For an arbitrary ambient field the
+definition selects the subextensions that lie in such Galois
+subextensions. Ramification at infinite places is unrestricted.
+
+The zeta series converges for complex s with Re s > 1. The estimates
+near s = 1 concern real s tending to 1 from above; this library proves
+bounds of order 1 / (s - 1) and logarithmic estimates. Analytic
+continuation and the simple pole are further results. The usual
+interpretation of has_dirichlet_density k S d assumes that S consists of
+nonzero prime ideals; its definition does not impose that condition or
+summability. The elementary laws of density
+(HAS_DIRICHLET_DENSITY_BOUNDS, _SUBSET, _DISJOINT_UNION, _DIFF_SUBSET,
+_COMPLEMENT, _FINITE_SYMDIFF) assume sets of nonzero prime ideals. The
+Frobenius density theorem counts primes whose Frobenius generates a
+specified conjugate cyclic subgroup. This is the classical weak density
+theorem.
+
+CONTENTS
+
+The sections of ANT/make.ml, in load order:
+
+  Generic material: unique factorization domains, integral elements and
+  integral closure (the determinant trick, integrally closed domains,
+  minimal polynomials, traces, norms and units over them), lying over and
+  going up, ideal arithmetic (products, quotients, the Chinese remainder
+  theorem, Nakayama), the Hensel lemma at finite level.
+
+  Dedekind domains: factorization of ideals, valuations, discrete
+  valuation rings, two generators, ideal classes, localization, the
+  valuations of the fraction field, valuation rings and the Chevalley
+  extension theorem, the ideal norm, Euler and Fermat for ideals, absolute
+  values and the P-adic absolute values.
+
+  Integer lattices, the Minkowski linear forms theorem and the Hermite
+  inequality for positive definite quadratic forms.
+
+  Number fields: the integral closure of a Dedekind domain in a finite
+  separable extension, rings of integers and integral bases, the norm of
+  principal ideals, finiteness of the class group, valuations of elements,
+  approximation, fractional ideals and their group, characterizations of
+  Dedekind domains.
+
+  Splitting of primes and the discriminant: e(P|p), f(P|p) and the
+  fundamental identity, in towers and relative extensions, the
+  discriminant and the index formula, ramification, the different and its
+  exponents, the Dedekind-Kummer theorem, Eisenstein polynomials, quadratic
+  fields and their decomposition law.
+
+  Hilbert theory: splitting types (unramified and weakly unramified
+  ideals), decomposition and inertia groups, Frobenius elements, the
+  decomposition and inertia fields, the Artin symbol of abelian
+  extensions, conjugate ideals, infinitely many totally split primes, the
+  relative ideal norm and discriminant, maps of class groups, rings of
+  S-integers and their class groups, extensions unramified outside a set
+  of primes, valuation subrings of number fields and of Q-bar.
+
+  Finitely generated abelian groups: extensions, cosets of the m-th
+  powers, a discreteness criterion, independent sets of maximal size.
+
+  Cyclotomic fields: cyclotomic polynomials over any ring, the degree, the
+  ring of integers and the discriminant, the decomposition law, the Galois
+  group, Frobenius elements, subfields and cyclotomic units, the quadratic
+  subfield through Gauss sums.
+
+  Embeddings into C: complex conjugation and the cyclotomic character,
+  finite generation of units and S-units, finiteness of K(S,m), infinite
+  places, Minkowski theory (the class bound sqrt|d_K|, |d_K| > 1 for
+  k <> Q), the Galois group of a Galois extension of Q generated by
+  inertia, composita with coprime discriminants, the Hermite finiteness
+  theorem, the Dirichlet unit theorem, the logarithmic embedding and the
+  regulator, roots of unity, quadratic units and the Pell equation, the
+  Stickelberger theorem.
+
+  Absolute values: the product formula, the S-unit theorem with the rank,
+  valuations of rank one, equivalence of absolute values, the
+  approximation theorem of Artin and Whaples, the Ostrowski theorem for Q
+  and the number fields of degree 1, the nonarchimedean places of number
+  fields.
+
+  Higher ramification groups, local power bases and the Euler formula for
+  the different, the Hilbert formula for the different.
+
+  The Dedekind zeta function and Dirichlet densities: the number of
+  ideals of bounded norm, the Euler product, bounds near s = 1, the
+  elementary laws of density, the Frobenius density theorem.
+
+SOME MAIN THEOREMS
+
+  DEDEKIND_IDEAL_FACTORIZATION       unique factorization of ideals
+  DEDEKIND_INTEGRAL_CLOSURE          integral closure in a finite
+                                     separable extension is Dedekind
+  VALUATION_SUBRING_DOMINATES        Chevalley extension theorem
+  DEDEKIND_EQ_IDEALS_INVERTIBLE      Dedekind iff every ideal invertible
+  IDEAL_EULER, IDEAL_NORM_FERMAT     Euler and Fermat for ideals
+  HENSEL_LEMMA                       Hensel lifting modulo powers
+  DEDEKIND_RING_OF_INTEGERS          the ring of integers is Dedekind
+  NUMBER_FIELD_CLASS_GROUP_FINITE    finiteness of the class group
+  NUMBER_FIELD_FUNDAMENTAL_IDENTITY  sum of e f is the degree
+  NUMBER_FIELD_RAMIFIED_DISCRIMINANT p ramifies iff p divides d_K
+  NUMBER_FIELD_DEDEKIND_KUMMER       Dedekind-Kummer over O_k
+  NUMBER_FIELD_DIFFERENT_TOWER       the different in towers
+  NUMBER_FIELD_DISCRIMINANT_TOWER    the discriminant in towers
+  NUMBER_FIELD_DIFFERENT_HILBERT_FORMULA
+                                     v_Q(D) = sum (|G_i| - 1)
+  NUMBER_FIELD_EISENSTEIN            Eisenstein implies totally ramified
+  NUMBER_FIELD_UNRAMIFIED_EQ_WEAKLY_UNRAMIFIED
+                                     unramified iff e = 1 (number fields)
+  NUMBER_FIELD_FROBENIUS_ELEMENT     Frobenius elements
+  NUMBER_FIELD_TOTALLY_SPLIT_INFINITE
+                                     infinitely many totally split primes
+  GALOIS_MAXIMAL_UNRAMIFIED_OUTSIDE  K_S is Galois over k
+  NUMBER_FIELD_IDEAL_MINKOWSKI       Minkowski theorem for ideals
+  NUMBER_FIELD_DISCRIMINANT_ABS_GT_1 |d_K| > 1 for k <> Q
+  NUMBER_FIELD_INERTIA_GROUPS_GENERATE
+                                     Gal(L/Q) generated by inertia
+  NUMBER_FIELD_HERMITE               finitely many fields of a given degree
+                                     and bounded discriminant
+  NUMBER_FIELD_FUNDAMENTAL_UNITS     Dirichlet unit theorem
+  S_UNIT_GROUP_FUNDAMENTAL           S-unit theorem with the rank
+  NUMBER_FIELD_REGULATOR             the regulator
+  NUMBER_FIELD_DISCRIMINANT_MOD_4    Stickelberger: d_K = 0, 1 (mod 4)
+  PELL_EQUATION_INFINITE             the Pell equation
+  CYCLOTOMIC_FIELD_RING_OF_INTEGERS  O = Z[z] for cyclotomic fields
+  CYCLOTOMIC_FIELD_GALOIS_GROUP      Gal(Q(z)/Q) = (Z/n)^*
+  QUADRATIC_GAUSS_SUM                g^2 = p* for the Gauss sum
+  ABSOLUTE_VALUE_WEAK_APPROXIMATION  Artin-Whaples approximation
+  OSTROWSKI                          the absolute values of a number
+                                     field of degree 1
+  OSTROWSKI_RATIONAL                 the absolute values of Q
+  NUMBER_FIELD_PRODUCT_FORMULA       the product formula
+  DEDEKIND_ZETA_EULER_PRODUCT        Euler product of the zeta function
+  NUMBER_FIELD_FROBENIUS_DENSITY     the Frobenius density theorem
+
+RELATED FILES OUTSIDE THIS DIRECTORY
+
+Most of the general lemmas that ANT needs are in the library files; the
+header of each ANT file names the library files and the results it uses.
+The most closely related files:
+
+  Library/ringtheory.ml, fieldtheory.ml, ring_det.ml, galois.ml,
+  cyclotomic.ml, finite_fields.ml   the algebra ANT builds on
+  Library/normal_basis.ml           the normal basis theorem
+  Multivariate/complex_algebra.ml   the algebra of the complex numbers,
+                                    without topology
+  Multivariate/complex_ring.ml      the complex numbers as a ring
+  Multivariate/complex_field.ml     C is algebraically closed
+  Multivariate/profinite_groups.ml  topological and profinite groups
+  Multivariate/infinite_galois.ml   the Krull topology and the infinite
+                                    Galois correspondence
+
+REFERENCES
+
+The comments refer to these books for statements and proofs:
+
+  S. Alaca and K. S. Williams, "Introductory Algebraic Number Theory",
+  Cambridge University Press 2004.
+  M. F. Atiyah and I. G. Macdonald, "Introduction to Commutative Algebra",
+  Addison-Wesley 1969.
+  S. Lang, "Algebraic Number Theory", 2nd edition, Springer 1994.
+  D. A. Marcus, "Number Fields", Springer 1977.
+  H. Matsumura, "Commutative Ring Theory", Cambridge University Press 1986.
+  W. Narkiewicz, "Elementary and Analytic Theory of Algebraic Numbers",
+  3rd edition, Springer 2004.
+  J. Neukirch, "Algebraic Number Theory", Springer 1999.
+  P. Ribenboim, "Classical Theory of Algebraic Numbers", Springer 2001.
+  J.-P. Serre, "Local Fields", Springer 1979.
+
+All code in this directory is distributed under the same license as HOL
+Light.

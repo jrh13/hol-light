@@ -58,6 +58,7 @@ STANDALONE_EXAMPLES:=\
 	Library/modmul_group \
 	Library/multiplicative \
 	Examples/multiwf \
+	Library/normal_basis \
 	Examples/padics \
 	Examples/pell \
 	Library/permutations \
@@ -94,6 +95,7 @@ STANDALONE_EXAMPLES:=\
 	Library/rstc-reduct
 
 EXTENDED_EXAMPLES:=\
+	ANT/make \
 	Arithmetic/make \
 	Boyer_Moore/make \
 	Cadical/make-test \
@@ -123,12 +125,15 @@ EXTENDED_EXAMPLES:=\
 	Sieve/make \
 	Unity/make \
 	WZ/make \
+	Multivariate/complex_field \
+	Multivariate/complex_ring \
 	Multivariate/cross \
 	Multivariate/cvectors \
 	Multivariate/flyspeck \
 	Multivariate/gamma \
 	Multivariate/geom \
 	Multivariate/homology \
+	Multivariate/infinite_galois \
 	Multivariate/lpspaces \
 	Multivariate/msum \
 	Multivariate/paracompact \

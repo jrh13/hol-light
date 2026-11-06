@@ -248,6 +248,40 @@ let ISUM_RELATED_NONEMPTY = prove
     (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_INT_ADD)) THEN
   ASM_REWRITE_TAC[GSYM isum; NEUTRAL_INT_ADD] THEN ASM_MESON_TAC[]);;
 
+let ISUM_DELTA_GEN = prove
+ (`!s (f:A->int) a. isum s (\x. if x = a then f x else &0) =
+                    if a IN s then f a else &0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[isum] THEN
+  MP_TAC(ISPECL [`f:A->int`; `a:A`; `s:A->bool`]
+    (MATCH_MP ITERATE_DELTA MONOIDAL_INT_ADD)) THEN
+  REWRITE_TAC[NEUTRAL_INT_ADD]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The number of integers x with abs x <= t.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_SIZE_INT_ABS_LE = prove
+ (`!t. {x:int | abs x <= &t} HAS_SIZE (2 * t + 1)`,
+  GEN_TAC THEN
+  SUBGOAL_THEN `{x:int | abs x <= &t} = IMAGE (\i. &i - &t) (0..2 * t)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_IMAGE; IN_NUMSEG; LE_0] THEN
+    X_GEN_TAC `x:int` THEN EQ_TAC THENL
+     [DISCH_TAC THEN EXISTS_TAC `num_of_int(x + &t)` THEN
+      MP_TAC(ISPEC `x + &t:int` INT_OF_NUM_OF_INT) THEN
+      ANTS_TAC THENL [ASM_INT_ARITH_TAC; DISCH_TAC] THEN
+      ASM_REWRITE_TAC[GSYM INT_OF_NUM_LE; GSYM INT_OF_NUM_MUL] THEN
+      ASM_INT_ARITH_TAC;
+      DISCH_THEN(X_CHOOSE_THEN `i:num` STRIP_ASSUME_TAC) THEN
+      ASM_REWRITE_TAC[] THEN
+      UNDISCH_TAC `i <= 2 * t` THEN
+      REWRITE_TAC[GSYM INT_OF_NUM_LE; GSYM INT_OF_NUM_MUL] THEN
+      INT_ARITH_TAC];
+    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+    REWRITE_TAC[INT_ARITH `x - t:int = y - t <=> x = y`; INT_OF_NUM_EQ] THEN
+    MP_TAC(SPECL [`0`; `2 * t`] HAS_SIZE_NUMSEG) THEN
+    REWRITE_TAC[SUB_0] THEN SIMP_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Expand "isum (m..n) f" where m and n are numerals.                        *)
 (* ------------------------------------------------------------------------- *)

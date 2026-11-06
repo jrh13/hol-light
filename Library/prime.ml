@@ -1317,6 +1317,26 @@ let INDEX_EXP = prove
   ASM_SIMP_TAC[INDEX_MUL; EXP_EQ_0; EXP; INDEX_1; MULT_CLAUSES] THEN
   ARITH_TAC);;
 
+let INDEX_NPRODUCT = prove
+ (`!p s (f:K->num).
+        prime p /\ FINITE s /\ (!i. i IN s ==> ~(f i = 0))
+        ==> index p (nproduct s f) = nsum s (\i. index p (f i))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `~(nproduct s (f:K->num) = 0) /\
+    index p (nproduct s f) = nsum s (\i. index p (f i))`
+   (fun th -> REWRITE_TAC[CONJUNCT2 th]) THEN
+  UNDISCH_TAC `!i:K. i IN s ==> ~(f i = 0)` THEN
+  UNDISCH_TAC `FINITE(s:K->bool)` THEN
+  SPEC_TAC(`s:K->bool`,`s:K->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NPRODUCT_CLAUSES; NSUM_CLAUSES; INDEX_1; FORALL_IN_INSERT] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  DISCH_THEN(fun th ->
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o MATCH_MP th))) THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[MULT_EQ_0; INDEX_MUL]);;
+
 let INDEX_FACT = prove
  (`!p n. prime p ==> index p (FACT n) = nsum(1..n) (\m. index p m)`,
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN

@@ -808,6 +808,42 @@ let JACOBI_NE_MINUS1 = prove
   REPEAT GEN_TAC THEN ASM_CASES_TAC `coprime(a:num,n)` THEN
   ASM_SIMP_TAC[JACOBI_ZERO; JACOBI_EQ_1] THEN CONV_TAC INT_REDUCE_CONV);;
 
+let JACOBI_SUM_RESIDUES = prove
+ (`!p. prime p /\ ~(p = 2) ==> isum {t | t < p} (\t. jacobi(t,p)) = &0`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP PRIME_IMP_NZ) THEN
+  SUBGOAL_THEN
+   `?c. c < p /\ coprime(p,c) /\ ~(?x. (x EXP 2 == c) (mod p))`
+  STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[QUADRATIC_NONRESIDUE_EXISTS] THEN
+    MP_TAC(SPEC `p:num` PRIME_GE_2) THEN ASM_REWRITE_TAC[] THEN
+    ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  SUBGOAL_THEN `jacobi(c,p) = --(&1)` ASSUME_TAC THENL
+   [ASM_SIMP_TAC[JACOBI_PRIME] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+    UNDISCH_TAC `coprime(p:num,c)` THEN
+    ASM_SIMP_TAC[PRIME_COPRIME_EQ];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `isum {t | t < p} (\t. jacobi((c * t) MOD p,p)) =
+    isum {t | t < p} (\t. jacobi(t,p))`
+  MP_TAC THENL
+   [MP_TAC(SPECL [`c:num`; `1`; `p:num`] CONG_SOLVE) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[COPRIME_SYM]; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_TAC `b:num`) THEN
+    MATCH_MP_TAC ISUM_EQ_GENERAL_INVERSES THEN
+    EXISTS_TAC `\t. (c * t) MOD p` THEN EXISTS_TAC `\t. (b * t) MOD p` THEN
+    ASM_SIMP_TAC[IN_ELIM_THM; MOD_LT_EQ; MOD_MULT_RMOD] THEN
+    CONJ_TAC THEN X_GEN_TAC `t:num` THEN DISCH_TAC THEN
+    MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC `t MOD p` THEN
+    (CONJ_TAC THENL [ALL_TAC; ASM_SIMP_TAC[MOD_LT]]) THEN
+    REWRITE_TAC[GSYM CONG] THEN
+    UNDISCH_TAC `(c * b == 1) (mod (p:num))` THEN CONV_TAC NUMBER_RULE;
+    REWRITE_TAC[JACOBI_MOD; JACOBI_LMUL] THEN
+    ASM_SIMP_TAC[ISUM_LMUL; FINITE_NUMSEG_LT] THEN
+    SPEC_TAC(`isum {t | t < p} (\t. jacobi(t,p))`,`s:int`) THEN
+    INT_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Integer version. The totalization at zero is a bit blunter; it's hard to  *)
 (* keep all the nice properties in the light of -1 * -1 = 1; we prioritize   *)
