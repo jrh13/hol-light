@@ -1516,6 +1516,46 @@ let PRIME_SUBFIELD_HOMOMORPHISM_EXISTS = prove
               RIGHT_FORALL_IMP_THM] THEN
   ASM_SIMP_TAC[RING_DIV; RING_OF_INT; INTEGER_RULE `(x:int == x) (mod n)`]);;
 
+(* Two fields have isomorphic prime subfields iff they have the same         *)
+(* characteristic; so in characteristic 0 the prime subfield is isomorphic   *)
+(* to the rational field, the prime subfield of the reals.                   *)
+let ISOMORPHIC_PRIME_SUBFIELDS = prove
+ (`!(k:A ring) (l:B ring).
+        field k /\ field l
+        ==> (subfield_generated k {ring_0 k} isomorphic_ring
+             subfield_generated l {ring_0 l} <=>
+             ring_char k = ring_char l)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [MESON_TAC[ISOMORPHIC_RING_CHAR; RING_CHAR_SUBFIELD_GENERATED];
+    DISCH_TAC] THEN
+  MP_TAC(ISPECL [`k:A ring`; `l:B ring`]
+    PRIME_SUBFIELD_HOMOMORPHISM_EXISTS) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(X_CHOOSE_TAC `h:A->B`) THEN
+  SUBGOAL_THEN
+   `ring_monomorphism(subfield_generated k {ring_0 k},l) (h:A->B)`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC FIELD_RING_HOMOMORPHISM_MONOMORPHISM THEN
+    ASM_SIMP_TAC[FIELD_SUBFIELD_GENERATED; FIELD_IMP_NONTRIVIAL_RING];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`subfield_generated k {ring_0 k:A}`; `l:B ring`; `h:A->B`]
+    PRIME_SUBFIELD_MONOMORPHIC_IMAGE) THEN
+  ASM_SIMP_TAC[FIELD_SUBFIELD_GENERATED;
+               PRIME_SUBFIELD_SUBFIELD_GENERATED] THEN
+  DISCH_TAC THEN REWRITE_TAC[isomorphic_ring] THEN EXISTS_TAC `h:A->B` THEN
+  MP_TAC(ISPECL [`h:A->B`; `subfield_generated k {ring_0 k:A}`; `l:B ring`]
+    RING_ISOMORPHISM_ONTO_IMAGE) THEN
+  ASM_REWRITE_TAC[ring_image; SUBRING_GENERATED_BY_SUBFIELD_GENERATED]);;
+
+let ISOMORPHIC_PRIME_SUBFIELD_RATIONAL_FIELD = prove
+ (`!k:A ring.
+        field k
+        ==> (subfield_generated k {ring_0 k} isomorphic_ring
+             subfield_generated real_ring {&0} <=>
+             ring_char k = 0)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`k:A ring`; `real_ring`] ISOMORPHIC_PRIME_SUBFIELDS) THEN
+  ASM_REWRITE_TAC[FIELD_REAL_RING; REAL_RING_CHAR; REAL_RING_CLAUSES]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Field extensions, allowing a general monomorphism. This does build        *)
 (* in the assumption that both the rings involved are indeed fields.         *)

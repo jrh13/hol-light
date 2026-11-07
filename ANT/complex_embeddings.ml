@@ -48,26 +48,27 @@
 (* criterion FINITELY_GENERATED_ABELIAN_GROUP_DISCRETE of                    *)
 (* ANT/fingen_group.ml applies.                                              *)
 (*                                                                           *)
-(* General helpers: embeddings are injective                                *)
+(* General helpers: the prime subfield of C is {Cx q | rational q}           *)
+(* (COMPLEX_PRIME_SUBFIELD); embeddings are injective                        *)
 (* (COMPLEX_EMBEDDINGS_MONOMORPHISM), are the extensions of any homomorphism *)
 (* from Q to C (COMPLEX_EMBEDDINGS_EXTENSIONS) and map roots of unity to the *)
 (* unit circle (COMPLEX_EMBEDDINGS_ROOT_OF_UNITY).                           *)
 (*                                                                           *)
 (* Uses: Multivariate/complex_ring.ml (complex_ring and its arithmetic:      *)
-(* COMPLEX_RING_CLAUSES, FIELD_COMPLEX_RING, COMPLEX_RING_OF_INT, _POW,      *)
-(* _SUM, POLY_EVAL_COMPLEX_RING), Multivariate/complex_algebra.ml (Cx, norm, *)
-(* vsum, COMPLEX_POLYFUN_EQ_0, COMPLEX_POLYFUN_FINITE_ROOTS,                 *)
+(* COMPLEX_RING_CLAUSES, FIELD_COMPLEX_RING, COMPLEX_RING_OF_INT, _DIV,      *)
+(* _POW, _SUM, POLY_EVAL_COMPLEX_RING), Multivariate/complex_algebra.ml (Cx, *)
+(* norm, vsum, COMPLEX_POLYFUN_EQ_0, COMPLEX_POLYFUN_FINITE_ROOTS,           *)
 (* COMPLEX_POLYFUN_LINEAR_FACTOR_ROOT), Multivariate/cauchy.ml (FTA; no      *)
 (* logarithm or exponential is used), Library/ringtheory.ml                  *)
 (* (RING_OF_INT_EQ_CHAR_0), Library/fieldtheory.ml (embedding counts,        *)
 (* extensions of homomorphisms,                                              *)
 (* RING_HOMOMORPHISMS_EQ_FROM_SUBFIELD_GENERATED,                            *)
 (* PRIME_SUBFIELD_HOMOMORPHISM_EXISTS), Library/grouptheory.ml,              *)
-(* ANT/integral.ml, ANT/numfield.ml, ANT/fingen_group.ml                     *)
-(* (FINITELY_GENERATED_ABELIAN_GROUP_DISCRETE), Library/ring_groups.ml       *)
-(* (unit_group, FINITELY_GENERATED_UNIT_GROUP), ANT/integrality.ml           *)
-(* (RING_OF_INTEGERS_MINIMAL_POLYNOMIAL_Q), Library/ring_det.ml              *)
-(* (RING_MATRIX_SOLVE) and Multivariate/complex_field.ml                     *)
+(* ANT/integral.ml, ANT/numfield.ml (PRIME_SUBFIELD_CHAR_0),                 *)
+(* ANT/fingen_group.ml (FINITELY_GENERATED_ABELIAN_GROUP_DISCRETE),          *)
+(* Library/ring_groups.ml (unit_group, FINITELY_GENERATED_UNIT_GROUP),       *)
+(* ANT/integrality.ml (RING_OF_INTEGERS_MINIMAL_POLYNOMIAL_Q),               *)
+(* Library/ring_det.ml (RING_MATRIX_SOLVE) and Multivariate/complex_field.ml *)
 (* (ALGEBRAICALLY_CLOSED_FIELD_COMPLEX_RING). NOT 100/transcendence.ml. The  *)
 (* needs lines of Multivariate/cauchy.ml, complex_ring.ml and                *)
 (* complex_field.ml come after those of the ANT files, so that these are     *)
@@ -105,6 +106,19 @@ let COMPLEX_MATRIX_SOLVE = prove
                  `v:K->complex`] RING_MATRIX_SOLVE) THEN
   ASM_SIMP_TAC[FIELD_UNIT; FIELD_COMPLEX_RING; COMPLEX_RING_CLAUSES;
                IN_UNIV; COMPLEX_RING_SUM] THEN MESON_TAC[]);;
+
+(* The prime subfield of C is {Cx q | rational q}, as that of the reals is   *)
+(* the set of the rationals (REAL_PRIME_SUBFIELD of ANT/numfield.ml).        *)
+let COMPLEX_PRIME_SUBFIELD = prove
+ (`ring_carrier(subfield_generated complex_ring {Cx(&0)}) =
+   {Cx q | rational q}`,
+  MP_TAC(ISPEC `complex_ring` PRIME_SUBFIELD_CHAR_0) THEN
+  REWRITE_TAC[FIELD_COMPLEX_RING; RING_CHAR_COMPLEX_RING; COMPLEX_RING_CLAUSES;
+              COMPLEX_RING_DIV; COMPLEX_RING_OF_INT] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM; rational; GSYM CX_DIV;
+              int_eq; int_of_num_th] THEN
+  MESON_TAC[int_tybij; INTEGER_REAL_OF_INT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Monic polynomials with bounded roots.                                     *)

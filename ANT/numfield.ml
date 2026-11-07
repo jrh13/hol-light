@@ -14,12 +14,14 @@
 (*                                                                           *)
 (* Main results: free bases and the degree (NUMBER_FIELD_ALT,                *)
 (* NUMBER_FIELD_FREE_BASIS, NUMBER_FIELD_FREE_BASIS_DEGREE); the prime       *)
-(* subfield consists of the quotients of integers (PRIME_SUBFIELD_CHAR_0)    *)
-(* and is a number field (NUMBER_FIELD_PRIME_SUBFIELD; that it is its own    *)
-(* prime subfield and the same in every subfield is PRIME_SUBFIELD_SUBFIELD  *)
-(* and PRIME_SUBFIELD_SUBFIELD_GENERATED of Library/fieldtheory.ml); O_K     *)
-(* meets Q in Z (RING_OF_INTEGERS_PRIME_SUBFIELD); ring homomorphisms,       *)
-(* monomorphisms and isomorphisms restrict to the rings of integers          *)
+(* subfield consists of the quotients of integers (PRIME_SUBFIELD_CHAR_0;    *)
+(* for the reals these are the rationals of Library/floor.ml,                *)
+(* REAL_PRIME_SUBFIELD) and is a number field (NUMBER_FIELD_PRIME_SUBFIELD;  *)
+(* that it is its own prime subfield and the same in every subfield is       *)
+(* PRIME_SUBFIELD_SUBFIELD and PRIME_SUBFIELD_SUBFIELD_GENERATED of          *)
+(* Library/fieldtheory.ml); O_K meets Q in Z                                 *)
+(* (RING_OF_INTEGERS_PRIME_SUBFIELD); ring homomorphisms, monomorphisms and  *)
+(* isomorphisms restrict to the rings of integers                            *)
 (* (RING_HOMOMORPHISM_RING_OF_INTEGERS, RING_MONOMORPHISM_RING_OF_INTEGERS,  *)
 (* RING_ISOMORPHISM_RING_OF_INTEGERS), so isomorphic fields have isomorphic  *)
 (* rings of integers (ISOMORPHIC_RING_RING_OF_INTEGERS); integral multiples  *)
@@ -61,9 +63,10 @@
 (* FREE_BASIS_PRIME_SUBFIELD_DENOMINATOR).                                   *)
 (*                                                                           *)
 (* Uses: Library/ringtheory.ml, Library/fieldtheory.ml                       *)
-(* (FREE_BASIS_FROM_RING_BASIS), Library/isum.ml, Library/ring_det.ml (the   *)
-(* free bases and linear combinations, FREE_BASIS_SCALE,                     *)
-(* ALGEBRA_NORM_SUB_CHARPOLY), ANT/integral.ml and ANT/zlattice.ml.          *)
+(* (FREE_BASIS_FROM_RING_BASIS), Library/isum.ml, Library/floor.ml           *)
+(* (rational), Library/ring_det.ml (the free bases and linear combinations,  *)
+(* FREE_BASIS_SCALE, ALGEBRA_NORM_SUB_CHARPOLY), ANT/integral.ml and         *)
+(* ANT/zlattice.ml.                                                          *)
 (* ========================================================================= *)
 
 needs "Library/ringtheory.ml";;
@@ -73,6 +76,7 @@ needs "ANT/algmisc.ml";;
 needs "Library/ring_det.ml";;
 needs "ANT/integral.ml";;
 needs "ANT/zlattice.ml";;
+needs "Library/floor.ml";;
 
 let number_field = new_definition
  `number_field (k:A ring) <=>
@@ -530,6 +534,18 @@ let PRIME_SUBFIELD_CHAR_0 = prove
   REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_UNIV] THEN
   MP_TAC(ISPEC `k:A ring` RING_OF_INT_EQ_0_CHAR_0) THEN
   ASM_REWRITE_TAC[] THEN MESON_TAC[]);;
+
+(* The prime subfield of the reals, the rational field, is the set of the    *)
+(* rationals of Library/floor.ml.                                            *)
+let REAL_PRIME_SUBFIELD = prove
+ (`ring_carrier(subfield_generated real_ring {&0}) = rational`,
+  MP_TAC(ISPEC `real_ring` PRIME_SUBFIELD_CHAR_0) THEN
+  REWRITE_TAC[FIELD_REAL_RING; REAL_RING_CHAR; REAL_RING_CLAUSES;
+              REAL_RING_DIV; REAL_RING_OF_INT] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+  REWRITE_TAC[IN; rational; int_eq; int_of_num_th] THEN
+  MESON_TAC[int_tybij; INTEGER_REAL_OF_INT]);;
 
 (* A common denominator for finitely many elements of the prime subfield     *)
 (* (the library FINITE_SUBSET_SUBFIELD_GENERATED_DENOMINATOR for s = {ring_0 *)

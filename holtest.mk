@@ -97,6 +97,7 @@ STANDALONE_EXAMPLES:=\
 EXTENDED_EXAMPLES:=\
 	ANT/make \
 	Arithmetic/make \
+	Baker/make \
 	Boyer_Moore/make \
 	Cadical/make-test \
 	Complex/make \

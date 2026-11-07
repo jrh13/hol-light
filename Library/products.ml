@@ -226,6 +226,20 @@ let NPRODUCT_SUPERSET = prove
         ==> nproduct v f = nproduct u f`,
   SIMP_TAC[nproduct; GSYM NEUTRAL_MUL; ITERATE_SUPERSET; MONOIDAL_MUL]);;
 
+let NPRODUCT_SUBSET_LE = prove
+ (`!(f:A->num) s t.
+        FINITE t /\ s SUBSET t /\ (!x. x IN t ==> 1 <= f x)
+        ==> nproduct s f <= nproduct t f`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC LE_TRANS `nproduct t (\x:A. if x IN s then f x else 1)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC EQ_IMP_LE THEN
+    REWRITE_TAC[GSYM NPRODUCT_RESTRICT_SET] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[];
+    MATCH_MP_TAC NPRODUCT_LE THEN ASM_REWRITE_TAC[] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    COND_CASES_TAC THEN ASM_SIMP_TAC[LE_REFL]]);;
+
 let NPRODUCT_UNIV = prove
  (`!f:A->num s.
         support ( * ) f (:A) SUBSET s ==> nproduct s f = nproduct (:A) f`,

@@ -5657,12 +5657,12 @@ let DKT_PROP6 = prove
                                           {a | hj_subst (k + 1) z a IN A}`,
   REPEAT STRIP_TAC THEN
   MP_TAC(SPECL [`k:num`; `delta:real`] DKT_COR11) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `gamma:real` (X_CHOOSE_THEN `M0:num`
+  DISCH_THEN(X_CHOOSE_THEN `gamma0:real` (X_CHOOSE_THEN `M0:num`
    (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "cor11")))) THEN
-  EXISTS_TAC `gamma / &2` THEN
+  EXISTS_TAC `gamma0 / &2` THEN
   ASM_REWRITE_TAC[REAL_ARITH `!x. &0 < x / &2 <=> &0 < x`] THEN
   X_GEN_TAC `d:num` THEN DISCH_TAC THEN
-  MP_TAC(SPECL [`k:num`; `gamma pow 2 / (&4 * &k)`; `k:num`; `d:num`]
+  MP_TAC(SPECL [`k:num`; `gamma0 pow 2 / (&4 * &k)`; `k:num`; `d:num`]
     HJ_TILING_STRUCTURED) THEN
   ANTS_TAC THENL
    [ASM_REWRITE_TAC[LE_REFL] THEN MATCH_MP_TAC REAL_LT_DIV THEN
@@ -5709,7 +5709,7 @@ let DKT_PROP6 = prove
    [MATCH_MP_TAC HJ_DENSITY_SUBADD THEN REWRITE_TAC[IN_ELIM_THM] THEN
     MESON_TAC[];
     ALL_TAC] THEN
-  SUBGOAL_THEN `&2 * &k * gamma pow 2 / (&4 * &k) = gamma pow 2 / &2`
+  SUBGOAL_THEN `&2 * &k * gamma0 pow 2 / (&4 * &k) = gamma0 pow 2 / &2`
   ASSUME_TAC THENL
    [UNDISCH_TAC `1 <= k` THEN REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN
     CONV_TAC REAL_FIELD;
@@ -5730,9 +5730,10 @@ let DKT_PROP6 = prove
   SUBGOAL_THEN `&0 <= rho` ASSUME_TAC THENL
    [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
   SUBGOAL_THEN
-   `(rho + gamma / &2) * dT <= (rho + gamma / &2) * dD /\
-    (rho + gamma) * gamma <= (rho + gamma) * dD /\
-    gamma * gamma <= gamma * dD /\ &0 < gamma * gamma /\ &0 <= rho * gamma`
+   `(rho + gamma0 / &2) * dT <= (rho + gamma0 / &2) * dD /\
+    (rho + gamma0) * gamma0 <= (rho + gamma0) * dD /\
+    gamma0 * gamma0 <= gamma0 * dD /\ &0 < gamma0 * gamma0 /\
+    &0 <= rho * gamma0`
   STRIP_ASSUME_TAC THENL
    [REPEAT CONJ_TAC THENL
      [MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC;
@@ -5741,15 +5742,15 @@ let DKT_PROP6 = prove
       MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC[];
       MATCH_MP_TAC REAL_LE_MUL THEN ASM_REAL_ARITH_TAC];
     ALL_TAC] THEN
-  SUBGOAL_THEN `(rho + gamma / &2) * dT <= dTA /\ &0 < dTA`
+  SUBGOAL_THEN `(rho + gamma0 / &2) * dT <= dTA /\ &0 < dTA`
   STRIP_ASSUME_TAC THENL
-   [UNDISCH_TAC `&2 * &k * gamma pow 2 / (&4 * &k) = gamma pow 2 / &2` THEN
+   [UNDISCH_TAC `&2 * &k * gamma0 pow 2 / (&4 * &k) = gamma0 pow 2 / &2` THEN
     REWRITE_TAC[REAL_POW_2] THEN DISCH_TAC THEN ASM_REAL_ARITH_TAC;
     ALL_TAC] THEN
   MP_TAC(ISPECL [`k + 1`; `d:num`; `m:num`; `Fs:(num->num)->bool`;
                  `{x:num->num | !j. j < k ==>
                    x IN (D:num->(num->num)->bool) j}`;
-                 `{x | hj_subst (k + 1) W x IN A}`; `rho + gamma / &2`]
+                 `{x | hj_subst (k + 1) W x IN A}`; `rho + gamma0 / &2`]
     HJ_TILING_AVERAGE) THEN
   ASM_REWRITE_TAC[ARITH_RULE `1 <= k + 1`] THEN ANTS_TAC THENL
    [DISCH_THEN SUBST_ALL_TAC THEN
@@ -5763,7 +5764,7 @@ let DKT_PROP6 = prove
   EXISTS_TAC `hj_subst (k + 1) W z` THEN CONJ_TAC THENL
    [MATCH_MP_TAC HJ_SUBSPACE_SUBST THEN EXISTS_TAC `m:num` THEN
     ASM_REWRITE_TAC[ARITH_RULE `1 <= k + 1`] THEN ASM_MESON_TAC[hj_tiling];
-    UNDISCH_TAC `rho + gamma / &2 <=
+    UNDISCH_TAC `rho + gamma0 / &2 <=
                  hj_density (k + 1) d {a | hj_subst (k + 1) z a IN
                                      {x | hj_subst (k + 1) W x IN A}}` THEN
     REWRITE_TAC[IN_ELIM_THM; HJ_SUBST_SUBST]]);;

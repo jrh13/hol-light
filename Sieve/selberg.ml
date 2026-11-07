@@ -721,23 +721,6 @@ let SELBERG_WEIGHT_BOUND = prove
 (* The sieve inequality.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
-let NPRODUCT_SUBSET_LE = prove
- (`!u t. FINITE t /\ u SUBSET t /\ (!p. p IN t ==> 1 <= p)
-         ==> nproduct u (\p. p) <= nproduct t (\p. p)`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `t = u UNION (t DIFF u:num->bool)` SUBST1_TAC THENL
-   [ASM SET_TAC[]; ALL_TAC] THEN
-  SUBGOAL_THEN `FINITE(u:num->bool)` ASSUME_TAC THENL
-   [ASM_MESON_TAC[FINITE_SUBSET]; ALL_TAC] THEN
-  ASM_SIMP_TAC[NPRODUCT_UNION; FINITE_DIFF;
-               SET_RULE `DISJOINT u (t DIFF u:num->bool)`] THEN
-  GEN_REWRITE_TAC LAND_CONV [ARITH_RULE `x = x * 1`] THEN
-  REWRITE_TAC[LE_MULT_LCANCEL] THEN DISJ2_TAC THEN
-  REWRITE_TAC[ARITH_RULE `1 <= n <=> 0 < n`] THEN
-  MATCH_MP_TAC NPRODUCT_POS_LT THEN ASM_SIMP_TAC[FINITE_DIFF; IN_DIFF] THEN
-  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:num`) THEN
-  ASM_REWRITE_TAC[] THEN ARITH_TAC);;
-
 let NPRODUCT_UNION_LE = prove
  (`!t1 t2. FINITE t1 /\ FINITE t2 /\ (!p. p IN t1 UNION t2 ==> 1 <= p)
            ==> nproduct (t1 UNION t2) (\p. p) <=

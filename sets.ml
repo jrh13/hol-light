@@ -3567,6 +3567,20 @@ let FINITE_RESTRICTED_FUNSPACE = prove
   REWRITE_TAC[GSYM CONJ_ASSOC; UNWIND_THM1; UNWIND_THM2] THEN
   ASM_CASES_TAC `(f:A->B) x = k x` THEN ASM_REWRITE_TAC[]);;
 
+let FINITE_CARTESIAN_PRODUCT_FINITE = prove
+ (`!(k:K->bool) (s:K->A->bool).
+        FINITE k /\ (!i. i IN k ==> FINITE(s i))
+        ==> FINITE(cartesian_product k s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+  EXISTS_TAC `{f:K->A | (!i. i IN k ==> f i IN UNIONS(IMAGE s k)) /\
+                        (!i. ~(i IN k) ==> f i = ARB)}` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC FINITE_FUNSPACE THEN
+    ASM_SIMP_TAC[FINITE_UNIONS; FINITE_IMAGE; FORALL_IN_IMAGE];
+    REWRITE_TAC[SUBSET; IN_CARTESIAN_PRODUCT; IN_ELIM_THM; IN_UNIONS;
+                EXISTS_IN_IMAGE; EXTENSIONAL; IN_ELIM_THM] THEN
+    MESON_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Set of numbers is infinite.                                               *)
 (* ------------------------------------------------------------------------- *)
