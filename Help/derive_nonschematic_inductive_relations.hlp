@@ -57,7 +57,7 @@ Normally, use {prove_inductive_relations_exist} or {new_inductive_definition}.
 This function is only needed for a very fine level of control.
 
 \SEEALSO
-new_inductive_definition, prove_inductive_relations_exist,
-prove_monotonicity_hyps.
+derive_nonschematic_coinductive_relations, new_inductive_definition,
+prove_inductive_relations_exist, prove_monotonicity_hyps.
 
 \ENDDOC

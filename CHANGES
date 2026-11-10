@@ -8,6 +8,58 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 10th Nov 2026       Library/llist.ml [new file], holtest.mk
+
+Added a library of possibly infinite lists ("lazy lists"), with the type
+A llist, the constructors LNIL and LCONS, the destructors LHD and LTL, LNTH
+for the element at a position, if any, and the conversions llist_of_list,
+list_of_llist and llist_of_seq. The type is the disjoint sum of A list and
+num->A, but the usual coinductive tools are provided too: corecursion with
+uniqueness (LCOREC and LUNFOLD), extensionality (LLIST_EQ), coinduction by
+bisimulation (LLIST_COINDUCT) and the tactics LLIST_CASES_TAC,
+LLIST_COINDUCT_TAC and LLIST_BISIM_TAC. The operations are finiteness and
+length (LFINITE, LLENGTH), LMAP, LAPPEND, LTAKE, LDROP, LFILTER, LFLATTEN,
+LZIP, the set of elements (set_of_llist), the quantifiers LALL and LEXISTS,
+the relator LALL2, the prefix order LPREFIX, in which every chain has a
+least upper bound, and LITERATE, plus THE and OPTION_MAP on options. The
+theorems include 94 statements collected from HOL4's llistTheory, the
+Isabelle AFP entry Coinductive_List and Lean Mathlib's Seq. This was
+written by Claude Opus 5.5.
+
+Tue 10th Nov 2026       Library/ringtheory.ml, Library/fieldtheory.ml
+
+Tweaked a few variable names to avoid unfortunate clashes with s2n-bignum
+(e.g. "bx" which is stolen as a constant for the x86 register).
+
+Tue 10th Nov 2026       ind_defs.ml, sets.ml, hol_lib.ml, holtest.mk, UnitTests/basic_tests.ml, Examples/coinduction.ml [new file], Help/*
+
+Added coinductive definitions to the core, as the duals of inductive
+definitions and sharing most of their code in ind_defs.ml. The new function
+new_coinductive_definition takes the same input as new_inductive_definition
+but defines the greatest relations consistent with the rules, i.e. the union
+of all relations R' such that each R' a follows by some rule from instances
+of R'. It returns a rules theorem, a coinduction theorem and a cases theorem.
+For example, the infinite paths in a relation R are defined by
+
+  new_coinductive_definition `!x:A y. R x y /\ infpath R y ==> infpath R x`
+
+with the coinduction theorem
+
+  |- !R infpath'. (!a. infpath' a ==> (?y. R a y /\ infpath' y))
+                  ==> (!a. infpath' a ==> infpath R a)
+
+As with inductive definitions, the rules may be mutual and schematic, and
+monotonicity is proved automatically using monotonicity_theorems, so the
+two kinds of definition can be nested. There are also the analogs
+prove_coinductive_relations_exist, derive_nonschematic_coinductive_relations,
+the_coinductive_definitions and new_coinductive_set, while
+derive_strong_coinduction gives a stronger form of coinduction "up to" the
+defined relations. The new file Examples/coinduction.ml gives classic
+examples of coinduction: infinite paths and Koenig's lemma, invariants,
+properties of infinite sequences, the lexicographic order, bisimilarity for
+transition systems and automata, and coinductive big-step semantics with
+divergence for a while-language. This was written by Claude Opus 5.5.
+
 Mon  9th Nov 2026       drule.ml, fusion.ml, tactics.ml
 
 Fixed a few remaining cases where the plain OCaml structural equality

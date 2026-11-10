@@ -1,0 +1,59 @@
+\DOC prove_coinductive_relations_exist
+
+\TYPE {prove_coinductive_relations_exist : term -> thm}
+
+\SYNOPSIS
+Prove existence of coinductively defined relations without defining them.
+
+\DESCRIBE
+The function {prove_coinductive_relations_exist} should be given a
+specification for a coinductively defined relation {R}, or more generally a
+family {R1,...,Rn} of mutually coinductive relations, in the same format as for
+{new_coinductive_definition}. It returns an existential theorem
+{A |- ?R1 ... Rn. rules /\ coinduction /\ cases}, where {rules},
+{coinduction} and {cases} are the rule, coinduction and cases theorems,
+explained further in the entry for {new_coinductive_definition}. In contrast
+with {new_coinductive_definition}, no actual definitions are made. The
+assumption list {A} is normally empty, but will include any monotonicity
+hypotheses that were not proven automatically.
+
+\FAILURE
+Fails if the form of the rules is wrong.
+
+\EXAMPLE
+Infinite paths in a relation:
+{
+  # prove_coinductive_relations_exist
+     `!x:A y. R x y /\ infpath R y ==> infpath R x`;;
+  val it : thm =
+    |- ?infpath.
+           !R.
+               (!x y. R x y /\ infpath R y ==> infpath R x) /\
+               (!infpath'.
+                    (!a. infpath' a ==> (?y. R a y /\ infpath' y))
+                    ==> (!a. infpath' a ==> infpath R a)) /\
+               (!a. infpath R a <=> (?y. R a y /\ infpath R y))
+}
+\noindent and an example where monotonicity does not hold, so the theorem has
+a hypothesis:
+{
+  # prove_coinductive_relations_exist `!x. ~P(x) ==> P(x+1)`;;
+  val it : thm =
+    !P P'.
+        (!a. P a ==> P' a)
+        ==> (!a. (?x. a = x + 1 /\ ~P x) ==> (?x. a = x + 1 /\ ~P' x))
+    |- ?P. (!x. ~P x ==> P (x + 1)) /\
+           (!P'. (!a. P' a ==> (?x. a = x + 1 /\ ~P' x))
+                 ==> (!a. P' a ==> P a)) /\
+           (!a. P a <=> (?x. a = x + 1 /\ ~P x))
+}
+
+\USES
+Using existence of coinductive relations as an auxiliary device inside a
+proof.
+
+\SEEALSO
+derive_strong_coinduction, new_coinductive_definition,
+prove_inductive_relations_exist, prove_monotonicity_hyps.
+
+\ENDDOC

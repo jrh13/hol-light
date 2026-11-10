@@ -82,7 +82,7 @@ This function uses {new_inductive_relation} internally, and the documentation
 for that function gives additional information and other relevant examples.
 
 \SEEALSO
-derive_strong_induction, new_inductive_definition,
+derive_strong_induction, new_coinductive_set, new_inductive_definition,
 prove_inductive_relations_exist, prove_monotonicity_hyps.
 
 \ENDDOC

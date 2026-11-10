@@ -64,7 +64,7 @@ manually or extend {monotonicity_theorems} to make the built-in monotonicity
 prover more powerful.
 
 \SEEALSO
-new_inductive_definition, prove_inductive_relations_exist,
-prove_monotonicity_hyps.
+derive_strong_coinduction, new_inductive_definition,
+prove_inductive_relations_exist, prove_monotonicity_hyps.
 
 \ENDDOC

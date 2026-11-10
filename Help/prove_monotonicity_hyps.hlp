@@ -19,7 +19,8 @@ Normally, this kind of reasoning is automated by the inductive definitions
 package, so explicit use of this tactic is rare.
 
 \SEEALSO
-MONO_TAC, monotonicity_theorems, new_inductive_definition,
+MONO_TAC, monotonicity_theorems, new_coinductive_definition,
+new_inductive_definition, prove_coinductive_relations_exist,
 prove_inductive_relations_exist.
 
 \ENDDOC

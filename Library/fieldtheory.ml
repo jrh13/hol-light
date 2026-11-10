@@ -14642,36 +14642,36 @@ let PURELY_INSEPARABLE_EXTENSION_DEGREE = prove
   MP_TAC(ISPECL [`I:B->B`; `K:B ring`; `l:B ring`; `x:B`]
     FIELD_SIMPLE_ALGEBRAIC_EXTENSION) THEN
   ASM_REWRITE_TAC[IMAGE_I] THEN
-  ABBREV_TAC `K1 = subring_generated l ((x:B) INSERT ring_carrier K)` THEN
+  ABBREV_TAC `K1' = subring_generated l ((x:B) INSERT ring_carrier K)` THEN
   REPEAT DISCH_TAC THEN
-  SUBGOAL_THEN `field_extension(K1,l) (I:B->B)` ASSUME_TAC THENL
-   [EXPAND_TAC "K1" THEN
+  SUBGOAL_THEN `field_extension(K1',l) (I:B->B)` ASSUME_TAC THENL
+   [EXPAND_TAC "K1'" THEN
     MATCH_MP_TAC FIELD_EXTENSION_FROM_SUBRING_GENERATED THEN
     ASM_REWRITE_TAC[FIELD_EXTENSION_REFL] THEN ASM_MESON_TAC[];
     ALL_TAC] THEN
   MP_TAC(REWRITE_RULE[I_O_ID] (ISPECL
-   [`I:B->B`; `I:B->B`; `K:B ring`; `K1:B ring`; `l:B ring`]
+   [`I:B->B`; `I:B->B`; `K:B ring`; `K1':B ring`; `l:B ring`]
    EXTENSION_DEGREE_TOWER_LAW)) THEN
   MP_TAC(REWRITE_RULE[I_O_ID] (ISPECL
-   [`I:B->B`; `I:B->B`; `K:B ring`; `K1:B ring`; `l:B ring`]
+   [`I:B->B`; `I:B->B`; `K:B ring`; `K1':B ring`; `l:B ring`]
    FINITE_EXTENSION_TRANS_EQ)) THEN
   ASM_SIMP_TAC[FINITE_IMP_FIELD_EXTENSION] THEN DISCH_TAC THEN
   DISCH_TAC THEN
-  REMOVE_THEN "ih" (MP_TAC o SPEC `extension_degree(K1,l) (I:B->B)`) THEN
+  REMOVE_THEN "ih" (MP_TAC o SPEC `extension_degree(K1',l) (I:B->B)`) THEN
   ANTS_TAC THENL
    [FIRST_X_ASSUM(SUBST1_TAC o check (fun th ->
       lhand(concl th) = `d:num`)) THEN
-    SUBGOAL_THEN `~(extension_degree(K1,l) (I:B->B) = 0)` MP_TAC THENL
+    SUBGOAL_THEN `~(extension_degree(K1',l) (I:B->B) = 0)` MP_TAC THENL
      [ASM_MESON_TAC[EXTENSION_DEGREE_EQ_0]; ALL_TAC] THEN
     FIRST_ASSUM(MP_TAC o MATCH_MP PRIME_GE_2) THEN
-    SPEC_TAC(`extension_degree(K1,l) (I:B->B)`,`e:num`) THEN
+    SPEC_TAC(`extension_degree(K1',l) (I:B->B)`,`e:num`) THEN
     GEN_TAC THEN
     SUBST1_TAC(ARITH_RULE `e < c * e <=> 1 * e < c * e`) THEN
     REWRITE_TAC[LT_MULT_RCANCEL] THEN ARITH_TAC;
-    DISCH_THEN(MP_TAC o SPEC `K1:B ring`)] THEN
+    DISCH_THEN(MP_TAC o SPEC `K1':B ring`)] THEN
   ANTS_TAC THENL
    [ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-     [EXPAND_TAC "K1" THEN REWRITE_TAC[RING_CHAR_SUBRING_GENERATED] THEN
+     [EXPAND_TAC "K1'" THEN REWRITE_TAC[RING_CHAR_SUBRING_GENERATED] THEN
       ASM_MESON_TAC[RING_CHAR_MONOMORPHIC_IMAGE; field_extension];
       X_GEN_TAC `y:B` THEN DISCH_TAC THEN
       FIRST_X_ASSUM(MP_TAC o SPEC `y:B` o check (fun th ->

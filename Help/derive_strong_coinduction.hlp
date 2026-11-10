@@ -1,0 +1,42 @@
+\DOC derive_strong_coinduction
+
+\TYPE {derive_strong_coinduction : thm * thm -> thm}
+
+\SYNOPSIS
+Derive stronger coinduction theorem from coinductive definition.
+
+\DESCRIBE
+The function {derive_strong_coinduction} is applied to a pair of theorems as
+returned by {new_coinductive_definition}. The first theorem is the `cases'
+theorem, the second the `coinduction' theorem; the `rule' theorem is not
+needed. It returns a stronger coinduction theorem where, in the hypothesis,
+each instance of a coinductive relation required for a tuple to arise by a
+rule may come either from the new relations or from the coinductive relation
+itself. That is, for proving that the relations {Ri'} are included in the
+coinductive relations {Ri}, one only needs to show that they are consistent
+with the rules ``up to'' the {Ri}.
+
+\FAILURE
+Fails if the two input theorems are not of the correct form for cases and
+coinduction theorems returned by {new_coinductive_definition}, or if the
+monotonicity of the clauses cannot be proved by {MONO_TAC}.
+
+\EXAMPLE
+For the infinite paths in a relation:
+{
+  # let infpath_RULES,infpath_COINDUCT,infpath_CASES =
+      new_coinductive_definition
+       `!x:A y. R x y /\ infpath R y ==> infpath R x`;;
+  ...
+  # derive_strong_coinduction(infpath_CASES,infpath_COINDUCT);;
+  val it : thm =
+    |- !R infpath'.
+           (!a. infpath' a ==> (?y. R a y /\ (infpath' y \/ infpath R y)))
+           ==> (!a. infpath' a ==> infpath R a)
+}
+
+\SEEALSO
+derive_strong_induction, MONO_TAC, new_coinductive_definition,
+prove_coinductive_relations_exist.
+
+\ENDDOC

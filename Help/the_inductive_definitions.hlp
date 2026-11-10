@@ -36,6 +36,6 @@ Users may also sometimes find it convenient.
 \SEEALSO
 axioms, constants, define, definitions, new_definition,
 new_inductive_definition, new_recursive_definition, new_specification,
-the_definitions, the_specifications.
+the_coinductive_definitions, the_definitions, the_specifications.
 
 \ENDDOC

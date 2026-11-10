@@ -59,6 +59,7 @@ HOL cannot prove monotonicity (and indeed, it doesn't hold).
 Using existence of inductive relations as an auxiliary device inside a proof.
 
 \SEEALSO
-derive_strong_induction, new_inductive_definition, prove_monotonicity_hyps.
+derive_strong_induction, new_inductive_definition,
+prove_coinductive_relations_exist, prove_monotonicity_hyps.
 
 \ENDDOC

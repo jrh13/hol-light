@@ -5374,10 +5374,11 @@ let HAS_SUP_LE = prove
   ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
-(* Inductive definition of sets, by reducing them to inductive relations.    *)
+(* Inductive and coinductive definition of sets, by reducing them to        *)
+(* inductive or coinductive relations.                                       *)
 (* ------------------------------------------------------------------------- *)
 
-let new_inductive_set =
+let new_inductive_set,new_coinductive_set =
   let const_of_var v = mk_mconst(name_of v,type_of v) in
   let comb_all =
     let rec f (n:int) (tm:term) : hol_type list -> term = function
@@ -5401,11 +5402,13 @@ let new_inductive_set =
     let tm = snd(dest_binary "IN" tm) in
     fst(strip_comb tm) in
   let find_pvars = setify o map rule_head o binops `(/\)` in
-  fun tm ->
+  let new_set_definition new_relation_definition tm =
     let pvars = find_pvars tm in
     let dtm = remove_in_transf pvars tm in
-    let th_rules, th_induct, th_cases = new_inductive_definition dtm in
+    let th_rules, th_induct, th_cases = new_relation_definition dtm in
     let insert_in_rule = REWRITE_RULE(map (mk_eqin o const_of_var) pvars) in
     insert_in_rule th_rules,
     insert_in_rule th_induct,
-    insert_in_rule th_cases;;
+    insert_in_rule th_cases in
+  new_set_definition new_inductive_definition,
+  new_set_definition new_coinductive_definition;;

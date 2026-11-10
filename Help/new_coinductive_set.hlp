@@ -1,0 +1,43 @@
+\DOC new_coinductive_set
+
+\TYPE {new_coinductive_set : term -> thm * thm * thm}
+
+\SYNOPSIS
+Define a set or family of sets coinductively.
+
+\DESCRIBE
+The function {new_coinductive_set} is applied to a conjunction of ``rules'',
+each of the form {!x1...xn. Pi ==> ti IN Sk}, as for {new_inductive_set}, but
+this conjunction is interpreted as a coinductive definition of a family of
+sets {Sk}. That is, the sets are defined to be the largest ones consistent
+with the rules, in the sense that each of their elements arises by one of the
+rules from elements of the sets. The function {new_coinductive_set} will
+convert this into explicit definitions, define a new constant for each {Sk},
+and return a triple of theorems: the rule theorem, the coinduction theorem and
+the cases theorem, as for {new_coinductive_definition}.
+
+\FAILURE
+Fails if the clauses are malformed, if the constants are already in use, or if
+there are unproven monotonicity hypotheses. See {new_coinductive_definition}
+for more detailed discussion in the similar case of coinductive relations.
+
+\EXAMPLE
+The set of points from which there is an infinite path in a relation {R}:
+{
+  # let DIVERGING_RULES,DIVERGING_COINDUCT,DIVERGING_CASES =
+      new_coinductive_set
+       `!x:A y. R x y /\ y IN diverging R ==> x IN diverging R`;;
+  val DIVERGING_RULES : thm =
+    |- !R x y. R x y /\ y IN diverging R ==> x IN diverging R
+  val DIVERGING_COINDUCT : thm =
+    |- !R diverging'.
+           (!a. diverging' a ==> (?y. R a y /\ diverging' y))
+           ==> (!a. diverging' a ==> a IN diverging R)
+  val DIVERGING_CASES : thm =
+    |- !R a. a IN diverging R <=> (?y. R a y /\ y IN diverging R)
+}
+
+\SEEALSO
+new_coinductive_definition, new_inductive_set.
+
+\ENDDOC

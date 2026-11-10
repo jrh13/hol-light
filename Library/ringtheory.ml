@@ -31410,16 +31410,16 @@ let RING_IDEAL_POLY_LEAST_DEGREE_ROOT = prove
   ASM_REWRITE_TAC[POLY_EVAL_0] THEN
   SUBGOAL_THEN `d:num <= N` ASSUME_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
   ABBREV_TAC
-   `bx = poly_mul l (poly_pow l (poly_var l one) (N - d))
+   `xb = poly_mul l (poly_pow l (poly_var l one) (N - d))
                     ((g:A->B) o (b:(1->num)->A))` THEN
   SUBGOAL_THEN
    `(p:(1->num)->A) IN ring_carrier(poly_ring r (:1)) /\
     (b:(1->num)->A) IN ring_carrier(poly_ring r (:1)) /\
     coeff N p IN ring_carrier r /\
     ring_polynomial l ((g:A->B) o p) /\ ring_polynomial l ((g:A->B) o b) /\
-    ring_polynomial l (bx:(1->num)->B) /\ poly_eval l bx w = ring_0 l`
+    ring_polynomial l (xb:(1->num)->B) /\ poly_eval l xb w = ring_0 l`
   STRIP_ASSUME_TAC THENL
-   [ASM_SIMP_TAC[COEFF_IN_CARRIER_ALT] THEN EXPAND_TAC "bx" THEN
+   [ASM_SIMP_TAC[COEFF_IN_CARRIER_ALT] THEN EXPAND_TAC "xb" THEN
     ASM_SIMP_TAC[RING_POLYNOMIAL_MUL; RING_POLYNOMIAL_POW; RING_POLYNOMIAL_VAR;
                  POLY_EVAL_MUL; RING_MUL_RZERO; POLY_EVAL];
     ALL_TAC] THEN
@@ -31442,7 +31442,7 @@ let RING_IDEAL_POLY_LEAST_DEGREE_ROOT = prove
             (ring_pow (poly_ring r (:1)) (poly_var r one) (N - d))
             (b:(1->num)->A))) =
     poly_sub l (poly_mul l (poly_const l (g(coeff d b))) (g o p))
-               (poly_mul l (poly_const l (g(coeff N p))) bx)`
+               (poly_mul l (poly_const l (g(coeff N p))) xb)`
   ASSUME_TAC THENL
    [MP_TAC(ISPEC `(:1)` (MATCH_MP RING_HOMOMORPHISM_POLY_RINGS
       (ASSUME `ring_homomorphism(r:A ring,l:B ring) g`))) THEN
@@ -31489,7 +31489,7 @@ let RING_IDEAL_POLY_LEAST_DEGREE_ROOT = prove
    `ring_polynomial l (poly_mul l (poly_const l ((g:A->B)(coeff d b)))
                                   (g o (p:(1->num)->A))) /\
     ring_polynomial l (poly_mul l (poly_const l ((g:A->B)(coeff N p)))
-                                  (bx:(1->num)->B))`
+                                  (xb:(1->num)->B))`
   STRIP_ASSUME_TAC THENL
    [ASM_SIMP_TAC[RING_POLYNOMIAL_MUL; RING_POLYNOMIAL_CONST]; ALL_TAC] THEN
   ASM_SIMP_TAC[POLY_EVAL_SUB; POLY_EVAL_MUL; POLY_EVAL_CONST;
@@ -33495,14 +33495,14 @@ let MONIC_POLY_EXTEND_WEIGHT = prove
   SUBST1_TAC THENL
    [EXPAND_TAC "pr" THEN REWRITE_TAC[poly_extend; o_THM; POLY_RING_CLAUSES];
     ALL_TAC] THEN
-  ABBREV_TAC `S0 = {m | ~((f:(V->num)->A) m = ring_0 k)} DELETE a` THEN
-  SUBGOAL_THEN `{m | ~((f:(V->num)->A) m = ring_0 k)} = a INSERT S0`
-  SUBST1_TAC THENL [EXPAND_TAC "S0" THEN ASM SET_TAC[]; ALL_TAC] THEN
+  ABBREV_TAC `S0' = {m | ~((f:(V->num)->A) m = ring_0 k)} DELETE a` THEN
+  SUBGOAL_THEN `{m | ~((f:(V->num)->A) m = ring_0 k)} = a INSERT S0'`
+  SUBST1_TAC THENL [EXPAND_TAC "S0'" THEN ASM SET_TAC[]; ALL_TAC] THEN
   SUBGOAL_THEN
-   `FINITE (S0:(V->num)->bool) /\ ~((a:V->num) IN S0) /\
-    (!m. m IN S0 ==> ~((f:(V->num)->A) m = ring_0 k) /\ ~(m = a))`
+   `FINITE (S0':(V->num)->bool) /\ ~((a:V->num) IN S0') /\
+    (!m. m IN S0' ==> ~((f:(V->num)->A) m = ring_0 k) /\ ~(m = a))`
   STRIP_ASSUME_TAC THENL
-   [EXPAND_TAC "S0" THEN ASM_SIMP_TAC[FINITE_DELETE; IN_DELETE; IN_ELIM_THM];
+   [EXPAND_TAC "S0'" THEN ASM_SIMP_TAC[FINITE_DELETE; IN_DELETE; IN_ELIM_THM];
     ALL_TAC] THEN
   ASM_SIMP_TAC[RING_SUM_CLAUSES; GSYM poly_1; POLY_MUL_LID] THEN
   REWRITE_TAC[POLY_RING_CLAUSES] THEN
@@ -33515,7 +33515,7 @@ let MONIC_POLY_EXTEND_WEIGHT = prove
    [MESON_TAC[RING_SUM; IN_POLY_RING_CARRIER]; ALL_TAC] THEN
   X_GEN_TAC `d:num` THEN DISCH_TAC THEN
   SUBGOAL_THEN
-   `!m. m IN S0
+   `!m. m IN S0'
         ==> ring_polynomial r
              (poly_mul r (poly_const r ((h:A->B) ((f:(V->num)->A) m)))
                          ((pr:(V->num)->(1->num)->B) m)) /\

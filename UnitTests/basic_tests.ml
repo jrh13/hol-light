@@ -106,6 +106,17 @@ let _ = new_inductive_definition
    (forall s s'' n. (exists s'. step s s' /\ steps step n s' s'')
       ==> steps step (n+1) s s'')`;;
 
+(* ------------------------------------------------------------------------- *)
+(* Test benign redefinition of a coinductive definition.                     *)
+(* ------------------------------------------------------------------------- *)
+
+let _ = new_coinductive_definition
+  `forall s s'. step s s' /\ diverges (step:S->S->bool) s'
+                ==> diverges step s`;;
+let _ = new_coinductive_definition
+  `forall s s'. step s s' /\ diverges (step:S->S->bool) s'
+                ==> diverges step s`;;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Test the 'er' command of the subgoal package.                             *)

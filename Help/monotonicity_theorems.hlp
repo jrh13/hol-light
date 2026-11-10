@@ -51,6 +51,6 @@ first establish a lemma:
 }
 
 \SEEALSO
-new_inductive_definition.
+new_coinductive_definition, new_inductive_definition.
 
 \ENDDOC

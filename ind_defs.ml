@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(* Mutually inductively defined relations.                                   *)
+(* Mutually inductively and coinductively defined relations.                 *)
 (*                                                                           *)
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*                                                                           *)
@@ -50,11 +50,13 @@ let EXISTS_EQUATION =
     MP th2 th4;;
 
 (* ========================================================================= *)
-(* Part 1: The main part of the inductive definitions package.               *)
-(* This proves that a certain definition yields the requires theorems.       *)
+(* Part 1: The main part of the inductive and coinductive definitions        *)
+(* packages. This proves that a certain definition yields the required       *)
+(* theorems, the coinductive case being the dual of the inductive one.       *)
 (* ========================================================================= *)
 
-let derive_nonschematic_inductive_relations =
+let derive_nonschematic_inductive_relations,
+    derive_nonschematic_coinductive_relations =
   let getconcl tm =
     let bod = repeat (snd o dest_forall) tm in
     try snd(dest_imp bod) with Failure _ -> bod
@@ -227,19 +229,96 @@ let derive_nonschematic_inductive_relations =
       GENL avs (IMP_ANTISYM_RULE (SPEC_ALL th1) (SPEC_ALL th2)) in
     let casethm = end_itlist CONJ
       (map2 mk_case (CONJUNCTS fthm) (CONJUNCTS rulethm)) in
-    CONJ rulethm (CONJ indthm casethm) in
-  fun tm ->
+    CONJ rulethm (CONJ indthm casethm)
+  and derive_canon_coinductive_relations clauses =
+    let closed = list_mk_conj clauses in
+    let clauses = conjuncts closed in
+    let vargs,bodies = unzip(map strip_forall clauses) in
+    let ants,concs = unzip(map dest_imp bodies) in
+    let rels = map (repeat rator) concs in
+    let avoids = variables closed in
+    let rels' = variants avoids rels in
+    let crels = zip rels' rels in
+    let prime_fn = subst crels in
+    let closed' = list_mk_conj
+      (map2 (fun a (t,c) -> list_mk_forall(a,mk_imp(prime_fn c,prime_fn t)))
+            vargs (zip ants concs)) in
+    let mk_def arg con =
+      mk_eq(repeat rator con,
+        list_mk_abs(arg,
+          list_mk_exists(rels',mk_conj(closed',prime_fn con)))) in
+    let deftms = map2 mk_def vargs concs in
+    let defthms = map2 HALF_BETA_EXPAND vargs (map ASSUME deftms) in
+    let closthm = ASSUME closed' in
+    let mk_coind args (con,dth) =
+      let pcon = prime_fn con in
+      let th1 = itlist SIMPLE_EXISTS rels' (CONJ closthm (ASSUME pcon)) in
+      GENL args (DISCH pcon (EQ_MP (SYM(SPECL args dth)) th1)) in
+    let coindthmr =
+      end_itlist CONJ (map2 mk_coind vargs (zip concs defthms)) in
+    let coindthm = GENL rels' (DISCH closed' coindthmr) in
+    let mconcs = map2 (fun a t -> list_mk_forall(a,mk_imp(t,prime_fn t)))
+      vargs ants
+    and sconcs = map2 (fun a c -> list_mk_forall(a,mk_imp(c,prime_fn c)))
+      vargs concs in
+    let monotm = mk_imp(list_mk_conj sconcs,list_mk_conj mconcs) in
+    let monothm = ASSUME(list_mk_forall(rels,list_mk_forall(rels',monotm))) in
+    let monothm' = SPECL rels (SPECL rels' monothm) in
+    let rec choose_all vs exth th =
+      match vs with
+        [] -> PROVE_HYP exth th
+      | v::ovs -> let v',bod = dest_exists(concl exth) in
+                  CHOOSE (v',exth) (choose_all ovs (ASSUME bod) th) in
+    let prove_unfold n args dth =
+      let rtm = lhs(concl(SPECL args dth)) in
+      let th0 = UNDISCH(fst(EQ_IMP_RULE(SPECL args dth))) in
+      let bod = snd(strip_exists(concl th0)) in
+      let cth,rth = CONJ_PAIR(ASSUME bod) in
+      let th1 = MP (SPECL args (el n (CONJUNCTS cth))) rth in
+      let th2 = MP monothm' (MP (SPECL rels' coindthm) cth) in
+      let th3 = MP (SPECL args (el n (CONJUNCTS th2))) th1 in
+      GENL args (DISCH rtm (choose_all rels' th0 th3)) in
+    let unfoldthms = map2 (fun (n,a) d -> prove_unfold n a d)
+      (zip (0--(length clauses - 1)) vargs) defthms in
+    let dtms = map2 (curry list_mk_abs) vargs ants in
+    let double_fn = subst (zip dtms rels) in
+    let imp_tm = `(==>)` in
+    let mk_unbetas args ant con dtm =
+      let bth = RIGHT_BETAS args (REFL dtm) in
+      let quantify = itlist MK_FORALL args in
+      quantify (AP_TERM (mk_comb(imp_tm,con)) bth),
+      quantify (AP_THM (AP_TERM imp_tm bth) (double_fn ant)),
+      quantify (AP_THM (AP_TERM imp_tm bth) con) in
+    let unths = map2 (fun (a,t) (c,d) -> mk_unbetas a t c d)
+      (zip vargs ants) (zip concs dtms) in
+    let unconj f = end_itlist MK_CONJ (map f unths) in
+    let th1 = EQ_MP (SYM(unconj (fun (x,_,_) -> x)))
+                    (end_itlist CONJ unfoldthms) in
+    let th2 = MP (SPECL dtms (SPECL rels monothm)) th1 in
+    let th3 = EQ_MP (SYM(unconj (fun (_,x,_) -> x))) th2 in
+    let th4 = MP (SPECL dtms coindthm) th3 in
+    let rulethm = EQ_MP (unconj (fun (_,_,x) -> x)) th4 in
+    let mk_case th1 th2 =
+      let avs = fst(strip_forall(concl th1)) in
+      GENL avs (IMP_ANTISYM_RULE (SPEC_ALL th1) (SPEC_ALL th2)) in
+    let casethm = end_itlist CONJ
+      (map2 mk_case unfoldthms (CONJUNCTS rulethm)) in
+    CONJ rulethm (CONJ coindthm casethm) in
+  let derive_nonschematic_relations derive_canon fix_induction tm =
     let clauses = conjuncts tm in
     let canonthm = canonicalize_clauses clauses in
     let canonthm' = SYM canonthm in
     let pclosed = rand(concl canonthm) in
     let pclauses = conjuncts pclosed in
-    let rawthm = derive_canon_inductive_relations pclauses in
+    let rawthm = derive_canon pclauses in
     let rulethm,otherthms = CONJ_PAIR rawthm in
     let indthm,casethm = CONJ_PAIR otherthms in
     let rulethm' = EQ_MP canonthm' rulethm
-    and indthm' = CONV_RULE (ONCE_DEPTH_CONV (REWR_CONV canonthm')) indthm in
-    CONJ rulethm' (CONJ indthm' casethm);;
+    and indthm' = fix_induction canonthm' indthm in
+    CONJ rulethm' (CONJ indthm' casethm) in
+  derive_nonschematic_relations derive_canon_inductive_relations
+   (fun th -> CONV_RULE (ONCE_DEPTH_CONV (REWR_CONV th))),
+  derive_nonschematic_relations derive_canon_coinductive_relations (K I);;
 
 (* ========================================================================= *)
 (* Part 2: Tactic-integrated tools for proving monotonicity automatically.   *)
@@ -303,7 +382,10 @@ let prove_monotonicity_hyps =
 
 let the_inductive_definitions = ref [];;
 
-let prove_inductive_relations_exist,new_inductive_definition =
+let the_coinductive_definitions = ref [];;
+
+let prove_inductive_relations_exist,new_inductive_definition,
+    prove_coinductive_relations_exist,new_coinductive_definition =
   let rec pare_comb qvs tm =
     if intersect (frees tm) qvs = [] && forall is_var (snd(strip_comb tm))
     then tm
@@ -351,31 +433,35 @@ let prove_inductive_relations_exist,new_inductive_definition =
       clauses',snd(strip_comb(hd schems)) in
   let find_redefinition tm (rth,ith,cth as trip):((thm*thm*thm)*thm) =
     (trip,PART_MATCH I rth tm) in
-  let prove_inductive_properties tm =
+  let prove_properties derive tm =
     let clauses = conjuncts tm in
     let clauses',fvs = unschematize_clauses clauses in
-    let th = derive_nonschematic_inductive_relations (list_mk_conj clauses') in
+    let th = derive (list_mk_conj clauses') in
     fvs,prove_monotonicity_hyps th in
-  let prove_inductive_relations_exist tm =
-    let fvs,th1 = prove_inductive_properties tm in
+  let prove_relations_exist derive tm =
+    let fvs,th1 = prove_properties derive tm in
     let th2 = generalize_schematic_variables true fvs th1 in
     derive_existence th2
-  and new_inductive_definition tm =
+  and new_definition_of derive store kind tm =
     try let tm' = snd(strip_forall tm) in
-        let th,_ = tryfind (find_redefinition tm')
-          (!the_inductive_definitions) in
-        warn true "Benign redefinition of inductive predicate";th
+        let th,_ = tryfind (find_redefinition tm') (!store) in
+        warn true ("Benign redefinition of "^kind^" predicate");th
     with Failure _ ->
-    let fvs,th1 = prove_inductive_properties tm in
+    let fvs,th1 = prove_properties derive tm in
     let th2 = generalize_schematic_variables true fvs th1 in
     let th3 = make_definitions th2 in
     let avs = fst(strip_forall(concl th3)) in
     let r,ic = CONJ_PAIR(SPECL avs th3) in
     let i,c = CONJ_PAIR ic in
     let thtr = GENL avs r,GENL avs i,GENL avs c in
-    the_inductive_definitions := thtr::(!the_inductive_definitions);
+    store := thtr::(!store);
     thtr in
-  prove_inductive_relations_exist,new_inductive_definition;;
+  prove_relations_exist derive_nonschematic_inductive_relations,
+  new_definition_of derive_nonschematic_inductive_relations
+    the_inductive_definitions "inductive",
+  prove_relations_exist derive_nonschematic_coinductive_relations,
+  new_definition_of derive_nonschematic_coinductive_relations
+    the_coinductive_definitions "coinductive";;
 
 (* ------------------------------------------------------------------------- *)
 (* Derivation of "strong induction".                                         *)
@@ -440,3 +526,65 @@ let derive_strong_induction =
     let nasm = lhand(concl th3) in
     let th4 = GENL ps (DISCH nasm (weaken_triv(UNDISCH th3))) in
     GENL svs (prove_monotonicity_hyps th4);;
+
+(* ------------------------------------------------------------------------- *)
+(* Derivation of "strong coinduction", from the cases and coinduction        *)
+(* theorems, where the relations themselves may be used in proving that the  *)
+(* hypothesis is a post-fixpoint, i.e. ant[\a. R' a \/ R a] in place of      *)
+(* ant[R'].                                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let derive_strong_coinduction =
+  let rec MULTI_BETA_CONV tm =
+    if is_abs(rator tm) then BETA_CONV tm
+    else (RATOR_CONV MULTI_BETA_CONV THENC BETA_CONV) tm in
+  fun (cth,coth) ->
+    let ovs,cbod = strip_forall(concl coth) in
+    let chyp,ccon = dest_imp cbod in
+    let cconcs = conjuncts ccon in
+    let svs,rvs = chop_list (length ovs - length cconcs) ovs in
+    let trips = map (fun c ->
+      let avs,bod = strip_forall c in
+      let l,r = dest_imp bod in
+      let n = length avs in
+      avs,funpow n rator l,funpow n rator r) cconcs in
+    let lams = map (fun (avs,p,r) ->
+      list_mk_abs(avs,mk_disj(list_mk_comb(p,avs),list_mk_comb(r,avs))))
+      trips in
+    let LAMS_CONV tm =
+      if mem (repeat rator tm) lams then MULTI_BETA_CONV tm
+      else failwith "LAMS_CONV" in
+    let BCONV = TOP_DEPTH_CONV LAMS_CONV in
+    let strengthen cl =
+      let avs,bod = strip_forall cl in
+      let l,r = dest_imp bod in
+      let r' = rand(concl(BCONV(subst (zip lams rvs) r))) in
+      list_mk_forall(avs,mk_imp(l,r')) in
+    let shyp = list_mk_conj(map strengthen (conjuncts chyp)) in
+    let sths = CONJUNCTS(ASSUME shyp) in
+    let leafths = map (fun (avs,p,r) ->
+      let ptm = list_mk_comb(p,avs) and rtm = list_mk_comb(r,avs) in
+      GENL avs (DISCH rtm (DISJ2 ptm (ASSUME rtm)))) trips in
+    let cths = CONJUNCTS(SPECL svs cth) in
+    let mk_step (avs,p,r) sth cth =
+      let sth' = SPECL avs sth in
+      let ant' = rand(concl sth') in
+      let cth' = fst(EQ_IMP_RULE(SPECL avs cth)) in
+      let ant = rand(concl cth') in
+      let mth =
+        try prove(mk_imp(ant,ant'),MAP_EVERY ASSUME_TAC leafths THEN MONO_TAC)
+        with Failure _ ->
+          failwith "derive_strong_coinduction: can't prove monotonicity" in
+      let rth = IMP_TRANS cth' mth in
+      let ptm = list_mk_comb(p,avs) and rtm = list_mk_comb(r,avs) in
+      let dtm = mk_disj(ptm,rtm) in
+      GENL avs (DISCH dtm (DISJ_CASES (ASSUME dtm) (MP sth' (ASSUME ptm))
+                                                    (MP rth (ASSUME rtm)))) in
+    let steps = map2 (fun t (s,c) -> mk_step t s c) trips (zip sths cths) in
+    let th1 = CONV_RULE BCONV (SPECL (svs @ lams) coth) in
+    let th2 = MP th1 (end_itlist CONJ steps) in
+    let mk_fin (avs,p,r) th =
+      let ptm = list_mk_comb(p,avs) and rtm = list_mk_comb(r,avs) in
+      GENL avs (DISCH ptm (MP (SPECL avs th) (DISJ1 (ASSUME ptm) rtm))) in
+    let th3 = end_itlist CONJ (map2 mk_fin trips (CONJUNCTS th2)) in
+    GENL ovs (DISCH shyp th3);;

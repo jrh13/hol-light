@@ -1,0 +1,79 @@
+\DOC new_coinductive_definition
+
+\TYPE {new_coinductive_definition : term -> thm * thm * thm}
+
+\SYNOPSIS
+Define a relation or family of relations coinductively.
+
+\DESCRIBE
+The function {new_coinductive_definition} is applied to a conjunction of
+``rules'' of exactly the same form as for {new_inductive_definition}, namely
+{!x1...xn. Pi ==> Ri t1 ... tk}, but this conjunction is interpreted as a
+coinductive definition of the relations {Ri}. That is, instead of the
+smallest relations closed under the rules, the relations are defined to be the
+largest ones consistent with the rules, in the sense that each tuple
+satisfying one of them arises by one of the rules from tuples satisfying them.
+As with {new_inductive_definition}, explicit definitions are made, a new
+constant is defined for each {Ri}, and a triple of theorems is returned. The
+first one is the ``rule'' theorem, which essentially matches the input clauses
+except that the {Ri} are now the new constants; this says that the new
+relations are closed under the rules. The second is a coinduction theorem,
+asserting that the relations are the largest ones consistent with the rules:
+if some relations {Ri'} are such that each tuple satisfying one of them arises
+by one of the rules from tuples satisfying the {Ri'}, then the {Ri'} are
+included in the {Ri}. Finally, the cases theorem shows how each tuple
+satisfying the relations arises by the rules, in the same form as the
+hypothesis of the coinduction theorem.
+
+\FAILURE
+Fails if the clauses are malformed, if the constants are already in use, or if
+there are unproven monotonicity hypotheses. In the last case, you can try
+{prove_coinductive_relations_exist} to examine these hypotheses, and either
+try to prove them manually or extend {monotonicity_theorems} to let HOL do it.
+
+\EXAMPLE
+A relation {R} has an infinite path from {x} if {x} has an {R}-successor from
+which there is an infinite path. Interpreted inductively this rule, having no
+base case, would define the empty relation. Interpreted coinductively it gives
+the intended notion:
+{
+  # let infpath_RULES,infpath_COINDUCT,infpath_CASES =
+      new_coinductive_definition
+       `!x:A y. R x y /\ infpath R y ==> infpath R x`;;
+  val infpath_RULES : thm = |- !R x y. R x y /\ infpath R y ==> infpath R x
+  val infpath_COINDUCT : thm =
+    |- !R infpath'.
+           (!a. infpath' a ==> (?y. R a y /\ infpath' y))
+           ==> (!a. infpath' a ==> infpath R a)
+  val infpath_CASES : thm = |- !R a. infpath R a <=> (?y. R a y /\ infpath R y)
+}
+\noindent To show that there are infinite paths from all the elements of a
+set, it suffices to show that each of them has a successor in the set, and
+apply the coinduction theorem. For example, there is an infinite increasing
+sequence of numbers starting at any number:
+{
+  # g `!n. infpath (<) n`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!n. infpath (<) n`
+
+  # e(MP_TAC(ISPECL [`(<)`; `\n:num. T`] infpath_COINDUCT) THEN
+      REWRITE_TAC[]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `((!a. ?y. a < y) ==> (!a. infpath (<) a)) ==> (!n. infpath (<) n)`
+
+  # e(MESON_TAC[ARITH_RULE `n < SUC n`]);;
+  0..0..solved at 2
+  0..0..solved at 2
+  val it : goalstack = No subgoals
+}
+\noindent Mutual coinductive definitions, schematic variables and the use of
+{monotonicity_theorems} are all as for {new_inductive_definition}.
+
+\SEEALSO
+derive_strong_coinduction, new_coinductive_set, new_inductive_definition,
+prove_coinductive_relations_exist, prove_monotonicity_hyps,
+the_coinductive_definitions.
+
+\ENDDOC

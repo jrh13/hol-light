@@ -1,0 +1,46 @@
+\DOC derive_nonschematic_coinductive_relations
+
+\TYPE {derive_nonschematic_coinductive_relations : term -> thm}
+
+\SYNOPSIS
+Deduce coinductive definitions properties from an explicit assignment.
+
+\DESCRIBE
+Given a set of clauses as given to {new_coinductive_definition}, the call
+{derive_nonschematic_coinductive_relations} will introduce explicit
+equational constraints (``definitions'', though only assumptions of the
+theorem, not actually constant definitions) that allow it to deduce the rule,
+coinduction and cases theorems. Each relation is defined as the union of all
+relations consistent with the rules. The theorem will in general have
+additional `monotonicity' hypotheses, but these may be removable by
+{prove_monotonicity_hyps}. None of the arguments are treated as schematic.
+
+\FAILURE
+Fails if the format of the clauses is wrong.
+
+\EXAMPLE
+Here a predicate on sequences says that {P} holds at every position:
+{
+  # (prove_monotonicity_hyps o derive_nonschematic_coinductive_relations)
+      `!s:num->A. P(s 0) /\ always(\n. s(SUC n)) ==> always s`;;
+  val it : thm =
+    always =
+    (\a. ?always'.
+             (!a. always' a ==> P (a 0) /\ always' (\n. a (SUC n))) /\
+             always' a)
+    |- (!s. P (s 0) /\ always (\n. s (SUC n)) ==> always s) /\
+       (!always'.
+            (!a. always' a ==> P (a 0) /\ always' (\n. a (SUC n)))
+            ==> (!a. always' a ==> always a)) /\
+       (!a. always a <=> P (a 0) /\ always (\n. a (SUC n)))
+}
+
+\USES
+This is a lower-level function underlying {new_coinductive_definition} and
+{prove_coinductive_relations_exist}, and is not normally used directly.
+
+\SEEALSO
+derive_nonschematic_inductive_relations, new_coinductive_definition,
+prove_coinductive_relations_exist, prove_monotonicity_hyps.
+
+\ENDDOC

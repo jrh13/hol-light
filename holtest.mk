@@ -17,6 +17,7 @@ STANDALONE_EXAMPLES:=\
 	Library/card \
 	Autoformalization/carleson \
 	Autoformalization/carleson_hunt \
+	Examples/coinduction \
 	Examples/combin \
 	Examples/complexpolygon \
 	Examples/cong \
@@ -48,6 +49,7 @@ STANDALONE_EXAMPLES:=\
 	Library/jacobi \
 	Examples/kb \
 	Examples/lagrange_lemma \
+	Library/llist \
 	Examples/lucas_lehmer \
 	Examples/mangoldt \
 	Library/matroids \
