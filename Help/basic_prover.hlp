@@ -14,10 +14,18 @@ these are applied to unproven subgoals arising in simplification. The
 tries to simplify the goals with the rewrites as far as possible, then tries
 the provers one at a time on the resulting subgoals till one succeeds.
 
+For an existential goal {?x1 ... xn. p}, it first uses {find_witnesses} to try
+to choose witnesses with the help of the provers (in the standard simpsets,
+this means matching against the facts in the context with {satisfy_prover}),
+and then tries to prove the corresponding instance of {p} in the same way. If
+this fails, it proceeds as above. A prover may also prove an existential goal
+by returning the instance of its body for some witnesses, as
+{satisfy_prover} does, and {basic_prover} will turn that into the existential.
+
 \FAILURE
 Never fails, though the later application to a term may fail to prove it.
 
 \SEEALSO
-mk_prover, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+find_witnesses, mk_prover, satisfy_prover, SIMP_CONV, SIMP_RULE, SIMP_TAC.
 
 \ENDDOC

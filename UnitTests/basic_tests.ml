@@ -212,6 +212,68 @@ let UNIFY_REFL_TAC_TEST3 = prove(`?f. y + 1 = f y 0`,
 
 
 (* ------------------------------------------------------------------------- *)
+(* Test instantiation of variables in the conditions of conditional rewrites *)
+(* that are not determined by the LHS (find_witnesses and satisfy_prover).   *)
+(* ------------------------------------------------------------------------- *)
+
+let simp_test conv thl tm =
+  let th = conv thl tm in
+  assert (lhs(concl th) = tm && subset (hyp th) (itlist (union o hyp) thl []));
+  rhs(concl th);;
+
+let _ =
+  let rule = ASSUME `!s:B x:A. P s x ==> f x = x`
+  and rrule = ASSUME `!s:B x:A. P s x ==> (f:A->A) x = g s x`
+  and fact = ASSUME `(P:B->A->bool) c q` and tm = `(f:A->A) q` in
+  (* A variable only in the condition, or also in the RHS *)
+  assert (simp_test SIMP_CONV [rule; fact] tm = `q:A`);
+  assert (simp_test PURE_SIMP_CONV [rule; fact] tm = `q:A`);
+  assert (simp_test ONCE_SIMP_CONV [rule; fact] tm = `q:A`);
+  assert (simp_test SIMP_CONV [rrule; fact] tm = `(g:B->A->A) c q`);
+  (* No suitable fact, including one at a different type: no change *)
+  assert (simp_test SIMP_CONV [rule] tm = tm);
+  assert (simp_test SIMP_CONV [rule; ASSUME `(P:B->A->bool) c z`] tm = tm);
+  assert (simp_test SIMP_CONV [rule; ASSUME `(P:B->bool->bool) c T`] tm = tm);
+  (* Plain rewriting is unaffected *)
+  assert (rhs(concl(REWRITE_CONV [rule; fact] tm)) = tm);;
+
+let _ =
+  let rule = ASSUME `!s:B x:A. P s x /\ Q s x ==> f x = x`
+  and tm = `(f:A->A) q` in
+  (* Backtrack over facts until all the conjuncts agree on the witness *)
+  assert (simp_test SIMP_CONV
+           [rule; ASSUME `(P:B->A->bool) c q`; ASSUME `(P:B->A->bool) d q`;
+            ASSUME `(Q:B->A->bool) d q`] tm = `q:A`);
+  assert (simp_test SIMP_CONV
+           [rule; ASSUME `(P:B->A->bool) c q`; ASSUME `(Q:B->A->bool) d q`]
+           tm = tm);
+  (* Separate existential and RHS variables solved together *)
+  let rule' = ASSUME `!s:B t:C x:A. P s x /\ R t x ==> (f:A->A) x = g s x` in
+  assert (simp_test SIMP_CONV
+           [rule'; ASSUME `(P:B->A->bool) c q`; ASSUME `(R:C->A->bool) d q`]
+           tm = `(g:B->A->A) c q`);;
+
+let _ =
+  let rule = ASSUME `!s:B x:A. P s x ==> f x = x` in
+  (* Facts from the context, e.g. an antecedent or the assumptions *)
+  assert (simp_test SIMP_CONV [rule]
+           `(P:B->A->bool) c q ==> (f:A->A) q = q` = `T`);
+  ignore(prove(`(!s:B x:A. P s x ==> f x = x) /\ P c q ==> f q = q`,
+               STRIP_TAC THEN ASM_SIMP_TAC[]));;
+
+let _ =
+  (* An instance with the LHS inside the RHS is not used, avoiding a loop *)
+  let rule = ASSUME `!s:A x:A. P s x ==> (f:A->A) x = g s x` in
+  assert (simp_test SIMP_CONV [rule; ASSUME `(P:A->A->bool) (f q) q`]
+           `(f:A->A) q` = `(f:A->A) q`);
+  (* Instantiated permutative rewrites must decrease in the term ordering *)
+  let rule = ASSUME `!x:A y:A. R x y ==> (f:A->A) x = f y`
+  and facts = [ASSUME `(R:A->A->bool) a b`; ASSUME `(R:A->A->bool) b a`] in
+  let check tm = let tm' = simp_test SIMP_CONV (rule::facts) tm in
+                 assert (tm' = tm || term_order tm tm') in
+  check `(f:A->A) a`; check `(f:A->A) b`;;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

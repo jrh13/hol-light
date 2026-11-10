@@ -8,6 +8,51 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon  9th Nov 2026       drule.ml, fusion.ml, tactics.ml
+
+Fixed a few remaining cases where the plain OCaml structural equality
+function "=" was used in place of "compare"; the latter is preferred
+since it shortcuts quickly on pointer-eq subterms. These were pointed
+out by Hanno Becker.
+
+Sat  7th Nov 2026       simp.ml, Help/find_witnesses.hlp [new file], Help/satisfy_prover.hlp [new file], passim
+
+The simplifier can now use a conditional rewrite |- c ==> l = r whose
+condition c has variables not determined by matching the left-hand side l,
+by instantiating them from facts in the context. For example, given an
+assumption q IN ring_carrier(poly_ring r (:V)), the rewrite
+
+  |- p IN ring_carrier(poly_ring r s) ==> poly_add r p (poly_0 r) = p
+
+now applies to poly_add r q (poly_0 r) even though s does not occur on the
+left, and with an assumption ring_homomorphism(r,s) f, the call
+ASM_SIMP_TAC[RING_HOMOMORPHISM_MUL] rewrites f(ring_mul r x y) to
+ring_mul s (f x) (f y), choosing s for r' although r' also occurs on the
+right. Previously the latter only worked when the variable names happened
+to coincide, so one usually wrote something like
+FIRST_ASSUM(fun th -> ASM_SIMP_TAC[MATCH_MP RING_HOMOMORPHISM_MUL th]).
+
+The approach follows Don Syme's SATISFY from hol98 (still in HOL4). A new
+prover satisfy_prover, included in basic_ss and empty_ss, collects facts from
+the context and proves an existential ?x1 ... xn. p1 /\ ... /\ pk by
+matching each conjunct pi against the facts, returning the instance with the
+witnesses rather than the existential itself. The new function find_witnesses
+uses this to choose an instantiation, which basic_prover uses for existential
+conditions (as produced by mk_rewrites for variables occurring only in the
+condition) and the depth conversions use for conditions with otherwise
+unconstrained variables. The instantiated condition is then proved in the
+usual way; if no instantiation is found, the behaviour is as before. Since
+the right-hand side of a conditional rewrite may now only be fixed when it is
+applied, such an instance is checked then, much as net_of_thm checks rewrites:
+it is rejected if the left-hand side occurs in the right-hand side, or if it
+is permutative and does not decrease in term_order. A few tests of all this
+are in UnitTests/basic_tests.ml.
+
+The extra power broke various existing proofs so these have been tweaked;
+for example about 95 explicit instantiations of homomorphism and similar
+theorems in Library/{ringtheory,ring_det,fieldtheory,galois,grouptheory}.ml
+have been replaced by plain uses of the theorems.
+
 Sat  7th Nov 2026       Baker/* [new directory], holtest.mk
 
 Added a development of the theory of linear forms in the logarithms of

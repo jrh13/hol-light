@@ -28,7 +28,6 @@ let real_infsum_offset = prove
   (`!m k f. real_summable (from m) f /\ m <= k 
    ==> real_infsum (from m) f = sum (m..k) f + real_infsum (from (k + 1)) f`,
    REPEAT STRIP_TAC THEN
-     FIRST_ASSUM (MP_TAC o SPEC `k + 1` o MATCH_MP REAL_SUMMABLE_FROM_ELSEWHERE) THEN
      UNDISCH_TAC `real_summable (from m) f` THEN
      REWRITE_TAC[real_summable] THEN REPEAT STRIP_TAC THEN
      ASM_SIMP_TAC[REAL_INFSUM_UNIQUE] THEN

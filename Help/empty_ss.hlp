@@ -3,18 +3,20 @@
 \TYPE {empty_ss : simpset}
 
 \SYNOPSIS
-Simpset consisting of only the default rewrites and conversions.
+Simpset with no rewrites, conversions or congruences.
 
 \DESCRIBE
 In their maximal generality, simplification operations in HOL Light (as invoked
-by {SIMP_TAC}) are controlled by a `simpset'. The simpset {empty_ss} has just
-the basic rewrites and conversions (see {basic_rewrites} and {basic_convs}),
-and no other provers.
+by {SIMP_TAC}) are controlled by a `simpset'. The simpset {empty_ss} has no
+rewrites or conversions at all, and its only prover is {satisfy_prover}, which
+allows variables in the conditions of conditional rewrites to be instantiated
+from the context. It is used by {PURE_SIMP_CONV} and friends.
 
 \FAILURE
 Not applicable.
 
 \SEEALSO
-basic_convs, basic_rewrites, basic_ss, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+basic_convs, basic_rewrites, basic_ss, PURE_SIMP_CONV, satisfy_prover,
+SIMP_CONV, SIMP_RULE, SIMP_TAC.
 
 \ENDDOC

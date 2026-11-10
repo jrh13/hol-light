@@ -51734,8 +51734,6 @@ let euclid_scale_simple_arc_ver2 = prove_by_refinement(
   TYPE_THEN `dr'` UNABBREV_TAC;
   REWRITE_TAC[GSYM real_div_assoc];
   ASM_SIMP_TAC[real_div_denom_lt];
-  FIRST_ASSUM IMATCH_MP_TAC ;
-  ASM_MESON_TAC[];
   (* -E *)
   TSPECH `i` 4673;
   REWRITE_TAC[];

@@ -1096,9 +1096,7 @@ let GRID_CROSSING = prove
                 `(K:(real^2->bool)->real^2->bool) r2`; `q2:real^2`]
                GRID_NEAR_NONEMPTY) THEN
   ASM_SIMP_TAC[] THEN
-  ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
   DISCH_THEN(X_CHOOSE_THEN `g2:num#num` STRIP_ASSUME_TAC) THEN
-  ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
   DISCH_THEN(X_CHOOSE_THEN `g1:num#num` STRIP_ASSUME_TAC) THEN
   SUBGOAL_THEN
    `(g1:num#num) IN grid_vertices N /\ (g2:num#num) IN grid_vertices N`

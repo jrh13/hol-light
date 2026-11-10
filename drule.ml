@@ -126,7 +126,7 @@ let (INSTANTIATE : instantiation->thm->thm) =
     let ith = if tyin = [] then th else INST_TYPE tyin th in
     if tmin = [] then ith else
     let tth = INST tmin ith in
-    if hyp tth = hyp th then
+    if compare (hyp tth) (hyp th) = 0 then
       if bcs = [] then tth else
       try let eth = HO_BETAS bcs (concl ith) (concl tth) in
           EQ_MP eth tth

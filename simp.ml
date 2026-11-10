@@ -205,6 +205,69 @@ let augment(Prover(_,aug)) thms = aug thms;;
 let apply_prover(Prover(conv,_)) tm = conv tm;;
 
 (* ------------------------------------------------------------------------- *)
+(* A prover for existential goals ?x1 ... xn. p1 /\ ... /\ pk that picks the *)
+(* witnesses so that each pi is a fact from the context, in the style of     *)
+(* Don Syme's SATISFY in hol98. It works constructively: the theorem it      *)
+(* returns is the instance |- p1' /\ ... /\ pk' with the witnesses plugged   *)
+(* in, not the existential itself, so the witnesses can be read off by       *)
+(* matching. This is used to instantiate extra variables in conditions. The  *)
+(* facts are only extracted from the context theorems when first needed.     *)
+(* ------------------------------------------------------------------------- *)
+
+let satisfy_prover =
+  let rec facts_of th acc =
+    let tm = concl th in
+    if is_forall tm then facts_of (SPEC_ALL th) acc
+    else if is_conj tm
+    then facts_of (CONJUNCT1 th) (facts_of (CONJUNCT2 th) acc)
+    else if is_imp tm || tm = `T` then acc else th::acc in
+  let rec satisfy facts vs (bcs,insts,_ as i) cjs =
+    match cjs with
+      [] -> i
+    | c::ocjs ->
+        let c' = instantiate i c in
+        let lconsts = subtract (frees c') vs in
+        tryfind (fun th ->
+          let bcs',insts',tyin = term_match lconsts c' (concl th) in
+          if exists (fun (ty,v) -> ty <> v) tyin then fail() else
+          satisfy facts vs (bcs'@bcs,insts'@insts,[]) ocjs) facts in
+  let rec prove facts tm =
+    if is_conj tm then CONJ (prove facts (lhand tm)) (prove facts (rand tm))
+    else find (fun th -> aconv (concl th) tm) facts in
+  let apply lfacts tm =
+    let vs,bod = strip_exists tm in
+    if vs = [] then failwith "satisfy_prover" else
+    let facts = Lazy.force lfacts in
+    let gvs = map (genvar o type_of) vs in
+    let gbod = vsubst (zip gvs vs) bod in
+    let i = satisfy facts gvs ([],[],[]) (conjuncts gbod) in
+    prove facts (instantiate i gbod) in
+  mk_prover apply
+            (fun lfacts thl -> lazy(itlist facts_of thl (Lazy.force lfacts)))
+            (lazy []);;
+
+(* ------------------------------------------------------------------------- *)
+(* Find an instantiation of the variables vs in a term tm by getting one of  *)
+(* the provers to prove "?vs. <the conjuncts of tm involving vs>" in that    *)
+(* constructive way. Any existential quantifiers round tm are treated in the *)
+(* same way, so they can be "seen through" when choosing the instantiation.  *)
+(* Proving the instance of tm is left to the caller.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let find_witnesses provers vs tm : instantiation =
+  let evs,bod = strip_exists tm in
+  let avs = vs @ evs in
+  let p = list_mk_conj(filter (fun c -> exists (C vfree_in c) avs)
+                              (conjuncts bod)) in
+  let q = list_mk_exists(avs,p) and lconsts = subtract (frees p) avs in
+  let restrict l = filter (fun (_,v) -> mem v vs) l in
+  tryfind (fun pr ->
+    let bcs,insts,tyin = term_match lconsts p (concl(apply_prover pr q)) in
+    if exists (fun (ty,v) -> ty <> v) tyin then fail()
+    else restrict bcs,restrict insts,[])
+  provers;;
+
+(* ------------------------------------------------------------------------- *)
 (* Type of simpsets. We have a convnet containing rewrites (implicational    *)
 (* and otherwise), other term-indexed context-free conversions like          *)
 (* BETA_CONV, and congruence rules. Then there is a list of provers that     *)
@@ -223,15 +286,38 @@ type simpset =
 and strategy = simpset -> int -> term -> thm;;
 
 (* ------------------------------------------------------------------------- *)
-(* Very simple prover: recursively simplify then try provers.                *)
+(* Very simple prover: recursively simplify then try provers. For a goal     *)
+(* ?x1 ... xn. p we first try to find witnesses using the provers and then   *)
+(* prove the instance of p recursively. Since provers may return instances   *)
+(* for existential goals, EXISTS_INSTANCE turns these into the existential.  *)
 (* ------------------------------------------------------------------------- *)
 
-let basic_prover strat (Simpset(net,prover,provers,rewmaker) as ss) lev tm =
-  let sth = try strat ss lev tm with Failure _ -> REFL tm in
-  try EQT_ELIM sth
-  with Failure _ ->
-    let tth = tryfind (fun pr -> apply_prover pr (rand(concl sth))) provers in
-    EQ_MP (SYM sth) tth;;
+let basic_prover =
+  let EXISTS_INSTANCE tm th =
+    if aconv (concl th) tm then th else
+    let vs,bod = strip_exists tm in
+    let i = term_match (subtract (frees bod) vs) bod (concl th) in
+    let rec build tm ws =
+      match ws with
+        [] -> if aconv (concl th) tm then th else fail()
+      | w::ows -> let v,b = dest_exists tm in
+                  EXISTS (tm,w) (build (vsubst [w,v] b) ows) in
+    build tm (map (instantiate i) vs) in
+  let rec basic_prover strat (Simpset(net,prover,provers,rewmaker) as ss)
+                       lev tm =
+    try let vs,bod = strip_exists tm in
+        if vs = [] then fail() else
+        let i = find_witnesses provers vs bod in
+        EXISTS_INSTANCE tm (basic_prover strat ss lev (instantiate i bod))
+    with Failure _ ->
+    let sth = try strat ss lev tm with Failure _ -> REFL tm in
+    try EQT_ELIM sth
+    with Failure _ ->
+      let tm' = rand(concl sth) in
+      let tth = tryfind (fun pr -> EXISTS_INSTANCE tm' (apply_prover pr tm'))
+                        provers in
+      EQ_MP (SYM sth) tth in
+  basic_prover;;
 
 (* ------------------------------------------------------------------------- *)
 (* Functions for changing or augmenting components of simpsets.              *)
@@ -270,11 +356,22 @@ let AUGMENT_SIMPSET cth (Simpset(net,prover,provers,rewmaker)) =
   Simpset(net',prover,provers',rewmaker);;
 
 (* ------------------------------------------------------------------------- *)
-(* Depth conversions.                                                        *)
+(* Depth conversions. When a conditional rewrite is applied, any variables   *)
+(* in the condition that are not fixed by matching the LHS (and are not free *)
+(* in the term or the hypotheses) are first instantiated, if possible, using *)
+(* find_witnesses, before the prover is called on the condition. Since that  *)
+(* can fix the RHS late, such an instance is checked much as net_of_thm      *)
+(* checks rewrites: the LHS must not occur in the RHS, and if the instance   *)
+(* is permutative it must decrease in the term ordering.                     *)
 (* ------------------------------------------------------------------------- *)
 
 let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
     TOP_DEPTH_SQCONV,TOP_SWEEP_SQCONV =
+  let nonlooping th =
+    let l,r = dest_eq(rand(concl th)) in
+    let matchable = can o term_match (freesl(hyp th)) in
+    not(free_in l r) &&
+    (not(matchable l r && matchable r l) || term_order l r) in
   let IMP_REWRITES_CONV strat (Simpset(net,prover,provers,rewmaker) as ss) lev
                         pconvs tm =
     tryfind (fun (n,cnv) ->
@@ -283,8 +380,17 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
       let etm = concl th in
       if is_eq etm then th else
       if lev <= 0 then failwith "IMP_REWRITES_CONV: Too deep" else
-      let cth = prover strat ss (lev-1) (lhand etm) in
-      MP th cth) pconvs in
+      let cnd = lhand etm in
+      let mvs = subtract (frees cnd) (union (frees tm) (freesl(hyp th))) in
+      let th' =
+        if mvs = [] then th else
+        let th1 = try INSTANTIATE (find_witnesses provers mvs cnd) th
+                  with Failure _ -> th in
+        if nonlooping th1 then th1
+        else if th1 != th && nonlooping th then th
+        else failwith "IMP_REWRITES_CONV: looping instance" in
+      let cth = prover strat ss (lev-1) (lhand(concl th')) in
+      MP th' cth) pconvs in
   let rec RUN_SUB_CONV strat ss lev triv th =
     let tm = concl th in
     if is_imp tm then
@@ -501,7 +607,8 @@ let SIMPLIFY_CONV ss = GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV ss 3;;
 (* Simple but useful default version.                                        *)
 (* ------------------------------------------------------------------------- *)
 
-let empty_ss = Simpset(empty_net,basic_prover,[],mk_rewrites true);;
+let empty_ss =
+  Simpset(empty_net,basic_prover,[satisfy_prover],mk_rewrites true);;
 
 let basic_ss =
   let rewmaker = mk_rewrites true in
@@ -509,7 +616,7 @@ let basic_ss =
     let cthms = itlist rewmaker thl [] in
     let net' = itlist (net_of_thm true) cthms (basic_net()) in
     let net'' = itlist net_of_cong (basic_congs()) net' in
-  Simpset(net'',basic_prover,[],rewmaker);;
+  Simpset(net'',basic_prover,[satisfy_prover],rewmaker);;
 
 let SIMP_CONV thl = SIMPLIFY_CONV (basic_ss []) thl;;
 

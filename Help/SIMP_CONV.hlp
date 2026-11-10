@@ -24,6 +24,19 @@ this can be done, the conditional rewrite is applied, otherwise not. To add
 additional provers to dispose of side-conditions beyond application of the
 basic rewrites, see {mk_prover} and {ss_of_provers}.
 
+The condition {c} may contain variables that are not determined by matching
+{l}, either because they occur only in {c} (in which case {mk_rewrites}
+quantifies them existentially) or because they also occur in {r}. Before
+trying to prove the condition, the simplifier attempts to instantiate such
+variables by matching the conjuncts of {c} that involve them against facts
+from the context, for example the assumptions in {ASM_SIMP_TAC}; see
+{find_witnesses} and {satisfy_prover}. If that fails, the condition is
+attempted with the variables as they are. Since the right-hand side may thus
+only be determined when the rewrite is applied, the instance is checked then:
+it is not used if its left-hand side occurs in its right-hand side, or if it is
+permutative and does not decrease in the ordering {term_order} (cf.
+{ORDERED_IMP_REWR_CONV}).
+
 \FAILURE
 Never fails, but may return a reflexive theorem {|- tm = tm} if no
 simplifications can be made.
@@ -42,12 +55,29 @@ Here we use the conditional and contextual facilities:
   # REWRITE_CONV[ADD_AC] `(a + c + e) + ((b + a + d) + e):num`;;
   val it : thm = |- (a + c + e) + (b + a + d) + e = a + a + b + c + d + e + e
 }
+\noindent The following show the instantiation of variables in a condition that
+are not determined by the left-hand side, using facts from the context. In
+the first case {s} occurs only in the condition, while in the second {y}
+does but {z} also occurs on the right-hand side:
+{
+  # SIMP_CONV[SET_RULE `!x s t:A->bool. x IN s /\ s SUBSET t ==> x IN t`;
+              ASSUME `(a:A) IN u`; ASSUME `(u:A->bool) SUBSET v`]
+             `(a:A) IN v`;;
+  val it : thm = a IN u, u SUBSET v |- a IN v <=> T
+
+  # SIMP_CONV[MESON[] `!(f:A->B) (g:B->C) x y z. f x = y /\ g y = z
+                                                ==> g(f x) = z`;
+              ASSUME `(f:A->B) a = b`; ASSUME `(g:B->C) b = c`]
+             `(g:B->C)((f:A->B) a)`;;
+  val it : thm = f a = b, g b = c |- g (f a) = c
+}
 
 \COMMENTS
 For simply rewriting with unconditional equations, {REWRITE_CONV} and relatives
 are simpler and more efficient.
 
 \SEEALSO
-ASM_SIMP_TAC, ONCE_SIMP_CONV, SIMP_RULE, SIMP_TAC.
+ASM_SIMP_TAC, find_witnesses, ONCE_SIMP_CONV, satisfy_prover, SIMP_RULE,
+SIMP_TAC.
 
 \ENDDOC

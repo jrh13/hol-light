@@ -1,0 +1,52 @@
+\DOC satisfy_prover
+
+\TYPE {satisfy_prover : prover}
+
+\SYNOPSIS
+Prover for existential goals that chooses witnesses from the context facts.
+
+\DESCRIBE
+This is a prover (see {mk_prover}) included in the standard simpsets
+{basic_ss} and {empty_ss}, mainly so that the simplifier can instantiate
+variables in the conditions of conditional rewrites. Its state is a list of
+`facts', obtained from the context theorems it is augmented with by splitting
+up conjunctions and stripping universal quantifiers, discarding implications.
+Applied to a goal {?x1 ... xn. p1 /\ ... /\ pk}, it tries to choose witnesses
+{t1,...,tn} so that each instantiated conjunct
+{pi[t1,...,tn/x1,...,xn]} is one of the facts (up to alpha-conversion),
+backtracking over the possible choices. The free variables of the facts are
+treated as constants, so this is a matter of matching each conjunct, with the
+variables {x1,...,xn} instantiable, against the facts.
+
+Unlike the usual convention for provers, the theorem returned is not the
+existential goal itself but the instance with the witnesses plugged in, i.e.
+{|- p1[t1,...,tn/x1,...,xn] /\ ... /\ pk[t1,...,tn/x1,...,xn]}, so that the
+witnesses can be read off by matching (this is what {find_witnesses} does).
+The simplifier's prover-use function {basic_prover} accepts such an instance
+as a proof of the existential.
+
+\FAILURE
+The value itself is not a function, but applying it with {apply_prover} fails
+unless the term is an existential that can be satisfied as described above.
+
+\EXAMPLE
+{
+  # let pr = augment satisfy_prover
+      [ASSUME `(x:A) IN s`; ASSUME `(x:A) IN t`; ASSUME `FINITE(t:A->bool)`];;
+  val pr : prover = Prover (<fun>, <fun>)
+
+  # apply_prover pr `?u. (x:A) IN u /\ FINITE u`;;
+  val it : thm = FINITE t, x IN t |- x IN t /\ FINITE t
+}
+
+\COMMENTS
+The idea and name come from Don Syme's {SATISFY} in hol98, still found in
+HOL4. Since the facts are only matched, not unified, universally quantified
+facts such as {|- !s. s SUBSET UNIV} are only useful when the variable names
+happen to coincide.
+
+\SEEALSO
+apply_prover, augment, basic_prover, basic_ss, empty_ss, find_witnesses,
+mk_prover, SIMP_CONV.
+
+\ENDDOC

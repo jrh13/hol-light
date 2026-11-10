@@ -671,6 +671,10 @@ let aconv s t = alphaorder s t = 0;;
 (* ------------------------------------------------------------------------- *)
 (* Comparison function on theorems. Currently the same as equality, but      *)
 (* it's useful to separate because in the proof-recording version it isn't.  *)
+(*                                                                           *)
+(* We use compare rather than = since it returns at once on physically       *)
+(* equal subterms. Terms and types contain no floats and no closures, so     *)
+(* compare x y = 0 holds exactly when x = y does.                            *)
 (* ------------------------------------------------------------------------- *)
 
-let equals_thm th th' = dest_thm th = dest_thm th';;
+let equals_thm th th' = compare (dest_thm th) (dest_thm th') = 0;;
