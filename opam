@@ -1,6 +1,9 @@
 opam-version: "2.0"
 name: "hol_light"
-version: "3.2.0"
+# The "+" stops 'opam install . --deps-only' from resolving a checkout against
+# the released hol_light.3.2.0 metadata in opam-repository, whose dependency
+# constraints can be older than the ones in this file.
+version: "3.2.0+"
 synopsis: "The HOL-Light interactive theorem prover"
 description: """
 HOL Light is a computer program written by John Harrison to help users prove
