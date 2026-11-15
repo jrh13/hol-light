@@ -12,13 +12,14 @@ needs "fusion.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Create probably-fresh variable                                            *)
+(* The counter is a Fresh_counter.t, which is atomic with OCaml 5, so that   *)
+(* concurrent calls from different domains never return the same name.      *)
 (* ------------------------------------------------------------------------- *)
 
 let genvar =
-  let gcounter = ref 0 in
-  fun ty -> let count = !gcounter in
-             (gcounter := count + 1;
-              mk_var("_"^(string_of_int count),ty));;
+  let gcounter = Fresh_counter.make 0 in
+  fun ty -> let count = Fresh_counter.next gcounter in
+            mk_var("_"^(string_of_int count),ty);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convenient functions for manipulating types.                              *)

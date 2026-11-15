@@ -157,8 +157,12 @@ module Mapping = struct
       gstore := (gv,v)::!gstore; gv in
     reset_vars,fol_of_var,hol_of_var
 
-  let reset_consts,fol_of_const,hol_of_const =
-    Meson.reset_consts,Meson.fol_of_const,Meson.hol_of_const
+  (* The constants are numbered in a MESON translation state that belongs  *)
+  (* to this module (MESON itself makes a new state for each call).         *)
+  let const_state = ref (Meson.new_meson_state())
+  let reset_consts() = const_state := Meson.new_meson_state()
+  let fol_of_const c = Meson.fol_of_const (!const_state) c
+  let hol_of_const c = Meson.hol_of_const (!const_state) c
 
   let rec fol_of_term env consts tm =
     if is_var tm && not (mem tm consts) then

@@ -207,12 +207,12 @@ let pp_print_var f i =
 let rec pp_print_fterm f = function
     Fvar i -> pp_print_var f i
   | Fnapp (i, l) ->
-      pp_print_term f (Meson.hol_of_const i);
+      pp_print_term f (Mapping.hol_of_const i);
       if l <> [] then pp_enum "," "(" ")" pp_print_fterm f l
 
 let pp_print_lit f (i, l) =
   if i < 0 then pp_print_char f '~';
-  pp_print_term f (Meson.hol_of_const (abs i));
+  pp_print_term f (Mapping.hol_of_const (abs i));
   if l <> [] then pp_enum "," "(" ")" pp_print_fterm f l
 
 let string_of_fterm = print_to_string pp_print_fterm
@@ -701,15 +701,15 @@ open Utils
 
 let hol_negate tm = try dest_neg tm with Failure _ -> mk_neg tm;;
 
-let rec hashek_of_proof sub lem lit =
+let rec hashek_of_proof (cache:Meson.contrapos_cache) sub lem lit =
   let liti = Mapping.hol_of_literal (Substarray.inst_lit sub lit) in
   function
     Lemma -> find (fun x -> concl x = liti) lem
   | Reduction -> ASSUME liti
   | Extension (contra, prfs) ->
       let _, ths = List.fold_map (fun lem (lit, prf) ->
-        let p = hashek_of_proof sub lem lit prf in p :: lem, p) lem prfs in
-      let cth = Meson.make_hol_contrapos contra in
+        let p = hashek_of_proof cache sub lem lit prf in p :: lem, p) lem prfs in
+      let cth = Meson.make_hol_contrapos cache contra in
       let hth = if ths = [] then cth else MATCH_MP cth (end_itlist CONJ ths) in
       let ith = PART_MATCH I hth liti in
       Meson.finish_RULE (DISCH (hol_negate (concl ith)) ith)
@@ -747,13 +747,14 @@ let start opt lim =
 (* Possible optimization:
    Reduce variable indexes to reduce used substitution and fit better in cache *)
 let LEANCOP_DEEPEN opt ths =
-  Meson.clear_contrapos_cache(); Mapping.reset_vars(); Mapping.reset_consts();
+  Mapping.reset_vars(); Mapping.reset_consts();
   let ths' = ths @ Equality.create_eq_axs opt.add_eq_symmetry (map concl ths) in
   Database.axioms2db ths';
   let sub, prf = strategy opt start in
   let hashek = Mapping.fol_of_literal [] [] Hashek.hashek_tm in
   let hashek_neg = Fol_term.negate_lit hashek in
-  let th = Recon.hashek_of_proof sub [] hashek_neg prf in
+  let cache = Meson.new_contrapos_cache() in
+  let th = Recon.hashek_of_proof cache sub [] hashek_neg prf in
   EQ_MP Hashek.hashek_eq th
 
 let PREPARE_LEAN_TAC ths =

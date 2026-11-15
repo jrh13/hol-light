@@ -9556,35 +9556,35 @@ module Metis_mapping = struct
 
 open Metis_prover
 
-  let reset_consts,fol_of_const,hol_of_const =
-    Meson.reset_consts,Meson.fol_of_const,Meson.hol_of_const
+(* The translation functions take the MESON translation state "st" of the  *)
+(* current Metis call, which numbers the HOL constants (see Metis_generate). *)
 
-let preterm_of_const = preterm_of_term o hol_of_const o int_of_string
+let preterm_of_const (st:Meson.meson_state) = preterm_of_term o Meson.hol_of_const st o int_of_string
 
 let prefix s = "__" ^ s
 
-let rec preterm_of_fol_term = function
+let rec preterm_of_fol_term (st:Meson.meson_state) = function
     Term.Var x -> Varp (prefix x, dpty)
   | Term.Fn (f, args) ->
-      let pf = preterm_of_const f in
-      let pargs = List.map preterm_of_fol_term args in
+      let pf = preterm_of_const st f in
+      let pargs = List.map (preterm_of_fol_term st) args in
       Preterm.list_mk_combp (pf, pargs)
 
-let preterm_of_predicate = function
+let preterm_of_predicate (st:Meson.meson_state) = function
     "=" -> Constp ("=", dpty)
-  | p -> preterm_of_const p
+  | p -> preterm_of_const st p
 
-let preterm_of_atom (p, args) =
-  let pp = preterm_of_predicate p in
-  let pargs = List.map preterm_of_fol_term args in
+let preterm_of_atom (st:Meson.meson_state) (p, args) =
+  let pp = preterm_of_predicate st p in
+  let pargs = List.map (preterm_of_fol_term st) args in
   Typing (Preterm.list_mk_combp (pp, pargs), pretype_of_type bool_ty)
 
-let preterm_of_literal (pol, fat) =
-  let pat = preterm_of_atom fat in
+let preterm_of_literal (st:Meson.meson_state) (pol, fat) =
+  let pat = preterm_of_atom st fat in
   if pol then pat else Preterm.mk_negp pat
 
-let preterm_of_eq (s, t) =
-  Preterm.mk_eqp (preterm_of_fol_term s, preterm_of_fol_term t)
+let preterm_of_eq (st:Meson.meson_state) (s, t) =
+  Preterm.mk_eqp (preterm_of_fol_term st s, preterm_of_fol_term st t)
 
 
 let typecheck env = term_of_preterm o retypecheck env o Preterm.unconst_preterm
@@ -9593,15 +9593,15 @@ let typecheckl env = function
   | xs -> Preterm.list_mk_disjp xs |> typecheck env |> disjuncts
 
 
-let hol_of_term env = typecheck env o preterm_of_fol_term
+let hol_of_term (st:Meson.meson_state) env = typecheck env o preterm_of_fol_term st
 
-let hol_of_atom env = typecheck env o preterm_of_atom
+let hol_of_atom (st:Meson.meson_state) env = typecheck env o preterm_of_atom st
 
-let hol_of_literal env = typecheck env o preterm_of_literal
+let hol_of_literal (st:Meson.meson_state) env = typecheck env o preterm_of_literal st
 
-let hol_of_clause env = typecheck env o Preterm.list_mk_disjp o map preterm_of_literal
+let hol_of_clause (st:Meson.meson_state) env = typecheck env o Preterm.list_mk_disjp o map (preterm_of_literal st)
 
-let hol_of_substitution env = map dest_eq o typecheckl env o map preterm_of_eq
+let hol_of_substitution (st:Meson.meson_state) env = map dest_eq o typecheckl env o map (preterm_of_eq st)
 
 end
 
@@ -9648,7 +9648,7 @@ let verb = ref false
 
 exception Unify
 
-let rec unify_fo_ho_term vars fat tm m =
+let rec unify_fo_ho_term (st:Meson.meson_state) vars fat tm m =
   if !verb then Format.printf "unify_fo_ho_term: fat = %s, tm = %s\n%!"
     (Term.toString fat) (string_of_term tm);
   match fat with
@@ -9668,19 +9668,19 @@ let rec unify_fo_ho_term vars fat tm m =
         Format.printf "is_var: %s\n%!" (if is_var hf then "true" else "false")
       end;
       assert (is_const hf || is_var hf);
-      if hf = Metis_mapping.hol_of_const (int_of_string f)
-      then itlist2 (unify_fo_ho_term vars) args hargs m
+      if hf = Meson.hol_of_const st (int_of_string f)
+      then itlist2 (unify_fo_ho_term st vars) args hargs m
       else raise Unify
 
-let unify_fo_ho_atom vars (p, args) htm m =
+let unify_fo_ho_atom (st:Meson.meson_state) vars (p, args) htm m =
   if p = "="
-  then try let hl, hr = dest_eq htm in itlist2 (unify_fo_ho_term vars) args [hl; hr] m
+  then try let hl, hr = dest_eq htm in itlist2 (unify_fo_ho_term st vars) args [hl; hr] m
        with Failure _ -> raise Unify
-  else unify_fo_ho_term vars (Term.Fn (p, args)) htm m
+  else unify_fo_ho_term st vars (Term.Fn (p, args)) htm m
 
-let unify_fo_ho_literal vars (pol, atom) htm m =
+let unify_fo_ho_literal (st:Meson.meson_state) vars (pol, atom) htm m =
   let htm' = if pol then htm else try dest_neg htm with Failure _ -> raise Unify in
-  unify_fo_ho_atom vars atom htm' m
+  unify_fo_ho_atom st vars atom htm' m
 
 end
 
@@ -9766,8 +9766,8 @@ let rec match_elems f m = function
         Some m' -> match_elems f m' (xs, List.filter ((!=) y) ys)
       | None -> []) ys |> List.concat
 
-let match_fo_ho_clause vars = match_elems
-  (fun ft ht m -> try Some (Metis_unify.unify_fo_ho_literal vars ft ht m) with Metis_unify.Unify -> None)
+let match_fo_ho_clause (st:Meson.meson_state) vars = match_elems
+  (fun ft ht m -> try Some (Metis_unify.unify_fo_ho_literal st vars ft ht m) with Metis_unify.Unify -> None)
   []
 
 
@@ -9785,7 +9785,7 @@ let reorient_tysubst vars sub =
     if List.mem v vars && is_vartype ty then v, ty else ty, v) sub in
   map (fun (ty, v) -> tysubst sub' ty, v) sub'
 
-let rec hol_of_thm axioms fth =
+let rec hol_of_thm (st:Meson.meson_state) axioms fth =
   if !metisverb then Format.printf "hol_of_thm: %s\n%!" (Thm.toString fth);
   let env = Preterm.env_of_ths axioms in
   let hth = match Proof.thmToInference fth with
@@ -9796,7 +9796,7 @@ let rec hol_of_thm axioms fth =
         let disjs = concl ax |> striplist dest_disj in
         (*if !metisverb then Format.printf "before matching\n%!";*)
         let tmvars = freesl (hyp ax) in
-        let ms = match_fo_ho_clause tmvars (clausel, disjs) in
+        let ms = match_fo_ho_clause st tmvars (clausel, disjs) in
         (*if !metisverb then Format.printf "after matching\n%!";*)
         map (fun m -> m, ax) ms) axioms in
       assert (List.length maxs > 0);
@@ -9807,13 +9807,13 @@ let rec hol_of_thm axioms fth =
       INST (tminst m) ax
   (* Caution: the substitution can contain elements such as "x -> f(x)" *)
   | Proof.Subst (fsub, fth1) ->
-      let th1 = hol_of_thm axioms fth1 in
+      let th1 = hol_of_thm st axioms fth1 in
       if !metisverb then Format.printf "subst with th1 = %s\n%!" (string_of_thm th1);
 
       let fsubl = Substitute.toList fsub in
       if !metisverb then Format.printf "before substitution lifting\n%!";
       let hsub = map (fun (v, t) -> t, Term.Var v) fsubl |>
-        Metis_mapping.hol_of_substitution env in
+        Metis_mapping.hol_of_substitution st env in
       if !metisverb then Format.printf "subst: %s\n%!" (string_of_tminst hsub);
       let tyinst = itlist (fun (t, v) m ->
         let v' = find (fun v' -> name_of v' = name_of v) (frees (concl th1)) in
@@ -9826,8 +9826,8 @@ let rec hol_of_thm axioms fth =
 
       INSTANTIATE ([], tminst, tyinst) th1
   | Proof.Resolve (atom, fth1, fth2) ->
-      let th1 = hol_of_thm axioms fth1
-      and th2 = hol_of_thm axioms fth2 in
+      let th1 = hol_of_thm st axioms fth1
+      and th2 = hol_of_thm st axioms fth2 in
       let env = Preterm.env_of_ths [th1; th2] @ env in
       if !metisverb then List.iter (fun (s, pty) -> Format.printf "%s <- %s\n%!" s (string_of_type (type_of_pretype pty))) env;
       if !metisverb then Format.printf "before resolving\n%!";
@@ -9837,7 +9837,7 @@ let rec hol_of_thm axioms fth =
       and tm2 = striplist dest_disj (concl th2) |> List.filter is_neg |> List.map dest_neg in
       if !metisverb then List.iter (Format.printf "tm1: %s\n%!" o string_of_term) tm1;
       if !metisverb then List.iter (Format.printf "tm2: %s\n%!" o string_of_term) tm2;
-      let hatom = Metis_mapping.hol_of_atom env atom in
+      let hatom = Metis_mapping.hol_of_atom st env atom in
       if !metisverb then Format.printf "hatom: %s\n%!" (string_of_term hatom);
       let cands = Utils.List.concat_map (fun x ->
         match term_eq_mod_type hatom x [] with
@@ -9856,13 +9856,13 @@ let rec hol_of_thm axioms fth =
 
       Metis_rules.RESOLVE (inst tyinsts hatom)
         (INST_TYPE tyinsts th1) (INST_TYPE tyinsts th2)
-  | Proof.Refl term -> REFL (Metis_mapping.hol_of_term env term)
-  | Proof.Assume atom -> SPEC (Metis_mapping.hol_of_atom env atom) EXCLUDED_MIDDLE
+  | Proof.Refl term -> REFL (Metis_mapping.hol_of_term st env term)
+  | Proof.Assume atom -> SPEC (Metis_mapping.hol_of_atom st env atom) EXCLUDED_MIDDLE
   | Proof.Equality (flit, fpath, ft) ->
-      let hlit = Metis_mapping.hol_of_literal env flit in
+      let hlit = Metis_mapping.hol_of_literal st env flit in
       let fs, hpath = Metis_path.hol_of_literal_path flit fpath in
       let hs = follow_path hpath hlit in
-      let ht = Metis_mapping.hol_of_term env ft in
+      let ht = Metis_mapping.hol_of_term st env ft in
       let m = type_unify (type_of ht) (type_of hs) [] in
       let hlit, hs, ht = inst m hlit, inst m hs, inst m ht in
 
@@ -9887,7 +9887,7 @@ let rec hol_of_thm axioms fth =
     let hth = CONV_RULE DISJ_CANON_CONV hth in
     if !metisverb then begin
       Format.printf "hol_of_thm finished\n%!";
-      let hth' = Thm.clause fth |> Literal.Set.toList |> Metis_mapping.hol_of_clause env in
+      let hth' = Thm.clause fth |> Literal.Set.toList |> Metis_mapping.hol_of_clause st env in
       Format.printf "hol_of_thm returned:\n%s\n for\n%s\n%!"
         (string_of_term (concl hth)) (string_of_term hth')
     end;
@@ -9905,40 +9905,40 @@ open Metis_prover
 
 let metis_name = string_of_int
 
-let rec metis_of_term env consts tm =
+let rec metis_of_term (st:Meson.meson_state) env consts tm =
   if is_var tm && not (List.mem tm consts) then
-    (Term.Var(metis_name (Meson.fol_of_var tm)))
+    (Term.Var(metis_name (Meson.fol_of_var st tm)))
   else (
     let f,args = strip_comb tm in
     if List.mem f env then failwith "metis_of_term: higher order" else
-    let ff = Meson.fol_of_const f in
-    Term.Fn (metis_name ff, map (metis_of_term env consts) args))
+    let ff = Meson.fol_of_const st f in
+    Term.Fn (metis_name ff, map (metis_of_term st env consts) args))
 
-let metis_of_atom env consts tm =
+let metis_of_atom (st:Meson.meson_state) env consts tm =
   try let (l, r) = dest_eq tm in
-      let l' = metis_of_term env consts l
-      and r' = metis_of_term env consts r in
+      let l' = metis_of_term st env consts l
+      and r' = metis_of_term st env consts r in
       Atom.mkEq (l', r')
   with Failure _ ->
       let f,args = strip_comb tm in
       if List.mem f env then failwith "metis_of_atom: higher order" else
-      let ff = Meson.fol_of_const f in
-      (metis_name ff, map (metis_of_term env consts) args)
+      let ff = Meson.fol_of_const st f in
+      (metis_name ff, map (metis_of_term st env consts) args)
 
-let metis_of_literal env consts tm =
+let metis_of_literal (st:Meson.meson_state) env consts tm =
   let (pol, tm') = try (false, dest_neg tm)
      with Failure _ -> (true,           tm)
-  in (pol, metis_of_atom env consts tm')
+  in (pol, metis_of_atom st env consts tm')
 
-let metis_of_clause th =
+let metis_of_clause (st:Meson.meson_state) th =
   let lconsts = freesl (hyp th) in
   let tm = concl th in
   let hlits = disjuncts tm in
-  let flits = map (metis_of_literal [] lconsts) hlits in
+  let flits = map (metis_of_literal st [] lconsts) hlits in
   let set = Literal.Set.fromList flits in
   Thm.axiom set
 
-let metis_of_clauses = map metis_of_clause
+let metis_of_clauses (st:Meson.meson_state) = map (metis_of_clause st)
 
 end
 
@@ -10045,11 +10045,12 @@ let without_warnings f =
 
 
 let SIMPLE_METIS_REFUTE ths =
-  Meson.clear_contrapos_cache();
+  (* A new HOL <-> FOL translation state for this call *)
+  let st = Meson.new_meson_state() in
   (* TODO: Metis currently uses randomness to search for proof --
      we should make that deterministic for proof reconstruction! *)
   Random.init 0;
-  let rules = Metis_generate.metis_of_clauses ths in
+  let rules = Metis_generate.metis_of_clauses st ths in
   if !metisverb then
   begin
     Format.printf "Original ths:\n%!";
@@ -10058,7 +10059,7 @@ let SIMPLE_METIS_REFUTE ths =
   let res = Loop.run rules in
   if !metisverb then Thm.print_proof res;
   let ths = map (CONV_RULE DISJ_CANON_CONV) ths in
-  let proof = without_warnings (fun () -> Metis_reconstruct2.hol_of_thm ths res) in
+  let proof = without_warnings (fun () -> Metis_reconstruct2.hol_of_thm st ths res) in
   if !metisverb then
   begin
     Format.printf "ths:\n%!";
@@ -10073,7 +10074,6 @@ let SIMPLE_METIS_REFUTE ths =
   proof
 
 let PURE_METIS_TAC g =
-  Meson.reset_vars(); Meson.reset_consts();
   (FIRST_ASSUM CONTR_TAC ORELSE
    W(ACCEPT_TAC o SIMPLE_METIS_REFUTE o map snd o fst)) g
 
