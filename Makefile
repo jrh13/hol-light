@@ -146,22 +146,38 @@ hol_loader.cmo: hol_loader.ml ; \
 hol_loader.cmx: hol_loader.ml ; \
         ocamlopt -verbose -c hol_loader.ml -o hol_loader.cmx
 
+# Hol_domains: hol_domains_4.ml for OCaml 3 and 4, hol_domains_5.ml for
+# any later version, so that a version not yet known gets the kernel lock.
+# The .cmx rule waits for the .cmo one, as both write hol_domains.cmi.
+
+hol_domains.cmo: hol_domains_4.ml hol_domains_5.ml ; \
+        if test ${OCAML_UNARY_VERSION} = "3" -o ${OCAML_UNARY_VERSION} = "4" ; \
+        then ocamlc -c -o hol_domains.cmo hol_domains_4.ml ; \
+        else ocamlc -c -o hol_domains.cmo hol_domains_5.ml ; \
+        fi
+
+hol_domains.cmx: hol_domains_4.ml hol_domains_5.ml | hol_domains.cmo ; \
+        if test ${OCAML_UNARY_VERSION} = "3" -o ${OCAML_UNARY_VERSION} = "4" ; \
+        then ocamlopt -c -o hol_domains.cmx hol_domains_4.ml ; \
+        else ocamlopt -c -o hol_domains.cmx hol_domains_5.ml ; \
+        fi
+
 hol_lib_inlined.ml: ${HOLSRC} inline_load.ml ; \
         HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml hol_lib.ml hol_lib_inlined.ml -omit-prelude
 
-hol_lib.cmo: pa_j.cmo hol_lib_inlined.ml hol_loader.cmo bignum.cmo ; \
-        ocamlc -verbose -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" hol_loader.cmo hol_lib_inlined.ml bignum.cmo -o hol_lib.cmo
+hol_lib.cmo: pa_j.cmo hol_lib_inlined.ml hol_loader.cmo hol_domains.cmo bignum.cmo ; \
+        ocamlc -verbose -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" hol_loader.cmo hol_domains.cmo hol_lib_inlined.ml bignum.cmo -o hol_lib.cmo
 
-hol_lib.cma: hol_lib.cmo bignum.cmo hol_loader.cmo ; \
-        ocamlfind ocamlc -package zarith -linkpkg -a -o hol_lib.cma bignum.cmo hol_loader.cmo hol_lib.cmo
+hol_lib.cma: hol_lib.cmo bignum.cmo hol_loader.cmo hol_domains.cmo ; \
+        ocamlfind ocamlc -package zarith -linkpkg -a -o hol_lib.cma bignum.cmo hol_loader.cmo hol_domains.cmo hol_lib.cmo
 
-hol_lib.cmx: pa_j.cmo hol_lib_inlined.ml hol_loader.cmx bignum.cmx ; \
+hol_lib.cmx: pa_j.cmo hol_lib_inlined.ml hol_loader.cmx hol_domains.cmx bignum.cmx ; \
         OCAMLRUNPARAM=l=1000000000 ocamlopt.byte -verbose -c \
               -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" \
-              hol_lib_inlined.ml hol_loader.cmx bignum.cmx -o hol_lib.cmx
+              hol_lib_inlined.ml hol_loader.cmx hol_domains.cmx bignum.cmx -o hol_lib.cmx
 
-hol_lib.cmxa: hol_lib.cmx hol_loader.cmx bignum.cmx ; \
-        ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx hol_loader.cmx hol_lib.cmx
+hol_lib.cmxa: hol_lib.cmx hol_loader.cmx hol_domains.cmx bignum.cmx ; \
+        ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx hol_loader.cmx hol_domains.cmx hol_lib.cmx
 
 # Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
 #
@@ -175,14 +191,14 @@ ifneq ($(HOLSH_USE_MODULE),$(HOLLIGHT_USE_MODULE))
 hol.sh: FORCE
 endif
 
-hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml \
+hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo hol_domains.cmo update_database.ml \
         hol_4.sh hol_4.14.sh $(wildcard opam) | $(CONFIG_FILE)
 	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
 		if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; then \
-			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo hol_loader.cmo ; \
+			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo hol_loader.cmo hol_domains.cmo ; \
 			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g; s^__VERSION__^$(HOLLIGHT_VERSION)^g; s^__COMMIT__^$(HOLLIGHT_COMMIT)^g" hol_4.14.sh > hol.sh ; \
 		else \
-			ocamlmktop -o ocaml-hol nums.cma bignum.cmo hol_loader.cmo ; \
+			ocamlmktop -o ocaml-hol nums.cma bignum.cmo hol_loader.cmo hol_domains.cmo ; \
 			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g; s^__VERSION__^$(HOLLIGHT_VERSION)^g; s^__COMMIT__^$(HOLLIGHT_COMMIT)^g" hol_4.sh > hol.sh ; \
 		fi ; \
 		chmod +x hol.sh ; \
@@ -317,7 +333,7 @@ clean:; \
   rm -rf bignum.c* bignum.o \
          update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
          hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
-         hol_loader.c* hol_loader.o \
+         hol_loader.c* hol_loader.o hol_domains.c* hol_domains.o \
          UnitTests/*_inlined.* UnitTests/*.byte UnitTests/*.native \
          ocaml-hol hol.sh hol hol.ckpt \
          hol.multivariate hol.multivariate.ckpt \
