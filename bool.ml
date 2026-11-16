@@ -449,8 +449,7 @@ let EQF_ELIM =
   let P = `P:bool` in
   let pth =
     let th1 = EQ_MP (ASSUME `P = F`) (ASSUME `P:bool`) in
-    let th2 = DISCH P (SPEC `F` (EQ_MP F_DEF th1)) in
-    DISCH_ALL (NOT_INTRO th2) in
+    DISCH_ALL (NOT_INTRO (DISCH P th1)) in
   fun th ->
     try MP (INST [rand(rator(concl th)),P] pth) th
     with Failure _ -> failwith "EQF_ELIM";;
