@@ -42,11 +42,14 @@ is just conjunction of inequalities of this kind.
 
 \COMMENTS
 An easier interface is {distinctness "tree"}; this function is mainly intended
-to generate that theorem internally.
+to generate that theorem internally. The theorem has a conjunct for each pair
+of constructors; for types with many constructors, the conversion
+{CONSTRUCTORS_DISTINCT_CONV} proves the distinctness of particular pairs more
+economically.
 
 \SEEALSO
-define_type, distinctness, INDUCT_TAC, new_recursive_definition,
-prove_cases_thm, prove_constructors_one_one, prove_induction_thm,
-prove_rec_fn_exists.
+CONSTRUCTORS_DISTINCT_CONV, constructors_distinct_convs, define_type,
+distinctness, INDUCT_TAC, new_recursive_definition, prove_cases_thm,
+prove_constructors_injective, prove_recursive_functions_exist.
 
 \ENDDOC

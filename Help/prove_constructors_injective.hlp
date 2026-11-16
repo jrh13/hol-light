@@ -7,9 +7,9 @@ Proves that the constructors of an automatically-defined concrete type are
 injective.
 
 \DESCRIBE
-{prove_constructors_one_one} takes as its argument a primitive recursion
+{prove_constructors_injective} takes as its argument a primitive recursion
 theorem, in the form returned by {define_type} for an automatically-defined
-concrete type.  When applied to such a theorem, {prove_constructors_one_one}
+concrete type.  When applied to such a theorem, {prove_constructors_injective}
 automatically proves and returns a theorem which states that the constructors
 of the concrete type in question are injective (one-to-one).  The resulting
 theorem covers only those constructors that take arguments (i.e. that are not
@@ -48,8 +48,7 @@ An easier interface is {injectivity "tree"}; the present function is mainly
 intended to generate that theorem internally.
 
 \SEEALSO
-define_type, INDUCT_THEN, injectivity, new_recursive_definition,
-prove_cases_thm, prove_constructors_distinct, prove_induction_thm,
-prove_rec_fn_exists.
+define_type, injectivity, injectivity_store, new_recursive_definition,
+prove_cases_thm, prove_constructors_distinct, prove_recursive_functions_exist.
 
 \ENDDOC

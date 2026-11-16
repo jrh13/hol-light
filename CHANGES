@@ -8,6 +8,36 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 15th Nov 2026       ind_types.ml, pair.ml, define.ml, Help/CONSTRUCTORS_DISTINCT_CONV.hlp [new file], Help/constructors_distinct_convs.hlp [new file], Help/constructors_distinct_net.hlp [new file], Help/basic_rectype_net.hlp, Help/cases.hlp, Help/define.hlp, Help/define_type.hlp, Help/distinctness.hlp, Help/distinctness_store.hlp, Help/extend_rectype_net.hlp, Help/injectivity.hlp, Help/new_definition.hlp, Help/prove_cases_thm.hlp, Help/prove_constructors_distinct.hlp, Help/prove_constructors_injective.hlp
+
+Made "define_type" much faster for types with many constructors by removing
+several steps that were quadratic or cubic in the number of constructors.
+For example, defining a type with 160 constructors now takes 0.5-2.1 seconds
+instead of 12-111, and Examples/rectypes.ml about 24 seconds instead of 1090.
+The theorems returned by "define_type", "distinctness", "injectivity" and
+"cases" are unchanged.
+
+The main change is that the distinctness theorem, which has a conjunct for
+each pair of constructors, is no longer proved when a type is defined, but
+only when it is first requested by "distinctness"; accordingly
+"distinctness_store" now holds functions of type unit -> thm. Instead of the
+distinctness rewrites, "basic_rectype_net" now holds one conversion for each
+constructor, proving that it differs from the other constructors of its
+type. These conversions are also available through the new functions:
+
+        CONSTRUCTORS_DISTINCT_CONV
+        constructors_distinct_convs
+        constructors_distinct_net
+
+Injectivity and distinctness are now proved from a single instance of the
+recursion theorem, and the internal constructor numbers are numerals
+instead of iterated SUC. Both "new_definition" and "define" now skip the
+search for a benign redefinition when the constant being defined is new.
+Also corrected some Help files, in particular removing references to
+functions inherited from HOL88 that do not exist in HOL Light
+(prove_constructors_one_one, prove_induction_thm, prove_rec_fn_exists and
+INDUCT_THEN).
+
 Tue 10th Nov 2026       Library/llist.ml [new file], holtest.mk
 
 Added a library of possibly infinite lists ("lazy lists"), with the type

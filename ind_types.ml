@@ -320,6 +320,20 @@ let define_type_raw =
     (MP (INST [r,l] (DISCH eq' th)) (REFL r),(r,l)::insts) in
 
   (* ----------------------------------------------------------------------- *)
+  (* The same for a list of hypotheses v1 = t1, ..., vn = tn with no vi free *)
+  (* in any tj, with a single instantiation instead of one for each, and a   *)
+  (* check that the hypotheses left are "hs". This applies to the            *)
+  (* definitions of the representing predicates and then to the definitions  *)
+  (* of the pseudo-constructors.                                             *)
+  (* ----------------------------------------------------------------------- *)
+
+  let SCRUB_EQUATIONS eqs hs th =
+    let theta = map (fun eq -> let l,r = dest_eq eq in r,l) eqs in
+    let th1 = INST theta (itlist DISCH eqs th) in
+    let th2 = rev_itlist (fun (r,_) th -> MP th (REFL r)) theta th1 in
+    if set_eq (hyp th2) hs then th2 else failwith "SCRUB_EQUATIONS" in
+
+  (* ----------------------------------------------------------------------- *)
   (* Proves existence of model (inductively); use pseudo-constructors.       *)
   (*                                                                         *)
   (* Returns suitable definitions of constructors in terms of CONSTR, and    *)
@@ -363,7 +377,7 @@ let define_type_raw =
           with Failure _ -> beps_tm in
         let rarg = itlist (mk_binop fcons) rargs bottail in
       let conty = itlist mk_fun_ty (map type_of args) recty in
-      let condef = list_mk_comb(constr,[sucivate n; iarg; rarg]) in
+      let condef = list_mk_comb(constr,[mk_small_numeral n; iarg; rarg]) in
       mk_eq(mk_var(cname,conty),list_mk_abs(args,condef)) in
     let rec mk_constructors n rights =
       if rights = [] then [] else
@@ -396,10 +410,18 @@ let define_type_raw =
   (* ----------------------------------------------------------------------- *)
   (* Shows that the predicates defined by the rules are all nonempty.        *)
   (* (This could be done much more efficiently/cleverly, but it's OK.)       *)
+  (* The rules have the predicate definitions as hypotheses, which mention   *)
+  (* all the pseudo-constructors, so we avoid finding their free variables   *)
+  (* for every rule (as SPEC_ALL and MATCH_MP would do).                     *)
   (* ----------------------------------------------------------------------- *)
 
   let prove_model_inhabitation rth =
-    let srules = map SPEC_ALL (CONJUNCTS rth) in
+    let hvs = freesl(hyp rth) in
+    let rec SPEC_ALL_RULE th =
+      if not(is_forall(concl th)) then th else
+      let v = bndvar(rand(concl th)) in
+      SPEC_ALL_RULE (SPEC (variant (hvs @ frees(concl th)) v) th) in
+    let srules = map SPEC_ALL_RULE (CONJUNCTS rth) in
     let imps,bases = partition (is_imp o concl) srules in
     let concs = map concl bases @ map (rand o concl) imps in
     let preds = setify (map (repeat rator) concs) in
@@ -413,7 +435,10 @@ let define_type_raw =
         let asms = map
           (fun p -> find (fun th -> fst(strip_comb(concl th)) = p) sofar)
           preds in
-        MATCH_MP thm (end_itlist CONJ asms) in
+        let ath = end_itlist CONJ asms in
+        try MP (INSTANTIATE (term_match [] (lhand(concl thm)) (concl ath)) thm)
+               ath
+        with Failure _ -> MATCH_MP thm ath in
       let newth = tryfind follow_horn useful in
       exhaust_inhabitations ths (newth::sofar) in
     let ithms = exhaust_inhabitations imps bases in
@@ -432,7 +457,10 @@ let define_type_raw =
     let th1 = ASSUME (find (fun eq -> lhand eq = epred) (hyp exth)) in
     let th2 = TRANS th1 (SUBS_CONV cdefs (rand(concl th1))) in
     let th3 = EQ_MP (AP_THM th2 (rand extm)) exth in
-    let th4,_ = itlist SCRUB_EQUATION (hyp th3) (th3,[]) in
+    let ceqs = map concl cdefs in
+    let th4 = try let peqs = subtract (hyp th3) ceqs in
+                  SCRUB_EQUATIONS ceqs [] (SCRUB_EQUATIONS peqs ceqs th3)
+              with Failure _ -> fst(itlist SCRUB_EQUATION (hyp th3) (th3,[])) in
     let mkname = "_mk_"^ename and destname = "_dest_"^ename in
     let bij1,bij2 = new_basic_type_definition ename (mkname,destname) th4 in
     let bij2a = AP_THM th2 (rand(rand(concl bij2))) in
@@ -488,20 +516,56 @@ let define_type_raw =
     SPECL lambs ith in
 
   (* ----------------------------------------------------------------------- *)
+  (* Instantiate a rule !x1 .. xn. [A ==>] P (c x1 .. xn) to the pattern    *)
+  (* c t1 .. tn. This is done once per clause on theorems with all the      *)
+  (* predicate definitions as hypotheses, so it uses SPECL rather than      *)
+  (* matching, which computes the free variables of the hypotheses.         *)
+  (* ----------------------------------------------------------------------- *)
+
+  let RULE_INSTANCE rthm pat =
+    let avs,bod = strip_forall(concl rthm) in
+    let cpat = rand(if is_imp bod then rand bod else bod) in
+    if snd(strip_comb cpat) = avs && repeat rator cpat = repeat rator pat
+    then SPECL (snd(strip_comb pat)) rthm
+    else PART_MATCH (if is_imp bod then rand o rand else rand) rthm pat in
+
+  (* ----------------------------------------------------------------------- *)
+  (* Quantified forms !r. P r <=> dest(mk r) = r and !a. P(dest a) of the    *)
+  (* type bijections, with the type predicate (a variable) as a key, so that *)
+  (* instances are obtained by SPEC instead of rewriting, which would        *)
+  (* instantiate the hypotheses (pseudo-constructor definitions) each time.  *)
+  (* ----------------------------------------------------------------------- *)
+
+  let quantified_tybijs tybijpairs =
+    let qbij (th1,th2) =
+      let l = lhand(concl th2) in
+      let th3 = INST [rand(lhand(concl th1)),rand l] th2 in
+      let th4 = AP_TERM (rator(lhand(rand(concl th2)))) th1 in
+      rator l,(GEN (rand l) th2,GEN (rand(concl th1)) (EQ_MP (SYM th3) th4)) in
+    map qbij tybijpairs in
+
+  let TYBIJ_RULE qbijs th =
+    let p,x = dest_comb(concl th) in
+    EQ_MP (SPEC x (fst(assoc p qbijs))) th in
+
+  (* ----------------------------------------------------------------------- *)
   (* Reduce a single clause of the postulated induction theorem (old_ver) ba *)
   (* to the kind wanted for the new type (new_ver); |- new_ver ==> old_ver   *)
   (* ----------------------------------------------------------------------- *)
 
   let pullback_induction_clause tybijpairs conthms =
     let PRERULE = GEN_REWRITE_RULE (funpow 3 RAND_CONV) (map SYM conthms) in
-    let IPRULE = SYM o GEN_REWRITE_RULE I (map snd tybijpairs) in
+    let qbijs = quantified_tybijs tybijpairs in
+    let IPRULE = SYM o TYBIJ_RULE qbijs in
     fun rthm tm ->
       let avs,bimp = strip_forall tm in
       if is_imp bimp then
         let ant,con = dest_imp bimp in
         let ths = map (CONV_RULE BETA_CONV) (CONJUNCTS (ASSUME ant)) in
         let tths,pths = unzip (map CONJ_PAIR ths) in
-        let tth = MATCH_MP (SPEC_ALL rthm) (end_itlist CONJ tths) in
+        let tth = let th = end_itlist CONJ tths in
+                  try MP (SPECL avs rthm) th
+                  with Failure _ -> MATCH_MP (SPEC_ALL rthm) th in
         let mths = map IPRULE (tth::tths) in
         let conth1 = BETA_CONV con in
         let contm1 = rand(concl conth1) in
@@ -523,7 +587,10 @@ let define_type_raw =
       else
         let con = bimp in
         let conth2 = BETA_CONV con in
-        let tth = PART_MATCH I rthm (lhand(rand(concl conth2))) in
+        let tth = let tm = lhand(rand(concl conth2)) in
+                  try let th = SPECL avs rthm in
+                      if concl th = tm then th else fail()
+                  with Failure _ -> PART_MATCH I rthm tm in
         let conth3 = PRERULE conth2 in
         let asmgen = rand(rand(concl conth3)) in
         let asmquant = list_mk_forall(snd(strip_comb(rand asmgen)),asmgen) in
@@ -571,6 +638,9 @@ let define_type_raw =
     let preds = map (rator o body o rand) (conjuncts(rand(concl th3))) in
     let th4 = GENL preds th3 in
     let pasms = filter (C mem (map fst consindex) o lhand) (hyp th4) in
+    try let ceqs = subtract (hyp th4) pasms in
+        SCRUB_EQUATIONS ceqs [] (SCRUB_EQUATIONS pasms ceqs th4)
+    with Failure _ ->
     let th5 = itlist DISCH pasms th4 in
     let th6,_ = itlist SCRUB_EQUATION (hyp th5) (th5,[]) in
     let th7 = UNDISCH_ALL th6 in
@@ -595,21 +665,18 @@ let define_type_raw =
     let fxths1 = map (fun th1 -> tryfind (fun th2 -> MK_COMB(th2,th1)) fdefs)
       conthms in
     let fxths2 = map (fun th -> TRANS th (BETA_CONV (rand(concl th)))) fxths1 in
-    let mk_tybijcons (th1,th2) =
-      let th3 = INST [rand(lhand(concl th1)),rand(lhand(concl th2))] th2 in
-      let th4 = AP_TERM (rator(lhand(rand(concl th2)))) th1 in
-      EQ_MP (SYM th3) th4 in
-    let SCONV = GEN_REWRITE_CONV I (map mk_tybijcons tybijpairs)
-    and ERULE = GEN_REWRITE_RULE I (map snd tybijpairs) in
+    let qbijs = quantified_tybijs tybijpairs in
+    let ERULE = TYBIJ_RULE qbijs
+    and SRULE t = let p,x = dest_comb t in SPEC (rand x) (snd(assoc p qbijs)) in
     let simplify_fxthm rthm fxth =
       let pat = funpow 4 rand (concl fxth) in
       if is_imp(repeat (snd o dest_forall) (concl rthm)) then
-        let th1 = PART_MATCH (rand o rand) rthm pat in
+        let th1 = RULE_INSTANCE rthm pat in
         let tms1 = conjuncts(lhand(concl th1)) in
-        let ths2 = map (fun t -> EQ_MP (SYM(SCONV t)) TRUTH) tms1 in
+        let ths2 = map SRULE tms1 in
         ERULE (MP th1 (end_itlist CONJ ths2))
       else
-        ERULE (PART_MATCH rand rthm pat) in
+        ERULE (RULE_INSTANCE rthm pat) in
     let fxths3 = map2 simplify_fxthm (CONJUNCTS rth) fxths2 in
     let fxths4 = map2 (fun th1 -> TRANS th1 o AP_TERM fn) fxths2 fxths3 in
     let cleanup_fxthm cth fxth =
@@ -618,6 +685,10 @@ let define_type_raw =
       TRANS fxth (AP_TERM fn kth) in
     let fxth5 = end_itlist CONJ (map2 cleanup_fxthm conthms fxths4) in
     let pasms = filter (C mem (map fst consindex) o lhand) (hyp fxth5) in
+    try let rest = subtract (hyp fxth5) pasms in
+        SCRUB_EQUATIONS (subtract rest eqs) eqs
+          (SCRUB_EQUATIONS pasms rest fxth5)
+    with Failure _ ->
     let fxth6 = itlist DISCH pasms fxth5 in
     let fxth7,_ =
       itlist SCRUB_EQUATION (itlist (union o hyp) conthms []) (fxth6,[]) in
@@ -668,45 +739,73 @@ let define_type_raw =
         list_mk_abs([i;r;s],list_mk_comb(funarg,allargs)) in
 
   (* ----------------------------------------------------------------------- *)
-  (* Derive the recursion theorem.                                           *)
+  (* Derive the recursion theorem. The function used in CONSTR_REC, mapping  *)
+  (* the k'th constructor number to the k'th function, is a balanced tree    *)
+  (* of conditionals "if c < m then .. else ..", so evaluating it at numeral *)
+  (* k takes logarithmically many steps. It is only substituted for a        *)
+  (* variable at the end, so that the clauses never contain the whole tree.  *)
   (* ----------------------------------------------------------------------- *)
 
   let derive_recursion_theorem =
-    let CCONV = funpow 3 RATOR_CONV (REPEATC (GEN_REWRITE_CONV I [FCONS])) in
+    let num_ty = `:num` and lt_tm = `(<):num->num->bool` in
+    let COND_CONV = GEN_REWRITE_CONV I [COND_CLAUSES] in
+    let rec TREE_CONV tm =
+      let th1 = BETA_CONV tm in
+      let r = rand(concl th1) in
+      if not(is_cond r) then th1 else
+      let th2 = TRANS th1 (RATOR_CONV(RATOR_CONV(RAND_CONV NUM_LT_CONV)) r) in
+      let th3 = TRANS th2 (COND_CONV(rand(concl th2))) in
+      TRANS th3 (TREE_CONV(rand(concl th3))) in
+    let mk_tree fs =
+      let c = genvar num_ty in
+      let rec tree k fs =
+        let n = length fs in
+        if n = 1 then mk_abs(c,hd fs) else
+        let fs1,fs2 = chop_list (n / 2) fs in
+        let m = k + n / 2 in
+        mk_abs(c,mk_cond(list_mk_comb(lt_tm,[c; mk_small_numeral m]),
+                         mk_comb(tree k fs1,c),mk_comb(tree m fs2,c))) in
+      tree 0 fs in
     fun tybijpairs consindex conthms rath ->
       let isocons = map (create_recursion_iso_constructor consindex) conthms in
-      let ty = type_of(hd isocons) in
-      let fcons = mk_const("FCONS",[ty,aty])
-      and fnil = mk_const("FNIL",[ty,aty]) in
-      let bigfun = itlist (mk_binop fcons) isocons fnil in
-      let eth = ISPEC bigfun CONSTR_REC in
+      let nums = map mk_small_numeral (0--(length isocons - 1)) in
+      let gv = genvar(mk_fun_ty num_ty (type_of(hd isocons))) in
+      let gths =
+        map2 (fun k f -> ASSUME(mk_eq(mk_comb(gv,k),f))) nums isocons in
+      let eth = ISPEC gv CONSTR_REC in
       let fn = rator(rand(hd(conjuncts(concl rath)))) in
       let betm = let v,bod = dest_abs(rand(concl eth)) in vsubst[fn,v] bod in
-      let LCONV = REWR_CONV (ASSUME betm) in
+      let bth = ASSUME betm in
       let fnths =
         map (fun t -> RIGHT_BETAS [bndvar(rand t)] (ASSUME t)) (hyp rath) in
       let SIMPER = PURE_REWRITE_RULE
         (map SYM fnths @ map fst tybijpairs @ [FST; SND; FCONS; BETA_THM]) in
-      let hackdown_rath th =
+      let hackdown_rath th gth =
         let ltm,rtm = dest_eq(concl th) in
         let wargs = snd(strip_comb(rand ltm)) in
-        let th1 = TRANS th (LCONV rtm) in
-        let th2 = TRANS th1 (CCONV (rand(concl th1))) in
+        let th1 = TRANS th (SPECL (snd(strip_comb(rand rtm))) bth) in
+        let GCONV tm = if aconv tm (lhs(concl gth)) then gth
+                       else failwith "derive_recursion_theorem" in
+        let th2 = TRANS th1 (funpow 3 RATOR_CONV GCONV (rand(concl th1))) in
         let th3 = TRANS th2 (funpow 2 RATOR_CONV BETA_CONV (rand(concl th2))) in
         let th4 = TRANS th3 (RATOR_CONV BETA_CONV (rand(concl th3))) in
         let th5 = TRANS th4 (BETA_CONV (rand(concl th4))) in
         GENL wargs (SIMPER th5) in
-      let rthm = end_itlist CONJ (map hackdown_rath (CONJUNCTS rath)) in
+      let rthm = end_itlist CONJ (map2 hackdown_rath (CONJUNCTS rath) gths) in
       let seqs =
-        let unseqs = filter is_eq (hyp rthm) in
+        let unseqs = filter (fun t -> is_eq t && not(free_in gv t))
+                            (hyp rthm) in
         let tys = map (hd o snd o dest_type o type_of o snd o snd) consindex in
         map (fun ty -> find
           (fun t -> hd(snd(dest_type(type_of(lhand t)))) = ty) unseqs) tys in
       let rethm = itlist EXISTS_EQUATION seqs rthm in
       let fethm = CHOOSE(fn,eth) rethm in
+      let bigfun = mk_tree isocons in
+      let fethm' = itlist (fun k -> PROVE_HYP (TREE_CONV(mk_comb(bigfun,k))))
+                          nums (INST [bigfun,gv] fethm) in
       let pcons = map (repeat rator o rand o repeat (snd o dest_forall))
         (conjuncts(concl rthm)) in
-      GENL pcons fethm in
+      GENL pcons fethm' in
 
   (* ----------------------------------------------------------------------- *)
   (* Basic function: returns induction and recursion separately. No parser.  *)
@@ -897,11 +996,101 @@ let EXISTS_OPTION_THM = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Tools for proving injectivity and distinctness of constructors.           *)
+(*                                                                           *)
+(* Both use functions defined casewise from the recursion theorem, without   *)
+(* recursive calls: a "selector" for injectivity and a "numbering" for       *)
+(* distinctness. These are obtained by a single instantiation of the         *)
+(* recursion theorem, and the existential quantifiers over them are only     *)
+(* eliminated once (per type, resp. per constructor for the distinctness     *)
+(* conversions below), so no step is quadratic in the number of clauses,     *)
+(* except of course the size of the full distinctness theorem.               *)
+(*                                                                           *)
+(* The instantiation function takes a list of pairs (k,v), meaning that the  *)
+(* k'th clause (counting from 0) "fn (C x1 .. xn) = f ..." is to become      *)
+(* "fn (C x1 .. xn) = v", where v involves only the x1,...,xn, and returns   *)
+(* |- ?fn0 .. fnm. cl0 /\ ... /\ clN with all the clauses, the others still  *)
+(* using the (now free) function variables of the recursion theorem. If the  *)
+(* recursion theorem is not of the expected form it fails and we fall back  *)
+(* on the original method using "prove_recursive_functions_exist" on each   *)
+(* constructor or each type. For compatibility with that method, a clause    *)
+(* whose constructor name already occurs in an earlier clause (e.g. CONS at  *)
+(* a second list type in a nested type) is not included, nor is a type with *)
+(* such a clause in the distinctness theorems.                               *)
 (* ------------------------------------------------------------------------- *)
 
-let prove_constructors_injective =
+let prove_constructors_injective,prove_constructors_distinct,
+    constructors_distinct_convs =
+  let instantiate_recursion =
+    let rec BETAS_CONV n tm =
+      if n = 0 then REFL tm
+      else (RATOR_CONV (BETAS_CONV (n - 1)) THENC BETA_CONV) tm in
+    let dest_clause cl =
+      let xs,eq = strip_forall cl in
+      let l,r = dest_eq eq in
+      let f,ts = strip_comb r in
+      xs,rator l,f,ts in
+    fun ax vals ->
+      let evs,bod = strip_exists(snd(strip_forall(concl ax))) in
+      let cls = Array.of_list(map dest_clause (conjuncts bod)) in
+      let n = Array.length cls in
+      let tyins = itlist
+        (fun (k,v) acc ->
+          let _,fn,_,_ = cls.(k) in
+          let rty = snd(dest_fun_ty(type_of fn)) and ty = type_of v in
+          if can (rev_assoc rty) acc then
+            if rev_assoc rty acc = ty then acc
+            else failwith "instantiate_recursion"
+          else if ty = rty then acc
+          else if is_vartype rty then (ty,rty)::acc
+          else failwith "instantiate_recursion") vals [] in
+      let rtys = map snd tyins in
+      let bad (xs,fn,_,_) =
+        exists (fun ty -> exists (fun x -> occurs_in ty (type_of x)) xs ||
+                          occurs_in ty (fst(dest_fun_ty(type_of fn)))) rtys in
+      if exists bad (Array.to_list cls)
+      then failwith "instantiate_recursion" else
+      let ax' = INST_TYPE tyins ax in
+      let th1 = SPECL (variants (thm_frees ax')
+                                (fst(strip_forall(concl ax')))) ax' in
+      let cls' = Array.of_list(map dest_clause
+                   (conjuncts(snd(strip_exists(concl th1))))) in
+      let nargs = Array.make n (-1) and nvars = Array.make n 0 in
+      let mk_inst (k,v) =
+        let xs,_,f,ts = cls'.(k) in
+        if nargs.(k) >= 0 then failwith "instantiate_recursion" else
+        let ys = map (genvar o type_of) ts in
+        let theta = map (fun x -> assoc x (zip ts ys),x)
+                        (intersect (frees v) xs) in
+        nargs.(k) <- length ts; nvars.(k) <- length xs;
+        list_mk_abs(ys,vsubst theta v),f in
+      let th2 = INST (map mk_inst vals) th1 in
+      let rec CLAUSES_CONV k tm =
+        let conv tm =
+          if nargs.(k) < 0 then REFL tm
+          else funpow nvars.(k) BINDER_CONV
+                 (RAND_CONV(BETAS_CONV nargs.(k))) tm in
+        if k < n - 1 then COMB2_CONV (RAND_CONV conv) (CLAUSES_CONV(k + 1)) tm
+        else conv tm in
+      CONV_RULE (funpow (length evs) BINDER_CONV (CLAUSES_CONV 0)) th2 in
+  let constructor_head pat =
+    if is_numeral pat then pat else repeat rator pat
+  and constructor_args pat =
+    if is_numeral pat then [] else snd(strip_comb pat) in
+  let first_occurrences pats =
+    let rec firsts seen l =
+      match l with
+        [] -> []
+      | p::t -> let c = try fst(dest_const(repeat rator p))
+                        with Failure _ -> "" in
+                (c <> "" && not(mem c seen))::firsts (c::seen) t in
+    firsts [] pats in
   let DEPAIR = GEN_REWRITE_RULE TOP_SWEEP_CONV [PAIR_EQ] in
-  let prove_distinctness ax pat =
+  let finish_injectivity atm qth =
+    let qtm = concl qth in
+    let f = repeat rator (lhand atm) in
+    let rth = rev_itlist (C(curry MK_COMB)) (CONJUNCTS(ASSUME qtm)) (REFL f) in
+    IMP_ANTISYM_RULE (DISCH atm qth) (DISCH qtm rth) in
+  let prove_injectivity_slow ax pat =
     let f,args = strip_comb pat in
     let rt = end_itlist (curry mk_pair) args in
     let ty = mk_fun_ty (type_of pat) (type_of rt) in
@@ -915,47 +1104,205 @@ let prove_constructors_injective =
     let cth1 = SPECL args (ASSUME(snd(dest_exists(concl eth)))) in
     let cth2 = INST (zip args' args) cth1 in
     let pth = TRANS (TRANS (SYM cth1) bth) cth2 in
-    let qth = DEPAIR pth in
-    let qtm = concl qth in
-    let rth = rev_itlist (C(curry MK_COMB)) (CONJUNCTS(ASSUME qtm)) (REFL f) in
-    let tth = IMP_ANTISYM_RULE (DISCH atm qth) (DISCH qtm rth) in
+    let tth = finish_injectivity atm (DEPAIR pth) in
     let uth = GENL args (GENL args' tth) in
     PROVE_HYP eth (SIMPLE_CHOOSE fn uth) in
-  fun ax ->
+  let rec mk_sum tys =
+    let k = length tys in
+    if k = 1 then hd tys else
+    let tys1,tys2 = chop_list (k / 2) tys in
+    mk_type("sum",[mk_sum tys1; mk_sum tys2]) in
+  let rec mk_injections tys =
+    let k = length tys in
+    if k = 1 then [I] else
+    let tys1,tys2 = chop_list (k / 2) tys in
+    let ty1 = mk_sum tys1 and ty2 = mk_sum tys2 in
+    let inl = mk_const("INL",[ty1,aty; ty2,bty])
+    and inr = mk_const("INR",[ty1,aty; ty2,bty]) in
+    map (fun f t -> mk_comb(inl,f t)) (mk_injections tys1) @
+    map (fun f t -> mk_comb(inr,f t)) (mk_injections tys2) in
+  let OUT_CONV = GEN_REWRITE_CONV I [OUTL; OUTR] in
+  let rec UNSUM_RULE th =
+    try let c = rator(lhs(concl th)) in
+        let cn,cty = dest_const c in
+        let dn = if cn = "INL" then "OUTL" else if cn = "INR" then "OUTR"
+                 else fail() in
+        let tys = snd(dest_type(snd(dest_fun_ty cty))) in
+        let d = mk_const(dn,[hd tys,aty; hd(tl tys),bty]) in
+        let th1 = AP_TERM d th in
+        let l,r = dest_eq(concl th1) in
+        UNSUM_RULE (TRANS (TRANS (SYM(OUT_CONV l)) th1) (OUT_CONV r))
+    with Failure _ -> th in
+  let prove_injectivity_fast ax =
+    let cls = conjuncts(snd(strip_exists(snd(strip_forall(concl ax))))) in
+    let lefts = map (dest_comb o lhand o snd o strip_forall) cls in
+    let klefts = map snd (filter
+      (fun (f,(_,(_,p))) -> let args = constructor_args p in
+                            f && args <> [] && forall is_var args)
+      (zip (first_occurrences(map snd lefts))
+           (zip (0--(length lefts - 1)) lefts))) in
+    let tup p = end_itlist (curry mk_pair) (constructor_args p) in
+    let mk_vals fn =
+      let kps = map (fun (k,(_,p)) -> k,p)
+                    (filter (fun (_,(f,_)) -> f = fn) klefts) in
+      let tys = setify (map (type_of o tup o snd) kps) in
+      let injs = zip tys (mk_injections tys) in
+      map (fun (k,p) -> k,assoc (type_of(tup p)) injs (tup p)) kps in
+    let vals = sort (fun (k1,_) (k2,_) -> k1 < k2)
+                    (itlist ((@) o mk_vals) (setify(map (fst o snd) klefts))
+                            []) in
+    let eth = instantiate_recursion ax vals in
+    let evs,bod = strip_exists(concl eth) in
+    let cths = Array.of_list(CONJUNCTS(ASSUME bod)) in
+    let prove_injective (k,(fn,pat)) =
+      let args = constructor_args pat in
+      let args' = variants args args in
+      let atm = mk_eq(pat,list_mk_comb(repeat rator pat,args')) in
+      let cth1 = SPECL args cths.(k) and cth2 = SPECL args' cths.(k) in
+      let fn' = rator(lhs(concl cth1)) in
+      let pth = TRANS (TRANS (SYM cth1) (AP_TERM fn' (ASSUME atm))) cth2 in
+      finish_injectivity atm (DEPAIR(UNSUM_RULE pth)),(args,args') in
+    let tths = map prove_injective klefts in
+    let th = PROVE_HYP eth
+     (itlist SIMPLE_CHOOSE evs (end_itlist CONJ (map fst tths))) in
+    end_itlist CONJ
+     (map2 (fun th (_,(args,args')) -> GENL args (GENL args' th))
+           (CONJUNCTS th) tths) in
+  let prove_constructors_injective ax =
     let cls = conjuncts(snd(strip_exists(snd(strip_forall(concl ax))))) in
     let pats = map (rand o lhand o snd o strip_forall) cls in
-    end_itlist CONJ (mapfilter (prove_distinctness ax) pats);;
-
-let prove_constructors_distinct =
-  let num_ty = `:num` in
-  let rec allopairs f l m =
-    if l = [] then [] else
-    map (f (hd l)) (tl m) @ allopairs f (tl l) (tl m) in
-  let NEGATE = GEN_ALL o CONV_RULE (REWR_CONV (TAUT `a ==> F <=> ~a`)) in
-  let prove_distinct ax pat =
-    let nums = map mk_small_numeral (0--(length pat - 1)) in
-    let fn = genvar (mk_type("fun",[type_of(hd pat); num_ty])) in
-    let ls = map (curry mk_comb fn) pat in
-    let defs = map2 (fun l r -> list_mk_forall(frees (rand l),mk_eq(l,r)))
-      ls nums in
-    let eth = prove_recursive_functions_exist ax (list_mk_conj defs) in
-    let ev,bod = dest_exists(concl eth) in
-    let REWRITE = GEN_REWRITE_RULE ONCE_DEPTH_CONV (CONJUNCTS (ASSUME bod)) in
-    let pat' = map
-     (fun t -> let f,args = if is_numeral t then t,[] else strip_comb t in
-               list_mk_comb(f,variants args args)) pat in
-    let pairs = allopairs (curry mk_eq) pat pat' in
-    let nths = map (REWRITE o AP_TERM fn o ASSUME) pairs in
-    let fths = map2 (fun t th -> NEGATE (DISCH t (CONV_RULE NUM_EQ_CONV th)))
-      pairs nths in
-    CONJUNCTS(PROVE_HYP eth (SIMPLE_CHOOSE ev (end_itlist CONJ fths))) in
-  fun ax ->
+    if forall (fun p -> constructor_args p = []) pats
+    then failwith "prove_constructors_injective" else
+    try prove_injectivity_fast ax with Failure _ ->
+    end_itlist CONJ (mapfilter (prove_injectivity_slow ax) pats) in
+  let prove_constructors_numbering ax =
+    let cls = conjuncts(snd(strip_exists(snd(strip_forall(concl ax))))) in
+    let lefts = map (dest_comb o lhand o snd o strip_forall) cls in
+    let fns = itlist (insert o fst) lefts [] in
+    let klefts = zip (first_occurrences(map snd lefts))
+                     (zip (0--(length lefts - 1)) lefts) in
+    let ok (b,(_,(_,p))) =
+      b && (is_numeral p || forall is_var (snd(strip_comb p))) in
+    let groups = mapfilter
+      (fun f -> let g = filter (fun (_,(_,(f',_))) -> f' = f) klefts in
+                if length g < 2 || not(forall ok g) then fail()
+                else map (fun (_,(k,(_,p))) -> k,p) g) fns in
+    if groups = [] then failwith "prove_constructors_numbering" else
+    let vals = sort (fun (k1,_) (k2,_) -> k1 < k2)
+      (itlist (fun g acc -> map2 (fun (k,_) i -> k,mk_small_numeral i)
+                                 g (0--(length g - 1)) @ acc) groups []) in
+    let eth = instantiate_recursion ax vals in
+    let evs,bod = strip_exists(concl eth) in
+    let cths = Array.of_list(CONJUNCTS(ASSUME bod)) in
+    eth,evs,map (map (fun (k,p) -> p,cths.(k))) groups in
+  let DISTINCT_RULE thi thj tm =
+    let fn = rator(lhs(concl thi)) in
+    let th1 = TRANS (TRANS (SYM thi) (AP_TERM fn (ASSUME tm))) thj in
+    NOT_INTRO(DISCH tm (EQ_MP (NUM_EQ_CONV(concl th1)) th1)) in
+  let prove_distinctness_slow =
+    let num_ty = `:num` in
+    let rec allopairs f l m =
+      if l = [] then [] else
+      map (f (hd l)) (tl m) @ allopairs f (tl l) (tl m) in
+    let NEGATE = GEN_ALL o CONV_RULE (REWR_CONV (TAUT `a ==> F <=> ~a`)) in
+    fun ax pat ->
+      let nums = map mk_small_numeral (0--(length pat - 1)) in
+      let fn = genvar (mk_type("fun",[type_of(hd pat); num_ty])) in
+      let ls = map (curry mk_comb fn) pat in
+      let defs = map2 (fun l r -> list_mk_forall(frees (rand l),mk_eq(l,r)))
+        ls nums in
+      let eth = prove_recursive_functions_exist ax (list_mk_conj defs) in
+      let ev,bod = dest_exists(concl eth) in
+      let REWRITE = GEN_REWRITE_RULE ONCE_DEPTH_CONV (CONJUNCTS (ASSUME bod)) in
+      let pat' = map
+       (fun t -> let f,args = if is_numeral t then t,[] else strip_comb t in
+                 list_mk_comb(f,variants args args)) pat in
+      let pairs = allopairs (curry mk_eq) pat pat' in
+      let nths = map (REWRITE o AP_TERM fn o ASSUME) pairs in
+      let fths = map2 (fun t th -> NEGATE (DISCH t (CONV_RULE NUM_EQ_CONV th)))
+        pairs nths in
+      CONJUNCTS(PROVE_HYP eth (SIMPLE_CHOOSE ev (end_itlist CONJ fths))) in
+  let prove_distinctness_fast ax =
+    let eth,evs,groups = prove_constructors_numbering ax in
+    let prove_group g =
+      let g' = map (fun (p,th) ->
+        let args = constructor_args p in
+        let args' = variants args args in
+        SPECL args th,SPECL args' th,
+        p,list_mk_comb(constructor_head p,args')) g in
+      let rec pairs l =
+        match l with
+          (thi,_,p,_)::t ->
+             map (fun (_,thj,_,q) -> DISTINCT_RULE thi thj (mk_eq(p,q))) t @
+             pairs t
+        | [] -> [] in
+      pairs g' in
+    let ths = itlist ((@) o prove_group) groups [] in
+    let th = PROVE_HYP eth (itlist SIMPLE_CHOOSE evs (end_itlist CONJ ths)) in
+    end_itlist CONJ (map GEN_ALL (CONJUNCTS th)) in
+  let prove_constructors_distinct ax =
     let cls = conjuncts(snd(strip_exists(snd(strip_forall(concl ax))))) in
     let lefts = map (dest_comb o lhand o snd o strip_forall) cls in
     let fns = itlist (insert o fst) lefts [] in
     let pats = map (fun f -> map snd (filter ((=)f o fst) lefts)) fns in
+    if forall (fun l -> length l < 2) pats
+    then failwith "prove_constructors_distinct" else
+    try prove_distinctness_fast ax with Failure _ ->
     end_itlist CONJ
-     (end_itlist (@) (mapfilter (prove_distinct ax) pats));;
+     (end_itlist (@) (mapfilter (prove_distinctness_slow ax) pats)) in
+  let constructors_distinct_convs ax =
+    let eth,evs,groups = prove_constructors_numbering ax in
+    let mk_convs g =
+      let n = length g in
+      let pats = Array.of_list (map fst g)
+      and cths = Array.of_list (map snd g) in
+      let ty = type_of pats.(0) in
+      let heads = map constructor_head (Array.to_list pats) in
+      let nums,cons = partition (is_numeral o fst) (zip heads (0--(n - 1))) in
+      let ctab = itlist (fun (c,i) -> fst(dest_const c) |-> i) cons undefined in
+      let index tm =
+        if is_numeral tm then assoc tm nums
+        else apply ctab (fst(dest_const(repeat rator tm))) in
+      let rows = Array.make n [||] in
+      let row i =
+        if Array.length rows.(i) > 0 then rows.(i) else
+        let p = pats.(i) in
+        let args = constructor_args p in
+        let thi = SPECL args cths.(i) in
+        let js = filter ((<>) i) (0--(n - 1)) in
+        let rec fresh avoid vs =
+          match vs with
+            [] -> []
+          | v::t -> let ty = type_of v in
+                    let v' = variant
+                      (map (fun u -> mk_var(fst(dest_var u),ty)) avoid) v in
+                    v'::fresh (v'::avoid) t in
+        let ths = map
+          (fun j -> let q = pats.(j) in
+                    let args' = fresh args (constructor_args q) in
+                    DISTINCT_RULE thi (SPECL args' cths.(j))
+                      (mk_eq(p,list_mk_comb(constructor_head q,args')))) js in
+        let th = PROVE_HYP eth
+          (itlist SIMPLE_CHOOSE evs (end_itlist CONJ ths)) in
+        let r = Array.make n TRUTH in
+        do_list (fun (j,th) -> r.(j) <- EQF_INTRO th) (zip js (CONJUNCTS th));
+        rows.(i) <- r; r in
+      let conv tm =
+        let i,j =
+          try let l,r = dest_eq tm in
+              let i = index l and j = index r in
+              if i = j || not(can (type_match ty (type_of l)) []) then fail()
+              else i,j
+          with Failure _ -> failwith "constructors_distinct_convs" in
+        REWR_CONV (row i).(j) tm in
+      map (fun p -> mk_eq(list_mk_comb(constructor_head p,
+                                       map (genvar o type_of)
+                                           (constructor_args p)),
+                          genvar ty),conv)
+          (Array.to_list pats) in
+    itlist ((@) o mk_convs) groups [] in
+  prove_constructors_injective,prove_constructors_distinct,
+  (constructors_distinct_convs:thm->(term*conv)list);;
 
 (* ------------------------------------------------------------------------- *)
 (* Automatically prove the case analysis theorems.                           *)
@@ -1014,23 +1361,40 @@ inductive_type_store :=
  (!inductive_type_store);;
 
 (* ------------------------------------------------------------------------- *)
-(* Also add a cached rewrite of distinctness and injectivity theorems. Since *)
-(* there can be quadratically many distinctness clauses, it would really be  *)
-(* preferable to have a conversion, but this seems OK up 100 constructors.   *)
+(* Also add cached rewrites for injectivity and conversions for distinctness *)
+(* of constructors to a net. Since there can be quadratically many           *)
+(* distinctness clauses, there is instead one entry "C x1 .. xn = y" for     *)
+(* each constructor C, with a conversion that proves (C .. = D ..) <=> F for *)
+(* the other constructors D of its type (see constructors_distinct_convs).   *)
+(* They are also put in their own net, for CONSTRUCTORS_DISTINCT_CONV. The   *)
+(* full distinctness theorem is only proved when it is first asked for: the  *)
+(* store holds a function that proves it on its first call and then returns  *)
+(* the saved result.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
 let basic_rectype_net = ref empty_net;;
-let distinctness_store = ref ["bool",TAUT `(T <=> F) <=> F`];;
+let constructors_distinct_net = ref empty_net;;
+let distinctness_store =
+  let th = TAUT `(T <=> F) <=> F` in ref ["bool",(fun () -> th)];;
 let injectivity_store = ref [];;
 
 let extend_rectype_net (tyname,(_,_,rth)) =
-  let ths1 = try [prove_constructors_distinct rth] with Failure _ -> []
-  and ths2 = try [prove_constructors_injective rth] with Failure _ -> [] in
-  let canon_thl = itlist (mk_rewrites false) (ths1 @ ths2) [] in
-  distinctness_store := map (fun th -> tyname,th) ths1 @ (!distinctness_store);
-  injectivity_store := map (fun th -> tyname,th) ths2 @ (!injectivity_store);
+  let ths = try [prove_constructors_injective rth] with Failure _ -> []
+  and cnvs = try constructors_distinct_convs rth with Failure _ -> [] in
+  let dth =
+    let saved = ref None in
+    fun () -> match !saved with
+                Some th -> th
+              | None -> let th = prove_constructors_distinct rth in
+                        (saved := Some th; th) in
+  let canon_thl = itlist (mk_rewrites false) ths [] in
+  let add_convs = itlist (fun (tm,cnv) -> net_of_conv tm cnv) cnvs in
+  if cnvs <> [] then
+    distinctness_store := (tyname,dth)::(!distinctness_store);
+  injectivity_store := map (fun th -> tyname,th) ths @ (!injectivity_store);
+  constructors_distinct_net := add_convs (!constructors_distinct_net);
   basic_rectype_net :=
-    itlist (net_of_thm true) canon_thl (!basic_rectype_net);;
+    itlist (net_of_thm true) canon_thl (add_convs (!basic_rectype_net));;
 
 do_list extend_rectype_net (!inductive_type_store);;
 
@@ -1038,9 +1402,17 @@ do_list extend_rectype_net (!inductive_type_store);;
 (* Return distinctness and injectivity for a type by simple lookup.          *)
 (* ------------------------------------------------------------------------- *)
 
-let distinctness ty = assoc ty (!distinctness_store);;
+let distinctness ty = assoc ty (!distinctness_store) ();;
 
 let injectivity ty = assoc ty (!injectivity_store);;
+
+(* ------------------------------------------------------------------------- *)
+(* Prove |- (C x1 .. xm = D y1 .. yn) <=> F for different constructors C, D. *)
+(* ------------------------------------------------------------------------- *)
+
+let (CONSTRUCTORS_DISTINCT_CONV:conv) = fun tm ->
+  try REWRITES_CONV (!constructors_distinct_net) tm
+  with Failure _ -> failwith "CONSTRUCTORS_DISTINCT_CONV";;
 
 let cases ty =
   if ty = "num" then num_CASES else
@@ -1157,8 +1529,16 @@ let define_type_raw =
       c0 = c1 && dty0 = rty1 && rty0 = dty1 in
 
   let prove_inductive_types_isomorphic n k (ith0,rth0) (ith1,rth1) =
+    (* For the big recursion theorem rth1 use SPECL of the bound variables  *)
+    (* if that is what SPEC_ALL would do, since SPEC_ALL takes quadratic     *)
+    (* time here (computing the free variables after each step).            *)
     let sth0 = SPEC_ALL rth0
-    and sth1 = SPEC_ALL rth1
+    and fvs1,sth1 =
+      let avs = fst(strip_forall(concl rth1)) in
+      if length(setify avs) = length avs && intersect avs (thm_frees rth1) = []
+      then avs,SPECL avs rth1 else
+      let th = SPEC_ALL rth1 in
+      subtract (frees(concl th)) (frees(concl rth1)),th
     and t_tm = concl TRUTH in
     let pevs0,pbod0 = strip_exists (concl sth0)
     and pevs1,pbod1 = strip_exists (concl sth1) in
@@ -1208,6 +1588,14 @@ let define_type_raw =
         list_mk_abs(gargs1,list_mk_comb(fst(strip_comb(rand l0)),xargs)),vc1 in
       inst0,inst1 in
     let insts0,insts1 = unzip (map2 proc_clause (lcjs0@rcjs0) (lcjs1@rcjs1)) in
+    (* The function variables of rth1 for other clauses are instantiated to *)
+    (* arbitrary closed terms, so that the definitions of the isomorphisms   *)
+    (* below (hypotheses until scrubbed) do not have them free.             *)
+    let insts1 =
+      let fvs = map (inst tyins1) fvs1 in
+      if not(subset (map snd insts1) fvs) then insts1 else
+      insts1 @ map (fun v -> mk_select(genvar(type_of v),t_tm),v)
+                   (subtract fvs (map snd insts1)) in
     let uth0 = BETA_RULE(INST insts0 tth0)
     and uth1 = BETA_RULE(INST insts1 tth1) in
     let efvs0,sth0 = DE_EXISTENTIALIZE_RULE uth0
@@ -1215,6 +1603,11 @@ let define_type_raw =
     let efvs2 = map
      (fun t1 -> find (fun t2 -> hd(tl(snd(dest_type(type_of t1)))) =
                                 hd(snd(dest_type(type_of t2)))) efvs1) efvs0 in
+    (* Only the clauses for the isomorphisms are used for rewriting.         *)
+    let sth1 =
+      match filter (fun th -> mem (repeat rator(lhand(snd(strip_forall
+                                     (concl th))))) efvs2) (CONJUNCTS sth1)
+      with [] -> sth1 | ths -> end_itlist CONJ ths in
     let isotms = map2 (fun ff gg -> list_mk_icomb "ISO" [ff;gg]) efvs0 efvs2 in
     let ctm = list_mk_conj isotms in
     let cth1 = ISO_EXPAND_CONV ctm in
@@ -1224,7 +1617,10 @@ let define_type_raw =
     let cjs1,cjs2 = partition fst (zip eee cjs) in
     let ctm2 = mk_conj(list_mk_conj (map snd cjs1),
                        list_mk_conj (map snd cjs2)) in
-    let DETRIV_RULE = TRIV_ANTE_RULE o REWRITE_RULE[sth0;sth1] in
+    (* Rewrite with assumed clauses, to keep the hypotheses small.          *)
+    let DETRIV_RULE =
+      let RULE = REWRITE_RULE[ASSUME(concl sth0); ASSUME(concl sth1)] in
+      fun th -> TRIV_ANTE_RULE (PROVE_HYP sth0 (PROVE_HYP sth1 (RULE th))) in
     let jth0 =
       let itha = SPEC_ALL ith0 in
       let icjs = conjuncts(rand(concl itha)) in
@@ -1345,9 +1741,28 @@ let define_type_raw =
       ctylist in
     let uisoths = map ISO_USAGE_RULE cisoths in
     let visoths = map (ASSUME o concl) uisoths in
-    let irth4 = itlist PROVE_HYP uisoths (REWRITE_FUN_EQ_RULE visoths irth3) in
-    let irth5 = REWRITE_RULE
-      (rclauses :: map SIMPLE_ISO_EXPAND_RULE isoths') irth4 in
+    let REWRITE_ISOS th =
+      let th1 = itlist PROVE_HYP uisoths (REWRITE_FUN_EQ_RULE visoths th) in
+      PROVE_HYP rclauses (REWRITE_RULE
+        (ASSUME(concl rclauses) :: map SIMPLE_ISO_EXPAND_RULE isoths') th1) in
+    (* The outer quantifiers !f. P f of the recursion theorem, one for each   *)
+    (* constructor, would just become !f'. P(g f') for those whose type is    *)
+    (* that of an isomorphism; doing that by instantiation spares rewriting  *)
+    (* through the long quantifier prefix, which is quadratic or worse.     *)
+    let irth5 =
+      try let gmap = map (fun th -> let f = lhand(concl th) in
+                                    fst(dest_fun_ty(type_of f)),rand(concl th))
+                         cisoths in
+          let avs = fst(strip_forall(concl rth1)) in
+          let reps = map
+            (fun v -> try let g = assoc (type_of v) gmap in
+                          let v' = mk_var(fst(dest_var v),
+                                          fst(dest_fun_ty(type_of g))) in
+                          mk_comb(g,v'),v'
+                      with Failure _ -> v,v) avs in
+          CONJ (REWRITE_ISOS ith1)
+               (GENL (map snd reps) (REWRITE_ISOS (SPECL (map fst reps) rth1)))
+      with Failure _ -> REWRITE_ISOS irth3 in
     let irth6 = repeat SCRUB_ASSUMPTION irth5 in
     let ncjs = filter (fun t -> exists (fun v -> not(is_var v))
                              (snd(strip_comb(rand(lhs(snd(strip_forall t)))))))
@@ -1364,6 +1779,25 @@ let define_type_raw =
     let dths = map mk_newcon ncjs in
     let ith6,rth6 = CONJ_PAIR(PURE_REWRITE_RULE dths irth6) in
     n,ith6,rth6 in
+  (* ----------------------------------------------------------------------- *)
+  (* SUBS for theorems |- c = d with constants c, in a single traversal of   *)
+  (* the theorem (SUBS_CONV does one beta-reduction of all of it for each).  *)
+  (* ----------------------------------------------------------------------- *)
+
+  let SUBS_CONSTANTS ths =
+    let tbl = itlist (fun th -> fst(dest_const(lhs(concl th))) |-> th)
+                     ths undefined in
+    let rec conv tm =
+      match tm with
+        Const(s,_) -> let th = apply tbl s in
+                      if lhs(concl th) = tm then th else fail()
+      | Comb(l,r) -> (try let lth = conv l in
+                          try MK_COMB(lth,conv r) with Failure _ -> AP_THM lth r
+                      with Failure _ -> AP_TERM l (conv r))
+      | Abs(v,b) -> ABS v (conv b)
+      | _ -> fail() in
+    CONV_RULE(fun tm -> try conv tm with Failure _ -> REFL tm) in
+
   fun def ->
     let newtys = map fst def in
     let truecons = itlist (@) (map (map fst o snd) def) [] in
@@ -1377,12 +1811,22 @@ let define_type_raw =
       map2 (fun s r -> SYM(new_definition (mk_eq(mk_var(s,type_of r),r))))
            truecons gencons in
     let tavs = make_args "f" [] (map type_of avs) in
-    let ith1 = SUBS cdefs ith0
-    and rth1 = GENL tavs (SUBS cdefs (SPECL tavs rth0)) in
+    let SUBS_CDEFS = try SUBS_CONSTANTS cdefs with Failure _ -> SUBS cdefs in
+    let ith1 = SUBS_CDEFS ith0
+    and rth1 =
+      let sth = if length(setify avs) = length avs && thm_frees rth0 = []
+                then INST (zip tavs avs) (SPECL avs rth0)
+                else SPECL tavs rth0 in
+      GENL tavs (SUBS_CDEFS sth) in
     let retval = p,ith1,rth1 in
     let newentries = map (fun s -> dest_vartype s,retval) newtys in
+    let share store =
+      try let x = assoc (fst(hd newentries)) (!store) in
+          store := map (fun (s,_) -> s,x) (rev(tl newentries)) @ (!store)
+      with Failure _ -> () in
     (inductive_type_store := newentries @ (!inductive_type_store);
-     do_list extend_rectype_net newentries; ith1,rth1);;
+     extend_rectype_net (hd newentries);
+     share distinctness_store; share injectivity_store; ith1,rth1);;
 
 (* ----------------------------------------------------------------------- *)
 (* The overall function, with rather crude string-based benignity.         *)

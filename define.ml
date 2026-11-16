@@ -994,7 +994,7 @@ let define =
     let fs = map (repeat rator o lhs o snd o strip_forall) cjs in
     let f = hd fs in (* Arbitrarily choose one of the left hands *)
     if not (is_const f)
-    then t (* t cannot be a benign redefinition. Just return the input. *)
+    then failwith "not a constant" (* t cannot be a benign redefinition. *)
     else
       (* Instantiate type variables of all other occurrences of the 'f'
          constant *)

@@ -162,7 +162,8 @@ let new_definition =
                gv,depair gv arg in
   fun tm ->
     let avs,def = strip_forall tm in
-    try let th,th' = tryfind (fun th -> th,PART_MATCH I th def)
+    try if not(is_const(fst(strip_comb(lhs def)))) then fail() else
+        let th,th' = tryfind (fun th -> th,PART_MATCH I th def)
                              (!the_definitions) in
         ignore(PART_MATCH I th' (snd(strip_forall(concl th))));
         warn true "Benign redefinition"; GEN_ALL (GENL avs th')

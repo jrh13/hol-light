@@ -22,7 +22,9 @@ universally quantified.
 
 \FAILURE
 {new_definition} fails if {c} is already a constant or if the definition does
-not have the right form.
+not have the right form. However, repeating an existing definition (up to the
+names of variables) is accepted as a benign redefinition: a warning is printed
+and the existing definition is returned, in terms of the new variable names.
 
 \EXAMPLE
 A NAND relation on signals indexed by `time' can be defined as follows.
@@ -43,6 +45,6 @@ more basic principle is fine.
 
 \SEEALSO
 define, new_basic_definition, new_inductive_definition,
-new_recursive_definition, new_specification.
+new_recursive_definition, new_specification, the_definitions.
 
 \ENDDOC

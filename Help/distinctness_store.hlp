@@ -1,19 +1,33 @@
 \DOC distinctness_store
 
-\TYPE {distinctness_store : (string * thm) list ref}
+\TYPE {distinctness_store : (string * (unit -> thm)) list ref}
 
 \SYNOPSIS
-Internal theorem list of distinctness theorems.
+Internal list of distinctness theorems, each proved when first needed.
 
 \DESCRIBE
-This list contains all the distinctness theorems (see {distinct}) for the
-recursive types defined so far. It is automatically extended by {define_type}
-and used as a cache by {distinct}.
+This list associates with the name of each recursive type defined so far that
+has at least two constructors a function returning its distinctness theorem
+(see {distinctness}). The theorem is proved when the function is first called,
+and saved for later calls, so it is never proved for types where it is not
+used; it has a conjunct for each pair of constructors, so for types with many
+constructors this saves much time and space. The list is automatically
+extended by {define_type} and used by {distinctness}.
 
 \FAILURE
 Not applicable.
 
+\EXAMPLE
+{
+  # assoc "list" (!distinctness_store);;
+  val it : unit -> thm = <fun>
+
+  # assoc "list" (!distinctness_store) ();;
+  val it : thm = |- !a0' a1'. ~([] = CONS a0' a1')
+}
+
 \SEEALSO
-define_type, distinctness, extend_rectype_net, injectivity_store.
+constructors_distinct_net, define_type, distinctness, extend_rectype_net,
+injectivity_store.
 
 \ENDDOC
