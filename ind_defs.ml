@@ -463,6 +463,16 @@ let prove_inductive_relations_exist,new_inductive_definition,
   new_definition_of derive_nonschematic_coinductive_relations
     the_coinductive_definitions "coinductive";;
 
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let new_inductive_definition =
+  let unlocked = new_inductive_definition in
+  fun x0 -> with_definitions_lock (fun () -> unlocked x0);;
+
+let new_coinductive_definition =
+  let unlocked = new_coinductive_definition in
+  fun x0 -> with_definitions_lock (fun () -> unlocked x0);;
+
 (* ------------------------------------------------------------------------- *)
 (* Derivation of "strong induction".                                         *)
 (* ------------------------------------------------------------------------- *)

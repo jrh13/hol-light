@@ -132,6 +132,12 @@ let new_type_definition tyname (absname,repname) th =
                             (!the_type_definitions);
     tth;;
 
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let new_type_definition =
+  let unlocked = new_type_definition in
+  fun x0 x1 x2 -> with_definitions_lock (fun () -> unlocked x0 x1 x2);;
+
 (* ------------------------------------------------------------------------- *)
 (* Derive excluded middle. The proof is an optimization due to Mark Adams of *)
 (* the original Diaconescu proof as presented in Beeson's book.              *)

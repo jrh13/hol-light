@@ -113,3 +113,9 @@ let new_recursive_definition =
     let dths = map2 SPECL fvs (CONJUNCTS dth) in
     let th = end_itlist CONJ dths in
     the_recursive_definitions := th::(!the_recursive_definitions); th;;
+
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let new_recursive_definition =
+  let unlocked = new_recursive_definition in
+  fun x0 x1 -> with_definitions_lock (fun () -> unlocked x0 x1);;
