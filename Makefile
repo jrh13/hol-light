@@ -214,6 +214,12 @@ hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo hol_domains.cmo update_data
 
 UNIT_TESTS=$(patsubst %.ml,%,$(filter-out %_inlined.ml,$(wildcard UnitTests/*.ml)))
 
+# The concurrency tests run several domains, so they need OCaml 5 or later.
+
+ifneq ($(filter 3 4,$(shell ocamlc -version 2>/dev/null | cut -c1)),)
+UNIT_TESTS:=$(filter-out UnitTests/concurrency_tests,$(UNIT_TESTS))
+endif
+
 ifeq ($(HOLLIGHT_USE_MODULE),1)
 hol.sh: hol_lib.cmo
 
