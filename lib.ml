@@ -789,7 +789,7 @@ let rec choose t =
 
 let pp_print_fpf fmt (f:('a,'b)func) = Format.pp_print_string fmt "<func>";;
 
-let print_fpf f = pp_print_fpf Format.std_formatter f;;
+let print_fpf f = pp_print_fpf (Hol_domains.std_formatter ()) f;;
 
 (* ------------------------------------------------------------------------- *)
 (* Set operations parametrized by equality (from Steven Obua).               *)

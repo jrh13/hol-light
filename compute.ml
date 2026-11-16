@@ -338,6 +338,15 @@ let assoc_clause (Rws rws) cst =
     Hashtbl.add rws cst mt;
     mt;;
 
+(* The rules of a constant, without adding the constant to the table. Rules
+   are compiled with assoc_clause, so that rules added later for a constant
+   are seen by earlier rules that mention it. Evaluation uses find_clause,
+   so that it only reads a compset and several domains can evaluate with
+   one compset at once. *)
+
+let find_clause (Rws rws) cst =
+  try Hashtbl.find rws cst with Not_found -> ref (End_db, None);;
+
 let add_in_db_upd rws (name, arity, hcst) act =
   let { contents = db, sk } as rl = assoc_clause rws name in
   rl := add_in_db (arity, hcst, act, db), sk;;
@@ -350,11 +359,11 @@ let scrub_const (Rws htbl) c =
   let name, _ = dest_const c in
   Hashtbl.remove htbl name;;
 
-let from_term (rws, env, t) =
+let from_term clause (rws, env, t) =
   let rec down (env, t, c) =
     match t with
     | Var _ -> up ((try Bv (index t env) with _ -> Fv), c)
-    | Const (name, _) -> up (Cst (t, assoc_clause rws name), c)
+    | Const (name, _) -> up (Cst (t, clause rws name), c)
     | Comb (rator, rand) -> down (env, rator, Zrator ((env, rand), c))
     | Abs (bvar, body) -> down (bvar :: env, body, Zabs ((), c))
 
@@ -376,7 +385,7 @@ let mk_rewrite rws eq_thm =
   let lhs, rhs = dest_eq (concl eq_thm) in
   let fv, cst, pats = check_arg_form lhs in
   let gen_thm = itlist GEN fv eq_thm in
-  let rhsc = from_term (rws, rev fv, rhs) in
+  let rhsc = from_term assoc_clause (rws, rev fv, rhs) in
   Rw {
     cst = cst;
     lhs = pats;
@@ -580,6 +589,16 @@ let inst_rw (th, monitoring, {rule = Rw {thm = thm; rhs = rhs}; inst = (bds, tys
 let monitoring = ref (None: (term -> bool) option);;
 let stoppers = ref (None: (term -> bool) option);;
 
+(* The stoppers of a RESTR_EVAL_CONV running on this domain, which take the
+   place of !stoppers there. They are per domain so that RESTR_EVAL_CONV on
+   one domain does not restrict EVAL_CONV on another. *)
+
+let restr_stoppers =
+  Hol_domains.local (fun () -> ref (None: (term -> bool) option));;
+
+let current_stoppers () =
+  match !(restr_stoppers ()) with None -> !stoppers | s -> s;;
+
 (*---------------------------------------------------------------------------
  * Reducing a constant
  *---------------------------------------------------------------------------*)
@@ -587,7 +606,7 @@ let stoppers = ref (None: (term -> bool) option);;
 let rec reduce_cst = function
   | th, {head = head; args = args; rws = Try {hcst = hcst; rws = Rewrite rls; tail = tail}; skip = skip} ->
    (try
-      let () = match !stoppers with None -> () | Some p -> if p head then raise No_match else () in
+      let () = match current_stoppers () with None -> () | Some p -> if p head then raise No_match else () in
       let _, _, tytheta = try term_match [] hcst head with _ -> raise No_match in
       let rule_inst = try_rwn tytheta args rls in
       let mon = match !monitoring with None -> false | Some f -> f head in
@@ -625,7 +644,8 @@ let rec stack_out = function
   | th, Zabs (mkl, ctx) -> stack_out (mkl th, ctx);;
 
 let initial_state rws t =
-  ((refl_thm t, mk_clos ([], from_term (rws, [], t))), (Ztop: cbv_stack));;
+  ((refl_thm t, mk_clos ([], from_term find_clause (rws, [], t))),
+   (Ztop: cbv_stack));;
 
 (*---------------------------------------------------------------------------
  * [cbv_wk (rws,(th,cl),stk)] puts the closure cl (useful information about
@@ -735,7 +755,7 @@ let WEAK_CBV_CONV rws =
 
 let extern_of_conv rws conv tm =
   let thm = conv tm in
-  thm, mk_clos ([], from_term (rws, [], rhs (concl thm)));;
+  thm, mk_clos ([], from_term find_clause (rws, [], rhs (concl thm)));;
 
 let add_conv (cst, arity, conv) rws =
   add_extern (cst, arity, extern_of_conv rws conv) rws;;
@@ -802,8 +822,8 @@ let rec OR = function
   | [x] -> same_const x
   | h :: t -> fun x -> same_const h x || OR t x;;
 
-let RESTR_EVAL_CONV clist =
-  with_flag (stoppers, Some (OR clist)) EVAL_CONV;;
+let RESTR_EVAL_CONV clist tm =
+  with_flag (restr_stoppers (), Some (OR clist)) EVAL_CONV tm;;
 
 let RESTR_EVAL_TAC = CONV_TAC o RESTR_EVAL_CONV;;
 let RESTR_EVAL_RULE = CONV_RULE o RESTR_EVAL_CONV;;

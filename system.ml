@@ -21,4 +21,4 @@ let pp_print_num fmt n =
   Format.pp_print_string fmt (string_of_num n);
   Format.pp_close_box fmt ();;
 
-let print_num = pp_print_num Format.std_formatter;;
+let print_num x = pp_print_num (Hol_domains.std_formatter ()) x;;
