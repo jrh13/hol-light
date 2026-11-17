@@ -647,6 +647,17 @@ let define_type_raw =
     fst (itlist SCRUB_EQUATION (hyp th7) (th7,[])) in
 
   (* ----------------------------------------------------------------------- *)
+  (* The range type of the recursive functions: Z, with primes added if this *)
+  (* is the name of a type variable of the new types.                        *)
+  (* ----------------------------------------------------------------------- *)
+
+  let range_tyvar consindex =
+    let tvs = itlist (union o tyvars o type_of o fst o snd) consindex [] in
+    let rec fresh s =
+      if mem (mk_vartype s) tvs then fresh (s^"'") else mk_vartype s in
+    fresh "Z" in
+
+  (* ----------------------------------------------------------------------- *)
   (* Create the recursive functions and eliminate pseudo-constructors.       *)
   (* (These are kept just long enough to derive the key property.)           *)
   (* ----------------------------------------------------------------------- *)
@@ -654,7 +665,7 @@ let define_type_raw =
   let create_recursive_functions tybijpairs consindex conthms rth =
     let domtys = map (hd o snd o dest_type o type_of o snd o snd) consindex in
     let recty = (hd o snd o dest_type o type_of o fst o snd o hd) consindex in
-    let ranty = mk_vartype "Z" in
+    let ranty = range_tyvar consindex in
     let fn = mk_var("fn",mk_fun_ty recty ranty)
     and fns = make_args "fn" [] (map (C mk_fun_ty ranty) domtys) in
     let args = make_args "a" [] domtys in
@@ -700,8 +711,6 @@ let define_type_raw =
   (* ----------------------------------------------------------------------- *)
 
   let create_recursion_iso_constructor =
-    let s = `s:num->Z` in
-    let zty = `:Z` in
     let numty = `:num` in
     let rec extract_arg tup v =
       if v = tup then REFL tup else
@@ -712,6 +721,8 @@ let define_type_raw =
       let th = extract_arg (rand(concl PAIR_th)) v in
       SUBS[SYM PAIR_th] th in
     fun consindex ->
+      let zty = range_tyvar consindex in
+      let s = mk_var("s",mk_fun_ty numty zty) in
       let recty = hd(snd(dest_type(type_of(fst(hd consindex))))) in
       let domty = hd(snd(dest_type recty)) in
       let i = mk_var("i",domty)
@@ -923,8 +934,10 @@ let define_type_raw =
       let evs,bod = strip_exists ebod in
       let n = length evs in
       if n = 1 then th else
-      let tys = map (fun i -> mk_vartype ("Z"^(string_of_int i)))
-                    (0--(n - 1)) in
+      let tvs = itlist (union o tyvars o type_of) evs [] in
+      let rec fresh s =
+        if mem (mk_vartype s) tvs then fresh (s^"'") else mk_vartype s in
+      let tys = map (fun i -> fresh ("Z"^(string_of_int i))) (0--(n - 1)) in
       let sty = mk_sum tys in
       let inls = mk_inls sty
       and outls = mk_outls sty in
@@ -1693,7 +1706,7 @@ let define_type_raw =
   let recover_clause id tm =
     let con,args = strip_comb tm in
     fst(dest_const con)^id,map type_of args in
-  let rec create_auxiliary_clauses nty =
+  let rec create_auxiliary_clauses avoid nty =
     let id = fst(dest_var(genvar bool_ty)) in
     let tycon,tyargs = dest_type nty in
     let k,ith,rth = try assoc tycon (!inductive_type_store) with Failure _ ->
@@ -1701,7 +1714,17 @@ let define_type_raw =
     let evs,bod = strip_exists(snd(strip_forall(concl rth))) in
     let cjs = map (lhand o snd o strip_forall) (conjuncts bod) in
     let rtys = map (hd o snd o dest_type o type_of) evs in
-    let tyins = tryfind (fun vty -> type_match vty nty []) rtys in
+    let tyins0 = tryfind (fun vty -> type_match vty nty []) rtys in
+    (* Rename the other type variables of the recursion theorem, i.e. its    *)
+    (* range types, if they are among those of the definition (avoid).       *)
+    let tyins =
+      let rtvs = itlist (union o tyvars o type_of) evs [] in
+      let rec fresh tvs s =
+        if mem (mk_vartype s) tvs then fresh tvs (s^"'") else mk_vartype s in
+      let clash v = mem v avoid && not(exists ((=) v o snd) tyins0) in
+      itlist (fun v acc ->
+          (fresh (map fst acc @ union avoid rtvs) (dest_vartype v),v)::acc)
+        (filter clash rtvs) tyins0 in
     let cjs' = map (inst tyins o rand) (fst(chop_list k cjs)) in
     let mtys = itlist (insert o type_of) cjs' [] in
     let pcons = map (fun ty -> filter (fun t -> type_of t = ty) cjs') mtys in
@@ -1717,7 +1740,8 @@ let define_type_raw =
     if rectys = [] then
       let th1,th2 = define_type_basecase def in n,th1,th2 else
     let nty = hd (sort (fun t1 t2 -> occurs_in t2 t1) rectys) in
-    let k,tyal,ncls,ith,rth = create_auxiliary_clauses nty in
+    let k,tyal,ncls,ith,rth =
+      create_auxiliary_clauses (itlist (union o tyvars) utys newtys) nty in
     let cls = map (modify_clause tyal) def @ ncls in
     let _,ith1,rth1 = define_type_nested cls in
     let xnewtys = map (hd o snd o dest_type o type_of)
