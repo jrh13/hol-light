@@ -1325,6 +1325,12 @@ let prove_cases_thm =
   let mk_exclauses x rpats =
     let xts = map (fun t -> list_mk_exists(frees t,mk_eq(x,t))) rpats in
     mk_abs(x,list_mk_disj xts) in
+  let mk_exclauses_apart avoid x rpats =
+    let mk_xt t =
+      let fvs = frees t in
+      let fvs' = variants avoid fvs in
+      list_mk_exists(fvs',mk_eq(x,vsubst (zip fvs' fvs) t)) in
+    mk_abs(x,list_mk_disj (map mk_xt rpats)) in
   let prove_triv tm =
     let evs,bod = strip_exists tm in
     let l,r = dest_eq bod in
@@ -1359,9 +1365,19 @@ let prove_cases_thm =
       (fun pr -> map snd (filter (fun (p,x) -> p = pr) spats)) preds in
     let xs = make_args "x" (freesl pats) (map (type_of o hd) rpatlist) in
     let xpreds = map2 mk_exclauses xs rpatlist in
-    let ith = BETA_RULE (INST (zip xpreds preds) (SPEC_ALL th)) in
+    let sth = SPEC_ALL th in
+    (* The beta-reductions in the antecedent would substitute C a0 .. an    *)
+    (* under the binders a0 .. an of the instance, which is exponential in *)
+    (* n, so they are done with the existential variables named apart and  *)
+    (* the result converted back to the original consequent.               *)
+    let xpreds' = map2 (mk_exclauses_apart (xs @ variables(concl sth)))
+                       xs rpatlist in
+    let ith = BETA_RULE (INST (zip xpreds' preds) sth) in
     let eclauses = conjuncts(fst(dest_imp(concl ith))) in
-    MP ith (end_itlist CONJ (map prove_eclause eclauses));;
+    let th1 = MP ith (end_itlist CONJ (map prove_eclause eclauses)) in
+    let ctm = vsubst (zip xpreds preds) (rand(concl sth)) in
+    let tm = rand(concl(REDEPTH_CONV BETA_CONV ctm)) in
+    EQ_MP (ALPHA (concl th1) tm) th1;;
 
 (* ------------------------------------------------------------------------- *)
 (* Now deal with nested recursion. Need a store of previous theorems.        *)
