@@ -1381,15 +1381,17 @@ let injectivity_store = ref [];;
 let extend_rectype_net (tyname,(_,_,rth)) =
   let ths = try [prove_constructors_injective rth] with Failure _ -> []
   and cnvs = try constructors_distinct_convs rth with Failure _ -> [] in
+  let dths = if cnvs <> [] then [] else
+             try [prove_constructors_distinct rth] with Failure _ -> [] in
   let dth =
-    let saved = ref None in
+    let saved = ref (if dths = [] then None else Some(hd dths)) in
     fun () -> match !saved with
                 Some th -> th
               | None -> let th = prove_constructors_distinct rth in
                         (saved := Some th; th) in
-  let canon_thl = itlist (mk_rewrites false) ths [] in
+  let canon_thl = itlist (mk_rewrites false) (dths @ ths) [] in
   let add_convs = itlist (fun (tm,cnv) -> net_of_conv tm cnv) cnvs in
-  if cnvs <> [] then
+  if cnvs <> [] || dths <> [] then
     distinctness_store := (tyname,dth)::(!distinctness_store);
   injectivity_store := map (fun th -> tyname,th) ths @ (!injectivity_store);
   constructors_distinct_net := add_convs (!constructors_distinct_net);
