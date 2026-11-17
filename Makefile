@@ -213,6 +213,13 @@ hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo fresh_counter.cmo hol_loader.cmo update_da
 
 UNIT_TESTS=$(patsubst %.ml,%,$(filter-out %_inlined.ml,$(wildcard UnitTests/*.ml)))
 
+# Test suites UnitTests/<name>_parallel.ml run code in parallel OCaml 5
+# domains, so they are only built with OCaml 5.
+
+ifneq ($(shell ocamlc -version | cut -c1),5)
+UNIT_TESTS:=$(filter-out %_parallel,$(UNIT_TESTS))
+endif
+
 ifeq ($(HOLLIGHT_USE_MODULE),1)
 hol.sh: hol_lib.cmo
 
