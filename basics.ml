@@ -89,20 +89,21 @@ let rec variants av vs =
   let vh = variant av (hd vs) in vh::(variants (vh::av) (tl vs));;
 
 (* ------------------------------------------------------------------------- *)
-(* Gets all variables (free and/or bound) in a term.                         *)
+(* Gets all variables (free and/or bound) in a term, most recently found     *)
+(* first. Those found so far are also kept in a finite function, so that     *)
+(* the membership test is not linear.                                        *)
 (* ------------------------------------------------------------------------- *)
 
 let variables =
-  let rec vars(acc,tm) =
-    if is_var tm then insert tm acc
-    else if is_const tm then acc
-    else if is_abs tm then
-      let v,bod = dest_abs tm in
-      vars(insert v acc,bod)
-    else
-      let l,r = dest_comb tm in
-      vars(vars(acc,l),r) in
-  fun tm -> vars([],tm);;
+  let rec vars (acc,seen as a) tm =
+    match tm with
+      Var(_,_) -> if tryapplyd seen tm false then a
+                  else tm::acc,(tm |-> true) seen
+    | Const(_,_) -> a
+    | Abs(v,bod) -> vars (if tryapplyd seen v false then a
+                          else v::acc,(v |-> true) seen) bod
+    | Comb(l,r) -> vars (vars a l) r in
+  fun tm -> fst(vars ([],undefined) tm);;
 
 (* ------------------------------------------------------------------------- *)
 (* General substitution (for any free expression).                           *)
