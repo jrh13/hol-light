@@ -335,6 +335,8 @@ let dest_numeral =
 (* preterms regard generalized abstractions as an atomic notion. This is     *)
 (* slightly unclean --- for example we need locally some operations on       *)
 (* universal quantifiers --- but probably simplest. It has to go somewhere!  *)
+(* The constants used by mk_gabs are looked up in the constant table only    *)
+(* the first time, and then instantiated.                                    *)
 (* ------------------------------------------------------------------------- *)
 
 let dest_gabs =
@@ -350,20 +352,24 @@ let dest_gabs =
 let is_gabs = can dest_gabs;;
 
 let mk_gabs =
-  let mk_forall(v,t) =
-    let cop = mk_const("!",[type_of v,aty]) in
-    mk_comb(cop,mk_abs(v,t)) in
-  let list_mk_forall(vars,bod) = itlist (curry mk_forall) vars bod in
-  let mk_geq(t1,t2) =
-    let p = mk_const("GEQ",[type_of t1,aty]) in
-    mk_comb(mk_comb(p,t1),t2) in
+  let consts = ref None in
+  let get_consts () =
+    match !consts with
+      Some c -> c
+    | None -> let c = mk_const("!",[]),mk_const("GEQ",[]),
+                      mk_const("GABS",[]) in
+              (consts := Some c; c) in
   fun (tm1,tm2) ->
     if is_var tm1 then mk_abs(tm1,tm2) else
+    let fa,geq,gabs = get_consts() in
+    let mk_forall(v,t) = mk_comb(inst [type_of v,aty] fa,mk_abs(v,t)) in
+    let mk_geq(t1,t2) = mk_comb(mk_comb(inst [type_of t1,aty] geq,t1),t2) in
     let fvs = frees tm1 in
     let fty = mk_fun_ty (type_of tm1) (type_of tm2) in
     let f = variant (frees tm1 @ frees tm2) (mk_var("f",fty)) in
-    let bod = mk_abs(f,list_mk_forall(fvs,mk_geq(mk_comb(f,tm1),tm2))) in
-    mk_comb(mk_const("GABS",[fty,aty]),bod);;
+    let bod = mk_abs(f,itlist (curry mk_forall) fvs
+                               (mk_geq(mk_comb(f,tm1),tm2))) in
+    mk_comb(inst [fty,aty] gabs,bod);;
 
 let list_mk_gabs(vs,bod) = itlist (curry mk_gabs) vs bod;;
 
