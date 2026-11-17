@@ -310,21 +310,10 @@ let define_type_raw =
     fun n -> funpow n (curry mk_comb suc) zero in
 
   (* ----------------------------------------------------------------------- *)
-  (* Eliminate local "definitions" in hyps.                                  *)
-  (* ----------------------------------------------------------------------- *)
-
-
-  let SCRUB_EQUATION eq (th,insts) = (*HA*)
-    let eq' = itlist subst (map (fun t -> [t]) insts) eq in
-    let l,r = dest_eq eq' in
-    (MP (INST [r,l] (DISCH eq' th)) (REFL r),(r,l)::insts) in
-
-  (* ----------------------------------------------------------------------- *)
-  (* The same for a list of hypotheses v1 = t1, ..., vn = tn with no vi free *)
-  (* in any tj, with a single instantiation instead of one for each, and a   *)
-  (* check that the hypotheses left are "hs". This applies to the            *)
-  (* definitions of the representing predicates and then to the definitions  *)
-  (* of the pseudo-constructors.                                             *)
+  (* Eliminate local "definitions" v1 = t1, ..., vn = tn in hyps, with no vi *)
+  (* free in any tj, by a single instantiation, and check that the hyps left *)
+  (* are "hs". This applies to the definitions of the representing           *)
+  (* predicates and then to the definitions of the pseudo-constructors.      *)
   (* ----------------------------------------------------------------------- *)
 
   let SCRUB_EQUATIONS eqs hs th =
@@ -436,9 +425,8 @@ let define_type_raw =
           (fun p -> find (fun th -> fst(strip_comb(concl th)) = p) sofar)
           preds in
         let ath = end_itlist CONJ asms in
-        try MP (INSTANTIATE (term_match [] (lhand(concl thm)) (concl ath)) thm)
-               ath
-        with Failure _ -> MATCH_MP thm ath in
+        MP (INSTANTIATE (term_match [] (lhand(concl thm)) (concl ath)) thm)
+           ath in
       let newth = tryfind follow_horn useful in
       exhaust_inhabitations ths (newth::sofar) in
     let ithms = exhaust_inhabitations imps bases in
@@ -458,9 +446,8 @@ let define_type_raw =
     let th2 = TRANS th1 (SUBS_CONV cdefs (rand(concl th1))) in
     let th3 = EQ_MP (AP_THM th2 (rand extm)) exth in
     let ceqs = map concl cdefs in
-    let th4 = try let peqs = subtract (hyp th3) ceqs in
-                  SCRUB_EQUATIONS ceqs [] (SCRUB_EQUATIONS peqs ceqs th3)
-              with Failure _ -> fst(itlist SCRUB_EQUATION (hyp th3) (th3,[])) in
+    let th4 = let peqs = subtract (hyp th3) ceqs in
+              SCRUB_EQUATIONS ceqs [] (SCRUB_EQUATIONS peqs ceqs th3) in
     let mkname = "_mk_"^ename and destname = "_dest_"^ename in
     let bij1,bij2 = new_basic_type_definition ename (mkname,destname) th4 in
     let bij2a = AP_THM th2 (rand(rand(concl bij2))) in
@@ -527,7 +514,7 @@ let define_type_raw =
     let cpat = rand(if is_imp bod then rand bod else bod) in
     if snd(strip_comb cpat) = avs && repeat rator cpat = repeat rator pat
     then SPECL (snd(strip_comb pat)) rthm
-    else PART_MATCH (if is_imp bod then rand o rand else rand) rthm pat in
+    else failwith "RULE_INSTANCE" in
 
   (* ----------------------------------------------------------------------- *)
   (* Quantified forms !r. P r <=> dest(mk r) = r and !a. P(dest a) of the    *)
@@ -563,9 +550,7 @@ let define_type_raw =
         let ant,con = dest_imp bimp in
         let ths = map (CONV_RULE BETA_CONV) (CONJUNCTS (ASSUME ant)) in
         let tths,pths = unzip (map CONJ_PAIR ths) in
-        let tth = let th = end_itlist CONJ tths in
-                  try MP (SPECL avs rthm) th
-                  with Failure _ -> MATCH_MP (SPEC_ALL rthm) th in
+        let tth = MP (SPECL avs rthm) (end_itlist CONJ tths) in
         let mths = map IPRULE (tth::tths) in
         let conth1 = BETA_CONV con in
         let contm1 = rand(concl conth1) in
@@ -587,10 +572,9 @@ let define_type_raw =
       else
         let con = bimp in
         let conth2 = BETA_CONV con in
-        let tth = let tm = lhand(rand(concl conth2)) in
-                  try let th = SPECL avs rthm in
-                      if concl th = tm then th else fail()
-                  with Failure _ -> PART_MATCH I rthm tm in
+        let tth = let th = SPECL avs rthm in
+                  if concl th = lhand(rand(concl conth2)) then th
+                  else failwith "pullback_induction_clause" in
         let conth3 = PRERULE conth2 in
         let asmgen = rand(rand(concl conth3)) in
         let asmquant = list_mk_forall(snd(strip_comb(rand asmgen)),asmgen) in
@@ -638,13 +622,8 @@ let define_type_raw =
     let preds = map (rator o body o rand) (conjuncts(rand(concl th3))) in
     let th4 = GENL preds th3 in
     let pasms = filter (C mem (map fst consindex) o lhand) (hyp th4) in
-    try let ceqs = subtract (hyp th4) pasms in
-        SCRUB_EQUATIONS ceqs [] (SCRUB_EQUATIONS pasms ceqs th4)
-    with Failure _ ->
-    let th5 = itlist DISCH pasms th4 in
-    let th6,_ = itlist SCRUB_EQUATION (hyp th5) (th5,[]) in
-    let th7 = UNDISCH_ALL th6 in
-    fst (itlist SCRUB_EQUATION (hyp th7) (th7,[])) in
+    let ceqs = subtract (hyp th4) pasms in
+    SCRUB_EQUATIONS ceqs [] (SCRUB_EQUATIONS pasms ceqs th4) in
 
   (* ----------------------------------------------------------------------- *)
   (* The range type of the recursive functions: Z, with primes added if this *)
@@ -696,15 +675,9 @@ let define_type_raw =
       TRANS fxth (AP_TERM fn kth) in
     let fxth5 = end_itlist CONJ (map2 cleanup_fxthm conthms fxths4) in
     let pasms = filter (C mem (map fst consindex) o lhand) (hyp fxth5) in
-    try let rest = subtract (hyp fxth5) pasms in
-        SCRUB_EQUATIONS (subtract rest eqs) eqs
-          (SCRUB_EQUATIONS pasms rest fxth5)
-    with Failure _ ->
-    let fxth6 = itlist DISCH pasms fxth5 in
-    let fxth7,_ =
-      itlist SCRUB_EQUATION (itlist (union o hyp) conthms []) (fxth6,[]) in
-    let fxth8 = UNDISCH_ALL fxth7 in
-    fst (itlist SCRUB_EQUATION (subtract (hyp fxth8) eqs) (fxth8,[])) in
+    let rest = subtract (hyp fxth5) pasms in
+    SCRUB_EQUATIONS (subtract rest eqs) eqs
+      (SCRUB_EQUATIONS pasms rest fxth5) in
 
   (* ----------------------------------------------------------------------- *)
   (* Create a function for recursion clause.                                 *)
@@ -1560,16 +1533,11 @@ let define_type_raw =
       c0 = c1 && dty0 = rty1 && rty0 = dty1 in
 
   let prove_inductive_types_isomorphic n k (ith0,rth0) (ith1,rth1) =
-    (* For the big recursion theorem rth1 use SPECL of the bound variables  *)
-    (* if that is what SPEC_ALL would do, since SPEC_ALL takes quadratic     *)
-    (* time here (computing the free variables after each step).            *)
+    (* For the big recursion theorem rth1, which is closed and has distinct  *)
+    (* bound variables, SPECL of them is what SPEC_ALL would do.             *)
     let sth0 = SPEC_ALL rth0
     and fvs1,sth1 =
-      let avs = fst(strip_forall(concl rth1)) in
-      if length(setify avs) = length avs && intersect avs (thm_frees rth1) = []
-      then avs,SPECL avs rth1 else
-      let th = SPEC_ALL rth1 in
-      subtract (frees(concl th)) (frees(concl rth1)),th
+      let avs = fst(strip_forall(concl rth1)) in avs,SPECL avs rth1
     and t_tm = concl TRUTH in
     let pevs0,pbod0 = strip_exists (concl sth0)
     and pevs1,pbod1 = strip_exists (concl sth1) in
@@ -1624,7 +1592,6 @@ let define_type_raw =
     (* below (hypotheses until scrubbed) do not have them free.             *)
     let insts1 =
       let fvs = map (inst tyins1) fvs1 in
-      if not(subset (map snd insts1) fvs) then insts1 else
       insts1 @ map (fun v -> mk_select(genvar(type_of v),t_tm),v)
                    (subtract fvs (map snd insts1)) in
     let uth0 = BETA_RULE(INST insts0 tth0)
@@ -1636,9 +1603,9 @@ let define_type_raw =
                                 hd(snd(dest_type(type_of t2)))) efvs1) efvs0 in
     (* Only the clauses for the isomorphisms are used for rewriting.         *)
     let sth1 =
-      match filter (fun th -> mem (repeat rator(lhand(snd(strip_forall
-                                     (concl th))))) efvs2) (CONJUNCTS sth1)
-      with [] -> sth1 | ths -> end_itlist CONJ ths in
+      let isofn th = repeat rator(lhand(snd(strip_forall(concl th)))) in
+      end_itlist CONJ (filter (fun th -> mem (isofn th) efvs2)
+                              (CONJUNCTS sth1)) in
     let isotms = map2 (fun ff gg -> list_mk_icomb "ISO" [ff;gg]) efvs0 efvs2 in
     let ctm = list_mk_conj isotms in
     let cth1 = ISO_EXPAND_CONV ctm in
@@ -1792,19 +1759,18 @@ let define_type_raw =
     (* that of an isomorphism; doing that by instantiation spares rewriting  *)
     (* through the long quantifier prefix, which is quadratic or worse.     *)
     let irth5 =
-      try let gmap = map (fun th -> let f = lhand(concl th) in
-                                    fst(dest_fun_ty(type_of f)),rand(concl th))
-                         cisoths in
-          let avs = fst(strip_forall(concl rth1)) in
-          let reps = map
-            (fun v -> try let g = assoc (type_of v) gmap in
-                          let v' = mk_var(fst(dest_var v),
-                                          fst(dest_fun_ty(type_of g))) in
-                          mk_comb(g,v'),v'
-                      with Failure _ -> v,v) avs in
-          CONJ (REWRITE_ISOS ith1)
-               (GENL (map snd reps) (REWRITE_ISOS (SPECL (map fst reps) rth1)))
-      with Failure _ -> REWRITE_ISOS irth3 in
+      let gmap = map (fun th -> let f = lhand(concl th) in
+                                fst(dest_fun_ty(type_of f)),rand(concl th))
+                     cisoths in
+      let avs = fst(strip_forall(concl rth1)) in
+      let reps = map
+        (fun v -> try let g = assoc (type_of v) gmap in
+                      let v' = mk_var(fst(dest_var v),
+                                      fst(dest_fun_ty(type_of g))) in
+                      mk_comb(g,v'),v'
+                  with Failure _ -> v,v) avs in
+      CONJ (REWRITE_ISOS ith1)
+           (GENL (map snd reps) (REWRITE_ISOS (SPECL (map fst reps) rth1))) in
     let irth6 = repeat SCRUB_ASSUMPTION irth5 in
     let ncjs = filter (fun t -> exists (fun v -> not(is_var v))
                              (snd(strip_comb(rand(lhs(snd(strip_forall t)))))))
@@ -1853,13 +1819,9 @@ let define_type_raw =
       map2 (fun s r -> SYM(new_definition (mk_eq(mk_var(s,type_of r),r))))
            truecons gencons in
     let tavs = make_args "f" [] (map type_of avs) in
-    let SUBS_CDEFS = try SUBS_CONSTANTS cdefs with Failure _ -> SUBS cdefs in
+    let SUBS_CDEFS = SUBS_CONSTANTS cdefs in
     let ith1 = SUBS_CDEFS ith0
-    and rth1 =
-      let sth = if length(setify avs) = length avs && thm_frees rth0 = []
-                then INST (zip tavs avs) (SPECL avs rth0)
-                else SPECL tavs rth0 in
-      GENL tavs (SUBS_CDEFS sth) in
+    and rth1 = GENL tavs (SUBS_CDEFS (INST (zip tavs avs) (SPECL avs rth0))) in
     let retval = p,ith1,rth1 in
     let newentries = map (fun s -> dest_vartype s,retval) newtys in
     let share store =
