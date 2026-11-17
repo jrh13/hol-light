@@ -110,14 +110,21 @@ let rec DISCH_CONJ t th =
   with Failure _ -> DISCH t th in
 
 (* Specializes all the universally quantified variables of a theorem,
- * and returns both the theorem and the list of variables.
+ * and returns both the theorem and the list of variables. As in SPEC_ALL,
+ * the free variables are computed once and then kept up to date, which
+ * gives the same variables as SPEC_VAR at each quantifier.
  *)
-let rec SPEC_VARS th =
-  try
-    let v,th' = SPEC_VAR th in
-    let vs,th'' = SPEC_VARS th' in
-    v::vs,th''
-  with Failure _ -> [],th in
+let SPEC_VARS =
+  let rec spec_vars fvs th =
+    let tm = concl th in
+    if not(is_forall tm) then [],th else
+    let v,bod = dest_forall tm in
+    let v' = variant fvs v in
+    let vs,th' =
+      spec_vars (if vfree_in v bod then v'::fvs else fvs) (SPEC v' th) in
+    v'::vs,th' in
+  fun th -> if is_forall(concl th) then spec_vars (thm_frees th) th
+            else [],th in
 
 (* Comblies the function [f] to the body of a universally quantified theorem. *)
 let MAP_FORALL_BODY f th =
