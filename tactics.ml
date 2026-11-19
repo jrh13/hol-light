@@ -496,7 +496,7 @@ let (X_GEN_TAC: term -> tactic),
         let pat = vsubst[x',x] bod in
         let xth' = ASSUME pat in
         fun (asl,w) ->
-          let avoids = itlist (union o frees o concl o snd) asl
+          let avoids = itlist (union o thm_frees o snd) asl
                               (union (frees w) (thm_frees xth)) in
           if mem x' avoids then failwith "X_CHOOSE_TAC: invalid variable" else
           null_meta,[("",xth')::asl,w],
