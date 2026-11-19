@@ -20,7 +20,7 @@ let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
   let spaces = " \t\n\r"
   and separators = ",;"
   and brackets = "()[]{}"
-  and symbs = "\\!@#$%^&*-+|\\<=>/?~.:"
+  and symbs = "\\!@#$%^&*-+|<=>/?~.:"
   and alphas = "'abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   and nums = "0123456789" in
   let allchars = spaces^separators^brackets^symbs^alphas^nums in
