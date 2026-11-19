@@ -215,12 +215,13 @@ let apply_prover(Prover(conv,_)) tm = conv tm;;
 (* ------------------------------------------------------------------------- *)
 
 let satisfy_prover =
+  let t_tm = `T` in
   let rec facts_of th acc =
     let tm = concl th in
     if is_forall tm then facts_of (SPEC_ALL th) acc
     else if is_conj tm
     then facts_of (CONJUNCT1 th) (facts_of (CONJUNCT2 th) acc)
-    else if is_imp tm || tm = `T` then acc else th::acc in
+    else if is_imp tm || tm = t_tm then acc else th::acc in
   let rec satisfy facts vs (bcs,insts,_ as i) cjs =
     match cjs with
       [] -> i
