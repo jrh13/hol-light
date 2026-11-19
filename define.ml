@@ -1035,3 +1035,9 @@ let define =
         let g = mk_mconst(dest_var f) in
         let th3 = PROVE_HYP th2 (INST [g,f] th) in
         the_definitions := th3::(!the_definitions); th3;;
+
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let define =
+  let unlocked = define in
+  fun x0 -> with_definitions_lock (fun () -> unlocked x0);;

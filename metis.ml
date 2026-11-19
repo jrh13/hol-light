@@ -193,20 +193,13 @@ let divides = curry divides;;
 (* Useful impure features.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let generator = ref 0;;
+let generator = Hol_domains.counter ();;
 
-  let newIntThunk () =
-      let n = !generator
-      in generator := n + 1;
-        n
-      ;;
+  let newIntThunk () = generator 1;;
 
   let newIntsThunk k () =
-      let
-        n = !generator
-
-        in generator := n + k;
-          interval n k
+      let n = generator k in
+      interval n k
       ;;
 
   let newInt () = newIntThunk ();;
@@ -7878,16 +7871,8 @@ module Clause = struct
 (* ------------------------------------------------------------------------- *)
 
 let newId =
-      let r = ref 0
-
-      in let newI () =
-            let n = !r
-
-            in let () = r := n + 1
-          in
-            n
-    in
-      fun () -> Useful.critical newI ()
+      let r = Hol_domains.counter () in
+      fun () -> r 1
     ;;
 
 (* ------------------------------------------------------------------------- *)
@@ -10037,9 +10022,10 @@ let FOL_PREPARE_TAC ths =
 
 
 let without_warnings f =
-  let tiv = !type_invention_warning in
-  let reset () = type_invention_warning := tiv in
-  type_invention_warning := false;
+  let quiet = type_invention_quiet () in
+  let tiv = !quiet in
+  let reset () = quiet := tiv in
+  quiet := true;
   try let y = f () in reset (); y
   with e -> (reset(); raise e)
 

@@ -62,8 +62,10 @@ type fol_goal =
 
 module Meson = struct
 
+  (* The state of one MESON call is per domain. *)
+
   let offinc = 10000
-  and inferences = ref 0
+  and inferences_cell = Hol_domains.local (fun () -> ref 0)
 
   (* ----------------------------------------------------------------------- *)
   (* Negate a clause.                                                        *)
@@ -93,25 +95,30 @@ module Meson = struct
   (* ----------------------------------------------------------------------- *)
 
   let reset_vars,fol_of_var,hol_of_var =
-    let vstore = ref []
-    and gstore = ref []
-    and vcounter = ref 0 in
+    let state = Hol_domains.local
+      (fun () -> ref ([]:(term*int)list),ref ([]:(term*int)list),ref 0) in
     let inc_vcounter() =
+      let _,_,vcounter = state () in
       let n = !vcounter in
       let m = n + 1 in
       if m >= offinc then failwith "inc_vcounter: too many variables" else
       (vcounter := m; n) in
-    let reset_vars() = vstore := []; gstore := []; vcounter := 0 in
+    let reset_vars() =
+      let vstore,gstore,vcounter = state () in
+      vstore := []; gstore := []; vcounter := 0 in
     let fol_of_var v =
+      let vstore,_,_ = state () in
       let currentvars = !vstore in
       try assoc v currentvars with Failure _ ->
       let n = inc_vcounter() in
       vstore := (v,n)::currentvars; n in
     let hol_of_var v =
+      let vstore,gstore,_ = state () in
       try rev_assoc v (!vstore)
       with Failure _ -> rev_assoc v (!gstore) in
     let hol_of_bumped_var v =
       try hol_of_var v with Failure _ ->
+      let _,gstore,_ = state () in
       let v' = v mod offinc in
       let hv' = hol_of_var v' in
       let gv = genvar(type_of hv') in
@@ -120,15 +127,18 @@ module Meson = struct
 
   let reset_consts,fol_of_const,hol_of_const =
     let false_tm = `F` in
-    let cstore = ref ([]:(term * int)list)
-    and ccounter = ref 2 in
-    let reset_consts() = cstore := [false_tm,1]; ccounter := 2 in
+    let state = Hol_domains.local
+      (fun () -> ref ([]:(term * int)list),ref 2) in
+    let reset_consts() =
+      let cstore,ccounter = state () in
+      cstore := [false_tm,1]; ccounter := 2 in
     let fol_of_const c =
+      let cstore,ccounter = state () in
       let currentconsts = !cstore in
       try assoc c currentconsts with Failure _ ->
       let n = !ccounter in
       ccounter := n + 1; cstore := (c,n)::currentconsts; n in
-    let hol_of_const c = rev_assoc c (!cstore) in
+    let hol_of_const c = let cstore,_ = state () in rev_assoc c (!cstore) in
     reset_consts,fol_of_const,hol_of_const
 
   let rec fol_of_term env consts tm =
@@ -355,7 +365,7 @@ module Meson = struct
       let h' = fol_inst_bump offset locin h in
       h',checkan insts h' ancestors in
     let newhyps =  map mk_ihyp hyps in
-    inferences := !inferences + 1;
+    inferences_cell () := !(inferences_cell ()) + 1;
     newhyps,(globin,offset+offinc,size-length hyps)
 
   (* ----------------------------------------------------------------------- *)
@@ -389,6 +399,7 @@ module Meson = struct
   (* ----------------------------------------------------------------------- *)
 
   let expand_goal rules =
+    let dcutin = if !meson_depth then 100001 else !meson_dcutin in
     let rec expand_goal depth ((g,_),(insts,offset,size) as state) cont =
       if depth < 0 then failwith "expand_goal: too deep" else
       meson_expand rules state
@@ -411,7 +422,7 @@ module Meson = struct
 
       | [g] -> expand_goal depth (g,tup) (fun (g',stup) -> cont([g'],stup))
 
-      | gl -> if size >= !meson_dcutin then
+      | gl -> if size >= dcutin then
                 let lsize = size / (!meson_skew) in
                 let rsize = size - lsize in
                 let lgoals,rgoals = chop_list (length gl / 2) gl in
@@ -446,11 +457,11 @@ module Meson = struct
       if n > max then failwith "solve_goal: Too deep" else
       (if !meson_chatty && !verbose then
         (Format.print_string
-          ((string_of_int (!inferences))^" inferences so far. "^
+          ((string_of_int (!(inferences_cell ())))^" inferences so far. "^
               "Searching with maximum size "^(string_of_int n)^".");
          Format.print_newline())
        else if !verbose then
-        (Format.print_string(string_of_int (!inferences)^"..");
+        (Format.print_string(string_of_int (!(inferences_cell ()))^"..");
          Format.print_flush())
        else ());
       try let gi =
@@ -458,11 +469,12 @@ module Meson = struct
             else expand_goal rules g 100000 n (fun x -> x) in
           (if !meson_chatty && !verbose then
             (Format.print_string
-              ("Goal solved with "^(string_of_int (!inferences))^
+              ("Goal solved with "^(string_of_int (!(inferences_cell ())))^
                " inferences.");
              Format.print_newline())
            else if !verbose then
-            (Format.print_string("solved at "^string_of_int (!inferences));
+            (Format.print_string
+               ("solved at "^string_of_int (!(inferences_cell ())));
              Format.print_newline())
            else ());
           gi
@@ -522,9 +534,10 @@ module Meson = struct
     and pull_CONV = GEN_REWRITE_CONV DEPTH_CONV
        [TAUT `~a \/ ~b <=> ~(a /\ b)`]
     and imf_CONV = REWR_CONV(TAUT `~p <=> p ==> F`) in
-    let memory = ref [] in
-    let clear_contrapos_cache() = memory := [] in
+    let state = Hol_domains.local (fun () -> ref ([]:((int*term)*thm)list)) in
+    let clear_contrapos_cache() = state () := [] in
     let make_hol_contrapos (n,th) =
+      let memory = state () in
       let tm = concl th in
       let key = (n,tm) in
       try assoc key (!memory) with Failure _ ->
@@ -771,15 +784,12 @@ module Meson = struct
 
   let SIMPLE_MESON_REFUTE min max inc ths =
     clear_contrapos_cache();
-    inferences := 0;
-    let old_dcutin = !meson_dcutin in
-    if !meson_depth then meson_dcutin := 100001 else ();
+    inferences_cell () := 0;
     let ths' = if !meson_brand then perform_brand_modification ths
                else ths @ create_equality_axioms (map concl ths) in
     let rules = optimize_rules(fol_of_hol_clauses ths') in
     let proof,(insts,_,_) =
       solve_goal rules (!meson_depth) min max inc (1,[]) in
-    meson_dcutin := old_dcutin;
     meson_to_hol insts proof
 
   let CONJUNCTS_THEN' ttac cth =

@@ -28,6 +28,8 @@ let temp_path = ref "/tmp";;
 #load "hol_loader.cmo";;
 include Hol_loader;;
 
+#load "hol_domains.cmo";;
+
 file_loader := fun s -> Toploop.use_file Format.std_formatter s;;
 (* Hide the definition of file_loader of hol_loader.ml.                      *)
 let file_loader = ();;

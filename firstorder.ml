@@ -136,15 +136,18 @@ end
 module Mapping = struct
 
   let reset_vars,fol_of_var,hol_of_var =
-    let vstore = ref []
-    and gstore = ref []
-    and vcounter = ref 0 in
+    let state = Hol_domains.local                (* per domain, as in MESON *)
+      (fun () -> ref ([]:(term*int)list),ref ([]:(term*int)list),ref 0) in
     let inc_vcounter() =
+      let _,_,vcounter = state () in
       let n = !vcounter in
       let m = n + 1 in
       (vcounter := m; n) in
-    let reset_vars() = vstore := []; gstore := []; vcounter := 0 in
+    let reset_vars() =
+      let vstore,gstore,vcounter = state () in
+      vstore := []; gstore := []; vcounter := 0 in
     let fol_of_var v =
+      let vstore,_,_ = state () in
       try assoc v !vstore with Failure _ ->
       let n = inc_vcounter() in
       if !copverb then
@@ -152,6 +155,7 @@ module Mapping = struct
         (string_of_term v) (string_of_type (type_of v)) n;
       vstore := (v,n)::!vstore; n in
     let hol_of_var v ty =
+      let _,gstore,_ = state () in
       try rev_assoc v !gstore with Failure _ ->
       let gv = genvar ty in
       gstore := (gv,v)::!gstore; gv in

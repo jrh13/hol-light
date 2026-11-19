@@ -131,10 +131,9 @@ let preparse_bitpat,preparse_bitmatch =
   | Absp(p1,p2) -> subtract (pfrees p2) (pfrees p1)
   | Typing(p,_) -> pfrees p in
   let pgenvar =
-    let gcounter = ref 0 in
-    fun () -> let count = !gcounter in
-              (gcounter := count + 1;
-               Varp("BM%PVAR%"^(string_of_int count),dpty)) in
+    let gcounter = Hol_domains.counter () in
+    fun () -> let count = gcounter 1 in
+              Varp("BM%PVAR%"^(string_of_int count),dpty) in
   let pmk_exists v ptm = Combp(Varp("?",dpty),Absp(v,ptm)) in
   let pmk_bitmatch (((_,e),_),cs) =
     let x = pgenvar() and y = pgenvar() in
@@ -270,10 +269,10 @@ let pp_print_bitpat,pp_print_colored_bitpat,
   and ppbitpatcol,ppbitmatchcol = switch_color true in
   ppbitpat,ppbitpatcol,ppbitmatch,ppbitmatchcol;;
 
-let print_bitpat = pp_print_bitpat std_formatter
+let print_bitpat x = pp_print_bitpat (Hol_domains.std_formatter ()) x
 and string_of_bitpat = print_to_string pp_print_bitpat;;
 
-let print_bitmatch = pp_print_bitmatch std_formatter
+let print_bitmatch x = pp_print_bitmatch (Hol_domains.std_formatter ()) x
 and string_of_bitmatch = print_to_string pp_print_bitmatch;;
 
 install_user_printer("bitpat",pp_print_bitpat);;

@@ -721,29 +721,24 @@ let pp_print_thm, pp_print_colored_thm =
 (* Print on standard output.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let print_type = pp_print_type std_formatter;;
-let print_qtype = pp_print_qtype std_formatter;;
-let print_term = pp_print_term std_formatter;;
-let print_qterm = pp_print_qterm std_formatter;;
-let print_thm = pp_print_thm std_formatter;;
+let print_type x = pp_print_type (Hol_domains.std_formatter ()) x;;
+let print_qtype x = pp_print_qtype (Hol_domains.std_formatter ()) x;;
+let print_term x = pp_print_term (Hol_domains.std_formatter ()) x;;
+let print_qterm x = pp_print_qterm (Hol_domains.std_formatter ()) x;;
+let print_thm x = pp_print_thm (Hol_domains.std_formatter ()) x;;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversions to string.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let print_to_string printer =
+let print_to_string printer x =
   let buf = Buffer.create 16 in
   let fmt = formatter_of_buffer buf in
   let () = pp_set_max_boxes fmt 100 in
-  let print = printer fmt in
-  let flush = pp_print_flush fmt in
-  fun x ->
-    let () = pp_set_margin fmt (get_margin ()) in
-    let () = print x in
-    let () = flush () in
-    let s = Buffer.contents buf in
-    let () = Buffer.reset buf in
-    s;;
+  let () = pp_set_margin fmt (get_margin ()) in
+  let () = printer fmt x in
+  let () = pp_print_flush fmt () in
+  Buffer.contents buf;;
 
 let string_of_type = print_to_string pp_print_type;;
 let string_of_term = print_to_string pp_print_term;;

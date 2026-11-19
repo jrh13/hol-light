@@ -304,10 +304,9 @@ let parse_preterm =
     itlist (fun x t -> Combp(Combp(Varp("INSERT",dpty),x),t)) ptms
            (Varp("EMPTY",dpty)) in
   let pgenvar =
-    let gcounter = ref 0 in
-    fun () -> let count = !gcounter in
-              (gcounter := count + 1;
-               Varp("GEN%PVAR%"^(string_of_int count),dpty)) in
+    let gcounter = Hol_domains.counter () in
+    fun () -> let count = gcounter 1 in
+              Varp("GEN%PVAR%"^(string_of_int count),dpty) in
   let pmk_exists(v,ptm) = Combp(Varp("?",dpty),Absp(v,ptm)) in
   let pmk_list els =
     itlist (fun x y -> Combp(Combp(Varp("CONS",dpty),x),y))

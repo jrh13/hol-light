@@ -212,6 +212,10 @@ let apply_prover(Prover(conv,_)) tm = conv tm;;
 (* in, not the existential itself, so the witnesses can be read off by       *)
 (* matching. This is used to instantiate extra variables in conditions. The  *)
 (* facts are only extracted from the context theorems when first needed.     *)
+(* They are cached in a reference, not a lazy value: a simpset may be used   *)
+(* on several domains at once, and forcing one lazy value on two domains at  *)
+(* once raises CamlinternalLazy.Undefined. Extracting the facts twice is     *)
+(* harmless.                                                                 *)
 (* ------------------------------------------------------------------------- *)
 
 let satisfy_prover =
@@ -234,17 +238,23 @@ let satisfy_prover =
   let rec prove facts tm =
     if is_conj tm then CONJ (prove facts (lhand tm)) (prove facts (rand tm))
     else find (fun th -> aconv (concl th) tm) facts in
+  let cached f =
+    let cache = ref None in
+    fun () -> match !cache with
+                Some x -> x
+              | None -> let x = f () in (cache := Some x; x) in
   let apply lfacts tm =
     let vs,bod = strip_exists tm in
     if vs = [] then failwith "satisfy_prover" else
-    let facts = Lazy.force lfacts in
+    let facts = lfacts () in
     let gvs = map (genvar o type_of) vs in
     let gbod = vsubst (zip gvs vs) bod in
     let i = satisfy facts gvs ([],[],[]) (conjuncts gbod) in
     prove facts (instantiate i gbod) in
   mk_prover apply
-            (fun lfacts thl -> lazy(itlist facts_of thl (Lazy.force lfacts)))
-            (lazy []);;
+            (fun lfacts thl ->
+               cached (fun () -> itlist facts_of thl (lfacts ())))
+            (fun () -> []);;
 
 (* ------------------------------------------------------------------------- *)
 (* Find an instantiation of the variables vs in a term tm by getting one of  *)

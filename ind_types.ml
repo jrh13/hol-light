@@ -1832,6 +1832,12 @@ let define_type_raw =
      extend_rectype_net (hd newentries);
      share distinctness_store; share injectivity_store; ith1,rth1);;
 
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let define_type_raw =
+  let unlocked = define_type_raw in
+  fun x0 -> with_definitions_lock (fun () -> unlocked x0);;
+
 (* ----------------------------------------------------------------------- *)
 (* The overall function, with rather crude string-based benignity.         *)
 (* ----------------------------------------------------------------------- *)
@@ -1861,6 +1867,12 @@ let define_type s =
       else
         let retval = define_type_raw defspec in
         the_inductive_types := (s,retval)::(!the_inductive_types); retval;;
+
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let define_type =
+  let unlocked = define_type in
+  fun x0 -> with_definitions_lock (fun () -> unlocked x0);;
 
 (* ------------------------------------------------------------------------- *)
 (* Unwinding, and application of patterns. Add easy cases to default net.    *)

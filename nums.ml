@@ -298,3 +298,9 @@ let new_specification =
           let sth = specifies names th in
           the_specifications := ((names,th),sth)::(!the_specifications);
           sth;;
+
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let new_specification =
+  let unlocked = new_specification in
+  fun x0 x1 -> with_definitions_lock (fun () -> unlocked x0 x1);;

@@ -114,6 +114,18 @@ module Hol : Hol_kernel = struct
   let the_type_constants = ref ["bool",0; "fun",2]
 
 (* ------------------------------------------------------------------------- *)
+(* Lock for concurrent use. The functions that extend the tables hold it     *)
+(* while they check that a name is new and add it. Reads need no lock,       *)
+(* since each table is a reference to an immutable list. The lock comes      *)
+(* from Hol_domains. It is a mutex on OCaml 5; on OCaml 4, where HOL Light   *)
+(* runs on one domain, Hol_domains.with_lock just calls its argument.        *)
+(* ------------------------------------------------------------------------- *)
+
+  let kernel_lock = Hol_domains.new_lock ()
+
+  let locked f = Hol_domains.with_lock kernel_lock f
+
+(* ------------------------------------------------------------------------- *)
 (* Return all the defined types.                                             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -129,10 +141,12 @@ module Hol : Hol_kernel = struct
 (* Declare a new type.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
-  let new_type(name,arity) =
+  let new_type_unlocked(name,arity) =
     if can get_type_arity name then
       failwith ("new_type: type "^name^" has already been declared")
     else the_type_constants := (name,arity)::(!the_type_constants)
+
+  let new_type(name,arity) = locked (fun () -> new_type_unlocked(name,arity))
 
 (* ------------------------------------------------------------------------- *)
 (* Basic type constructors.                                                  *)
@@ -222,10 +236,12 @@ module Hol : Hol_kernel = struct
 (* Declare a new constant.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-  let new_constant(name,ty) =
+  let new_constant_unlocked(name,ty) =
     if can get_const_type name then
       failwith ("new_constant: constant "^name^" has already been declared")
     else the_term_constants := (name,ty)::(!the_term_constants)
+
+  let new_constant(name,ty) = locked (fun () -> new_constant_unlocked(name,ty))
 
 (* ------------------------------------------------------------------------- *)
 (* Finds the type of a term (assumes it is well-typed).                      *)
@@ -575,7 +591,7 @@ module Hol : Hol_kernel = struct
   let new_axiom tm =
     if compare (type_of tm) bool_ty = 0 then
       let th = Sequent([],tm) in
-       (the_axioms := th::(!the_axioms); th)
+       (locked (fun () -> the_axioms := th::(!the_axioms)); th)
     else failwith "new_axiom: Not a proposition"
 
 (* ------------------------------------------------------------------------- *)
@@ -586,7 +602,7 @@ module Hol : Hol_kernel = struct
 
   let definitions() = !the_definitions
 
-  let new_basic_definition tm =
+  let new_basic_definition tm = locked (fun () ->
     match tm with
       Comb(Comb(Const("=",_),Var(cname,ty)),r) ->
         if not(freesin [] r) then
@@ -594,12 +610,12 @@ module Hol : Hol_kernel = struct
               (String.concat ", " (map (fun (Var (name,_)) -> name) (frees r))))
         else if not (subset (type_vars_in_term r) (tyvars ty))
         then failwith "new_definition: Type variables not reflected in constant"
-        else let c = new_constant(cname,ty); Const(cname,ty) in
+        else let c = new_constant_unlocked(cname,ty); Const(cname,ty) in
              let dth = Sequent([],safe_mk_eq c r) in
              the_definitions := dth::(!the_definitions); dth
     | Comb(Comb(Const("=",_),Const(cname,ty)),r) ->
       failwith ("new_basic_definition: '" ^ cname ^ "' is already defined")
-    | _ -> failwith "new_basic_definition"
+    | _ -> failwith "new_basic_definition")
 
 (* ------------------------------------------------------------------------- *)
 (* Handling of type definitions.                                             *)
@@ -615,6 +631,7 @@ module Hol : Hol_kernel = struct
 (* ------------------------------------------------------------------------- *)
 
   let new_basic_type_definition tyname (absname,repname) (Sequent(asl,c)) =
+    locked (fun () ->
     if exists (can get_const_type) [absname; repname] then
       failwith "new_basic_type_definition: Constant(s) already in use" else
     if not (asl = []) then
@@ -625,18 +642,18 @@ module Hol : Hol_kernel = struct
     if not(freesin [] P) then
       failwith "new_basic_type_definition: Predicate is not closed" else
     let tyvars = sort (<=) (type_vars_in_term P) in
-    let _ = try new_type(tyname,length tyvars)
+    let _ = try new_type_unlocked(tyname,length tyvars)
             with Failure _ ->
                 failwith "new_basic_type_definition: Type already defined" in
     let aty = Tyapp(tyname,tyvars)
     and rty = type_of x in
     let absty = Tyapp("fun",[rty;aty]) and repty = Tyapp("fun",[aty;rty]) in
-    let abs = (new_constant(absname,absty); Const(absname,absty))
-    and rep = (new_constant(repname,repty); Const(repname,repty)) in
+    let abs = (new_constant_unlocked(absname,absty); Const(absname,absty))
+    and rep = (new_constant_unlocked(repname,repty); Const(repname,repty)) in
     let a = Var("a",aty) and r = Var("r",rty) in
     Sequent([],safe_mk_eq (Comb(abs,mk_comb(rep,a))) a),
     Sequent([],safe_mk_eq (Comb(P,r))
-                          (safe_mk_eq (mk_comb(rep,mk_comb(abs,r))) r))
+                          (safe_mk_eq (mk_comb(rep,mk_comb(abs,r))) r)))
 
 end;;
 
