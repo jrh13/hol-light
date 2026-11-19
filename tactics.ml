@@ -509,12 +509,20 @@ let (X_GEN_TAC: term -> tactic),
     fun i [th] -> EXISTS (instantiate i w,instantiate i t) th in
   X_GEN_TAC,X_CHOOSE_TAC,EXISTS_TAC;;
 
+(* ------------------------------------------------------------------------- *)
+(* GEN_TAC does what X_GEN_TAC does for the variable it chooses, but without *)
+(* the check that it is not free in the goal, which would only compute the   *)
+(* free variables of all the assumptions again.                              *)
+(* ------------------------------------------------------------------------- *)
+
 let (GEN_TAC: tactic) =
   fun (asl,w) ->
-    try let x = fst(dest_forall w) in
+    try let x,bod = dest_forall w in
         let avoids = itlist (union o thm_frees o snd) asl (frees w) in
         let x' = mk_primed_var avoids x in
-        X_GEN_TAC x' (asl,w)
+        let afn = CONV_RULE(GEN_ALPHA_CONV x) in
+        null_meta,[asl,vsubst[x',x] bod],
+        fun i [th] -> afn (GEN x' th)
     with Failure _ -> failwith "GEN_TAC";;
 
 let (CHOOSE_TAC: thm_tactic) =

@@ -787,12 +787,21 @@ let instantiate_casewise_recursion,
                     itlist GEN avs (PART_MATCH I th tbod)) ths3 cjs in
       let th5 = SIMPLE_EXISTS f (end_itlist CONJ ths4) in
       let th6 = PROVE_HYP th2 (SIMPLE_CHOOSE f th5) in
+      (* The inner quantifier of "!x y. ..." is split into variables named   *)
+      (* apart from parms, as the kernel would rename them when x is split:  *)
+      (* with the names of parms, splitting x renames every one of them, and *)
+      (* the kernel substitutes twice at each renamed binder, which takes    *)
+      (* time exponential in the number of parms.                            *)
+      let rewr_forall_apart tm =
+        let parms' = variants (parms @ frees tm) parms in
+        let parm' = end_itlist (curry mk_pair) parms' in
+        BINDER_CONV (REWR_CONV(FORALL_PAIR_CONV parm' parms')) tm in
       let th7 =
        (RAND_CONV(COMB2_CONV
             (RAND_CONV (LAND_CONV (GABS_CONV(BINDER_CONV
-                     (BINDER_CONV(rewr_forall_th) THENC rewr_forall_th)))))
+                     (rewr_forall_apart THENC rewr_forall_th)))))
             (LAND_CONV (funpow 2 GABS_CONV(BINDER_CONV
-                     (BINDER_CONV(rewr_forall_th) THENC
+                     (rewr_forall_apart THENC
                       rewr_forall_th))))) THENC
         ELIM_LISTOPS_CONV) (hd(hyp th6)) in
       let th8 = PROVE_HYP (UNDISCH(snd(EQ_IMP_RULE th7))) th6 in
@@ -994,7 +1003,7 @@ let define =
     let fs = map (repeat rator o lhs o snd o strip_forall) cjs in
     let f = hd fs in (* Arbitrarily choose one of the left hands *)
     if not (is_const f)
-    then t (* t cannot be a benign redefinition. Just return the input. *)
+    then failwith "not a constant" (* t cannot be a benign redefinition. *)
     else
       (* Instantiate type variables of all other occurrences of the 'f'
          constant *)

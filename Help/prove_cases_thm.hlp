@@ -7,14 +7,14 @@ Proves a structural cases theorem for an automatically-defined concrete type.
 
 \DESCRIBE
 {prove_cases_thm} takes as its argument a structural induction theorem, in the
-form returned by {prove_induction_thm} for an automatically-defined concrete
+form returned by {define_type} for an automatically-defined concrete
 type.  When applied to such a theorem, {prove_cases_thm} automatically proves
 and returns a theorem which states that every value the concrete type in
 question is denoted by the value returned by some constructor of the type.
 
 \FAILURE
 Fails if the argument is not a theorem of the form returned by
-{prove_induction_thm}
+{define_type}.
 
 \EXAMPLE
 The following type definition for labelled binary trees:
@@ -40,7 +40,7 @@ An easier interface is {cases "tree"}. This function is mainly intended to
 generate the cases theorems for that function.
 
 \SEEALSO
-cases, define_type, INDUCT_THEN, new_recursive_definition,
-prove_constructors_distinct, prove_constructors_one_one, prove_induction_thm.
+cases, define_type, new_recursive_definition, prove_constructors_distinct,
+prove_constructors_injective.
 
 \ENDDOC

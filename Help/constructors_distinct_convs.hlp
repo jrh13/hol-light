@@ -1,0 +1,72 @@
+\DOC constructors_distinct_convs
+
+\TYPE {constructors_distinct_convs : thm -> (term * conv) list}
+
+\SYNOPSIS
+Produces conversions proving that different constructors of an inductive type
+give different values.
+
+\DESCRIBE
+{constructors_distinct_convs} takes as its argument a primitive recursion
+theorem, in the form returned by {define_type}, just like
+{prove_constructors_distinct}. It returns a list of pairs, one for each
+constructor {C} of each type in the theorem that has at least two
+constructors: a pattern {`C x1 ... xn = y`}, where {x1}, ..., {xn} and {y} are
+(generated) variables, and a conversion. When applied to an equation
+{`C s1 ... sn = D t1 ... tm`}, where {D} is a different constructor of the same
+type, at any instance of the type, the conversion returns the theorem
+{|- C s1 ... sn = D t1 ... tm <=> F}. The pairs are in the form expected by
+{net_of_conv}, and {extend_rectype_net} uses them in this way to extend
+{basic_rectype_net} and {constructors_distinct_net} when a type is defined.
+
+The conversions for a recursion theorem all rely on one theorem numbering the
+constructors, which {constructors_distinct_convs} proves at once, in time
+roughly linear in the size of the recursion theorem. The theorems for {C}
+against all the other constructors of its type are proved the first time the
+conversion for {C} is used, and then saved.
+
+\FAILURE
+Fails if the argument is not a theorem of the form returned by {define_type},
+or if no type in it has more than one constructor. The conversions fail unless
+the term is an equation between applications of two different constructors of
+the type.
+
+\EXAMPLE
+For a type of labelled binary trees:
+{
+  # let ith,rth = define_type "tree = LEAF num | NODE tree tree";;
+  val ith : thm =
+    |- !P.
+           (!a. P (LEAF a)) /\ (!a0 a1. P a0 /\ P a1 ==> P (NODE a0 a1))
+           ==> (!x. P x)
+  val rth : thm =
+    |- !f0 f1.
+           ?fn.
+               (!a. fn (LEAF a) = f0 a) /\
+               (!a0 a1. fn (NODE a0 a1) = f1 a0 a1 (fn a0) (fn a1))
+
+  # let cnvs = constructors_distinct_convs rth;;
+  val cnvs : (term * conv) list =
+    [(`LEAF _120602 = _120601`, <fun>);
+     (`NODE _120604 _120605 = _120603`, <fun>)]
+}
+\noindent the first conversion proves distinctness for equations with {LEAF}
+on the left:
+{
+  # snd(hd cnvs) `LEAF 1 = NODE t t`;;
+  val it : thm = |- LEAF 1 = NODE t t <=> F
+
+  # snd(hd cnvs) `LEAF 1 = LEAF 2`;;
+  Exception: Failure "constructors_distinct_convs".
+}
+
+\COMMENTS
+This function is mainly intended for internal use. The conversions for all the
+types defined so far are available through {CONSTRUCTORS_DISTINCT_CONV}.
+
+\SEEALSO
+basic_rectype_net, CONSTRUCTORS_DISTINCT_CONV, constructors_distinct_net,
+define_type, distinctness, extend_rectype_net, net_of_conv,
+prove_constructors_distinct.
+
+\ENDDOC

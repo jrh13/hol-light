@@ -8,6 +8,168 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 16th Nov 2026       ind_types.ml
+
+Removed from "define_type" the fallbacks to the original, slower code that
+were kept in case the new steps of the previous change did not apply, since
+none of them is ever used: instrumented, they did not fire once in
+Examples/rectypes.ml, the libraries including Multivariate, the 244
+datatypes of the HOL Light port of CakeML, all 102 different define_type
+specifications in the repository, or synthetic types with up to 320
+constructors. Where a step relies on the form of its input it now fails with
+a message instead. The fallbacks of prove_constructors_injective and
+prove_constructors_distinct, which also accept recursion theorems not
+produced by define_type, are kept.
+
+Mon 16th Nov 2026       define.ml
+
+Fixed an exponential slowdown in "define" for functions with several
+variables in their patterns, for example a function of an n-tuple. The
+well-definedness conditions quantify twice over the tuple of all pattern
+variables, and the inner variables had the same names as the outer ones, so
+splitting the outer quantifier renamed all of them, each time substituting
+twice. The inner variables are now named apart from the start, with the
+names they got anyway, so the theorems are unchanged. For example defining a
+function of a 20-tuple now takes 0.05 seconds instead of 56.
+
+Mon 16th Nov 2026       pair.ml
+
+Made GEN_BETA_CONV much faster for a paired abstraction whose pattern is a
+tuple of distinct variables, by using a witness built with UNCURRY, which
+needs linearly many steps, instead of one built with projections for all the
+variables, which took time cubic in their number. For example a tuple of 100
+variables now takes 0.02 seconds instead of 26. The right-hand side and
+hypotheses of the result are unchanged, and the left-hand side is, as
+before, the input term up to the name of a generated bound variable.
+
+Mon 16th Nov 2026       basics.ml
+
+Made mk_gabs look up the constants "!", "GEQ" and "GABS" in the constant
+table only once and then instantiate them, instead of calling mk_const for
+each of them and for every variable of the pattern at every use. The terms
+are the same; constructing a paired abstraction over a 10-tuple is about 3
+times faster in a session with 1600 constants, and more with more constants.
+
+Mon 16th Nov 2026       equal.ml
+
+Made SUBS_CONV return the reflexivity theorem at once when the theorems are
+equations and none of their left-hand sides occurs free in the term, which
+is what it returned anyway in that case after substituting and beta-reducing
+the whole term (other theorems still make it fail, as tactics such as
+FIRST_ASSUM SUBST1_TAC rely on). This helps for example SUBST_ALL_TAC, which
+applies it to every assumption: on a large term without the left-hand side
+it is now about 15 times faster.
+
+Mon 16th Nov 2026       basics.ml
+
+Made "variables" keep the variables found so far in a finite function as
+well as in the result list, so that it is no longer quadratic in the number
+of variables. The result, including its order, is unchanged. It is used for
+example by "subst" at every call; on a term with 278 variables it is about 8
+times faster.
+
+Mon 16th Nov 2026       tactics.ml
+
+Made GEN_TAC do directly what X_GEN_TAC does with the variable it has
+chosen, instead of calling X_GEN_TAC, whose check that the variable is not
+free in the goal or the assumptions cannot fail for that choice but computed
+the free variables of all the assumptions a second time. The subgoal and
+justification are the same; GEN_TAC is about twice as fast on goals with
+many assumptions.
+
+Mon 16th Nov 2026       impconv.ml
+
+Made SPEC_VARS in impconv.ml compute the free variables of the theorem once
+instead of once per quantifier, in the same way as SPEC_ALL below. It
+chooses the same variables as before, so the results are unchanged, but it
+is much faster for theorems with many quantifiers.
+
+Mon 16th Nov 2026       ind_types.ml
+
+Fixed an exponential slowdown in "prove_cases_thm", and hence "cases", for a
+constructor with many arguments, for the same reason as in the inductive
+definition package below: the beta-reductions substituted the arguments
+under binders of the same names, which captured them. For example the cases
+theorem for a record type with 20 fields now takes 0.006 seconds instead of
+12. The theorems are unchanged.
+
+Mon 16th Nov 2026       ind_types.ml
+
+Fixed a clash in "define_type" between the type variables of the new types
+and the ones used internally for the range of the recursive functions (Z,
+Z0, Z1, ... for mutual recursion) and for the range types of the recursion
+theorems of types used in nested recursion. For a type with a parameter of
+such a name, for example "zt = ZA Z | ZB", the recursion theorem had its
+range tied to that parameter, so "define" could not use it; distinctness and
+injectivity were missing or incomplete, nested definitions failed, and in
+some mutual cases internal constants were left in the induction theorem. The
+internal names are now chosen apart from the type's own type variables, so
+such types give the same theorems as with any other names, and nothing
+changes for types without such parameters.
+
+Mon 16th Nov 2026       ind_types.ml
+
+Made "extend_rectype_net" fall back on the original eager treatment of
+distinctness (the theorem stored and its rewrites added to the net) for a
+recursion theorem for which the distinctness conversions of the previous
+change are not available, so that the stores and the net are as before in
+all cases.
+
+Mon 16th Nov 2026       recursion.ml
+
+Made "new_recursive_definition" skip the search for a benign redefinition
+when the function being defined is not already a constant, as
+"new_definition" and "define" now do. In a development with thousands of
+large recursive definitions this search could take a second or more per
+definition.
+
+Mon 16th Nov 2026       ind_defs.ml
+
+Fixed an exponential slowdown in the inductive definition package that made
+"define_type" very slow for a constructor with many arguments, for example a
+record type with many fields: the arguments were substituted under binders
+that captured their variables, and the kernel renames each such binder by
+substituting into its body twice. For example a constructor with 20
+arguments now takes 0.04 seconds instead of 14. The theorems are unchanged.
+
+Mon 16th Nov 2026       bool.ml
+
+Made SPEC_ALL compute the free variables of the theorem once instead of once
+per quantifier. It still chooses exactly the same variables as iterating
+SPEC_VAR, so the results are unchanged, but it is much faster on theorems
+with many quantifiers, for example 0.05 seconds instead of 6.9 for a theorem
+with 160 quantifiers.
+
+Sun 15th Nov 2026       ind_types.ml, pair.ml, define.ml, Help/CONSTRUCTORS_DISTINCT_CONV.hlp [new file], Help/constructors_distinct_convs.hlp [new file], Help/constructors_distinct_net.hlp [new file], Help/basic_rectype_net.hlp, Help/cases.hlp, Help/define.hlp, Help/define_type.hlp, Help/distinctness.hlp, Help/distinctness_store.hlp, Help/extend_rectype_net.hlp, Help/injectivity.hlp, Help/new_definition.hlp, Help/prove_cases_thm.hlp, Help/prove_constructors_distinct.hlp, Help/prove_constructors_injective.hlp
+
+Made "define_type" much faster for types with many constructors by removing
+several steps that were quadratic or cubic in the number of constructors.
+For example, defining a type with 160 constructors now takes 0.5-2.1 seconds
+instead of 12-111, and Examples/rectypes.ml about 24 seconds instead of 1090.
+The theorems returned by "define_type", "distinctness", "injectivity" and
+"cases" are unchanged.
+
+The main change is that the distinctness theorem, which has a conjunct for
+each pair of constructors, is no longer proved when a type is defined, but
+only when it is first requested by "distinctness"; accordingly
+"distinctness_store" now holds functions of type unit -> thm. Instead of the
+distinctness rewrites, "basic_rectype_net" now holds one conversion for each
+constructor, proving that it differs from the other constructors of its
+type. These conversions are also available through the new functions:
+
+        CONSTRUCTORS_DISTINCT_CONV
+        constructors_distinct_convs
+        constructors_distinct_net
+
+Injectivity and distinctness are now proved from a single instance of the
+recursion theorem, and the internal constructor numbers are numerals
+instead of iterated SUC. Both "new_definition" and "define" now skip the
+search for a benign redefinition when the constant being defined is new.
+Also corrected some Help files, in particular removing references to
+functions inherited from HOL88 that do not exist in HOL Light
+(prove_constructors_one_one, prove_induction_thm, prove_rec_fn_exists and
+INDUCT_THEN).
+
 Tue 10th Nov 2026       Library/llist.ml [new file], holtest.mk
 
 Added a library of possibly infinite lists ("lazy lists"), with the type

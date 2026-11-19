@@ -300,12 +300,16 @@ let CONV_RULE (conv:conv) th =
   EQ_MP (conv(concl th)) th;;
 
 (* ------------------------------------------------------------------------- *)
-(* Substitution conversion.                                                  *)
+(* Substitution conversion. If the theorems are equations and no left-hand   *)
+(* side occurs free in the term, the result is REFL as in the general case,  *)
+(* but without substituting. (Other theorems make MK_COMB fail below.)       *)
 (* ------------------------------------------------------------------------- *)
 
 let SUBS_CONV ths tm =
   try if ths = [] then REFL tm else
       let lefts = map (lhand o concl) ths in
+      if forall (is_eq o concl) ths &&
+         not(exists (fun l -> free_in l tm) lefts) then REFL tm else
       let gvs = map (genvar o type_of) lefts in
       let pat = subst (zip gvs lefts) tm in
       let abs = list_mk_abs(gvs,pat) in

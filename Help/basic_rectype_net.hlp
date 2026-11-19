@@ -1,22 +1,28 @@
 \DOC basic_rectype_net
 
-\TYPE {basic_rectype_net : (int * (term -> thm)) net ref}
+\TYPE {basic_rectype_net : (int * conv) net ref}
 
 \SYNOPSIS
 Net of injectivity and distinctness properties for recursive type constructors.
 
 \DESCRIBE
-HOL Light maintains a net of theorems used to simplify equations between
-elements of recursive datatypes; essentially these include injectivity and
-distinctness, e.g. {CONS_11} and {NOT_CONS_NIL} for lists. This net is used in
-some situations where such things need to be proved automatically, notably in
-{define}. A call to {basic_rectype_net()} returns that net. It is automatically
+HOL Light maintains a net used to simplify equations between elements of
+recursive datatypes; essentially it contains the injectivity and distinctness
+properties, e.g. {CONS_11} and {NOT_CONS_NIL} for lists. The injectivity
+theorems are included as rewrites, but since there can be quadratically many
+distinctness clauses, distinctness is handled instead by one conversion for
+each constructor, which proves that it differs from all the other
+constructors of its type (see {constructors_distinct_convs}). This net is used
+in some situations where such things need to be proved automatically, notably
+in {define}. The net itself is {!basic_rectype_net}. It is automatically
 updated whenever a type is defined by {define_type}.
 
 \FAILURE
 Never fails.
 
 \SEEALSO
-cases, define, distinctness, GEN_BETA_CONV, injectivity.
+cases, CONSTRUCTORS_DISTINCT_CONV, constructors_distinct_convs,
+constructors_distinct_net, define, distinctness, extend_rectype_net,
+GEN_BETA_CONV, injectivity.
 
 \ENDDOC

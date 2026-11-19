@@ -49,7 +49,12 @@ and returns two theorems that characterize the type up to isomorphism. Roughly,
 the first theorem allows one to prove properties over the new (family of) types
 by (mutual) induction, while the latter allows one to defined functions by
 recursion. Rather than presenting these in full generality, it is probably
-easier to consider some simple examples.
+easier to consider some simple examples. Other basic properties of the new
+types can then be obtained with {cases}, {distinctness} and {injectivity}, and
+{CONSTRUCTORS_DISTINCT_CONV} proves that particular pairs of constructors give
+different values. These properties are also made available automatically to
+{define} and other tools (see {basic_rectype_net}); the distinctness theorem
+itself is only proved when it is first requested.
 
 \FAILURE
 The evaluation fails if one of the types or constructor constants is already
@@ -128,8 +133,9 @@ trees for commands and expressions for a hypothetical programming language:
 }
 
 \SEEALSO
-INDUCT_THEN, new_recursive_definition, new_type_abbrev, prove_cases_thm,
-prove_constructors_distinct, prove_constructors_one_one, prove_induction_thm,
-prove_rec_fn_exists.
+basic_rectype_net, cases, CONSTRUCTORS_DISTINCT_CONV, define, distinctness,
+injectivity, new_recursive_definition, new_type_abbrev, prove_cases_thm,
+prove_constructors_distinct, prove_constructors_injective,
+prove_recursive_functions_exist.
 
 \ENDDOC

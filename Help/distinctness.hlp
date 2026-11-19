@@ -11,7 +11,9 @@ with {define_type}, returns a ``distinctness'' theorem asserting that elements
 constructed by different type constructors are always different. The effect is
 exactly the same as if {prove_constructors_distinct} were applied to the
 recursion theorem produced by {define_type}, and the documentation for
-{prove_constructors_distinct} gives a lengthier discussion.
+{prove_constructors_distinct} gives a lengthier discussion. The theorem is
+proved the first time it is requested for a type, and then saved (see
+{distinctness_store}).
 
 \FAILURE
 Fails if {ty} is not the name of a recursive type, or if the type has only one
@@ -26,7 +28,13 @@ constructor.
   val it : thm = |- !a0' a1'. ~([] = CONS a0' a1')
 }
 
+\COMMENTS
+The theorem has a conjunct for each pair of constructors, so it can be large
+for types with many constructors. The conversion {CONSTRUCTORS_DISTINCT_CONV}
+proves the distinctness of particular pairs of constructors without it.
+
 \SEEALSO
-cases, define_type, injectivity, prove_constructors_distinct.
+cases, CONSTRUCTORS_DISTINCT_CONV, define_type, distinctness_store,
+injectivity, prove_constructors_distinct.
 
 \ENDDOC

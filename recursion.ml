@@ -98,7 +98,9 @@ let new_recursive_definition =
     let th' = PART_MATCH I th tm in
     ignore(PART_MATCH I th' (concl th)); th' in
   fun ax tm ->
-    try let th = tryfind (find_redefinition tm) (!the_recursive_definitions) in
+    try let cl = snd(strip_forall(hd(conjuncts tm))) in
+        if not(is_const(repeat rator (lhand cl))) then fail() else
+        let th = tryfind (find_redefinition tm) (!the_recursive_definitions) in
         warn true "Benign redefinition of recursive function"; th
     with Failure _ ->
     let rawcls = conjuncts tm in

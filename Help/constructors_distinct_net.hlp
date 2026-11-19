@@ -1,0 +1,33 @@
+\DOC constructors_distinct_net
+
+\TYPE {constructors_distinct_net : (int * conv) net ref}
+
+\SYNOPSIS
+Net of conversions proving distinctness of constructors of inductive types.
+
+\DESCRIBE
+This net contains, for each constructor {C} of each inductive type defined so
+far that has at least two constructors, an entry with a pattern
+{`C x1 ... xn = y`} and a conversion proving
+{|- C s1 ... sn = D t1 ... tm <=> F} for the other constructors {D} of the same
+type, as produced by {constructors_distinct_convs}. It covers the types
+defined by {define_type} as well as {bool}, {num}, {list}, {option} and {sum}.
+The net is extended automatically by {extend_rectype_net}, which is called by
+{define_type}, and it is used by {CONSTRUCTORS_DISTINCT_CONV}. The same entries
+are also in {basic_rectype_net}.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+The conversion {CONSTRUCTORS_DISTINCT_CONV} simply rewrites with this net:
+{
+  # REWRITES_CONV (!constructors_distinct_net) `SOME (x:num) = NONE`;;
+  val it : thm = |- SOME x = NONE <=> F
+}
+
+\SEEALSO
+basic_rectype_net, CONSTRUCTORS_DISTINCT_CONV, constructors_distinct_convs,
+define_type, extend_rectype_net, REWRITES_CONV.
+
+\ENDDOC
