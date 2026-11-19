@@ -329,7 +329,7 @@ very different than this.
 = (tht (thtc1 th)) ORELSE (tht (thtc2 th))
 
 ALL_THEN = I
-(all_then is the theorem tactical which does nothing to the theorem
+(ALL_THEN is the theorem tactical which does nothing to the theorem
 before handing it to the theorem tactic)
 
 NO_THEN
@@ -640,14 +640,20 @@ Looks up `a` in the net, and applies the resulting conversion to `a`.
 There's a lot of generality in the simpset data structure which is not
 used; I'm not going to try to understand the general-purpose operation,
 but only the portions of it which are actually used in HOL Light.
-Of the four fields in the simpset data structure, only the first ever
-changes: the second is always basic_prover, the third is always the
-empty list, and the fourth is always (mk_rewrites true).
+Of the four fields in the simpset data structure, only the first and
+third ever change: the second is always basic_prover, the third is
+always the list [satisfy_prover] of subprovers (augmented with the
+context), and the fourth is always (mk_rewrites true).
 The first field is a conversion net.
 
 basic_prover strat ss lev `a`
 Tries to prove `|- a`.  Succeeds if `a` = `T`, or if
-(strat ss lev `a`) proves `|- a = T`.
+(strat ss lev `a`) proves `|- a = T`, or if a subprover proves the
+result of that rewrite.  If `a` is `?x1 ... xn. b`, it first tries
+to prove an instance of `b` with witnesses chosen by the subprovers.
+
+satisfy_prover proves `?x1 ... xn. p1 /\ ... /\ pk` by matching each
+`pi` against the facts in the context.
 
 (* None of the following are ever called.
 ss_of_thms thms ss
@@ -671,11 +677,13 @@ Replaces the rewrite maker in the simpset with newmaker.
 AUGMENT_SIMPSET th ss
 Uses the rewrite maker from the simpset (always (mk_rewrites true))
 to create a list of rewrite theorems from th; use (net_of_thm true)
-to add these theorems to the conversion net in the simpset.
+to add these theorems to the conversion net in the simpset.  Also
+augments the subprovers with th.
 
-Note: IMP_REWRITES_CONV and GEN_SUB_CONV have a different signature than
-what I am documenting; if you ever want to call them directly,
-look at the source.  I will first describe the meaning of these functions;
+Note: IMP_REWRITES_CONV, RUN_SUB_CONV and GEN_SUB_CONV are local to the
+definition of the depth conversions in simp.ml, and have a different
+signature than what I am documenting; look at the source for the
+details.  I will first describe the meaning of these functions;
 then I will describe their implementation.
 (IMP_REWRITES_CONV strat ss lev) is a conversion which looks up the
 term in the ss conversion net.  It tries unconditional rewrites before
@@ -715,8 +723,9 @@ case), if the call to strat fails to rewrite `a`, then it rewrites
 `a` to `a`; but if all the calls to strat fail (so that GEN_SUB_CONV
 would rewrite tm to tm), GEN_SUB_CONV fails instead.
 
-Note that there are only two congruence rules used in HOL Light: one for
-rewriting `if g then t else e` and one for rewriting `p ==> q`.
+Note that there are only a few congruence rules used in HOL Light: one
+for rewriting `if g then t else e`, one for rewriting `p ==> q`, and
+some for the sums nsum and sum (in iterate.ml).
 
 ONCE_DEPTH_SQCONV ss lev
 = (IMP_REWRITES_CONV ONCE_DEPTH_SQCONV ss lev) ORELSEC
@@ -747,9 +756,9 @@ extend_basic_rewrites thl: adds thl to the "basic rewrite" set
 basic_rewrites (): retrieves the (canonicalized) "basic rewrite" set
 basic_net (): retrieves the conversion net for the "basic rewrite" set
 
-There is also a set of basic congruences; since HOL has only two congruence
-rules, I won't bother documenting set_basic_congs, extend_basic_congs,
-basic_congs.
+There is also a set of basic congruences; since HOL has only a few
+congruence rules, I won't bother documenting set_basic_congs,
+extend_basic_congs, basic_congs.
 
 GENERAL_REWRITE_CONV rep cnvl net thl
 Canonicalizes thl with (mk_rewrites false), adds these conversions
@@ -940,6 +949,9 @@ ind-defs:
 RIGHT_BETAS [`x`;`y`] `|- f = \x y. A[x,y]` gives
 `|- f x y = A[x,y]`
 
+HALF_BETA_EXPAND, SIMPLE_DISJ_PAIR, FORALL_IMPS_CONV and AND_IMPS_CONV
+are local to ind_defs.ml, and cannot be called directly.
+
 HALF_BETA_EXPAND [`x`;`y`] `|- f = \x y. A[x,y]` gives
 `|- !x y. f x y = A[x,y]`
 
@@ -963,6 +975,9 @@ val ( MONO_IMP ) : thm = |- (B ==> A) /\ (C ==> D) ==> (A ==> C) ==> B ==> D
 val ( MONO_NOT ) : thm = |- (B ==> A) ==> ~A ==> ~B
 val ( MONO_FORALL ) : thm = |- (!x. P x ==> Q x) ==> (!x. P x) ==> (!x. Q x)
 val ( MONO_EXISTS ) : thm = |- (!x. P x ==> Q x) ==> (?x. P x) ==> (?x. Q x)
+
+BACKCHAIN_TAC, MONO_ABS_TAC, APPLY_MONOTAC and MONO_STEP_TAC are
+local to the definition of MONO_TAC, and cannot be called directly.
 
 BACKCHAIN_TAC:
 "Simplified version of MATCH_MP_TAC to avoid quantifier troubles."
@@ -1183,9 +1198,11 @@ SPLIT_TAC lev
 Starts by replacing any assumption `|- a /\ b` with separate assumptions
 `|- a` and `|- b`.  Then, up to lev levels deep, it removes an assumption
 `|- a \/ b`, splits into two subgoals, adds assumption `|- a` in one
-subgoal, and adds assumption `|- b` in the other.
+subgoal, and adds assumption `|- b` in the other.  (SPLIT_TAC is
+local to meson.ml, and cannot be called directly.)
 
-I'm not documenting GEN_FOL_CONV.
+FOL_CONV and GEN_FOL_CONV are local to the definition of ASM_FOL_TAC
+in canon.ml; I'm not documenting GEN_FOL_CONV.
 FOL_CONV takes a term and makes sure that for every constant, whenever
 it is used, it is always applied to the same number of arguments.  It
 does this by finding the minimal number of arguments for each constant;
@@ -1639,28 +1656,24 @@ val ( MOD_UNIQ ) : thm =
   |- !m n q r. (m = q * n + r) /\ r < n ==> (m MOD n = r)
 val ( DIV_UNIQ ) : thm =
   |- !m n q r. (m = q * n + r) /\ r < n ==> (m DIV n = q)
-val ( MOD_MULT ) : thm = |- !m n. ~(m = 0) ==> ((m * n) MOD m = 0)
+val ( MOD_MULT ) : thm = |- !m n. (m * n) MOD m = 0
 val ( DIV_MULT ) : thm = |- !m n. ~(m = 0) ==> ((m * n) DIV m = n)
-val ( DIV_DIV ) : thm =
-  |- !m n p. ~(n * p = 0) ==> (m DIV n DIV p = m DIV (n * p))
+val ( DIV_DIV ) : thm = |- !m n p. m DIV n DIV p = m DIV (n * p)
 val ( MOD_LT ) : thm = |- !m n. m < n ==> (m MOD n = m)
 val ( MOD_EQ ) : thm = |- !m n p q. (m = n + q * p) ==> (m MOD p = n MOD p)
-val ( DIV_MOD ) : thm =
-  |- !m n p. ~(n * p = 0) ==> ((m DIV n) MOD p = (m MOD (n * p)) DIV n)
+val ( DIV_MOD ) : thm = |- !m n p. (m DIV n) MOD p = (m MOD (n * p)) DIV n
 val ( DIV_1 ) : thm = |- !n. n DIV 1 = n
 val ( EXP_LT_0 ) : thm = |- !n x. 0 < x EXP n = ~(x = 0) \/ (n = 0)
-val ( DIV_LE ) : thm = |- !m n. ~(n = 0) ==> m DIV n <= m
+val ( DIV_LE ) : thm = |- !m n. m DIV n <= m
 val ( DIV_MUL_LE ) : thm = |- !m n. n * m DIV n <= m
-val ( DIV_0 ) : thm = |- !n. ~(n = 0) ==> (0 DIV n = 0)
-val ( MOD_0 ) : thm = |- !n. ~(n = 0) ==> (0 MOD n = 0)
+val ( DIV_0 ) : thm = |- !n. 0 DIV n = 0
+val ( MOD_0 ) : thm = |- !n. 0 MOD n = 0
 val ( DIV_LT ) : thm = |- !m n. m < n ==> (m DIV n = 0)
-val ( MOD_MOD ) : thm =
-  |- !m n p. ~(n * p = 0) ==> (m MOD (n * p) MOD n = m MOD n)
-val ( MOD_MOD_REFL ) : thm = |- !m n. ~(n = 0) ==> (m MOD n MOD n = m MOD n)
+val ( MOD_MOD ) : thm = |- !m n p. m MOD (n * p) MOD n = m MOD n
+val ( MOD_MOD_REFL ) : thm = |- !m n. m MOD n MOD n = m MOD n
 val ( DIV_MULT2 ) : thm =
-  |- !m n p. ~(m * p = 0) ==> ((m * n) DIV (m * p) = n DIV p)
-val ( MOD_MULT2 ) : thm =
-  |- !m n p. ~(m * p = 0) ==> ((m * n) MOD (m * p) = m * n MOD p)
+  |- !m n p. ~(m = 0) ==> ((m * n) DIV (m * p) = n DIV p)
+val ( MOD_MULT2 ) : thm = |- !m n p. (m * n) MOD (m * p) = m * n MOD p
 val ( MOD_1 ) : thm = |- !n. n MOD 1 = 0
 val ( MOD_EXISTS ) : thm =
   |- !m n. (?q. m = n * q) = (if n = 0 then m = 0 else m MOD n = 0)
@@ -1672,7 +1685,7 @@ val ( LE_EXP ) : thm =
   |- !x m n.
          x EXP m <= x EXP n =
          (if x = 0 then (m = 0) ==> (n = 0) else (x = 1) \/ m <= n)
-val ( DIV_MONO ) : thm = |- !m n p. ~(p = 0) /\ m <= n ==> m DIV p <= n DIV p
+val ( DIV_MONO ) : thm = |- !m n p. m <= n ==> m DIV p <= n DIV p
 val ( DIV_MONO_LT ) : thm =
   |- !m n p. ~(p = 0) /\ m + p <= n ==> m DIV p < n DIV p
 val ( LE_LDIV ) : thm = |- !a b n. ~(a = 0) /\ b <= a * n ==> b DIV a <= n
@@ -1681,21 +1694,21 @@ val ( LE_RDIV_EQ ) : thm =
 val ( LE_LDIV_EQ ) : thm =
   |- !a b n. ~(a = 0) ==> (b DIV a <= n = b < a * (n + 1))
 val ( DIV_EQ_0 ) : thm = |- !m n. ~(n = 0) ==> ((m DIV n = 0) = m < n)
-val ( MOD_EQ_0 ) : thm =
-  |- !m n. ~(n = 0) ==> ((m MOD n = 0) = (?q. m = q * n))
+val ( MOD_EQ_0 ) : thm = |- !m n. (m MOD n = 0) = (?q. m = q * n)
 val ( EVEN_MOD ) : thm = |- !n. EVEN n = n MOD 2 = 0
 val ( ODD_MOD ) : thm = |- !n. ODD n = n MOD 2 = 1
-val ( MOD_MULT_RMOD ) : thm =
-  |- !m n p. ~(n = 0) ==> ((m * p MOD n) MOD n = (m * p) MOD n)
-val ( MOD_MULT_LMOD ) : thm =
-  |- !m n p. ~(n = 0) ==> ((m MOD n * p) MOD n = (m * p) MOD n)
+val ( MOD_MULT_RMOD ) : thm = |- !m n p. (m * p MOD n) MOD n = (m * p) MOD n
+val ( MOD_MULT_LMOD ) : thm = |- !m n p. (m MOD n * p) MOD n = (m * p) MOD n
 val ( MOD_MULT_MOD2 ) : thm =
-  |- !m n p. ~(n = 0) ==> ((m MOD n * p MOD n) MOD n = (m * p) MOD n)
-val ( MOD_EXP_MOD ) : thm =
-  |- !m n p. ~(n = 0) ==> ((m MOD n) EXP p MOD n = m EXP p MOD n)
-val ( MOD_MULT_ADD ) : thm = |- !m n p. (m * n + p) MOD n = p MOD n
+  |- !m n p. (m MOD n * p MOD n) MOD n = (m * p) MOD n
+val ( MOD_EXP_MOD ) : thm = |- !m n p. (m MOD n) EXP p MOD n = m EXP p MOD n
+val ( MOD_MULT_ADD ) : thm =
+  |- (!m n p. (m * n + p) MOD n = p MOD n) /\
+     (!m n p. (n * m + p) MOD n = p MOD n) /\
+     (!m n p. (p + m * n) MOD n = p MOD n) /\
+     (!m n p. (p + n * m) MOD n = p MOD n)
 val ( MOD_ADD_MOD ) : thm =
-  |- !a b n. ~(n = 0) ==> ((a MOD n + b MOD n) MOD n = (a + b) MOD n)
+  |- !a b n. (a MOD n + b MOD n) MOD n = (a + b) MOD n
 val ( DIV_ADD_MOD ) : thm =
   |- !a b n.
          ~(n = 0)
@@ -1703,16 +1716,17 @@ val ( DIV_ADD_MOD ) : thm =
               (a + b) DIV n =
               a DIV n + b DIV n)
 val ( DIV_REFL ) : thm = |- !n. ~(n = 0) ==> (n DIV n = 1)
-val ( MOD_LE ) : thm = |- !m n. ~(n = 0) ==> m MOD n <= m
+val ( MOD_LE ) : thm = |- !m n. m MOD n <= m
 val ( DIV_MONO2 ) : thm =
   |- !m n p. ~(p = 0) /\ p <= m ==> n DIV m <= n DIV p
 val ( SUB_ELIM_THM ) : thm =
-  |- P (a - b) = (!d. ((b = a + d) ==> P 0) /\ ((a = b + d) ==> P d))
+  |- P (a - b) = (!d. (a = b + d) \/ a < b /\ (d = 0) ==> P d)
 val ( PRE_ELIM_THM ) : thm =
-  |- P (PRE n) = (!m. ((n = 0) ==> P 0) /\ ((n = SUC m) ==> P m))
+  |- P (PRE n) = (!m. (n = SUC m) \/ (m = 0) /\ (n = 0) ==> P m)
 val ( DIVMOD_ELIM_THM ) : thm =
-  |- ~(n = 0)
-     ==> (P (m DIV n) (m MOD n) = (!q r. (m = q * n + r) /\ r < n ==> P q r))
+  |- P (m DIV n) (m MOD n) =
+     (!q r.
+          (n = 0) /\ (q = 0) /\ (r = m) \/ (m = q * n + r) /\ r < n ==> P q r)
 
 NUM_CANCEL_CONV rewrites `(c+(b+a)) = (b+d)+a` to `c=d`
 
@@ -1838,7 +1852,7 @@ val ( ARITH_ODD ) : thm =
 val ( ARITH_LE ) : thm =
   |- (!m n. NUMERAL m <= NUMERAL n = m <= n) /\
      (_0 <= _0 = T) /\
-     (!n. BIT0 n <= _0 = n = _0) /\
+     (!n. BIT0 n <= _0 = n <= _0) /\
      (!n. BIT1 n <= _0 = F) /\
      (!n. _0 <= BIT0 n = T) /\
      (!n. _0 <= BIT1 n = T) /\
@@ -1860,7 +1874,7 @@ val ( ARITH_LT ) : thm =
 val ( ARITH_GE ) : thm =
   |- (!m n. NUMERAL n >= NUMERAL m = n >= m) /\
      _0 >= _0 /\
-     (!n. _0 >= BIT0 n = n = _0) /\
+     (!n. _0 >= BIT0 n = _0 >= n) /\
      (!n. ~(_0 >= BIT1 n)) /\
      (!n. BIT0 n >= _0) /\
      (!n. BIT1 n >= _0) /\
@@ -1961,7 +1975,7 @@ val ( ARITH ) : thm =
       (!m n. (BIT1 m = BIT1 n) = m = n)) /\
      ((!m n. NUMERAL m <= NUMERAL n = m <= n) /\
       (_0 <= _0 = T) /\
-      (!n. BIT0 n <= _0 = n = _0) /\
+      (!n. BIT0 n <= _0 = n <= _0) /\
       (!n. BIT1 n <= _0 = F) /\
       (!n. _0 <= BIT0 n = T) /\
       (!n. _0 <= BIT1 n = T) /\
@@ -1981,7 +1995,7 @@ val ( ARITH ) : thm =
       (!m n. BIT1 m < BIT1 n = m < n)) /\
      ((!m n. NUMERAL n >= NUMERAL m = n >= m) /\
       _0 >= _0 /\
-      (!n. _0 >= BIT0 n = n = _0) /\
+      (!n. _0 >= BIT0 n = _0 >= n) /\
       (!n. ~(_0 >= BIT1 n)) /\
       (!n. BIT0 n >= _0) /\
       (!n. BIT1 n >= _0) /\
@@ -2039,12 +2053,11 @@ are numerals.
 
 NUM_DIV_CONV and NUM_MOD_CONV rewrite terms of the forms `j DIV k`
 and `j MOD k` respectively, where j and k are numerals.
-NUM_DIVMOD_CONV (j:Num.num) (k:Num.num) produces a theorem
+Both call a function NUM_DIVMOD_CONV, local to calc_num.ml, which
+for numbers j and k produces a theorem
 `|- (J DIV K = JDIVK) /\ (J MOD K = JMODK)`, where J and K
 are the numerals for j and k, and JDIVK and JMODK are the appropriate
-numerals.  (NUM_DIV_CONV and NUM_MOD_CONV each call this function;
-if you need to compute both DIV and MOD, it's about twice as
-fast to do both together with NUM_DIVMOD_CONV.)
+numerals.
 
 NUM_FACT_CONV rewrites terms of the form `FACT k` where k is a numeral.
 
@@ -2172,9 +2185,7 @@ This is the definition of FNIL.
 val ( FNIL ) : thm = |- !n. FNIL n = (@x. T)
 
 sucivate 5 = `SUC (SUC (SUC (SUC (SUC 0))))`
-(for example)
-
-SCRUB_EQUATION `x = a` `x = a |- P[x]` gives `|- P[a]`
+(for example; sucivate is local to ind_types.ml)
 
 list.ml:
 
@@ -2297,7 +2308,7 @@ val ( FILTER_APPEND ) : thm =
 val ( FILTER_MAP ) : thm =
   |- !P f l. FILTER P (MAP f l) = MAP f (FILTER (P o f) l)
 val ( MEM_FILTER ) : thm = |- !P l x. MEM x (FILTER P l) = P x /\ MEM x l
-val ( EX_MEM ) : thm = |- !P l. EX P l = (?x. P x /\ MEM x l)
+val ( EX_MEM ) : thm = |- !P l. (?x. P x /\ MEM x l) = EX P l
 val ( MAP_FST_ZIP ) : thm =
   |- !l1 l2. (LENGTH l1 = LENGTH l2) ==> (MAP FST (ZIP l1 l2) = l1)
 val ( MAP_SND_ZIP ) : thm =
