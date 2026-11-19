@@ -115,7 +115,6 @@ REAL_MUL_RID            |- x * &1 = x
 REAL_MUL_RINV           |- ~(x = &0) ==> x * inv x = &1
 REAL_MUL_RZERO          |- x * &0 = &0
 REAL_MUL_SYM            |- x * y = y * x
-REAL_NEGNEG             |- -- --x = x
 REAL_NEG_NEG            |- -- --x = x
 REAL_NOT_LE             |- ~(x <= y) <=> y < x
 REAL_NOT_LT             |- ~(x < y) <=> y <= x

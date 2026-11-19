@@ -84,14 +84,17 @@ BINDER_CONV c rewrites the body of an abstraction or of a
 SUB_CONV c either rewrites both parts of a combination, or the body
          of an abstraction, or does nothing (it never fails).
 BINOP_CONV c rewrites both arguments of a binary function.
+
+THENQC, THENCQC, REPEATQC and the QCONV functions below are local to
+the definition of the depth conversions in equal.ml, and cannot be
+called directly.
 THENQC c1 c2 is like (c1 THENC c2) ORELSEC c1 ORELSEC c2
 THENCQC c1 c2 is like (c1 THENC c2) ORELSEC c1
 REPEATQC c rewrites with c one or more times, until it fails (returning
          the last succeeding rewrite; if the initial rewrite fails,
          then REPEATQC fails)
-COMB2_QCONV c1 c2 is like
-            (RATOR_CONV c1 THENC RAND_CONV c2) ORELSEC RATOR_CONV c1 ORELSEC RAND_CONV c2
-COMB_QCONV c = COMB2_QCONV c c
+COMB_QCONV c is like
+           (RATOR_CONV c THENC RAND_CONV c) ORELSEC RATOR_CONV c ORELSEC RAND_CONV c
 SUB_QCONV c is like ABS_CONV c ORELSEC COMB_QCONV c
 ONCE_DEPTH_QCONV c uses c to rewrite all maximal applicable terms
                  (terms which are not properly contained in another
@@ -115,6 +118,7 @@ like the QCONV variants, except they never fail
 
 SINGLE_DEPTH_CONV c rewrites maximal applicable subterms with c,
                   then rewrites parents of changed terms bottom-up
+                  (no longer in the core; now in Examples/hol88.ml)
 
 DEPTH_BINOP_CONV op c
                  For example, DEPTH_BINOP_CONV `+` c rewrites
@@ -122,7 +126,7 @@ DEPTH_BINOP_CONV op c
                  of these rewrites fail)
 
 PATH_CONV path c
-          For example, PATH_CONV ["b";"l";"r";"r"] c rewrites the
+          For example, PATH_CONV "blrr" c rewrites the
           operand of the operand of the operator of the abstraction body
           with c.
 
@@ -219,6 +223,7 @@ EQF_INTRO `ASM |- ~a` gives `ASM |- a = F`
 EQF_ELIM `ASM |- a = F` gives `ASM |- ~a`
 NEG_DISCH `a` `ASM,a |- F` gives `ASM |- ~a` (if the conclusion of the
           initial theorem is not F, then NEG_DISCH acts like DISCH)
+          (no longer in the core; now in Examples/hol88.ml)
 CONTR `a` `ASM |- F` gives `ASM |- a`
 
 EXISTS_UNIQUE_DEF: `(?!) = \P:A->bool. ((?) P) /\ (!x y. ((P x) /\ (P y)) ==> (x = y))`
@@ -231,8 +236,9 @@ MK_DISJ `ASM1 |- a = b` `ASM2 |- c = d` gives `ASM1,ASM2 |- a \/ c = b \/ d`
 MK_FORALL `x` `ASM |- a = b` gives `ASM |- (!x.a) = (!x.b)`
 MK_EXISTS `x` `ASM |- a = b` gives `ASM |- (?x.a) = (?x.b)`
 
-BETAS_CONV (n:int) is a conversion which rewrites with BETA_CONV n times.
-(so BETAS_CONV 3 rewrites `(\x y z.P[x,y,z]) a b c` to `P[a,b,c]`)
+BETAS_CONV is a conversion which rewrites with BETA_CONV once for each
+argument of an iterated application of an abstraction
+(so BETAS_CONV rewrites `(\x y z.P[x,y,z]) a b c` to `P[a,b,c]`)
 
 INSTANTIATE takes an "instantiation" and a theorem and instantiates
 the theorem.  (I haven't figured out yet what an "instantiation" is.)
@@ -345,7 +351,7 @@ of th are also hypotheses of the goal.)
 
 ASSUME_TAC = LABEL_TAC ""
 
-USE_ASSUM s tht
+USE_THEN s tht
 Find the first assumption with label s (call this assumption th).
 Applies tactic (tht th).
 
@@ -573,6 +579,7 @@ Either succeeds or leaves the goal state unchanged.
 ITAUT `a` gives `|-a` if ITAUT can prove it.
 
 CONTRAPOS `|- a ==> b` gives `|- ~b ==> ~a`
+(no longer in the core; now in Examples/hol88.ml)
 
 simp:
 REWR_CONV `|- a = b`
@@ -713,14 +720,14 @@ rewriting `if g then t else e` and one for rewriting `p ==> q`.
 
 ONCE_DEPTH_SQCONV ss lev
 = (IMP_REWRITES_CONV ONCE_DEPTH_SQCONV ss lev) ORELSEC
-  (GEN_SUB_CONV ONCE_DEPTH_SQCONF ss lev)
+  (GEN_SUB_CONV ONCE_DEPTH_SQCONV ss lev)
 
 DEPTH_SQCONV ss lev
 = THENQC (GEN_SUB_CONV DEPTH_SQCONV ss lev)
          (IMP_REWRITES_CONV DEPTH_SQCONV ss lev)
 
 REDEPTH_SQCONV ss lev
-= REPEATQC (DEPTH_CONV ss lev)
+= REPEATQC (DEPTH_SQCONV ss lev)
 
 TOP_DEPTH_SQCONV ss lev
 = REPEATQC ((IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev) ORELSEC
@@ -763,11 +770,6 @@ PURE_ONCE_REWRITE_CONV thl
 
 ONCE_REWRITE_CONV thl
 = GENERAL_REWRITE_CONV false ONCE_DEPTH_CONV (basic_net()) thl
-
-LIMITED_REWRITE_CONV n thl
-Rewrite n times with
-(GEN_REWRITE_CONV ONCE_DEPTH_CONV ths THENC
- GENERAL_REWRITE_CONV true TOP_DEPTH_CONV (basic_net()) [])
 
 GEN_REWRITE_RULE cnvl thl
 = CONV_RULE(GEN_REWRITE_CONV cnvl thl)
@@ -834,7 +836,6 @@ As non-"ASM_", but adds current assumptions to the rewrite list
 theorems:
 
 val ( EQ_REFL ) : thm = |- !x. x = x
-val ( EQ_REFL_T ) : thm = |- !x. (x = x) = T
 val ( EQ_SYM ) : thm = |- !x y. (x = y) ==> (y = x)
 val ( EQ_SYM_EQ ) : thm = |- !x y. (x = y) = y = x
 val ( EQ_TRANS ) : thm = |- !x y z. (x = y) /\ (y = z) ==> (x = z)
@@ -971,12 +972,14 @@ MONO_ABS_TAC:
 (* ==================================================                        *)
 (*     ?- !x1. P[x1] x2 .. xn ==> Q[x1] x2 .. xn                             *)
 
-mono_tactics:
-A global variable holding a set of tactics for proving monotonicity.
+monotonicity_theorems:
+A global variable holding a list of monotonicity theorems (initially
+MONO_AND, MONO_OR, MONO_IMP, MONO_NOT, MONO_EXISTS and MONO_FORALL),
+from which MONO_TAC makes its tactics for proving monotonicity.
 
 APPLY_MONOTAC
-Prove `a ==> a` automatically; otherwise, select a tactic from
-mono_tactics and apply it.
+Prove `a ==> a` automatically; otherwise, select a tactic made from
+monotonicity_theorems and apply it.
 
 MONO_STEP_TAC
 = REPEAT GEN_TAC THEN APPLY_MONOTAC
@@ -995,7 +998,8 @@ Rewrites `(\x. f x)` to `f`
 val ( EQ_EXT ) : thm = |- !f g. (!x. f x = g x) ==> (f = g)
 val ( FUN_EQ_THM ) : thm = |- !f g. (f = g) = (!x. f x = g x)
 
-EXT `|- (!x. f x = g x)` gives `|- f = x`
+EXT `|- (!x. f x = g x)` gives `|- f = g`
+(no longer in the core; now in Examples/hol88.ml)
 
 This is an axiom:
 val ( SELECT_AX ) : thm = |- !P x. P x ==> P ((@) P)
@@ -1003,10 +1007,12 @@ val ( SELECT_AX ) : thm = |- !P x. P x ==> P ((@) P)
 val ( EXISTS_THM ) : thm = |- (?) = (\P. P ((@) P))
 
 SELECT_INTRO `|- P a` gives `|- P ((@) P)`
+(no longer in the core; now in Examples/hol88.ml)
 
 SELECT_RULE `|- ?x. P[x]` gives `|- P[ @x. P[x] ]`
 
 SELECT_ELIM `|- P ((@) P)` (`x`, `P x |- a`) gives `|- a`
+(no longer in the core; now in Examples/hol88.ml)
 
 SELECT_CONV rewrites `P[ @x. P[x] ]` to `?x. P[x]`
 
@@ -1018,10 +1024,6 @@ SELECT_REFL is a "basic rewrite".
 new_specification ["foo";"bar";"baz"] `?x y z.P[x,y,z]`
 Defines "foo", "bar", and "baz" as new constants, and returns a theorem
 `|- P[foo,bar,baz]`
-
-simple_new_specification th
-Like new_specification, but gets the new constant names from the
-bound variable names in the theorem.
 
 new_type_definition "newtype" ("newtypeABS","newtypeREP") `|- ?x. P[x]`
 Creates a new type "newtype", which is isomorphic to a subset
@@ -1167,14 +1169,12 @@ existentials inside negations.
 
 PRENEX_CONV moves universal quantifiers outward past or,and.
 
-MINISCOPE_FORALL moves universal quantifiers inward past or,and,forall.
-(For instance, `!x y. P x y \/ Q y` would become `!y. (!x. P x y) \/ Q y`.)
+CNF_CONV uses distributivity to move a term in negation normal form
+to conjunctive normal form, with the conjunctions and disjunctions
+associated to the right and without duplicates (WEAK_CNF_CONV gives
+a conjunction of disjunctions but does neither).
 
-PROP_CNF_CONV uses DeMorgan's laws and associativity to move to
-conjunctive normal form.
-
-PROP_DNF_CONV uses DeMorgan's laws and associativity to move to
-disjunctive normal form.
+DNF_CONV and WEAK_DNF_CONV are the same for disjunctive normal form.
 
 REFUTE_THEN tht changes the goal from `p` to `F` and runs tht on the
 assumption `|- ~p`.
@@ -1184,13 +1184,6 @@ Starts by replacing any assumption `|- a /\ b` with separate assumptions
 `|- a` and `|- b`.  Then, up to lev levels deep, it removes an assumption
 `|- a \/ b`, splits into two subgoals, adds assumption `|- a` in one
 subgoal, and adds assumption `|- b` in the other.
-
-EQ_ABS_CONV rewrites `f = \x y z. A[x,y,z]` to `!x y z. f x y z = A[x,y,z]`.
-It never fails.
-
-DELAMB_CONV repeatedly rewrites `(\x. s x) = t` to `!x. s x = t x`
-(and similarly if the lambda is on the right) and applies beta reduction
-until no more progress can be made.  It never fails.
 
 I'm not documenting GEN_FOL_CONV.
 FOL_CONV takes a term and makes sure that for every constant, whenever
@@ -1345,11 +1338,8 @@ to equal `(@)`, and GEQ is defined to equal `(=)`, so the internal
 form of the above is actually `GABS (\f. !x y. GEQ (f (P[x,y])) Q[x,y])`.
 
 PAIRED_BETA_CONV handles beta reduction of extended lambda expressions
-whose arguments are pairs.
-
-GEN_PAIR_TAC converts a goal of the form `!x. P[x]` (where `x` has a
-pair type) to `P[(FST x, SND x)]`; but a comment says that rewriting with
-FORALL_PAIR_THM (below) is better.
+whose arguments are pairs (no longer in the core; now in Examples/hol88.ml;
+GEN_BETA_CONV below does the same).
 
 val ( FORALL_PAIR_THM ) : thm = |- (!p. P p) = (!p1 p2. P (p1,p2))
 val ( EXISTS_PAIR_THM ) : thm = |- (?p. P p) = (?p1 p2. P (p1,p2))
@@ -1577,7 +1567,6 @@ val ( LE_MULT_LCANCEL ) : thm = |- !m n p. m * n <= m * p = (m = 0) \/ n <= p
 val ( LE_MULT_RCANCEL ) : thm = |- !m n p. m * p <= n * p = m <= n \/ (p = 0)
 val ( LT_MULT_LCANCEL ) : thm = |- !m n p. m * n < m * p = ~(m = 0) /\ n < p
 val ( LT_MULT_RCANCEL ) : thm = |- !m n p. m * p < n * p = m < n /\ ~(p = 0)
-val ( EQ_SUC ) : thm = |- !m n. (SUC m = SUC n) = m = n
 val ( LT_MULT2 ) : thm = |- !m n p q. m < n /\ p < q ==> m * p < n * q
 val ( LE_SQUARE_REFL ) : thm = |- !n. n <= n * n
 val num_WF : thm = |- !P. (!n. (!m. m < n ==> P m) ==> P n) ==> (!n. P n)
@@ -1719,35 +1708,11 @@ val ( DIV_MONO2 ) : thm =
   |- !m n p. ~(p = 0) /\ p <= m ==> n DIV m <= n DIV p
 val ( SUB_ELIM_THM ) : thm =
   |- P (a - b) = (!d. ((b = a + d) ==> P 0) /\ ((a = b + d) ==> P d))
-
-SUB_ELIM_CONV rewrites with SUB_ELIM_THM (directly above).
-
-SUB_ELIM_TAC takes a goal `P[a-b]` and creates two subgoals.  In the
-first, the goal is changed to `P[0]`, `b` is rewritten to `a+d`
-throughout the goal state, and an assumption `b = a+d` is added.
-In the second, the goal is changed to `P[d]`, `a` is rewritten
-to `b+d` throughout the goal state, and an assumption `a=b+d` is added.
-
 val ( PRE_ELIM_THM ) : thm =
   |- P (PRE n) = (!m. ((n = 0) ==> P 0) /\ ((n = SUC m) ==> P m))
-
-PRE_ELIM_CONV rewrites with PRE_ELIM_THM (directly above).
-
-PRE_ELIM_TAC takes a goal `P[PRE n]` and creates two subgoals.  In the
-first, the goal is changed to `P[0]`, `n` is rewritten to `0` throughout
-the goal state, and an assumption `n=0` is added.  In the second, the
-goal is changed to `P[m]`, `n` is rewritten to `SUC m` throughout
-the goal state, and an assumption `n = SUC m` is added.
-
 val ( DIVMOD_ELIM_THM ) : thm =
   |- ~(n = 0)
      ==> (P (m DIV n) (m MOD n) = (!q r. (m = q * n + r) /\ r < n ==> P q r))
-
-DIVMOD_ELIM_TAC finds either a subterm `m DIV n` or `m MOD n` in
-the current goal.  It uses these to view the goal as `P[m DIV n,m MOD n]`.
-It then changes the goal to
-`~(n = 0) /\
-  ((m = q*n + r) /\ r < n ==> P[q;r]`
 
 NUM_CANCEL_CONV rewrites `(c+(b+a)) = (b+d)+a` to `c=d`
 
@@ -1802,22 +1767,19 @@ val ( WF_REC_num ) : thm =
   |- !H. (!f g n. (!m. m < n ==> (f m = g m)) ==> (H f n = H g n))
          ==> (?f. !n. f n = H f n)
 
-This is the definition of measure.
-val measure : thm = |- !m. measure m = (\x y. m x < m y)
+This is the definition of MEASURE.
+val ( MEASURE ) : thm = |- !m. MEASURE m = (\x y. m x < m y)
 
-val ( WF_MEASURE ) : thm = |- !m. WF (measure m)
+val ( WF_MEASURE ) : thm = |- !m. WF (MEASURE m)
 val ( WF_REFL ) : thm = |- !x. WF (<<) ==> ~(x << x)
 val ( WF_REC_TAIL ) : thm =
   |- !P g h. ?f. !x. f x = (if P x then f (g x) else h x)
 
-WF_INDUCT_THEN
 WF_INDUCT_TAC
 Perform wellfounded induction over a nominated measure function. Sometimes
 avoids explicit "!n t. size(t) = n ==> ..." goal.
 
 calc_num.ml:
-
-mangle takes a theorem and rewrites its conclusion to elide NUMERAL.
 
 val ( ARITH_ZERO ) : thm = |- (NUMERAL 0 = 0) /\ (BIT0 _0 = _0)
 val ( ARITH_SUC ) : thm =
@@ -2050,15 +2012,11 @@ val ( ARITH ) : thm =
 
 NUM_SUC_CONV rewrites a term of the form `SUC k`, where k is a numeral.
 NUM_ADD_CONV rewrites a term of the form `j + k`, where j and k are numerals.
-NUM_SUC_CONV' and NUM_ADD_CONV' are the same, except that they expect
-numerals without the NUMERAL tag.
 
 NUM_PRE_CONV rewrites a term of the form `PRE k`, where k is a numeral.
 
 NUM_REL_CONV rewrites a term of the form `j OP k`, where j and k
 are numerals, and op is (<), (<=), (>), (>=), (=).
-NUM_REL_CONV' is the same, except that it expects numerals without
-the NUMERAL tag and does not deal with (>) or (>=).
 
 NUM_EQ_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_GE_CONV, NUM_GT_CONV
 Like NUM_REL_CONV, but only works if the op matches the conversion
@@ -2075,8 +2033,6 @@ are numerals.
 
 NUM_MULT_CONV rewrites a term of the form `j * k`, where j and k
 are numerals.
-NUM_MULT_CONV' is the same, except that it expects numerals without
-the NUMERAL tag.
 
 NUM_EXP_CONV rewrites a term of the form `j EXP k`, where j and k
 are numerals.
@@ -2086,7 +2042,7 @@ and `j MOD k` respectively, where j and k are numerals.
 NUM_DIVMOD_CONV (j:Num.num) (k:Num.num) produces a theorem
 `|- (J DIV K = JDIVK) /\ (J MOD K = JMODK)`, where J and K
 are the numerals for j and k, and JDIVK and JMODK are the appropriate
-numerals.  (NUM_DIV_CONV and NUM_MID_CONV each call this function;
+numerals.  (NUM_DIV_CONV and NUM_MOD_CONV each call this function;
 if you need to compute both DIV and MOD, it's about twice as
 fast to do both together with NUM_DIVMOD_CONV.)
 
@@ -2169,7 +2125,7 @@ val ( ZBOT ) : thm = |- ZBOT = INJP (INJN 0) (@z. T)
 val ( ZCONSTR_ZBOT ) : thm = |- !c i r. ~(ZCONSTR c i r = ZBOT)
 
 This is the definition (via new_inductive_definition) of
-ZRECSPACE_ZBOT.
+ZRECSPACE.
 val ( ZRECSPACE_RULES ) : thm =
   |- ZRECSPACE ZBOT /\
      (!c i r. (!n. ZRECSPACE (r n)) ==> ZRECSPACE (ZCONSTR c i r))
@@ -2370,7 +2326,7 @@ The operators +,-,*,<,<=,>,>= are overloaded; there are versions for
 num, real, int.  If an expression does not make it clear which type is
 used, they default to the current "prioritized" type.
 
-pioritize_num() sets operator overloading to default to the type num.
+prioritize_num() sets operator overloading to default to the type num.
 
 This is the definition of dist.
 val dist : thm = |- !n m. dist (m,n) = m - n + n - m
