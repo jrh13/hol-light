@@ -294,6 +294,18 @@ let _ = MESON[] `ALL2 (=) (l:num list) m /\ (!f:num->bool. f 1) ==> ALL2 (=) l m
 let _ = MESON[] `(!g:num->num->bool. P g ==> Q (g 1)) /\ P (=) ==> Q ((=) 1)`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that X_CHOOSE_TAC rejects a variable that is free in the hypotheses  *)
+(* of an assumption, whose use would make the justification fail.           *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let th = ADD_ASSUM `x = 0` TRUTH in
+  let gl = (["",th],`T`) and xth = ASSUME `?x. x = 1` in
+  (try ignore(X_CHOOSE_TAC `x:num` xth gl); assert false
+   with Failure _ -> () | Assert_failure _ as e -> raise e);
+  ignore(TAC_PROOF(gl,X_CHOOSE_TAC `y:num` xth THEN ACCEPT_TAC th));;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
