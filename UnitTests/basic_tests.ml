@@ -285,6 +285,15 @@ let _ =
   check `(f:A->A) a`; check `(f:A->A) b`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Test MESON on unapplied and partially applied equalities when there is a  *)
+(* variable in head position (ASM_FOL_TAC used to fail on these).            *)
+(* ------------------------------------------------------------------------- *)
+
+let _ = MESON[] `ALL2 (=) (l:num list) m /\ (!f:num->bool. f 1) ==> ALL2 (=) l m`;;
+
+let _ = MESON[] `(!g:num->num->bool. P g ==> Q (g 1)) /\ P (=) ==> Q ((=) 1)`;;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
