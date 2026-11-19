@@ -306,6 +306,19 @@ let _ =
   ignore(TAC_PROOF(gl,X_CHOOSE_TAC `y:num` xth THEN ACCEPT_TAC th));;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that the simplifier keeps simplifying where a congruence rule may    *)
+(* apply: the range of a sum after its body, and a term that becomes an     *)
+(* implication.                                                              *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let simp thl tm = rhs(concl(SIMP_CONV thl tm)) in
+  assert (simp [ADD_CLAUSES] `nsum(0..n+0) (\i. i + 0)` = `nsum(0..n) (\i. i)`);
+  assert (simp [ADD_CLAUSES] `nsum(0..n+0) (\i. if i <= n then 1 else 0)` =
+          `nsum(0..n) (\i. 1)`);
+  assert (simp [] `(if T then (==>) else (\/)) p (p /\ r)` = `p ==> r`);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

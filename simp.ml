@@ -463,12 +463,26 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
     with Failure _ -> th in
   let rec TOP_DEPTH_SQCONV (Simpset(net,prover,provers,rewmaker) as ss) lev tm =
     let pconvs = lookup tm net in
-    let th1 =
-      try IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev pconvs tm
-      with Failure _ -> GEN_SUB_CONV TOP_DEPTH_SQCONV ss lev pconvs tm in
-    try let th2 = TOP_DEPTH_SQCONV ss lev (rand(concl th1)) in
-            TRANS th1 th2
-    with Failure _ -> th1 in
+    try let th1 = IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev pconvs tm in
+        try TRANS th1 (TOP_DEPTH_SQCONV ss lev (rand(concl th1)))
+        with Failure _ -> th1
+    with Failure _ ->
+    let th1 = GEN_SUB_CONV TOP_DEPTH_SQCONV ss lev pconvs tm in
+    let tm1 = rand(concl th1) in
+    let pconvs1 = lookup tm1 net in
+    (* If no congruence rule is stored for a combination or for the result   *)
+    (* of simplifying its operator and operand, then the operator and        *)
+    (* operand of the result are already simplified, so only the rewrites at *)
+    (* its top are tried. Otherwise the result is simplified again from the  *)
+    (* top: a congruence rule may leave a subterm such as the range of a sum *)
+    (* alone or give it a new context.                                       *)
+    if is_comb tm && forall (fun (n,_) -> n < 4) (pconvs @ pconvs1) then
+      try let th2 = IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev pconvs1 tm1 in
+          try TRANS th1 (TRANS th2 (TOP_DEPTH_SQCONV ss lev (rand(concl th2))))
+          with Failure _ -> TRANS th1 th2
+      with Failure _ -> th1
+    else
+      try TRANS th1 (TOP_DEPTH_SQCONV ss lev tm1) with Failure _ -> th1 in
   let rec TOP_SWEEP_SQCONV (Simpset(net,prover,provers,rewmaker) as ss) lev tm =
     let pconvs = lookup tm net in
     try let th1 = IMP_REWRITES_CONV TOP_SWEEP_SQCONV ss lev pconvs tm in
