@@ -1,0 +1,92 @@
+\DOC CONSTRUCTORS_DISTINCT_CONV
+
+\TYPE {CONSTRUCTORS_DISTINCT_CONV : conv}
+
+\SYNOPSIS
+Proves that values built by two different constructors of an inductive type
+are different.
+
+\KEYWORDS
+conversion, inductive type.
+
+\DESCRIBE
+When applied to an equation {`C s1 ... sm = D t1 ... tn`} where {C} and {D}
+are two different constructors of the same inductive type, the conversion
+{CONSTRUCTORS_DISTINCT_CONV} returns the theorem:
+{
+   |- C s1 ... sm = D t1 ... tn <=> F
+}
+\noindent The arguments {s1}, ..., {tn} may be arbitrary terms, and the type
+may be any instance of the type in question. This works for all types defined
+by {define_type} and for the types {bool}, {num} (with the constructors {0}
+and {SUC}), {list}, {option} and {sum}. The theorems are not obtained from the
+distinctness theorem of the type (see {distinctness}), which has a conjunct for
+each pair of constructors, but are proved, the first time a constructor is
+used, from a theorem numbering the constructors, and then saved. Thus the
+first call involving a constructor of a type with {n} constructors takes time
+roughly proportional to {n}, and later calls are fast.
+
+\FAILURE
+Fails unless the term is an equation between applications of two different
+constructors of an inductive type known to the system.
+
+\EXAMPLE
+Here is a type with three nullary constructors and one with arguments:
+{
+  # define_type "colour = Red | Green | Blue | Rgb num num num";;
+  val it : thm * thm =
+    (|- !P.
+            P Red /\ P Green /\ P Blue /\ (!a0 a1 a2. P (Rgb a0 a1 a2))
+            ==> (!x. P x),
+     |- !f0 f1 f2 f3.
+            ?fn.
+                fn Red = f0 /\
+                fn Green = f1 /\
+                fn Blue = f2 /\
+                (!a0 a1 a2. fn (Rgb a0 a1 a2) = f3 a0 a1 a2))
+}
+\noindent Equations between different constructors are proved false, for this
+type and the built-in ones:
+{
+  # CONSTRUCTORS_DISTINCT_CONV `Rgb 1 2 3 = Blue`;;
+  val it : thm = |- Rgb 1 2 3 = Blue <=> F
+
+  # CONSTRUCTORS_DISTINCT_CONV `0 = SUC n`;;
+  val it : thm = |- 0 = SUC n <=> F
+
+  # CONSTRUCTORS_DISTINCT_CONV `INL (x:num) = INR (y:bool)`;;
+  val it : thm = |- INL x = INR y <=> F
+}
+\noindent but the conversion fails if the constructors are the same, or if one
+side is not a constructor application:
+{
+  # CONSTRUCTORS_DISTINCT_CONV `Rgb 1 2 3 = Rgb 1 2 4`;;
+  Exception: Failure "CONSTRUCTORS_DISTINCT_CONV".
+
+  # CONSTRUCTORS_DISTINCT_CONV `Red = c`;;
+  Exception: Failure "CONSTRUCTORS_DISTINCT_CONV".
+}
+\noindent To use it on all such equations inside a term, apply it with a depth
+conversion:
+{
+  # DEPTH_CONV CONSTRUCTORS_DISTINCT_CONV
+      `~(Red = Blue) /\ (c = Green \/ Rgb 0 0 0 = Red)`;;
+  val it : thm =
+    |- ~(Red = Blue) /\ (c = Green \/ Rgb 0 0 0 = Red) <=>
+       ~F /\ (c = Green \/ F)
+}
+
+\USES
+Proving the distinctness of constructors for types with many constructors,
+where the full distinctness theorem would be large.
+
+\COMMENTS
+The conversions used are the ones in {constructors_distinct_net}. The same
+conversions are in {basic_rectype_net}, so for example {define} and
+{MATCH_CONV} use them automatically.
+
+\SEEALSO
+basic_rectype_net, constructors_distinct_convs, constructors_distinct_net,
+define_type, distinctness, injectivity, prove_constructors_distinct.
+
+\ENDDOC

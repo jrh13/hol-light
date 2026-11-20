@@ -110,6 +110,16 @@ let derive_nonschematic_inductive_relations,
     let plis = zip args xargs in
     let yes,no = calculate_simp_sequence avs plis in
     let nvs = filter (not o C mem (map snd yes)) avs in
+    (* The actual arguments contain the variables nvs free, so rename the    *)
+    (* bound nvs of |- !args nvs. ... apart before SPECL: substituting under *)
+    (* binders capturing them takes time exponential in the number of nvs.   *)
+    let SPEC_CLAUSE th5 =
+      let c5 = concl th5 in
+      let nvs' = variants (variables c5) nvs in
+      let bod = funpow (length args + length nvs) (body o rand) c5 in
+      let c5' = list_mk_forall(args,
+                  list_mk_forall(nvs',vsubst(zip nvs' nvs) bod)) in
+      SPECL nvs (SPECL (map snd plis) (EQ_MP (ALPHA c5 c5') (ASSUME c5))) in
     let eth =
       if is_imp bimp then
         let atm = itlist (curry mk_conj o mk_eq) (yes@no) ant in
@@ -122,7 +132,7 @@ let derive_nonschematic_inductive_relations,
         let tm4 = funpow (length yes) rand (lhand(concl th3)) in
         let th4 = itlist (CONJ o REFL o fst) yes (ASSUME tm4) in
         let th5 = GENL args (GENL nvs (DISCH tm4 (MP th3 th4))) in
-        let th6 = SPECL nvs (SPECL (map snd plis) (ASSUME (concl th5))) in
+        let th6 = SPEC_CLAUSE th5 in
         let th7 = itlist (CONJ o REFL o snd) no (ASSUME ant) in
         let th8 = GENL avs (DISCH ant (MP th6 th7)) in
         IMP_ANTISYM_RULE (DISCH_ALL th5) (DISCH_ALL th8)
@@ -137,7 +147,7 @@ let derive_nonschematic_inductive_relations,
         let tm4 = funpow (length yes) rand (lhand(concl th3)) in
         let th4 = itlist (CONJ o REFL o fst) yes (ASSUME tm4) in
         let th5 = GENL args (GENL nvs (DISCH tm4 (MP th3 th4))) in
-        let th6 = SPECL nvs (SPECL (map snd plis) (ASSUME (concl th5))) in
+        let th6 = SPEC_CLAUSE th5 in
         let th7 = end_itlist CONJ (map (REFL o snd) no) in
         let th8 = GENL avs (MP th6 th7) in
         IMP_ANTISYM_RULE (DISCH_ALL th5) (DISCH_ALL th8) in

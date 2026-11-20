@@ -162,7 +162,8 @@ let new_definition =
                gv,depair gv arg in
   fun tm ->
     let avs,def = strip_forall tm in
-    try let th,th' = tryfind (fun th -> th,PART_MATCH I th def)
+    try if not(is_const(fst(strip_comb(lhs def)))) then fail() else
+        let th,th' = tryfind (fun th -> th,PART_MATCH I th def)
                              (!the_definitions) in
         ignore(PART_MATCH I th' (snd(strip_forall(concl th))));
         warn true "Benign redefinition"; GEN_ALL (GENL avs th')
@@ -259,17 +260,43 @@ let GEN_BETA_CONV =
       let sths = create_iterated_projections (lhand(concl arth)) in
       map (CONV_RULE(RAND_CONV(SUBS_CONV[arth]))) sths) arths in
     unions' equals_thm ths in
+  (* ----------------------------------------------------------------------- *)
+  (* When the pattern is a tuple of distinct variables, the function used as *)
+  (* the witness is UNCURRY (\x1. UNCURRY (\x2. ... (\xn-1 xn. bod))), with  *)
+  (* |- pat (x1,...,xn) = bod proved in linearly many steps, instead of a    *)
+  (* function built with projections for all the variables, which takes time *)
+  (* cubic in their number. The other steps are the same.                    *)
+  (* ----------------------------------------------------------------------- *)
+  let unc_tm = mk_const("UNCURRY",[]) in
+  let rec tuple_vars tm =
+    if is_var tm then [tm] else
+    let l,r = dest_pair tm in tuple_vars l @ tuple_vars r in
+  let rec mk_uncurried p b =
+    if is_var p then mk_abs(p,b) else
+    let s,t = dest_pair p in
+    mk_icomb(unc_tm,mk_uncurried s (mk_uncurried t b)) in
+  let rec UNCURRIED_CONV p w =
+    if is_var p then BETA_CONV(mk_comb(w,p)) else
+    let s,t = dest_pair p in
+    let f = rand w in
+    let th1 = ISPECL [f;s;t] UNCURRY_DEF in
+    let th2 = UNCURRIED_CONV s f in
+    TRANS th1 (TRANS (AP_THM th2 t) (UNCURRIED_CONV t (rand(concl th2)))) in
   let GEN_BETA_CONV tm =
     try BETA_CONV tm with Failure _ ->
     let l,r = dest_comb tm in
     let vstr,bod = dest_gabs l in
     let instn = term_match [] vstr r in
-    let prjs = create_iterated_projections vstr in
-    let th1 = SUBS_CONV prjs bod in
-    let bod' = rand(concl th1) in
-    let gv = genvar(type_of vstr) in
-    let pat = mk_abs(gv,subst[gv,vstr] bod') in
-    let th2 = TRANS (BETA_CONV (mk_comb(pat,vstr))) (SYM th1) in
+    let pat,th2 =
+      let vs = try tuple_vars vstr with Failure _ -> [] in
+      if vs <> [] && length(setify vs) = length vs then
+        let pat = mk_uncurried vstr bod in pat,UNCURRIED_CONV vstr pat else
+      let prjs = create_iterated_projections vstr in
+      let th1 = SUBS_CONV prjs bod in
+      let bod' = rand(concl th1) in
+      let gv = genvar(type_of vstr) in
+      let pat = mk_abs(gv,subst[gv,vstr] bod') in
+      pat,TRANS (BETA_CONV (mk_comb(pat,vstr))) (SYM th1) in
     let avs = fst(strip_forall(body(rand l))) in
     let th3 = GENL (fst(strip_forall(body(rand l)))) th2 in
     let efn = genvar(type_of pat) in

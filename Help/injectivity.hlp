@@ -7,8 +7,9 @@ Produce injectivity theorem for an inductive type.
 
 \DESCRIBE
 A call {injectivity "ty"} where {"ty"} is the name of a recursive type defined
-with {define_type}, returns a ``injectivity'' theorem asserting that elements
-constructed by different type constructors are always different. The effect is
+with {define_type}, returns an ``injectivity'' theorem asserting that each
+constructor with arguments is injective, i.e. that values constructed by the
+same constructor are equal only if their arguments are equal. The effect is
 exactly the same as if {prove_constructors_injective} were applied to the
 recursion theorem produced by {define_type}, and the documentation for
 {prove_constructors_injective} gives a lengthier discussion.
@@ -28,6 +29,7 @@ are nullary.
 }
 
 \SEEALSO
-cases, define_type, distinctness, prove_constructors_injective.
+cases, define_type, distinctness, injectivity_store,
+prove_constructors_injective.
 
 \ENDDOC

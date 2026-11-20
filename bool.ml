@@ -268,8 +268,20 @@ let SPEC_VAR th =
   let bv = variant (thm_frees th) (bndvar(rand(concl th))) in
   bv,SPEC bv th;;
 
-let rec SPEC_ALL th =
-  if is_forall(concl th) then SPEC_ALL(snd(SPEC_VAR th)) else th;;
+(* ------------------------------------------------------------------------- *)
+(* SPEC_ALL picks the same variables as iterating SPEC_VAR, but it computes  *)
+(* the free variables of the theorem only once: SPEC v' on |- !v. bod adds   *)
+(* v' to the free variables just when v is free in bod.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let SPEC_ALL =
+  let rec spec_all fvs th =
+    let tm = concl th in
+    if not(is_forall tm) then th else
+    let v,bod = dest_forall tm in
+    let v' = variant fvs v in
+    spec_all (if vfree_in v bod then v'::fvs else fvs) (SPEC v' th) in
+  fun th -> if is_forall(concl th) then spec_all (thm_frees th) th else th;;
 
 let ISPEC t th =
   let x,_ = try dest_forall(concl th) with Failure _ ->
@@ -449,8 +461,7 @@ let EQF_ELIM =
   let P = `P:bool` in
   let pth =
     let th1 = EQ_MP (ASSUME `P = F`) (ASSUME `P:bool`) in
-    let th2 = DISCH P (SPEC `F` (EQ_MP F_DEF th1)) in
-    DISCH_ALL (NOT_INTRO th2) in
+    DISCH_ALL (NOT_INTRO (DISCH P th1)) in
   fun th ->
     try MP (INST [rand(rator(concl th)),P] pth) th
     with Failure _ -> failwith "EQF_ELIM";;

@@ -27,7 +27,10 @@ defined constant.
 \FAILURE
 Fails if the definition is malformed or if some of the necessary conditions for
 the definition to be admissible cannot be proved automatically, or if there is
-already a constant of the given name.
+already a constant of the given name. However, repeating an existing definition
+(up to the names of variables) is accepted as a benign redefinition: a warning
+is printed and the existing definition is returned, in terms of the new
+variable names.
 
 \EXAMPLE
 This is a `multifactorial' function:
@@ -73,6 +76,6 @@ than any of these.
 \SEEALSO
 new_definition, new_recursive_definition, new_specification,
 prove_general_recursive_function_exists, prove_recursive_functions_exist,
-pure_prove_recursive_function_exists.
+pure_prove_recursive_function_exists, the_definitions.
 
 \ENDDOC

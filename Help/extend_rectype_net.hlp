@@ -11,16 +11,26 @@ HOL Light maintains several data structures based on the current set of
 distinctness and injectivity theorems for the inductive data type so far
 defined. A call {extend_rectype_net ("tyname",(_,_,rth))} where {rth} is the
 recursion theorem for the type as returned as the second item from
-{define_type}, extend these structures for a new type. Two arguments are
-ignored just for regularity with some other internal data structures.
+{define_type}, extends these structures for a new type: the injectivity theorem
+proved by {prove_constructors_injective} is added to {injectivity_store} and as
+rewrites to {basic_rectype_net}; the conversions produced by
+{constructors_distinct_convs} are added to {basic_rectype_net} and
+{constructors_distinct_net}; and a function that proves the distinctness
+theorem the first time it is called is added to {distinctness_store}. Two
+arguments are ignored just for regularity with some other internal data
+structures.
 
 \FAILURE
 Never fails, even if the theorem is malformed.
 
 \COMMENTS
 This function is called automatically by {define_type}, and normally users will
-not need to invoke it explicitly.
+not need to invoke it explicitly. For a mutually recursive family of types,
+{define_type} calls it only for the first type, since the recursion theorem
+covers them all, and enters the same theorems for the other types in
+{distinctness_store} and {injectivity_store}.
 
 \SEEALSO
-basic_rectype_net, define_type, distinctness_store, injectivity_store.
+basic_rectype_net, constructors_distinct_convs, constructors_distinct_net,
+define_type, distinctness_store, injectivity_store.
 \ENDDOC
