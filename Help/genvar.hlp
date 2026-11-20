@@ -7,7 +7,9 @@ Returns a `fresh' variable with specified type.
 
 \DESCRIBE
 When given a type, {genvar} returns a variable of that type whose name has not
-previously been produced by {genvar}.
+previously been produced by {genvar}. With OCaml 5 this holds even when
+{genvar} is called from several domains at the same time: the counter that
+generates the names is atomic, so no two calls return the same name.
 
 \FAILURE
 Never fails.

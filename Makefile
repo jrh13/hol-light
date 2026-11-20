@@ -140,6 +140,21 @@ bignum.cmx: bignum_zarith.ml bignum_num.ml ; \
         else ocamlopt -c -o bignum.cmx bignum_num.ml ; \
         fi
 
+# Choose an implementation of the counters used for fresh names (genvar):
+# atomic with OCaml 5, where several domains may run in parallel.
+
+fresh_counter.cmo: fresh_counter_atomic.ml fresh_counter_ref.ml ; \
+        if test ${OCAML_UNARY_VERSION} = "5" ; \
+        then ocamlc -c -o fresh_counter.cmo fresh_counter_atomic.ml ; \
+        else ocamlc -c -o fresh_counter.cmo fresh_counter_ref.ml ; \
+        fi
+
+fresh_counter.cmx: fresh_counter_atomic.ml fresh_counter_ref.ml ; \
+        if test ${OCAML_UNARY_VERSION} = "5" ; \
+        then ocamlopt -c -o fresh_counter.cmx fresh_counter_atomic.ml ; \
+        else ocamlopt -c -o fresh_counter.cmx fresh_counter_ref.ml ; \
+        fi
+
 hol_loader.cmo: hol_loader.ml ; \
         ocamlc -verbose -c hol_loader.ml -o hol_loader.cmo
 
@@ -149,19 +164,19 @@ hol_loader.cmx: hol_loader.ml ; \
 hol_lib_inlined.ml: ${HOLSRC} inline_load.ml ; \
         HOLLIGHT_DIR="`pwd`" ocaml inline_load.ml hol_lib.ml hol_lib_inlined.ml -omit-prelude
 
-hol_lib.cmo: pa_j.cmo hol_lib_inlined.ml hol_loader.cmo bignum.cmo ; \
+hol_lib.cmo: pa_j.cmo hol_lib_inlined.ml hol_loader.cmo bignum.cmo fresh_counter.cmo ; \
         ocamlc -verbose -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" hol_loader.cmo hol_lib_inlined.ml bignum.cmo -o hol_lib.cmo
 
-hol_lib.cma: hol_lib.cmo bignum.cmo hol_loader.cmo ; \
-        ocamlfind ocamlc -package zarith -linkpkg -a -o hol_lib.cma bignum.cmo hol_loader.cmo hol_lib.cmo
+hol_lib.cma: hol_lib.cmo bignum.cmo fresh_counter.cmo hol_loader.cmo ; \
+        ocamlfind ocamlc -package zarith -linkpkg -a -o hol_lib.cma bignum.cmo fresh_counter.cmo hol_loader.cmo hol_lib.cmo
 
-hol_lib.cmx: pa_j.cmo hol_lib_inlined.ml hol_loader.cmx bignum.cmx ; \
+hol_lib.cmx: pa_j.cmo hol_lib_inlined.ml hol_loader.cmx bignum.cmx fresh_counter.cmx ; \
         OCAMLRUNPARAM=l=1000000000 ocamlopt.byte -verbose -c \
               -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo -I . pa_j.cmo" \
               hol_lib_inlined.ml hol_loader.cmx bignum.cmx -o hol_lib.cmx
 
-hol_lib.cmxa: hol_lib.cmx hol_loader.cmx bignum.cmx ; \
-        ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx hol_loader.cmx hol_lib.cmx
+hol_lib.cmxa: hol_lib.cmx hol_loader.cmx bignum.cmx fresh_counter.cmx ; \
+        ocamlfind ocamlopt -package zarith -a -o hol_lib.cmxa bignum.cmx fresh_counter.cmx hol_loader.cmx hol_lib.cmx
 
 # Create a bash script 'hol.sh' that loads 'hol.ml' in OCaml REPL.
 #
@@ -175,14 +190,14 @@ ifneq ($(HOLSH_USE_MODULE),$(HOLLIGHT_USE_MODULE))
 hol.sh: FORCE
 endif
 
-hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml \
+hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo fresh_counter.cmo hol_loader.cmo update_database.ml \
         hol_4.sh hol_4.14.sh $(wildcard opam) | $(CONFIG_FILE)
 	if [ `uname` = "Linux" ] || [ `uname` = "Darwin" ] ; then \
 		if [ ${OCAML_UNARY_VERSION} = "5" ] || [ ${OCAML_VERSION} = "4.14" ] ; then \
-			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo hol_loader.cmo ; \
+			ocamlfind ocamlmktop -package zarith -o ocaml-hol zarith.cma bignum.cmo fresh_counter.cmo hol_loader.cmo ; \
 			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g; s^__VERSION__^$(HOLLIGHT_VERSION)^g; s^__COMMIT__^$(HOLLIGHT_COMMIT)^g" hol_4.14.sh > hol.sh ; \
 		else \
-			ocamlmktop -o ocaml-hol nums.cma bignum.cmo hol_loader.cmo ; \
+			ocamlmktop -o ocaml-hol nums.cma bignum.cmo fresh_counter.cmo hol_loader.cmo ; \
 			sed "s^__DIR__^`pwd`^g; s^__USE_MODULE__^$(HOLLIGHT_USE_MODULE)^g; s^__VERSION__^$(HOLLIGHT_VERSION)^g; s^__COMMIT__^$(HOLLIGHT_COMMIT)^g" hol_4.sh > hol.sh ; \
 		fi ; \
 		chmod +x hol.sh ; \
@@ -197,6 +212,13 @@ hol.sh: pa_j.cmo ${HOLSRC} bignum.cmo hol_loader.cmo update_database.ml \
 # 'hol.sh compile-byte/link-byte' respectively.
 
 UNIT_TESTS=$(patsubst %.ml,%,$(filter-out %_inlined.ml,$(wildcard UnitTests/*.ml)))
+
+# Test suites UnitTests/<name>_parallel.ml run code in parallel OCaml 5
+# domains, so they are only built with OCaml 5.
+
+ifneq ($(shell ocamlc -version | cut -c1),5)
+UNIT_TESTS:=$(filter-out %_parallel,$(UNIT_TESTS))
+endif
 
 ifeq ($(HOLLIGHT_USE_MODULE),1)
 hol.sh: hol_lib.cmo
@@ -314,7 +336,7 @@ install: hol.sh hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.m
 # Clean up all compiled files
 
 clean:; \
-  rm -rf bignum.c* bignum.o \
+  rm -rf bignum.c* bignum.o fresh_counter.c* fresh_counter.o \
          update_database.ml pa_j.ml pa_j.cmi pa_j.cmo \
          hol_lib.a hol_lib.c* hol_lib.o hol_lib_inlined.ml \
          hol_loader.c* hol_loader.o \
