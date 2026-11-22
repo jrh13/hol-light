@@ -338,6 +338,22 @@ let _ =
   assert (aconv (rhs(concl th')) `nsum(0..n) (\i. i)`);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test ASM_ARITH_TAC and ASM_REAL_ARITH_TAC with many irrelevant            *)
+(* assumptions, and with assumptions that only the fallback to all of them   *)
+(* can use.                                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let asm tms = map (fun t -> "",ASSUME t) tms in
+  let ys = map (fun i -> mk_eq(mk_var("y"^string_of_int i,`:num`),
+                               mk_small_numeral i)) (1--40) in
+  ignore(TAC_PROOF((asm(`x < 2`::ys),`x + 1 <= 2`),ASM_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`x < 2 /\ P(x:num)`],`x < 3`),ASM_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`F`; `y = 1`],`x < 3`),ASM_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`&0 < x`; `y = &1`],`&0 <= x / &2`),ASM_REAL_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`&0 < x`; `y = &1`],`&0 <= x + y`),ASM_REAL_ARITH_TAC));;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

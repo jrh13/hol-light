@@ -552,9 +552,60 @@ let REAL_ARITH =
 
 let REAL_ARITH_TAC = CONV_TAC REAL_ARITH;;
 
+(* ------------------------------------------------------------------------- *)
+(* GEN_ASM_ARITH_TAC ty rels ops tac, as used for ASM_REAL_ARITH_TAC,        *)
+(* ASM_INT_ARITH_TAC and ASM_ARITH_TAC, first tries tac with only the        *)
+(* arithmetic assumptions (boolean combinations of the relations rels over   *)
+(* ty) that share an atom with the goal, directly or through other such      *)
+(* assumptions, where the atoms are the maximal subterms that are neither    *)
+(* built by ops nor numerals. Only if that fails does it use all the         *)
+(* assumptions that are not universally quantified, as these tactics did. In *)
+(* a big context that is much faster, and every goal proved before is still  *)
+(* proved.                                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let GEN_ASM_ARITH_TAC ty rels ops (tac:tactic) : tactic =
+  let f_tm = mk_const("F",[]) in
+  let is_rel tm =
+    match tm with
+      Comb(Comb(Const(s,_),l),_) -> mem s rels && type_of l = ty
+    | _ -> false in
+  let rec is_arith tm =
+    if is_neg tm then is_arith(rand tm)
+    else if is_conj tm || is_disj tm || is_imp tm || is_iff tm
+    then is_arith(lhand tm) && is_arith(rand tm)
+    else is_rel tm in
+  let rec term_atoms tm acc =
+    if is_numeral tm then acc else
+    match strip_comb tm with
+      Const(s,_),args when mem s ops -> itlist term_atoms args acc
+    | _ -> insert tm acc in
+  let rec atoms tm acc =
+    if is_neg tm then atoms (rand tm) acc
+    else if is_conj tm || is_disj tm || is_imp tm || is_iff tm
+    then atoms (lhand tm) (atoms (rand tm) acc)
+    else if is_rel tm then term_atoms (lhand tm) (term_atoms (rand tm) acc)
+    else acc in
+  let rec relevant ats tths =
+    let tths1,tths2 = partition (fun (_,a) -> exists (C mem ats) a) tths in
+    if tths1 = [] then [] else
+    map fst tths1 @ relevant (itlist (union o snd) tths1 ats) tths2 in
+  let full = REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
+             tac in
+  fun (asl,w as g) ->
+    let ths = filter (not o is_forall o concl) (map snd asl) in
+    let tths = map (fun th -> th,atoms (concl th) [])
+                   (filter (is_arith o concl) ths) in
+    let rel = relevant (atoms w []) tths in
+    if length rel = length ths || exists (fun th -> concl th = f_tm) ths
+    then full g else
+    try (MAP_EVERY MP_TAC rel THEN tac) g with Failure _ -> full g;;
+
 let ASM_REAL_ARITH_TAC =
-  REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
-  REAL_ARITH_TAC;;
+  GEN_ASM_ARITH_TAC `:real` ["="; "real_lt"; "real_le"; "real_gt"; "real_ge"]
+   ["real_add"; "real_sub"; "real_mul"; "real_neg"; "real_abs"; "real_max";
+    "real_min"; "real_pow"; "real_div"; "real_inv"; "real_of_num"]
+   REAL_ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
 (* A few handy equivalential forms of transitivity.                          *)
