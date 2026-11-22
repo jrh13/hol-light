@@ -8,6 +8,31 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 22nd Nov 2026       Library/words.ml
+
+Removed the second definition of WORD_SUBWORD_IWORD, which was left in
+place when the theorem was type-generalized (see the entry of 20th October
+2025), so that it still shadowed the general version. The name now gives
+the general theorem, whose result can be a word of any type.
+
+Sun 22nd Nov 2026       calc_rat.ml, int.ml, UnitTests/basic_tests.ml
+
+Made ASM_ARITH_TAC, ASM_INT_ARITH_TAC and ASM_REAL_ARITH_TAC first try
+their decision procedure with only the arithmetic assumptions that share an
+atom with the goal, directly or through other such assumptions, and only if
+that fails with all the assumptions that are not universally quantified, as
+before. This is done by the new function GEN_ASM_ARITH_TAC. In a big
+context it is much faster, and every goal proved before is still proved.
+
+Sun 22nd Nov 2026       simp.ml, UnitTests/basic_tests.ml
+
+Made the simplifier abandon at once, instead of at the end, a pass over the
+body of an abstraction \v. b that is going to be redone because it uses a
+fact of the context about a free variable named like v (ABS fails, and the
+body is simplified again with a genvar for v); under n such binders that
+took up to 2^n complete passes. The results are unchanged, apart from the
+names of the genvars made afterwards.
+
 Thu 19th Nov 2026       simp.ml, UnitTests/basic_tests.ml
 
 Made the simplifier's strategy TOP_DEPTH_SQCONV, used by SIMP_CONV,
