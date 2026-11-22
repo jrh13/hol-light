@@ -319,6 +319,25 @@ let _ =
   assert (simp [] `(if T then (==>) else (\/)) p (p /\ r)` = `p ==> r`);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that the simplifier keeps facts about free variables off bound       *)
+(* variables of the same names, also under many such binders (each used to   *)
+(* double the time) and under a congruence rule with a bound variable.       *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let vs = map (fun i -> mk_var("x"^string_of_int i,`:num`)) (1--10) in
+  let fty = itlist (fun _ ty -> mk_fun_ty `:num` ty) vs `:num` in
+  let f = mk_var("f",fty) and g = mk_var("g",fty) in
+  let facts = map (fun v -> ASSUME(mk_eq(v,`0`))) vs in
+  let eqn l r = list_mk_forall(vs,mk_eq(l,r)) in
+  let tm = eqn (mk_comb(mk_comb(`(+):num->num->num`,list_mk_comb(f,vs)),`0`))
+               (list_mk_comb(g,vs)) in
+  let th = SIMP_CONV (ADD_CLAUSES::facts) tm in
+  assert (rhs(concl th) = eqn (list_mk_comb(f,vs)) (list_mk_comb(g,vs)));
+  let th' = SIMP_CONV [ADD_CLAUSES; ASSUME `i = 5`] `nsum(0..n) (\i. i + 0)` in
+  assert (aconv (rhs(concl th')) `nsum(0..n) (\i. i)`);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
