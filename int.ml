@@ -705,8 +705,10 @@ let INT_ARITH =
 let INT_ARITH_TAC = CONV_TAC(EQT_INTRO o INT_ARITH);;
 
 let ASM_INT_ARITH_TAC =
-  REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
-  INT_ARITH_TAC;;
+  GEN_ASM_ARITH_TAC `:int` ["="; "int_lt"; "int_le"; "int_gt"; "int_ge"]
+   ["int_add"; "int_sub"; "int_mul"; "int_neg"; "int_abs"; "int_max";
+    "int_min"; "int_pow"; "int_of_num"]
+   INT_ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
 (* Some pseudo-definitions.                                                  *)
@@ -2183,8 +2185,8 @@ let ARITH_RULE =
 let ARITH_TAC = CONV_TAC(EQT_INTRO o ARITH_RULE);;
 
 let ASM_ARITH_TAC =
-  REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
-  ARITH_TAC;;
+  GEN_ASM_ARITH_TAC `:num` ["="; "<"; "<="; ">"; ">="]
+   ["+"; "-"; "*"; "SUC"; "PRE"] ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
 (* Enhanced integer procedures eliminating div and rem (replacing first one) *)
@@ -2317,8 +2319,10 @@ let INT_ARITH =
 let INT_ARITH_TAC = CONV_TAC(EQT_INTRO o INT_ARITH);;
 
 let ASM_INT_ARITH_TAC =
-  REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
-  INT_ARITH_TAC;;
+  GEN_ASM_ARITH_TAC `:int` ["="; "int_lt"; "int_le"; "int_gt"; "int_ge"]
+   ["int_add"; "int_sub"; "int_mul"; "int_neg"; "int_abs"; "int_max";
+    "int_min"; "int_pow"; "int_of_num"]
+   INT_ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
 (* A few miscellaneous natural number lemmas.                                *)

@@ -696,7 +696,11 @@ let ASM_FOL_TAC =
     let th = rev_itlist (C (curry MK_COMB))
                         (map (FOL_CONV hddata) args) (REFL op) in
     let tm' = rand(concl th) in
-    let n = try length args - assoc op hddata with Failure _ -> 0 in
+    let m = length args in
+    (* With variable heads "=" has arity 2 and all other heads arity 0; an  *)
+    (* "=" with fewer than two arguments is then treated like the others.   *)
+    let n = try let k = assoc op hddata in if m < k then m else m - k
+            with Failure _ -> 0 in
     if n = 0 then th
     else TRANS th (APP_N_CONV n tm') in
   let GEN_FOL_CONV (cheads,vheads) =

@@ -285,6 +285,75 @@ let _ =
   check `(f:A->A) a`; check `(f:A->A) b`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Test MESON on unapplied and partially applied equalities when there is a  *)
+(* variable in head position (ASM_FOL_TAC used to fail on these).            *)
+(* ------------------------------------------------------------------------- *)
+
+let _ = MESON[] `ALL2 (=) (l:num list) m /\ (!f:num->bool. f 1) ==> ALL2 (=) l m`;;
+
+let _ = MESON[] `(!g:num->num->bool. P g ==> Q (g 1)) /\ P (=) ==> Q ((=) 1)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that X_CHOOSE_TAC rejects a variable that is free in the hypotheses  *)
+(* of an assumption, whose use would make the justification fail.           *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let th = ADD_ASSUM `x = 0` TRUTH in
+  let gl = (["",th],`T`) and xth = ASSUME `?x. x = 1` in
+  (try ignore(X_CHOOSE_TAC `x:num` xth gl); assert false
+   with Failure _ -> () | Assert_failure _ as e -> raise e);
+  ignore(TAC_PROOF(gl,X_CHOOSE_TAC `y:num` xth THEN ACCEPT_TAC th));;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that the simplifier keeps simplifying where a congruence rule may    *)
+(* apply: the range of a sum after its body, and a term that becomes an     *)
+(* implication.                                                              *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let simp thl tm = rhs(concl(SIMP_CONV thl tm)) in
+  assert (simp [ADD_CLAUSES] `nsum(0..n+0) (\i. i + 0)` = `nsum(0..n) (\i. i)`);
+  assert (simp [ADD_CLAUSES] `nsum(0..n+0) (\i. if i <= n then 1 else 0)` =
+          `nsum(0..n) (\i. 1)`);
+  assert (simp [] `(if T then (==>) else (\/)) p (p /\ r)` = `p ==> r`);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that the simplifier keeps facts about free variables off bound       *)
+(* variables of the same names, also under many such binders (each used to   *)
+(* double the time) and under a congruence rule with a bound variable.       *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let vs = map (fun i -> mk_var("x"^string_of_int i,`:num`)) (1--10) in
+  let fty = itlist (fun _ ty -> mk_fun_ty `:num` ty) vs `:num` in
+  let f = mk_var("f",fty) and g = mk_var("g",fty) in
+  let facts = map (fun v -> ASSUME(mk_eq(v,`0`))) vs in
+  let eqn l r = list_mk_forall(vs,mk_eq(l,r)) in
+  let tm = eqn (mk_comb(mk_comb(`(+):num->num->num`,list_mk_comb(f,vs)),`0`))
+               (list_mk_comb(g,vs)) in
+  let th = SIMP_CONV (ADD_CLAUSES::facts) tm in
+  assert (rhs(concl th) = eqn (list_mk_comb(f,vs)) (list_mk_comb(g,vs)));
+  let th' = SIMP_CONV [ADD_CLAUSES; ASSUME `i = 5`] `nsum(0..n) (\i. i + 0)` in
+  assert (aconv (rhs(concl th')) `nsum(0..n) (\i. i)`);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test ASM_ARITH_TAC and ASM_REAL_ARITH_TAC with many irrelevant            *)
+(* assumptions, and with assumptions that only the fallback to all of them   *)
+(* can use.                                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let asm tms = map (fun t -> "",ASSUME t) tms in
+  let ys = map (fun i -> mk_eq(mk_var("y"^string_of_int i,`:num`),
+                               mk_small_numeral i)) (1--40) in
+  ignore(TAC_PROOF((asm(`x < 2`::ys),`x + 1 <= 2`),ASM_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`x < 2 /\ P(x:num)`],`x < 3`),ASM_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`F`; `y = 1`],`x < 3`),ASM_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`&0 < x`; `y = &1`],`&0 <= x / &2`),ASM_REAL_ARITH_TAC));
+  ignore(TAC_PROOF((asm[`&0 < x`; `y = &1`],`&0 <= x + y`),ASM_REAL_ARITH_TAC));;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

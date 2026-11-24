@@ -4238,15 +4238,6 @@ let WORD_SUBWORD_IWORD = prove
   SIMP_TAC[INT_DIV_REM; INT_POW_LE; INT_POS; GSYM INT_POW_ADD] THEN
   ASM_SIMP_TAC[INT_REM_IVAL_IWORD]);;
 
-let WORD_SUBWORD_IWORD = prove
- (`!x pos len.
-        pos + len <= dimindex(:N)
-        ==> word_subword (iword x:N word) (pos,len):N word =
-            iword((x div &2 pow pos) rem &2 pow len)`,
-  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[WORD_SUBWORD_AS_IWORD] THEN
-  SIMP_TAC[INT_DIV_REM; INT_POW_LE; INT_POS; GSYM INT_POW_ADD] THEN
-  ASM_SIMP_TAC[INT_REM_IVAL_IWORD]);;
-
 let WORD_SUBWORD_AS_USHR_SHL = prove (`!(x:N word) pos len.
         pos + len <= dimindex(:N)
         ==> word_subword x (pos,len):N word =

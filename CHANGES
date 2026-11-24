@@ -8,6 +8,105 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 22nd Nov 2026       Library/words.ml
+
+Removed the second definition of WORD_SUBWORD_IWORD, which was left in
+place when the theorem was type-generalized (see the entry of 20th October
+2025), so that it still shadowed the general version. The name now gives
+the general theorem, whose result can be a word of any type.
+
+Sun 22nd Nov 2026       calc_rat.ml, int.ml, UnitTests/basic_tests.ml
+
+Made ASM_ARITH_TAC, ASM_INT_ARITH_TAC and ASM_REAL_ARITH_TAC first try
+their decision procedure with only the arithmetic assumptions that share an
+atom with the goal, directly or through other such assumptions, and only if
+that fails with all the assumptions that are not universally quantified, as
+before. This is done by the new function GEN_ASM_ARITH_TAC. In a big
+context it is much faster, and every goal proved before is still proved.
+
+Sun 22nd Nov 2026       simp.ml, UnitTests/basic_tests.ml
+
+Made the simplifier abandon at once, instead of at the end, a pass over the
+body of an abstraction \v. b that is going to be redone because it uses a
+fact of the context about a free variable named like v (ABS fails, and the
+body is simplified again with a genvar for v); under n such binders that
+took up to 2^n complete passes. The results are unchanged, apart from the
+names of the genvars made afterwards.
+
+Thu 19th Nov 2026       simp.ml, UnitTests/basic_tests.ml
+
+Made the simplifier's strategy TOP_DEPTH_SQCONV, used by SIMP_CONV,
+SIMP_TAC, ASM_SIMP_TAC and their variants, skip a pass that cannot change
+anything. After simplifying the operator and operand of a combination, it
+simplified the whole result again from the top, traversing every subterm
+once more, and that again at each enclosing level. When no congruence rule
+is stored for the combination or for the result, only the rewrites at the
+top of the result are now tried; the pass is kept when a congruence rule
+may apply, since such a rule may leave a subterm alone, as the rules for
+sums leave the range, or give it a new context. The results are unchanged,
+apart from the names of the genvars made afterwards, which are numbered in
+order, and simplification takes about a third less time.
+
+Thu 19th Nov 2026       simp.ml
+
+Made satisfy_prover parse the term `T` once, when it is defined, instead of
+every time a theorem is added to a simpset. Parsing during simplification
+made the numbering of the invented type variables of later quotations, as
+in ?123, depend on how much simplification had been done before.
+
+Thu 19th Nov 2026       tactics.ml, UnitTests/basic_tests.ml
+
+Made X_CHOOSE_TAC check that the new variable is not free in the
+hypotheses of the assumptions either, as X_GEN_TAC and CHOOSE_TAC already
+do. It only checked their conclusions, so it accepted a variable free just
+in the hypotheses of an assumption, and if that assumption was used, the
+justification failed later in CHOOSE.
+
+Thu 19th Nov 2026       canon.ml, UnitTests/basic_tests.ml
+
+Fixed a failure "RATOR_CONV: Not a combination" of MESON and METIS on goals
+with an unapplied or partially applied equality, such as ALL2 (=) l m,
+when some assumption has a variable in head position, e.g. !f. f 1. In that
+case ASM_FOL_TAC gives every head arity 0 except "=", which keeps arity 2,
+and for an "=" with fewer than two arguments it tried to insert a negative
+number of applications. Such an "=" is now treated like the other heads.
+
+Thu 19th Nov 2026       QUICK_REFERENCE.txt
+
+Brought QUICK_REFERENCE.txt further up to date, after checking every name
+in it and in VERYQUICK_REFERENCE.txt against a session with the current
+sources, and every theorem shown against the current theorem. Updated the
+statements of 26 theorems that have changed: 19 DIV and MOD theorems such
+as MOD_MULT and DIV_LE that no longer need hypotheses ~(n = 0), since
+m DIV 0 = 0 and m MOD 0 = m, as well as SUB_ELIM_THM, PRE_ELIM_THM,
+DIVMOD_ELIM_THM, ARITH_LE, ARITH_GE, ARITH and EX_MEM. Noted which of the
+documented functions are local and cannot be called directly
+(NUM_DIVMOD_CONV, the helpers of MONO_TAC and of the inductive definitions
+package, SPLIT_TAC, FOL_CONV, the simplifier's IMP_REWRITES_CONV and
+GEN_SUB_CONV, and sucivate), removed SCRUB_EQUATION, which no longer
+exists, described the subprover satisfy_prover now in the simpsets, and
+mentioned the congruence rules for nsum and sum.
+
+Thu 19th Nov 2026       QUICK_REFERENCE.txt, VERYQUICK_REFERENCE.txt
+
+Fixed many errors in QUICK_REFERENCE.txt and VERYQUICK_REFERENCE.txt
+reported by Chris Walton, mostly names that no longer match the sources.
+Removed the entries for functions and theorems that are no longer in the
+system (COMB2_QCONV, LIMITED_REWRITE_CONV, EQ_REFL_T,
+simple_new_specification, MINISCOPE_FORALL, EQ_ABS_CONV, DELAMB_CONV,
+GEN_PAIR_TAC, EQ_SUC, SUB_ELIM_CONV, SUB_ELIM_TAC, PRE_ELIM_CONV,
+PRE_ELIM_TAC, DIVMOD_ELIM_TAC, WF_INDUCT_THEN, mangle, the primed numeral
+conversions such as NUM_ADD_CONV', and REAL_NEGNEG, a duplicate of
+REAL_NEG_NEG), and noted that SINGLE_DEPTH_CONV, NEG_DISCH, CONTRAPOS,
+EXT, SELECT_INTRO, SELECT_ELIM and PAIRED_BETA_CONV are now only in
+Examples/hol88.ml. Replaced USE_ASSUM by USE_THEN, mono_tactics by
+monotonicity_theorems, PROP_CNF_CONV and PROP_DNF_CONV by CNF_CONV and
+DNF_CONV, and measure by MEASURE; updated the arguments of PATH_CONV and
+BETAS_CONV; fixed the typos ONCE_DEPTH_SQCONF, DEPTH_CONV for
+DEPTH_SQCONV, NUM_MID_CONV, ZRECSPACE_ZBOT, pioritize_num and the result
+of EXT; and noted that THENQC, THENCQC, REPEATQC and the QCONV depth
+conversions are local to equal.ml.
+
 Mon 16th Nov 2026       ind_types.ml
 
 Removed from "define_type" the fallbacks to the original, slower code that

@@ -215,12 +215,13 @@ let apply_prover(Prover(conv,_)) tm = conv tm;;
 (* ------------------------------------------------------------------------- *)
 
 let satisfy_prover =
+  let t_tm = `T` in
   let rec facts_of th acc =
     let tm = concl th in
     if is_forall tm then facts_of (SPEC_ALL th) acc
     else if is_conj tm
     then facts_of (CONJUNCT1 th) (facts_of (CONJUNCT2 th) acc)
-    else if is_imp tm || tm = `T` then acc else th::acc in
+    else if is_imp tm || tm = t_tm then acc else th::acc in
   let rec satisfy facts vs (bcs,insts,_ as i) cjs =
     match cjs with
       [] -> i
@@ -363,10 +364,48 @@ let AUGMENT_SIMPSET cth (Simpset(net,prover,provers,rewmaker)) =
 (* can fix the RHS late, such an instance is checked much as net_of_thm      *)
 (* checks rewrites: the LHS must not occur in the RHS, and if the instance   *)
 (* is permutative it must decrease in the term ordering.                     *)
+(*                                                                           *)
+(* The body of an abstraction \v. b is simplified with v as it is and, if    *)
+(* the result has a hypothesis in which v is free (a fact of the context     *)
+(* about a free variable named like v) so that ABS fails, again with a       *)
+(* genvar for v; under n such binders that took up to 2^n passes. Now the    *)
+(* first pass is abandoned as soon as a step that is sure to be part of its  *)
+(* result has such a hypothesis. The passes under way are kept on a stack of *)
+(* frames, and a step is sure to reach a frame unless a frame in between can *)
+(* still discard it: an abstraction may take the genvar route, and a         *)
+(* congruence rule may fail after a successful simplification, by GENL for   *)
+(* the bound variables of an antecedent, or by GEN_PART_MATCH when its       *)
+(* right-hand side is not a variable. Steps in side-condition proofs and     *)
+(* witness searches do not count. An antecedent fails at once in the same    *)
+(* way when its bound variables are free in a hypothesis that is sure to     *)
+(* reach it, as GENL would then make it fail. The results are the same as    *)
+(* before.                                                                   *)
 (* ------------------------------------------------------------------------- *)
+
+exception Simp_abandon of (term list * term list * bool);;
 
 let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
     TOP_DEPTH_SQCONV,TOP_SWEEP_SQCONV =
+  let frames = ref ([]:(term list * term list * bool) list) in
+  let within f g x =
+    let old = !frames in
+    frames := f::old;
+    try let y = g x in frames := old; y
+    with e -> frames := old; raise e in
+  let barrier = ([],[],true) in
+  let commit th =
+    let hs = hyp th in
+    if hs = [] then () else
+    let rec scan inner fs =
+      match fs with
+        [] -> ()
+      | ((vs,cxts,stop) as f)::ofs ->
+          let inner' = cxts @ inner in
+          if exists (fun h -> exists (fun v -> vfree_in v h) vs &&
+                              not(exists (aconv h) inner')) hs
+          then raise (Simp_abandon f)
+          else if stop then () else scan inner' ofs in
+    scan [] (!frames) in
   let nonlooping th =
     let l,r = dest_eq(rand(concl th)) in
     let matchable = can o term_match (freesl(hyp th)) in
@@ -378,40 +417,58 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
       if n >= 4 then fail() else
       let th = cnv tm in
       let etm = concl th in
-      if is_eq etm then th else
+      if is_eq etm then (commit th; th) else
       if lev <= 0 then failwith "IMP_REWRITES_CONV: Too deep" else
       let cnd = lhand etm in
       let mvs = subtract (frees cnd) (union (frees tm) (freesl(hyp th))) in
       let th' =
         if mvs = [] then th else
-        let th1 = try INSTANTIATE (find_witnesses provers mvs cnd) th
-                  with Failure _ -> th in
+        let th1 =
+          try INSTANTIATE (within barrier (find_witnesses provers mvs) cnd) th
+          with Failure _ -> th in
         if nonlooping th1 then th1
         else if th1 != th && nonlooping th then th
         else failwith "IMP_REWRITES_CONV: looping instance" in
-      let cth = prover strat ss (lev-1) (lhand(concl th')) in
-      MP th' cth) pconvs in
-  let rec RUN_SUB_CONV strat ss lev triv th =
+      let cth = within barrier (prover strat ss (lev-1)) (lhand(concl th')) in
+      let th'' = MP th' cth in
+      commit th''; th'') pconvs in
+  let dest_antecedent ant =
+    let avs,bod = strip_forall ant in
+    try avs,None,dest_eq bod with Failure _ ->
+    let cxt,deq = dest_imp bod in avs,Some cxt,dest_eq deq in
+  let safe_antecedents th =
+    let ants = fst(splitlist dest_imp (concl th)) in
+    let rhss = map (fun a -> let avs,_,(_,t') = dest_antecedent a in
+                             if avs = [] && is_var t' then t' else fail())
+                   ants in
+    length(setify rhss) = length rhss in
+  let rec RUN_SUB_CONV strat ss lev safe triv th =
     let tm = concl th in
     if is_imp tm then
-      let subtm = lhand tm in
-      let avs,bod = strip_forall subtm in
-      let (t,t'),ss',mk_fun =
-        try dest_eq bod,ss,I with Failure _ ->
-        let cxt,deq = dest_imp bod in
-        dest_eq deq,AUGMENT_SIMPSET (ASSUME cxt) ss,DISCH cxt in
-      let eth,triv' = try strat ss' lev t,false with Failure _ -> REFL t,triv in
+      let avs,cxto,(t,t') = dest_antecedent(lhand tm) in
+      let ss',mk_fun,cxts =
+        match cxto with
+          None -> ss,I,[]
+        | Some cxt -> AUGMENT_SIMPSET (ASSUME cxt) ss,DISCH cxt,[cxt] in
+      let f = (avs,cxts,not safe) in
+      let eth,triv' =
+        try within f (fun t -> try strat ss' lev t,false
+                               with Failure _ -> REFL t,triv) t
+        with Simp_abandon f' when f' == f ->
+          failwith "RUN_SUB_CONV: bound variable free in a hypothesis" in
       let eth' = GENL avs (mk_fun eth) in
       let th' = if is_var t' then INST [rand(concl eth),t'] th
                 else GEN_PART_MATCH lhand th (concl eth') in
       let th'' = MP th' eth' in
-      RUN_SUB_CONV strat ss lev triv' th''
+      RUN_SUB_CONV strat ss lev safe triv' th''
     else if triv then fail() else th in
   let GEN_SUB_CONV strat ss lev pconvs tm =
     try tryfind (fun (n,cnv) ->
           if n < 4 then fail() else
           let th = cnv tm in
-          RUN_SUB_CONV strat ss lev true th) pconvs
+          let safe = can safe_antecedents th in
+          let th' = RUN_SUB_CONV strat ss lev safe true th in
+          commit th'; th') pconvs
     with Failure _ ->
         if is_comb tm then
           let l,r = dest_comb tm in
@@ -421,16 +478,22 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
           with Failure _ -> AP_TERM l (strat ss lev r)
         else if is_abs tm then
           let v,bod = dest_abs tm in
-          let th = strat ss lev bod in
-          try ABS v th with Failure _ ->
-          let gv = genvar(type_of v) in
-          let gbod = vsubst[gv,v] bod in
-          let gth = ABS gv (strat ss lev gbod) in
-          let gtm = concl gth in
-          let l,r = dest_eq gtm in
-          let v' = variant (frees gtm) v in
-          let l' = alpha v' l and r' = alpha v' r in
-          EQ_MP (ALPHA gtm (mk_eq(l',r'))) gth
+          let via_genvar() =
+            let gv = genvar(type_of v) in
+            let gbod = vsubst[gv,v] bod in
+            let gth = ABS gv (strat ss lev gbod) in
+            let gtm = concl gth in
+            let l,r = dest_eq gtm in
+            let v' = variant (frees gtm) v in
+            let l' = alpha v' l and r' = alpha v' r in
+            EQ_MP (ALPHA gtm (mk_eq(l',r'))) gth in
+          let f = ([v],[],true) in
+          let th =
+            match (try Some(within f (strat ss lev) bod)
+                   with Simp_abandon f' when f' == f -> None) with
+              Some th -> (try ABS v th with Failure _ -> via_genvar())
+            | None -> via_genvar() in
+          commit th; th
         else failwith "GEN_SUB_CONV" in
   let rec ONCE_DEPTH_SQCONV
        (Simpset(net,prover,provers,rewmaker) as ss) lev tm =
@@ -462,12 +525,26 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
     with Failure _ -> th in
   let rec TOP_DEPTH_SQCONV (Simpset(net,prover,provers,rewmaker) as ss) lev tm =
     let pconvs = lookup tm net in
-    let th1 =
-      try IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev pconvs tm
-      with Failure _ -> GEN_SUB_CONV TOP_DEPTH_SQCONV ss lev pconvs tm in
-    try let th2 = TOP_DEPTH_SQCONV ss lev (rand(concl th1)) in
-            TRANS th1 th2
-    with Failure _ -> th1 in
+    try let th1 = IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev pconvs tm in
+        try TRANS th1 (TOP_DEPTH_SQCONV ss lev (rand(concl th1)))
+        with Failure _ -> th1
+    with Failure _ ->
+    let th1 = GEN_SUB_CONV TOP_DEPTH_SQCONV ss lev pconvs tm in
+    let tm1 = rand(concl th1) in
+    let pconvs1 = lookup tm1 net in
+    (* If no congruence rule is stored for a combination or for the result   *)
+    (* of simplifying its operator and operand, then the operator and        *)
+    (* operand of the result are already simplified, so only the rewrites at *)
+    (* its top are tried. Otherwise the result is simplified again from the  *)
+    (* top: a congruence rule may leave a subterm such as the range of a sum *)
+    (* alone or give it a new context.                                       *)
+    if is_comb tm && forall (fun (n,_) -> n < 4) (pconvs @ pconvs1) then
+      try let th2 = IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev pconvs1 tm1 in
+          try TRANS th1 (TRANS th2 (TOP_DEPTH_SQCONV ss lev (rand(concl th2))))
+          with Failure _ -> TRANS th1 th2
+      with Failure _ -> th1
+    else
+      try TRANS th1 (TOP_DEPTH_SQCONV ss lev tm1) with Failure _ -> th1 in
   let rec TOP_SWEEP_SQCONV (Simpset(net,prover,provers,rewmaker) as ss) lev tm =
     let pconvs = lookup tm net in
     try let th1 = IMP_REWRITES_CONV TOP_SWEEP_SQCONV ss lev pconvs tm in
@@ -475,8 +552,9 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
             TRANS th1 th2
         with Failure _ -> th1
     with Failure _ -> GEN_SUB_CONV TOP_SWEEP_SQCONV ss lev pconvs tm in
-  ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
-  TOP_DEPTH_SQCONV,TOP_SWEEP_SQCONV;;
+  let shield (strat:strategy) ss lev tm = within barrier (strat ss lev) tm in
+  shield ONCE_DEPTH_SQCONV,shield DEPTH_SQCONV,shield REDEPTH_SQCONV,
+  shield TOP_DEPTH_SQCONV,shield TOP_SWEEP_SQCONV;;
 
 (* ------------------------------------------------------------------------- *)
 (* Maintenence of basic rewrites and conv nets for rewriting.                *)
