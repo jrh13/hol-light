@@ -557,6 +557,29 @@ let HIGHER_REWRITE_CONV =
       CONV_RULE beta_fn (INST tmin (INST tmin0 (INST_TYPE tyin0 th)));;
 
 (* ------------------------------------------------------------------------- *)
+(* Lock for the definitional rules. They look in their own tables for an     *)
+(* identical earlier definition before calling the kernel; the lock keeps    *)
+(* that check and the table update together. The rules call each other, so   *)
+(* a domain that holds the lock may take it again; a flag per domain         *)
+(* records that it does. The lock is always taken before the kernel's lock.  *)
+(* Like the rest of HOL Light, it assumes one thread per domain.             *)
+(* ------------------------------------------------------------------------- *)
+
+module Definitions_lock : sig val with_lock : (unit -> 'a) -> 'a end = struct
+  let lock = Hol_domains.new_lock ()
+  let holding = Hol_domains.local (fun () -> ref false)
+  let with_lock f =
+    let h = holding () in
+    if !h then f () else
+    Hol_domains.with_lock lock (fun () ->
+      h := true;
+      let r = try f () with e -> (h := false; raise e) in
+      h := false; r)
+end;;
+
+let with_definitions_lock f = Definitions_lock.with_lock f;;
+
+(* ------------------------------------------------------------------------- *)
 (* Derived principle of definition justifying |- c x1 .. xn = t[x1,..,xn]    *)
 (* ------------------------------------------------------------------------- *)
 

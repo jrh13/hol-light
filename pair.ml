@@ -181,6 +181,12 @@ let new_definition =
         let th4 = GEN_ALL (GENL avs th3) in
         the_definitions := th4::(!the_definitions); th4;;
 
+(* One definition at a time (see with_definitions_lock in drule.ml).  *)
+
+let new_definition =
+  let unlocked = new_definition in
+  fun x0 -> with_definitions_lock (fun () -> unlocked x0);;
+
 (* ------------------------------------------------------------------------- *)
 (* A few more useful definitions.                                            *)
 (* ------------------------------------------------------------------------- *)

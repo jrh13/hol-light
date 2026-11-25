@@ -234,16 +234,18 @@ let clause_max_var cl = 1 + List.fold_left Fol_term.lit_max_var (-1) cl
 let mapentry ((cl_rest, (p, args)), th) =
   (args, cl_rest, clause_max_var ((p, args) :: cl_rest), th)
 
-(* for every predicate, store list of possible contrapositives *)
-let db : (int, contrapositive list) Hashtbl.t = Hashtbl.create 10017
+(* for every predicate, store list of possible contrapositives, per domain *)
+let db_cell = Hol_domains.local (fun () ->
+  (Hashtbl.create 10017 : (int, contrapositive list) Hashtbl.t))
 
 let axioms2db ths =
+  let db = db_cell () in
   Hashtbl.clear db;
   Mapping.fol_of_hol_clauses ths |>
   List.iter (fun (p, l) -> Hashtbl.add db (-p) (map mapentry l))
 
 let db_entries lit =
-  try Hashtbl.find db (fst lit) with Not_found -> []
+  try Hashtbl.find (db_cell ()) (fst lit) with Not_found -> []
 
 end
 
@@ -932,10 +934,14 @@ let string_of_matrix m = print_to_string (pp_print_matrix pp_print_null) m
 
 let pp_print_matrix_ni fmt x = pp_print_matrix pp_print_null fmt x
 
-let print_iclause c = pp_nl (pp_print_iclause pp_print_null) std_formatter c
-let print_iclause_i = pp_nl (pp_print_iclause pp_print_index) std_formatter
-let print_nclause c = pp_nl (pp_print_nclause pp_print_null) std_formatter c
-let print_matrix_i = pp_nl (pp_print_matrix pp_print_index) Format.std_formatter
+let print_iclause c =
+  pp_nl (pp_print_iclause pp_print_null) (Hol_domains.std_formatter ()) c
+let print_iclause_i c =
+  pp_nl (pp_print_iclause pp_print_index) (Hol_domains.std_formatter ()) c
+let print_nclause c =
+  pp_nl (pp_print_nclause pp_print_null) (Hol_domains.std_formatter ()) c
+let print_matrix_i m =
+  pp_nl (pp_print_matrix pp_print_index) (Hol_domains.std_formatter ()) m
 
 end
 
@@ -975,7 +981,7 @@ and pp_print_proofs (fl, fc) sub f =
 let string_of_inst_litmat sub litmat = Ncprint.string_of_litmat litmat
 
 let print_proofa (fl, fc) sub prf =
-  pp_nl (pp_print_proof (fl, fc) sub) std_formatter prf
+  pp_nl (pp_print_proof (fl, fc) sub) (Hol_domains.std_formatter ()) prf
 
 let print_proof_def sub prf =
   print_proofa (string_of_inst_litmat, Ncprint.string_of_nclause) sub prf
@@ -1065,7 +1071,9 @@ open Extclause
 (* position of the literal in matrix, literal arguments, groundness, variable offset *)
 type 'v contrapositive = 'v clause_ext * fol_term list * bool * int
 
-let db : (int, int contrapositive list) Hashtbl.t = Hashtbl.create 10000
+(* per domain, as in Database *)
+let db_cell = Hol_domains.local (fun () ->
+  (Hashtbl.create 10000 : (int, int contrapositive list) Hashtbl.t))
 
 let insert_db db ((p, a), clext) =
   let matC = snd (matBC_of_clause_ext clext) in
@@ -1077,11 +1085,13 @@ let insert_db db ((p, a), clext) =
   with Not_found -> Hashtbl.add db p ([v])
 
 let matrix2db m =
+  let db = db_cell () in
   let predb = assert_matrix m in
   Hashtbl.clear db;
   List.iter (insert_db db) (List.rev predb)
 
-let db_entries lit = try Hashtbl.find db (fst lit) with Not_found -> []
+let db_entries lit =
+  try Hashtbl.find (db_cell ()) (fst lit) with Not_found -> []
 
 end
 

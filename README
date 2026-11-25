@@ -295,6 +295,53 @@ this flag on only if having this additional trusted base is considered okay.
 
         *       *       *       *       *       *       *       *
 
+                  RUNNING PROOFS ON SEVERAL DOMAINS
+
+With OCaml 5, independent proofs can run in parallel on several domains of
+one HOL Light process:
+
+    let d = Domain.spawn (fun () -> prove(`p`, MESON_TAC[])) in
+    let th = prove(`q`, ARITH_TAC) in
+    let th' = Domain.join d in ...
+
+The kernel protects its own tables, so running proofs in parallel cannot
+make it unsound. For the results to be those of a single domain:
+
+  - The proof tools of the core system, such as MESON_TAC, METIS_TAC,
+    LEANCOP_TAC, NANOCOP_TAC, rewriting, simplification, arithmetic and
+    Compute.EVAL_CONV, may run on any domain, and so may parsing and
+    printing. Printing uses the Format settings, such as the margin, of
+    the domain that prints.
+
+  - Definitions (new_definition, define, define_type, new_type_definition
+    and the like) may be made on any domain; they are made one at a time.
+    Parsing and some rewrites depend on which constants and types exist,
+    so a proof that uses a new definition, or a quotation that mentions
+    its name, must start after the definition is made.
+
+  - While proofs run on other domains, the parser, the interface, the
+    overloads and the rewrites and conversions that REWRITE_TAC, SIMP_TAC
+    and Compute.EVAL_CONV use by default must stay fixed: do not call
+    parse_as_infix, overload_interface, extend_basic_rewrites,
+    Compute.add_funs and the like then.
+
+  - The goal stack (g, e, b, p, ...) belongs to one domain.
+
+  - Run one thread per domain: the state kept per domain is shared by all
+    threads of that domain.
+
+  - Code outside the core system, for example in Library or Multivariate,
+    may keep global state of its own that needs its own protection.
+
+Each domain allocates into its own minor heap, and a minor collection stops
+all domains. A larger minor heap, set with the s parameter of OCAMLRUNPARAM
+(in words), reduces that cost.
+
+With OCaml 4, HOL Light runs on one domain as before, and the kernel is not
+protected against several systhreads.
+
+        *       *       *       *       *       *       *       *
+
 [*] HOL Light uses the OCaml 'num' library for multiple-precision
 rationals. On many platforms, including Linux and native Windows, this
 will be loaded automatically by the HOL root file 'hol.ml'. However,

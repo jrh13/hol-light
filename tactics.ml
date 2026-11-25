@@ -838,11 +838,12 @@ let (pp_print_goalstack:Format.formatter->goalstack->unit),
       print_goalstate color_flag fmt p' gs in
   fn false, fn true;;
 
-let print_goal = pp_print_goal Format.std_formatter;;
-let print_goalstack = pp_print_goalstack Format.std_formatter;;
+let print_goal x = pp_print_goal (Hol_domains.std_formatter ()) x;;
+let print_goalstack x = pp_print_goalstack (Hol_domains.std_formatter ()) x;;
 let PRINT_GOAL_TAC: tactic = fun gl -> print_goal gl; ALL_TAC gl;;
 let PRINT_COLORED_GOAL_TAC: tactic =
-    fun gl -> pp_print_colored_goal Format.std_formatter gl; ALL_TAC gl;;
+    fun gl -> pp_print_colored_goal (Hol_domains.std_formatter ()) gl;
+              ALL_TAC gl;;
 let REMARK_TAC (s:string): tactic = fun gl -> remark s; ALL_TAC gl;;
 
 (* ------------------------------------------------------------------------- *)

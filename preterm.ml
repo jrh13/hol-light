@@ -26,6 +26,11 @@ let type_invention_warning = ref true;;
 
 let type_invention_error = ref false;;
 
+(* Set by METIS on its own domain while it reconstructs a proof, so that it  *)
+(* does not warn there; type_invention_warning stays as it is for others.    *)
+
+let type_invention_quiet = Hol_domains.local (fun () -> ref false);;
+
 (* ------------------------------------------------------------------------- *)
 (* Implicit types or type schemes for non-constants.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -155,8 +160,8 @@ let rec preterm_of_term tm =
 (* ------------------------------------------------------------------------- *)
 
 let type_of_pretype,term_of_preterm,retypecheck =
-  let tyv_num = ref 0 in
-  let new_type_var() = let n = !tyv_num in (tyv_num := n + 1; Stv(n)) in
+  let tyv_num = Hol_domains.counter () in
+  let new_type_var() = Stv(tyv_num 1) in
 
   let pmk_cv(s,pty) =
     if can get_const_type s then Constp(s,pty)
@@ -439,7 +444,7 @@ let type_of_pretype,term_of_preterm,retypecheck =
   (* Maps preterms to terms.                                                 *)
   (* ----------------------------------------------------------------------- *)
 
-  let term_of_preterm =
+  let term_of_preterm ptm =
     let stvs_translated_terms:string list ref = ref [] in
     let rec term_of_preterm (ptm:preterm): term =
       match ptm with
@@ -468,10 +473,10 @@ let type_of_pretype,term_of_preterm,retypecheck =
         then failwith
             ("typechecking error (cannot infer type of variables): " ^
              String.concat ", " !stvs_translated_terms)
-        else warn !type_invention_warning "inventing type variables" in
-    fun ptm -> stvs_translated_terms := [];
-               let tm = term_of_preterm ptm in
-               report_type_invention (); tm in
+        else warn (!type_invention_warning && not !(type_invention_quiet ()))
+                  "inventing type variables" in
+    let tm = term_of_preterm ptm in
+    report_type_invention (); tm in
 
   (* ----------------------------------------------------------------------- *)
   (* Overall typechecker: initial typecheck plus overload resolution pass.   *)

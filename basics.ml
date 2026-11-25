@@ -15,10 +15,9 @@ needs "fusion.ml";;
 (* ------------------------------------------------------------------------- *)
 
 let genvar =
-  let gcounter = ref 0 in
-  fun ty -> let count = !gcounter in
-             (gcounter := count + 1;
-              mk_var("_"^(string_of_int count),ty));;
+  let gcounter = Hol_domains.counter () in
+  fun ty -> let count = gcounter 1 in
+            mk_var("_"^(string_of_int count),ty);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convenient functions for manipulating types.                              *)
