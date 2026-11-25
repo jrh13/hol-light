@@ -588,17 +588,15 @@ module Meson = struct
     (* This computes the same as itlist (union' eqt o fol_of_hol_clause), *)
     (* i.e. it keeps the last of each set of duplicates, in their original *)
     (* order, but uses hashing instead of quadratically many comparisons.  *)
-    let remove_duplicates (rules:meson_rule list) =
+    fun thms ->
       let tab = Hashtbl.create 97 in
-      let keep ((a,(b,c)) as r) acc =
+      let keep ((a,(b,_)) as r) acc =
         let key = Hashtbl.hash (a,b) in
         let bucket = try Hashtbl.find tab key with Not_found -> [] in
         if exists (eqt r) bucket then acc
         else (Hashtbl.replace tab key (r::bucket); r::acc) in
-      List.fold_right keep rules [] in
-    fun thms ->
       let rawrules =
-        remove_duplicates (List.concat (map fol_of_hol_clause thms)) in
+        itlist (fun th acc -> itlist keep (fol_of_hol_clause th) acc) thms [] in
       let prs = setify (map (fst o snd o fst) rawrules) in
       let groups = Hashtbl.create 17 in
       List.iter (fun (((_,(p,_)),_) as r) ->
