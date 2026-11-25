@@ -354,6 +354,41 @@ let _ =
   ignore(TAC_PROOF((asm[`&0 < x`; `y = &1`],`&0 <= x + y`),ASM_REAL_ARITH_TAC));;
 
 (* ------------------------------------------------------------------------- *)
+(* Test genvar_index and genvars: the variables avoid every variable named   *)
+(* like them in the terms, free or bound, whatever its type, never have the  *)
+(* names of genvar, and the results depend only on the arguments, whatever  *)
+(* was called before.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let v s ty = mk_var(s,ty) in
+  let tm1 = mk_abs(v "_v3" `:num`,mk_eq(v "_v1" `:num`,v "x" `:num`))
+  and tm2 = mk_eq(v "_v10" `:bool`,v "_v007" `:bool`)
+  and tm3 = mk_eq(v "_v12'" `:bool`,mk_eq(v "_v" `:bool`,v "_20" `:bool`)) in
+  let tys = [`:num`; `:bool`; `:num`] in
+  let call1() = genvar_index [tm1;tm2;tm3],genvars [tm1;tm2;tm3] tys
+  and call2() = genvar_index [tm1],genvars [tm3] tys in
+  let r1 = (11,[v "_v11" `:num`; v "_v12" `:bool`; v "_v13" `:num`])
+  and r2 = (4,[v "_v1" `:num`; v "_v2" `:bool`; v "_v3" `:num`]) in
+  assert (genvar_index [] = 1 && genvars [tm1] [] = []);
+  assert (genvar_index [`0`; v "_v0" `:num`] = 1 &&
+          genvars [`0`] [`:num`] = [v "_v1" `:num`]);
+  assert (call1() = r1);
+  assert (call2() = r2);
+  ignore(map genvar tys);
+  assert (call2() = r2 && call1() = r1 && call2() = r2);
+  let g1 = genvar `:num` in
+  let gvs = genvars [g1] [`:num`; `:num`] in
+  let g2 = genvar `:num` in
+  assert (gvs = [v "_v1" `:num`; v "_v2" `:num`] &&
+          not(mem g1 gvs) && not(mem g2 gvs));
+  let asl = ["",ASSUME(mk_eq(v "_v5" `:num`,v "_v2" `:num`));
+             "",ADD_ASSUM (mk_eq(v "_v7" `:bool`,`T`)) (ASSUME `x = 1`)] in
+  assert (genvar_index_goal ([],tm3) = 1 &&
+          genvar_index_goal (asl,tm1) = 8 &&
+          genvar_index_goal (tl asl,tm2) = 11);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

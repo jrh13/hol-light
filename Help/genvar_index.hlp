@@ -1,0 +1,34 @@
+\DOC genvar_index
+
+\TYPE {genvar_index : term list -> int}
+
+\SYNOPSIS
+Returns a starting number for fresh variables named like those of genvars.
+
+\DESCRIBE
+The call {genvar_index tms} returns the least number {n >= 1} such that no
+variable named {_vm} for any number {m >= n} occurs, free or bound, in any of
+the terms {tms} (only names that are {_v} followed by the decimal
+representation of a number, as made by {string_of_int}, are considered). So
+the variables {mk_genvar(n,ty)}, {mk_genvar(n + 1,ty)}, ... are fresh for all
+the terms {tms}, whatever the types. It is 1 if there are no such variables.
+
+\FAILURE
+Fails only if a variable named by the largest representable integer occurs.
+
+\EXAMPLE
+{
+  # genvar_index [`\x _v3:num. _v1 + x`; `_v10 /\ _v007`];;
+  val it : int = 11
+}
+
+\USES
+Making fresh variables one at a time in a derived rule, as in
+{let n = genvar_index tms in ... mk_genvar(n,ty1) ... mk_genvar(n + 1,ty2)},
+without any global state. Where all the variables can be made at once,
+{genvars} is simpler.
+
+\SEEALSO
+genvar, genvar_index_goal, genvars, mk_genvar.
+
+\ENDDOC
