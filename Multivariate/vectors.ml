@@ -958,13 +958,18 @@ let NORM_ARITH =
      (`norm(x) = n ==> norm(x) >= &0 /\ n >= norm(x)`,
       DISCH_THEN(SUBST_ALL_TAC o SYM) THEN
       REWRITE_TAC[real_ge; NORM_POS_LE] THEN REAL_ARITH_TAC) in
-    let NORM_MP = MATCH_MP pth in
+    let NORM_MP = MATCH_MP pth
+    and real_ty = `:real` in
     fun translator (ges,gts) ->
     let ntms = itlist find_normedterms (map (lhand o concl) (ges @ gts)) [] in
     let lctab = vector_lincombs (map snd (filter (not o fst) ntms)) in
-    let asl = map (fun (t,_) ->
-       ASSUME(mk_eq(mk_icomb(mk_const("vector_norm",[]),t),
-                    genvar `:real`))) lctab in
+    (* The variables standing for the norms are later instantiated in a *)
+    (* theorem with the hypotheses of ges and gts, so they avoid those.  *)
+    let gvs = genvars
+      (itlist (fun th l -> concl th::hyp th @ l) (ges @ gts) [])
+      (map (K real_ty) lctab) in
+    let asl = map2 (fun (t,_) gv ->
+       ASSUME(mk_eq(mk_icomb(mk_const("vector_norm",[]),t),gv))) lctab gvs in
     let replace_conv = GEN_REWRITE_CONV TRY_CONV asl in
     let replace_rule = CONV_RULE (LAND_CONV (replacenegnorms replace_conv)) in
     let ges' =

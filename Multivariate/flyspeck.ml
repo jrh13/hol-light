@@ -271,17 +271,21 @@ let NORM_PAD2D3D = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Apply 3D->2D conversion to a goal. Take care to preserve variable names.  *)
+(* The intermediate bound variable is new to the term, free or bound.        *)
 (* ------------------------------------------------------------------------- *)
 
 let PAD2D3D_QUANTIFY_CONV =
-  let gv = genvar `:real^2` in
-  let pth = CONV_RULE (BINOP_CONV(BINDER_CONV(RAND_CONV(GEN_ALPHA_CONV gv))))
-                      QUANTIFY_PAD2D3D_THM in
-  let conv1 = GEN_REWRITE_CONV I [pth]
-  and dest_quant tm = try dest_forall tm with Failure _ -> dest_exists tm in
+  let conv1 gv =
+    GEN_REWRITE_CONV I
+     [CONV_RULE (BINOP_CONV(BINDER_CONV(RAND_CONV(GEN_ALPHA_CONV gv))))
+                QUANTIFY_PAD2D3D_THM]
+  and dest_quant tm = try dest_forall tm with Failure _ -> dest_exists tm
+  and ty2 = `:real^2` and ty3 = `:real^3` in
   fun tm ->
-    let th = conv1 tm in
-    let name = fst(dest_var(fst(dest_quant tm))) in
+    let v = fst(dest_quant tm) in
+    if type_of v <> ty3 then failwith "PAD2D3D_QUANTIFY_CONV" else
+    let th = conv1 (mk_genvar(genvar_index [tm],ty2)) tm in
+    let name = fst(dest_var v) in
     let ty = snd(dest_var(fst(dest_quant(rand(concl th))))) in
     CONV_RULE(RAND_CONV(GEN_ALPHA_CONV(mk_var(name,ty)))) th;;
 
@@ -644,7 +648,7 @@ let GEOM_HORIZONTAL_PLANE_RULE =
     ==> ((?a f. q a f) ==> (p <=> !a f. q a f ==> p' a f))` in
   fun tm ->
     let x,bod = dest_forall tm in
-    let th1 = EXISTS_GENVAR_RULE
+    let th1 = EXISTS_GENVARS_RULE [tm]
       (UNDISCH(ISPEC x ROTATION_HORIZONTAL_PLANE)) in
     let [a;f],tm1 = strip_exists(concl th1) in
     let [th_orth;th_det;th_im] = CONJUNCTS(ASSUME tm1) in

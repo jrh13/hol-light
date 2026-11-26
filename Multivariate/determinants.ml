@@ -4746,7 +4746,7 @@ let GEOM_ORIGIN_CONV,GEOM_TRANSLATE_CONV =
   let GEOM_ORIGIN_CONV avoid tm =
     let x,tm0 = dest_forall tm in
     let th0 = ISPEC x pth in
-    let x' = genvar(type_of x) in
+    let x' = mk_genvar(genvar_index [tm],type_of x) in
     let ith = ISPEC x' qth in
     let th1 = PARTIAL_EXPAND_QUANTS_CONV avoid (ASSUME(concl ith)) tm0 in
     let th2 = CONV_RULE(RAND_CONV(SUBS_CONV(CONJUNCTS th0))) th1 in
@@ -4787,10 +4787,12 @@ let GEOM_TRANSLATE_TAC avoid (asl,w) =
    REWRITE_TAC[]) (asl,w);;
 
 (* ------------------------------------------------------------------------- *)
-(* Rename existential variables in conclusion to fresh genvars.              *)
+(* Rename existential variables in conclusion to new variables (genvars of  *)
+(* the terms tms and the theorem, hypotheses included), so they occur in    *)
+(* neither. EXISTS_GENVAR_RULE, using genvar, is kept for compatibility.    *)
 (* ------------------------------------------------------------------------- *)
 
-let EXISTS_GENVAR_RULE =
+let EXISTS_GENVARS_RULE,EXISTS_GENVAR_RULE =
   let rec rule vs th =
     match vs with
       [] -> th
@@ -4798,7 +4800,10 @@ let EXISTS_GENVAR_RULE =
                 let th1 = rule ovs (ASSUME bod) in
                 let th2 = SIMPLE_CHOOSE x (SIMPLE_EXISTS x th1) in
                 PROVE_HYP th (CONV_RULE (GEN_ALPHA_CONV v) th2) in
-  fun th -> rule (map (genvar o type_of) (fst(strip_exists(concl th)))) th;;
+  (fun tms th ->
+     let tys = map type_of (fst(strip_exists(concl th))) in
+     rule (genvars (concl th::hyp th @ tms) tys) th),
+  (fun th -> rule (map (genvar o type_of) (fst(strip_exists(concl th)))) th);;
 
 (* ------------------------------------------------------------------------- *)
 (* Rotate so that WLOG some point is a +ve multiple of basis vector k.       *)
@@ -4861,7 +4866,7 @@ let GEOM_BASIS_MULTIPLE_RULE =
   fun k tm ->
     let x,bod = dest_forall tm in
     let th0 = ISPECL [x; mk_small_numeral k] ROTATION_RIGHTWARD_LINE in
-    let th1 = EXISTS_GENVAR_RULE
+    let th1 = EXISTS_GENVARS_RULE [tm]
      (MP th0 (EQT_ELIM(arithconv(lhand(concl th0))))) in
     let [a;f],tm1 = strip_exists(concl th1) in
     let th_orth,th2 = CONJ_PAIR(ASSUME tm1) in
@@ -5049,9 +5054,11 @@ let GEOM_NORMALIZE_RULE =
     let th2 = CONV_RULE (RAND_CONV
      (PARTIAL_EXPAND_QUANTS_CONV avoid vth)) th1 in
     let th3 = SCALING_THEOREMS x in
+    let n = genvar_index(concl th2::concl th3::hyp th2 @ hyp th3) in
     let th3' = (end_itlist CONJ (map
        (fun th -> let avs,_ = strip_forall(concl th) in
-                  let gvs = map (genvar o type_of) avs in
+                  let gvs = map2 (fun v i -> mk_genvar(i,type_of v))
+                                 avs (n--(n + length avs - 1)) in
                   GENL gvs (SPECL gvs th))
        (CONJUNCTS th3))) in
     let th4 = GEN_REWRITE_RULE (RAND_CONV o REDEPTH_CONV)
@@ -5196,7 +5203,7 @@ let GEOM_EQUAL_DIMENSION_RULE =
     REWRITE_TAC[QUANTIFY_SURJECTION_HIGHER_THM] THEN
     REWRITE_TAC[IMAGE_CLAUSES; MAP] THEN MESON_TAC[LINEAR_0]) in
   fun dth th ->
-    let eth = EXISTS_GENVAR_RULE (MATCH_MP bth dth) in
+    let eth = EXISTS_GENVARS_RULE (concl th::hyp th) (MATCH_MP bth dth) in
     let f,bod = dest_exists(concl eth) in
     let lsth,neth = CONJ_PAIR(ASSUME bod) in
     let cth,qth = CONJ_PAIR(MATCH_MP pth lsth) in
