@@ -400,6 +400,16 @@ let _ =
   assert (rhs(concl(SIMP_CONV ths `\x. x + 0`)) = `\x:num. x`);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that new_definition keeps the user's variables in the underlying     *)
+(* definition.                                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let _ = new_definition `genvar_test_def (f:num->num) (x,y) = f x + y` in
+  assert (concl(hd(definitions())) =
+          `genvar_test_def = \(f:num->num) (p:num#num). f (FST p) + SND p`);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

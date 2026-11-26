@@ -151,15 +151,29 @@ let the_definitions = ref
   EXISTS_UNIQUE_DEF; NOT_DEF; F_DEF; OR_DEF; EXISTS_DEF; FORALL_DEF; IMP_DEF;
   AND_DEF; T_DEF];;
 
+(* ------------------------------------------------------------------------- *)
+(* The arguments that are variables are used as they are, so that the        *)
+(* underlying definition has the user's variables, and each tuple is         *)
+(* replaced by a new variable p (or p0, p1, ...), named apart from all the   *)
+(* variables of the definition. If some variable occurs more than once in    *)
+(* the arguments, all the arguments are replaced, so that the first          *)
+(* occurrence is the one that counts, as in the old behaviour.               *)
+(* ------------------------------------------------------------------------- *)
+
 let new_definition =
-  let depair =
-    let rec depair gv arg =
-      try let l,r = dest_pair arg in
-          (depair (list_mk_icomb "FST" [gv]) l) @
-          (depair (list_mk_icomb "SND" [gv]) r)
-      with Failure _ -> [gv,arg] in
-    fun arg -> let gv = genvar(type_of arg) in
-               gv,depair gv arg in
+  let rec depair gv arg =
+    try let l,r = dest_pair arg in
+        (depair (list_mk_icomb "FST" [gv]) l) @
+        (depair (list_mk_icomb "SND" [gv]) r)
+    with Failure _ -> [gv,arg] in
+  let rec vars tm acc =
+    if is_var tm then tm::acc else
+    if is_comb tm then vars (rator tm) (vars (rand tm) acc) else acc in
+  let rec assign rns args pvs =
+    match rns,args with
+      true::orns,_::oargs -> hd pvs::assign orns oargs (tl pvs)
+    | false::orns,a::oargs -> a::assign orns oargs pvs
+    | _ -> [] in
   fun tm ->
     let avs,def = strip_forall tm in
     try if not(is_const(fst(strip_comb(lhs def)))) then fail() else
@@ -170,7 +184,14 @@ let new_definition =
     with Failure _ ->
         let l,r = dest_eq def in
         let fn,args = strip_comb l in
-        let gargs,reps = (I F_F unions) (unzip(map depair args)) in
+        let avs' = itlist vars args [] in
+        let rns = if length(setify avs') = length avs'
+                  then map (not o is_var) args else map (K true) args in
+        let pvs = make_args "p" (variables def)
+                    (map (type_of o snd) (filter fst (zip rns args))) in
+        let gargs = assign rns args pvs in
+        let reps = unions(map2 (fun g a -> if g = a then [] else depair g a)
+                               gargs args) in
         let l' = list_mk_comb(fn,gargs) and r' = subst reps r in
         let th1 = new_definition (mk_eq(l',r')) in
         let slist = zip args gargs in
