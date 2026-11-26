@@ -389,6 +389,17 @@ let _ =
           genvar_index_goal (tl asl,tm2) = 11);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that ABS_CONV and the simplifier rename a bound variable that is     *)
+(* free in a fact of the context apart from the context, even when the       *)
+(* context has a variable named like the first choice.                       *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let ths = [ASSUME `x = 1`; ASSUME `_v1 = 2`; ADD_CLAUSES] in
+  assert (rhs(concl(REWRITE_CONV ths `\x. x + 0`)) = `\x:num. x`);
+  assert (rhs(concl(SIMP_CONV ths `\x. x + 0`)) = `\x:num. x`);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
