@@ -741,7 +741,7 @@ let define_type_raw =
       let th3 = TRANS th2 (COND_CONV(rand(concl th2))) in
       TRANS th3 (TREE_CONV(rand(concl th3))) in
     let mk_tree fs =
-      let c = genvar num_ty in
+      let c = mk_genvar(genvar_index fs,num_ty) in
       let rec tree k fs =
         let n = length fs in
         if n = 1 then mk_abs(c,hd fs) else
@@ -753,7 +753,11 @@ let define_type_raw =
     fun tybijpairs consindex conthms rath ->
       let isocons = map (create_recursion_iso_constructor consindex) conthms in
       let nums = map mk_small_numeral (0--(length isocons - 1)) in
-      let gv = genvar(mk_fun_ty num_ty (type_of(hd isocons))) in
+      (* A function variable for the constructor numbers, fresh for all the  *)
+      (* terms it is combined with.                                          *)
+      let gv = mk_genvar(genvar_index (concl rath::hyp rath @ isocons @
+                                       map (concl o fst) tybijpairs),
+                         mk_fun_ty num_ty (type_of(hd isocons))) in
       let gths =
         map2 (fun k f -> ASSUME(mk_eq(mk_comb(gv,k),f))) nums isocons in
       let eth = ISPEC gv CONSTR_REC in
@@ -926,11 +930,11 @@ let define_type_raw =
         let avs,bod = strip_forall tm in
         let l,r = dest_eq bod in
         let fn,args = strip_comb r in
-        let pargs = map
-          (fun a -> let g = genvar(type_of a) in
-                    if is_var a then g,g else
-                    let outl = assoc (rator a) outlalist in
-                    mk_comb(outl,g),g) args in
+        let pargs = map2
+          (fun a g -> if is_var a then g,g else
+                      let outl = assoc (rator a) outlalist in
+                      mk_comb(outl,g),g)
+          args (genvars [tm] (map type_of args)) in
         let args',args'' = unzip pargs in
         let inl = assoc (rator l) inlalist in
         let rty = hd(snd(dest_type(type_of inl))) in
@@ -1044,7 +1048,7 @@ let prove_constructors_injective,prove_constructors_distinct,
       let mk_inst (k,v) =
         let xs,_,f,ts = cls'.(k) in
         if nargs.(k) >= 0 then failwith "instantiate_recursion" else
-        let ys = map (genvar o type_of) ts in
+        let ys = genvars [v] (map type_of ts) in
         let theta = map (fun x -> assoc x (zip ts ys),x)
                         (intersect (frees v) xs) in
         nargs.(k) <- length ts; nvars.(k) <- length xs;
@@ -1080,7 +1084,7 @@ let prove_constructors_injective,prove_constructors_distinct,
     let f,args = strip_comb pat in
     let rt = end_itlist (curry mk_pair) args in
     let ty = mk_fun_ty (type_of pat) (type_of rt) in
-    let fn = genvar ty in
+    let fn = mk_genvar(genvar_index [pat],ty) in
     let dtm = mk_eq(mk_comb(fn,pat),rt) in
     let eth = prove_recursive_functions_exist ax (list_mk_forall(args,dtm)) in
     let args' = variants args args in
@@ -1193,7 +1197,8 @@ let prove_constructors_injective,prove_constructors_distinct,
     let NEGATE = GEN_ALL o CONV_RULE (REWR_CONV (TAUT `a ==> F <=> ~a`)) in
     fun ax pat ->
       let nums = map mk_small_numeral (0--(length pat - 1)) in
-      let fn = genvar (mk_type("fun",[type_of(hd pat); num_ty])) in
+      let fn = mk_genvar(genvar_index pat,
+                         mk_type("fun",[type_of(hd pat); num_ty])) in
       let ls = map (curry mk_comb fn) pat in
       let defs = map2 (fun l r -> list_mk_forall(frees (rand l),mk_eq(l,r)))
         ls nums in
@@ -1281,10 +1286,9 @@ let prove_constructors_injective,prove_constructors_distinct,
               else i,j
           with Failure _ -> failwith "constructors_distinct_convs" in
         REWR_CONV (row i).(j) tm in
-      map (fun p -> mk_eq(list_mk_comb(constructor_head p,
-                                       map (genvar o type_of)
-                                           (constructor_args p)),
-                          genvar ty),conv)
+      map (fun p -> let args = constructor_args p in
+                    let gvs = genvars [] (ty::map type_of args) in
+                    mk_eq(list_mk_comb(constructor_head p,tl gvs),hd gvs),conv)
           (Array.to_list pats) in
     itlist ((@) o mk_convs) groups [] in
   prove_constructors_injective,prove_constructors_distinct,
@@ -1510,15 +1514,17 @@ let define_type_raw =
       DISCH_TAC THEN DISCH_THEN SUBST1_TAC THEN
       MATCH_MP_TAC SELECT_AX THEN POP_ASSUM ACCEPT_TAC) in
     let USE_PTH = MATCH_MP pth in
-    let rec DE_EXISTENTIALIZE_RULE th =
+    (* The new variables are numbered from an index that is fresh for the    *)
+    (* theorem; each later theorem only adds the earlier ones to it.         *)
+    let rec DE_EXISTENTIALIZE_RULE n th =
       if not (is_exists(concl th)) then [],th else
       let th1 = USE_PTH th in
       let v1 = rand(rand(concl th1)) in
-      let gv = genvar(type_of v1) in
+      let gv = mk_genvar(n,type_of v1) in
       let th2 = CONV_RULE BETA_CONV (UNDISCH (INST [gv,v1] th1)) in
-      let vs,th3 = DE_EXISTENTIALIZE_RULE th2 in
+      let vs,th3 = DE_EXISTENTIALIZE_RULE (n + 1) th2 in
       gv::vs,th3 in
-    DE_EXISTENTIALIZE_RULE in
+    fun th -> DE_EXISTENTIALIZE_RULE (genvar_index(concl th::hyp th)) th in
 
   let grab_type = type_of o rand o lhand o snd o strip_forall in
 
@@ -1564,7 +1570,7 @@ let define_type_raw =
       and l1,r1 = dest_eq tm1 in
       let vc0,wargs0 = strip_comb r0 in
       let con0,vargs0 = strip_comb(rand l0) in
-      let gargs0 = map (genvar o type_of) wargs0 in
+      let gargs0 = genvars [tm0] (map type_of wargs0) in
       let nestf0 = map (fun a -> can (find (fun t -> is_comb t && rand t = a))
         wargs0) vargs0 in
       let targs0 = map2 (fun a f ->
@@ -1576,7 +1582,7 @@ let define_type_raw =
         list_mk_abs(gargs0,list_mk_comb(fst(strip_comb(rand l1)),xargs)),vc0 in
       let vc1,wargs1 = strip_comb r1 in
       let con1,vargs1 = strip_comb(rand l1) in
-      let gargs1 = map (genvar o type_of) wargs1 in
+      let gargs1 = genvars [tm1] (map type_of wargs1) in
       let targs1 = map2
         (fun a f -> if f then
                     find (fun t -> is_comb t && rand t = a) wargs1
@@ -1592,7 +1598,7 @@ let define_type_raw =
     (* below (hypotheses until scrubbed) do not have them free.             *)
     let insts1 =
       let fvs = map (inst tyins1) fvs1 in
-      insts1 @ map (fun v -> mk_select(genvar(type_of v),t_tm),v)
+      insts1 @ map (fun v -> mk_select(mk_var("v",type_of v),t_tm),v)
                    (subtract fvs (map snd insts1)) in
     let uth0 = BETA_RULE(INST insts0 tth0)
     and uth1 = BETA_RULE(INST insts1 tth1) in
