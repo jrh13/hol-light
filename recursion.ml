@@ -61,14 +61,19 @@ let prove_recursive_functions_exist =
     let eth = prove_raw_recursive_functions_exist ax atm in
     let evs = fst(strip_exists(concl eth)) in
     PROVE_HYP eth (itlist SIMPLE_CHOOSE evs (itlist SIMPLE_EXISTS evs rth)) in
-  let reshuffle fn args acc =
+  let reshuffle tm fn args acc =
     let args' = uncurry (C (@)) (partition is_var args) in
     if args = args' then acc else
-    let gvs = map (genvar o type_of) args in
+    let lty = itlist (mk_fun_ty o type_of) args'
+               (funpow (length args) (hd o tl o snd o dest_type)
+                       (type_of fn)) in
+    (* The new function variable is fresh for the clauses and for those of   *)
+    (* the earlier reshuffles, and the bound ones are distinct from it.      *)
+    let fn',gvs =
+      match genvars (tm::map concl acc) (lty::map type_of args) with
+        fn'::gvs -> fn',gvs
+      | [] -> failwith "reshuffle" in
     let gvs' = map (C assoc (zip args gvs)) args' in
-    let lty = itlist (mk_fun_ty o type_of) gvs'
-              (funpow (length gvs) (hd o tl o snd o dest_type) (type_of fn)) in
-    let fn' = genvar lty in
     let def = mk_eq(fn,list_mk_abs(gvs,list_mk_comb(fn',gvs'))) in
     (ASSUME def)::acc
   and scrub_def t th =
@@ -80,7 +85,7 @@ let prove_recursive_functions_exist =
     let lpats = map (strip_comb o lhand) spcls in
     let ufns = itlist (insert o fst) lpats [] in
     let uxargs = map (C assoc lpats) ufns in
-    let trths = itlist2 reshuffle ufns uxargs [] in
+    let trths = itlist2 (reshuffle tm) ufns uxargs [] in
     let tth = GEN_REWRITE_CONV REDEPTH_CONV (BETA_THM::trths) tm in
     let eth = prove_canon_recursive_functions_exist ax (rand(concl tth)) in
     let evs,ebod = strip_exists(concl eth) in
