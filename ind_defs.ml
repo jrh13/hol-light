@@ -173,7 +173,25 @@ let derive_nonschematic_inductive_relations,
     let cclausel = map list_mk_conj clausell in
     let cclauses = list_mk_conj cclausel
     and oclauses = list_mk_conj pclauses in
-    let eth = CONJ_ACI_RULE(mk_eq(oclauses,cclauses)) in
+    (* When the clauses are already grouped by relation, as for the types    *)
+    (* of define_type, only the bracketing changes, and the conjunctions are *)
+    (* regrouped directly instead of by AC normalization, whose cost depends *)
+    (* on how the clauses happen to be ordered by the term ordering.         *)
+    let eth =
+      let rec build ths t =
+        if is_conj t then
+          let l,r = dest_conj t in
+          let lth,ths' = build ths l in
+          let rth,ths'' = build ths' r in
+          CONJ lth rth,ths''
+        else hd ths,tl ths in
+      let oths = CONJUNCTS(ASSUME oclauses)
+      and cths = CONJUNCTS(ASSUME cclauses) in
+      if flat clausell = pclauses && map concl oths = pclauses &&
+         map concl cths = pclauses
+      then DEDUCT_ANTISYM_RULE (fst(build cths oclauses))
+                               (fst(build oths cclauses))
+      else CONJ_ACI_RULE(mk_eq(oclauses,cclauses)) in
     let pth = TRANS (end_itlist MK_CONJ cthms) eth in
     TRANS pth (end_itlist MK_CONJ (map AND_IMPS_CONV cclausel))
   and derive_canon_inductive_relations clauses =
