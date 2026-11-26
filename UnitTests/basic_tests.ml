@@ -418,6 +418,16 @@ let _ =
   assert (lhs(concl(GEN_BETA_CONV tm)) = tm);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that the parser names its bound variables repeatably and that        *)
+(* alpha-equivalent set comprehensions are identical.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  assert (rand `P {x | x < 2}:bool` = `{x | x < 2}`);
+  assert (parse_term "{x | ?y. y IN {z | z < x}}" =
+          parse_term "{x | ?y. y IN {z | z < x}}");;
+
+(* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

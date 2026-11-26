@@ -303,11 +303,16 @@ let parse_preterm =
   let pmk_set_enum ptms =
     itlist (fun x t -> Combp(Combp(Varp("INSERT",dpty),x),t)) ptms
            (Varp("EMPTY",dpty)) in
-  let pgenvar =
-    let gcounter = ref 0 in
-    fun () -> let count = !gcounter in
-              (gcounter := count + 1;
-               Varp("GEN%PVAR%"^(string_of_int count),dpty)) in
+  (* ----------------------------------------------------------------------- *)
+  (* The bound variables made for set comprehensions and for the clauses of  *)
+  (* pattern matching are named GEN%PVAR%n, which no variable written by the *)
+  (* user can be. While parsing, n is computed from the position of the      *)
+  (* construct in the input (the number of tokens left), which makes it      *)
+  (* unique. Afterwards they are renamed GEN%PVAR%d, where d is the number   *)
+  (* of such variables bound around the binder (see canonicalize below), so  *)
+  (* the names depend only on the nesting of the constructs.                 *)
+  (* ----------------------------------------------------------------------- *)
+  let pgenvar n = Varp("GEN%PVAR%"^(string_of_int n),dpty) in
   let pmk_exists(v,ptm) = Combp(Varp("?",dpty),Absp(v,ptm)) in
   let pmk_list els =
     itlist (fun x y -> Combp(Combp(Varp("CONS",dpty),x),y))
@@ -322,18 +327,18 @@ let parse_preterm =
     let ns = map (fun i -> Char.code(String.get s i))
                  (0--(String.length s - 1)) in
     pmk_list(map pmk_char ns) in
-  let pmk_setcompr (fabs,bvs,babs) =
-    let v = pgenvar() in
+  let pmk_setcompr n (fabs,bvs,babs) =
+    let v = pgenvar (3 * n) in
     let bod = itlist (curry pmk_exists) bvs
                      (Combp(Combp(Combp(Varp("SETSPEC",dpty),v),babs),fabs)) in
     Combp(Varp("GSPEC",dpty),Absp(v,bod)) in
-  let pmk_setabs (fabs,babs) =
+  let pmk_setabs n (fabs,babs) =
     let evs =
       let fvs = pfrees fabs
       and bvs = pfrees babs in
       if length fvs <= 1 || bvs = [] then fvs
       else intersect fvs bvs in
-    pmk_setcompr (fabs,evs,babs) in
+    pmk_setcompr n (fabs,evs,babs) in
   let rec mk_precedence infxs prs inp =
     match infxs with
       (s,(p,at))::_ ->
@@ -346,8 +351,8 @@ let parse_preterm =
           inp
     | _ -> prs inp in
   let pmk_geq s t = Combp(Combp(Varp("GEQ",dpty),s),t) in
-  let pmk_pattern ((pat,guards),res) =
-    let x = pgenvar() and y = pgenvar() in
+  let pmk_pattern n ((pat,guards),res) =
+    let x = pgenvar (3 * n + 1) and y = pgenvar (3 * n + 2) in
     let vs = pfrees pat
     and bod =
      if guards = [] then
@@ -374,9 +379,9 @@ let parse_preterm =
   and lmk_let (((_,bnds),_),ptm) = pmk_let (bnds,ptm)
   and lmk_binder ((((s,h),t),_),p) = pmk_binder(s,h::t,p)
   and lmk_setenum(l,_) = pmk_set_enum l
-  and lmk_setabs(((l,_),r),_) = pmk_setabs(l,r)
-  and lmk_setcompr(((((f,_),vs),_),b),_) =
-     pmk_setcompr(f,pfrees vs,b)
+  and lmk_setabs n (((l,_),r),_) = pmk_setabs n (l,r)
+  and lmk_setcompr n (((((f,_),vs),_),b),_) =
+     pmk_setcompr n (f,pfrees vs,b)
   and lmk_decimal ((_,l0),ropt) =
     let l,r = if ropt = [] then l0,"1" else
               let r0 = hd ropt in
@@ -484,10 +489,10 @@ let parse_preterm =
        (elistof nocommapreterm (a (Ident ",")) "comma separated list of terms" ++  a (Resword "}")
               >> lmk_setenum
         ||| (preterm ++ a (Resword "|") ++ preterm ++ a (Resword "}")
-              >> lmk_setabs)
+              >> (fun x -> lmk_setabs (length i) x))
         ||| (preterm ++ a (Resword "|") ++ preterm ++
              a (Resword "|") ++ preterm ++ a (Resword "}")
-             >> lmk_setcompr))
+             >> (fun x -> lmk_setcompr (length i) x)))
       >> snd)
   ||| (a (Resword "{") >> (fun _ -> failwith "malformed set {}"))
   ||| (a (Resword "match") ++ preterm ++ a (Resword "with") ++ clauses
@@ -504,11 +509,40 @@ let parse_preterm =
   and pattern i =
     (preterm ++ possibly (a (Resword "when") ++ preterm >> snd)) i
   and clause i =
-   ((pattern ++ (a (Resword "->") ++ preterm >> snd)) >> pmk_pattern) i
+   ((pattern ++ (a (Resword "->") ++ preterm >> snd))
+    >> (fun x -> pmk_pattern (length i) x)) i
   and clauses i =
    ((possibly (a (Resword "|")) ++
      listof clause (a (Resword "|")) "pattern-match clause" >> snd)
     >> end_itlist (fun s t -> Combp(Combp(Varp("_SEQPATTERN",dpty),s),t))) i in
+  (* ----------------------------------------------------------------------- *)
+  (* Each variable GEN%PVAR%n is bound by one abstraction made by the parser *)
+  (* and occurs only in its scope. Renaming it GEN%PVAR%d, where d counts    *)
+  (* the binders of such variables around that abstraction, keeps distinct   *)
+  (* the names of those whose scopes are nested, so none can capture         *)
+  (* another, and gives the same names to alpha-equivalent constructs, e.g.  *)
+  (* set comprehensions, wherever they were parsed, so the result depends    *)
+  (* only on the quotation and such terms from different quotations are      *)
+  (* even identical. Terms combined later may share these bound names, but   *)
+  (* substitution and instantiation rename bound variables where needed.     *)
+  (* ----------------------------------------------------------------------- *)
+  let canonicalize =
+    let is_pvar s = String.length s > 9 && String.sub s 0 9 = "GEN%PVAR%" in
+    let rec canon env d ptm =
+      match ptm with
+        Varp(s,ty) -> if env = [] then ptm else
+                      (try Varp(assoc s env,ty) with Failure _ -> ptm)
+      | Constp(_,_) -> ptm
+      | Combp(l,r) -> let l' = canon env d l and r' = canon env d r in
+                      if l' == l && r' == r then ptm else Combp(l',r')
+      | Absp(Varp(s,ty),bod) when is_pvar s ->
+          let s' = "GEN%PVAR%"^string_of_int d in
+          Absp(Varp(s',ty),canon ((s,s')::env) (d + 1) bod)
+      | Absp(v,bod) -> let v' = canon env d v and bod' = canon env d bod in
+                       if v' == v && bod' == bod then ptm else Absp(v',bod')
+      | Typing(p,ty) -> let p' = canon env d p in
+                        if p' == p then ptm else Typing(p',ty) in
+    canon [] 0 in
   (fun inp ->
     match inp with
       [Ident s] when
@@ -516,7 +550,7 @@ let parse_preterm =
             String.sub s 0 1 = "\"" &&
             String.sub s (String.length s - 1) 1 = "\"")
       -> Varp(s,dpty),[]
-    | _ -> preterm inp);;
+    | _ -> let ptm,rst = preterm inp in canonicalize ptm,rst);;
 
 (* ------------------------------------------------------------------------- *)
 (* Type and term parsers.                                                    *)
