@@ -425,7 +425,7 @@ let module Fo_nets =
         match op with
         |Const(n,_) -> Cnet(n,nargs),args
         |Abs(v,b) ->
-          let b' = if mem v lcs then vsubst [genvar(type_of v),v] b else b in
+          let b' = if mem v lcs then vsubst [variant lcs v,v] b else b in
           Lnet nargs,b'::args
         |Var(n,_) when mem op lcs -> Lcnet(n,nargs),args
         |Var(_,_) -> Vnet nargs,args
@@ -1669,7 +1669,7 @@ let DEEP_IMP_REWR_MCONV:thm list->(atomic->annot_mconv) with_context =
     let ths = c b in
     try map (map_fst (ABS v)) ths
     with Failure _ ->
-      let gv = genvar(type_of v) in
+      (* As in ABS_CONV: rename v apart from b and the hypotheses at hand.   *)
       let f (gth,ho,vs) =
         let gtm = concl gth in
         let l,r = dest_eq gtm in
@@ -1677,8 +1677,19 @@ let DEEP_IMP_REWR_MCONV:thm list->(atomic->annot_mconv) with_context =
         let l' = alpha v' l and r' = alpha v' r in
         EQ_MP (ALPHA gtm (mk_eq(l',r'))) gth,ho,vs
       in
-      let b' = vsubst[gv,v] b in
-      map f (map (map_fst (ABS gv)) (c b'))
+      let hyps ths acc = itlist (fun (th,_,_) acc -> hyp th @ acc) ths acc in
+      let attempt avoid =
+        let gv = mk_genvar(genvar_index avoid,type_of v) in
+        gv,c (vsubst[gv,v] b)
+      in
+      let avoid = b::hyps ths [] in
+      let gv,gths = attempt avoid in
+      let aths =
+        try map (map_fst (ABS gv)) gths with Failure _ ->
+        let gv',gths' = attempt (hyps gths avoid) in
+        map (map_fst (ABS gv')) gths'
+      in
+      map f aths
   in
   let SUB_MCONV c = function
     |Comb(l,r) -> COMB_MCONV c l r
