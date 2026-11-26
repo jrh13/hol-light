@@ -262,7 +262,9 @@ let new_specification =
     with Failure _ -> false in
   let specify name th =
     let ntm = mk_code name in
-    let gv = genvar(type_of ntm) in
+    (* The tag argument of the underlying definition is a variable "tag",    *)
+    (* or a variant, distinct from all variables of the theorem.             *)
+    let gv = variant (variables(concl th)) (mk_var("tag",type_of ntm)) in
     let th0 = CONV_RULE(REWR_CONV SKOLEM_THM) (GEN gv th) in
     let th1 = CONV_RULE(RATOR_CONV (REWR_CONV EXISTS_THM) THENC
                         BETA_CONV) th0 in
