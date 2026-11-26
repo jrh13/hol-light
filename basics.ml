@@ -173,7 +173,7 @@ let subst =
     if theta = [] then (fun tm -> tm) else
     let ts,xs = unzip theta in
     fun tm ->
-      let gs = variants (variables tm) (map (genvar o type_of) xs) in
+      let gs = genvars [tm] (map type_of xs) in
       let tm' = ssubst (zip gs xs) tm in
       if tm' == tm then tm else vsubst (zip ts gs) tm';;
 
