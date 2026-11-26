@@ -331,6 +331,19 @@ let _ =
   ignore(MESON[] `(!x y. R x (y:num)) ==> R (x0:num) (y0:num)`);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that the variables abstracted over by NUM_SIMPLIFY_CONV avoid the    *)
+(* variables of the term named like them, free or bound, so that the term   *)
+(* is unchanged on the left of the result.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let v1 = mk_var("_v1",`:num`) and v2 = mk_var("_v2",`:num`) in
+  let tm = mk_conj
+    (subst [v1,`a:num`; v2,`b:num`] `PRE a + (b - a) + a DIV 3 = b`,
+     mk_forall(v1,mk_eq(v1,mk_binop `(+):num->num->num` v1 `0`))) in
+  assert (lhs(concl(NUM_SIMPLIFY_CONV tm)) = tm);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test that X_CHOOSE_TAC rejects a variable that is free in the hypotheses  *)
 (* of an assumption, whose use would make the justification fail.           *)
 (* ------------------------------------------------------------------------- *)

@@ -621,7 +621,9 @@ let ideal_cofactors parms = snd(RING_AND_IDEAL_CONV parms);;
 (* PRE, cutoff subtraction, EVEN and ODD. Try to do it in a way that makes   *)
 (* new quantifiers universal. At the moment we don't split "<=>" which would *)
 (* make this quantifier selection work there too; better to do NNF first if  *)
-(* you care. This also applies to EVEN and ODD.                              *)
+(* you care. This also applies to EVEN and ODD. The variables abstracted     *)
+(* over here do not occur in the term, free or bound, so nothing is captured *)
+(* or renamed, and they disappear again in the beta-reductions.              *)
 (* ------------------------------------------------------------------------- *)
 
 let NUM_SIMPLIFY_CONV =
@@ -662,7 +664,7 @@ let NUM_SIMPLIFY_CONV =
     else
        try let t = find_term (fun t -> is_pre t && free_in t tm) tm in
            let ty = type_of t in
-           let v = genvar ty in
+           let v = mk_genvar(genvar_index [tm],ty) in
            let p = mk_abs(v,subst [v,t] tm) in
            let th0 = if pos then PRE_ELIM_THM'' else PRE_ELIM_THM' in
            let th1 = INST [p,p_tm; rand t,n_tm] th0 in
@@ -672,7 +674,7 @@ let NUM_SIMPLIFY_CONV =
        with Failure _ -> try
            let t = find_term (fun t -> is_sub t && free_in t tm) tm in
            let ty = type_of t in
-           let v = genvar ty in
+           let v = mk_genvar(genvar_index [tm],ty) in
            let p = mk_abs(v,subst [v,t] tm) in
            let th0 = if pos then SUB_ELIM_THM'' else SUB_ELIM_THM' in
            let th1 = INST [p,p_tm; lhand t,a_tm; rand t,b_tm] th0 in
@@ -684,8 +686,9 @@ let NUM_SIMPLIFY_CONV =
            let x = lhand t and y = rand t in
            let dtm = mk_comb(mk_comb(div_tm,x),y)
            and mtm = mk_comb(mk_comb(mod_tm,x),y) in
-           let vd = genvar(type_of dtm)
-           and vm = genvar(type_of mtm) in
+           let n = genvar_index [tm] in
+           let vd = mk_genvar(n,type_of dtm)
+           and vm = mk_genvar(n + 1,type_of mtm) in
            let p = list_mk_abs([vd;vm],subst[vd,dtm; vm,mtm] tm) in
            let th0 = if pos then DIVMOD_ELIM_THM'' else DIVMOD_ELIM_THM' in
            let th1 = INST [p,q_tm; x,m_tm; y,n_tm] th0 in
@@ -724,10 +727,13 @@ let NUM_RING =
     REPEAT(FIRST_X_ASSUM
      (CHOOSE_THEN SUBST1_TAC o REWRITE_RULE[LE_EXISTS])) THEN
     ASM_MESON_TAC[NUM_INTEGRAL_LEMMA; ADD_SYM; MULT_SYM]) in
+  (* A boolean variable stands for each missing operation: not being a      *)
+  (* function, it never matches the operator of a term.                      *)
+  let nop_tm = mk_var("nop",bool_ty) in
   let rawring =
     RING(dest_numeral,mk_numeral,NUM_EQ_CONV,
-         genvar bool_ty,`(+):num->num->num`,genvar bool_ty,
-         genvar bool_ty,`(*):num->num->num`,genvar bool_ty,
+         nop_tm,`(+):num->num->num`,nop_tm,
+         nop_tm,`(*):num->num->num`,nop_tm,
          `(EXP):num->num->num`,
          NUM_INTEGRAL,TRUTH,NUM_NORMALIZE_CONV) in
   let initconv = NUM_SIMPLIFY_CONV THENC GEN_REWRITE_CONV DEPTH_CONV [ADD1]
