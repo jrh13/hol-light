@@ -506,6 +506,7 @@ end
 module Equality = struct
 
 (* Version of Meson.create_equality_axioms with added symmetry rule *)
+(* (the variables are chosen in the same way, see the comment there) *)
 let create_equality_axioms =
   let eq_thms = (CONJUNCTS o prove)
    (`(x:A = x) /\ (~(x = y) \/ y = x) /\
@@ -548,8 +549,8 @@ let create_equality_axioms =
                                         else fail())
                              (type_of tm) in
     let ctys = fst(chop_list len atys) in
-    let largs = map genvar ctys
-    and rargs = map genvar ctys in
+    let largs = make_args "x" [tm] ctys
+    and rargs = make_args "y" [tm] ctys in
     let th1 = rev_itlist (C (curry MK_COMB)) (map (ASSUME o mk_eq)
         (zip largs rargs)) (REFL tm) in
     let th2 = if pflag then eq_elim_RULE th1 else th1 in
@@ -701,14 +702,14 @@ open Utils
 
 let hol_negate tm = try dest_neg tm with Failure _ -> mk_neg tm;;
 
-let rec hashek_of_proof sub lem lit =
-  let liti = Mapping.hol_of_literal (Substarray.inst_lit sub lit) in
+let rec hashek_of_proof hv sub lem lit =
+  let liti = Mapping.hol_of_literal hv (Substarray.inst_lit sub lit) in
   function
     Lemma -> find (fun x -> concl x = liti) lem
   | Reduction -> ASSUME liti
   | Extension (contra, prfs) ->
       let _, ths = List.fold_map (fun lem (lit, prf) ->
-        let p = hashek_of_proof sub lem lit prf in p :: lem, p) lem prfs in
+        let p = hashek_of_proof hv sub lem lit prf in p :: lem, p) lem prfs in
       let cth = Meson.make_hol_contrapos contra in
       let hth = if ths = [] then cth else MATCH_MP cth (end_itlist CONJ ths) in
       let ith = PART_MATCH I hth liti in
@@ -753,14 +754,14 @@ let LEANCOP_DEEPEN opt ths =
   let sub, prf = strategy opt start in
   let hashek = Mapping.fol_of_literal [] [] Hashek.hashek_tm in
   let hashek_neg = Fol_term.negate_lit hashek in
-  let th = Recon.hashek_of_proof sub [] hashek_neg prf in
+  let hv = Mapping.mk_hol_of_var ths' in
+  let th = Recon.hashek_of_proof hv sub [] hashek_neg prf in
   EQ_MP Hashek.hashek_eq th
 
 let PREPARE_LEAN_TAC ths =
   Prepare.PREPARE_COP_TAC ths THEN
   RULE_ASSUM_TAC(CONV_RULE(PRENEX_CONV THENC WEAK_CNF_CONV)) THEN
-  RULE_ASSUM_TAC(repeat
-   (fun th -> SPEC(genvar(type_of(fst(dest_forall(concl th))))) th)) THEN
+  Meson.SPEC_ASSUMS_TAC THEN
   REPEAT (FIRST_X_ASSUM (Meson.CONJUNCTS_THEN' ASSUME_TAC)) THEN
   RULE_ASSUM_TAC(CONV_RULE(ASSOC_CONV DISJ_ASSOC)) THEN
   REPEAT (FIRST_X_ASSUM SUBST_VAR_TAC)
@@ -1282,18 +1283,18 @@ let nth_conj i th =
   List.nth (CONJUNCTS th) i
 
 
-let inst_var sub ty v =
+let inst_var hv sub ty v =
   let ftm = Substarray.inst_tm sub (Fvar v) in
-  try Mapping.hol_of_term ty ftm
+  try Mapping.hol_of_term hv ty ftm
   with Failure e -> failwith ("inst_var: " ^ e)
 
-let spec_vars sub vs th =
+let spec_vars hv sub vs th =
   if !copverb then
     Format.printf "spec_vars: |vars| = %d, th = %s\n%!"
     (List.length vs) (string_of_term (concl th));
   let tys = concl th |> strip_forall |> fst |> List.map type_of in
   assert (List.length tys = List.length vs);
-  List.fold_left2 (fun th ty v -> SPEC (inst_var sub ty v) th)
+  List.fold_left2 (fun th ty v -> SPEC (inst_var hv sub ty v) th)
     th tys vs
 
 
@@ -1301,6 +1302,7 @@ type recon_data =
 { problem : thm
 ; mapping : (int * int) list
 ; sub : Substarray.t
+; hv : int -> hol_type -> term
 }
 
 let rec clause_index_mapping cl = cl |>
@@ -1316,12 +1318,14 @@ let mk_recon_data (problem, mat, sub) =
   { problem = problem
   ; mapping = matrix_index_mapping mat
   ; sub = sub
+  ; hv = Mapping.mk_hol_of_var [problem]
   }
 
 let prefix_problem data =
   let rel i = List.assoc i data.mapping in
   List.fold_left (fun th ((i, v), j) ->
-    th |> nth_conj (rel i) |> spec_vars data.sub v |> nth_disj (rel j) |> fst)
+    th |> nth_conj (rel i) |> spec_vars data.hv data.sub v
+       |> nth_disj (rel j) |> fst)
     data.problem
 
 
@@ -1338,7 +1342,8 @@ and bot_of_clause_ext data ((i, v), (matL, matR), lmext) acc th =
   let i' = List.assoc i data.mapping in
   assert (i' = List.length matL);
   assert (List.length (CONJUNCTS th) = 1 + List.length (matL @ matR));
-  bot_of_litmat_ext data acc (nth_conj i' th |> spec_vars data.sub v) lmext
+  bot_of_litmat_ext data acc
+    (nth_conj i' th |> spec_vars data.hv data.sub v) lmext
 and bot_of_litmat_ext data acc thi = function
     Litext ((claL, claR), claC) ->
       let j = List.length claL in
@@ -1366,13 +1371,14 @@ and bot_of_proof data lem th = function
       assert (snd (List.nth mat i') = cla);
       if !copverb then
         Format.printf "Decomposition %d: %s\n%!" i' (string_of_term (concl th));
-      let thi = nth_conj i' th |> spec_vars data.sub v in
+      let thi = nth_conj i' th |> spec_vars data.hv data.sub v in
       let djs = disjuncts (concl thi) in
       assert (List.length djs = List.length prfs);
       List.map ASSUME djs |> eat_proofs data (lem, prfs)
       |> snd |> DISJ_CASES_LIST thi
   | Lit lit, prf ->
-      let liti = Mapping.hol_of_literal (Substarray.inst_lit data.sub lit) in
+      let liti =
+        Mapping.hol_of_literal data.hv (Substarray.inst_lit data.sub lit) in
       if !copverb then
         Format.printf "bot_of_proof: lit = %s\n%!" (string_of_term liti);
       assert (liti = concl th);
