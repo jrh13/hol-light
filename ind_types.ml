@@ -1666,9 +1666,35 @@ let define_type_raw =
     let l,r = dest_eq eqn in
     MP (INST [r,l] (DISCH eqn th)) (REFL r) in
 
+  (* ----------------------------------------------------------------------- *)
+  (* The internal names are derived from the names in the definition: the    *)
+  (* names s, s', s'', ... are tried until one is neither a constant nor one *)
+  (* of the names given (e.g. those of the constructors of the definition).  *)
+  (* ----------------------------------------------------------------------- *)
+
+  let fresh_const_name avoid s =
+    let rec fresh s =
+      if mem s avoid || can get_const_type s then fresh (s^"'") else s in
+    fresh s in
+
+  let constructor_names def =
+    itlist (fun (_,l) acc -> map fst l @ acc) def [] in
+
+  (* ----------------------------------------------------------------------- *)
+  (* The pseudo-constructors that the basic function defines for the         *)
+  (* constructors C1, ..., Cn of the (expanded) definition are named _C1,    *)
+  (* ..., _Cn, apart from the constants and the names of the constructors.   *)
+  (* ----------------------------------------------------------------------- *)
+
   let define_type_basecase def =
-    let add_id s = fst(dest_var(genvar bool_ty)) in
-    let def' = map (I F_F (map (add_id F_F I))) def in
+    let cnames = constructor_names def in
+    let rec rename avoid l =
+      match l with
+        [] -> []
+      | s::t -> let s' = fresh_const_name avoid ("_"^s) in
+                (s,s')::rename (s'::avoid) t in
+    let tbl = rename cnames cnames in
+    let def' = map (I F_F (map ((fun s -> assoc s tbl) F_F I))) def in
     define_type_raw def' in
 
   let SIMPLE_BETA_RULE = GSYM o PURE_REWRITE_RULE[BETA_THM; FUN_EQ_THM] in
@@ -1692,11 +1718,30 @@ let define_type_raw =
     s,map (modify_type alist) l in
   let modify_clause alist (l,lis) =
      l,map (modify_item alist) lis in
+  (* ----------------------------------------------------------------------- *)
+  (* The auxiliary types for a nested type, say (tree)list, and their        *)
+  (* constructors get names with a suffix made from the level of nesting     *)
+  (* (1 for the outermost) and the type arguments, as in list_1_tree and     *)
+  (* CONS_1_tree, with primes added to the suffix until the names of the     *)
+  (* types are not those of types or type variables in use and those of the  *)
+  (* constructors are not those of the definition (cnames). A constructor    *)
+  (* whose name is not alphanumeric, like "," of the pairs, gives the name   *)
+  (* of its type instead, as in prod_1_tree_num. Since the level comes       *)
+  (* first, auxiliary types with the same type constructor sort in the order *)
+  (* of their creation, as they did when they were numbered by genvar, so    *)
+  (* the order of the functions in the recursion theorem is unchanged.       *)
+  (* ----------------------------------------------------------------------- *)
   let recover_clause id tm =
     let con,args = strip_comb tm in
-    fst(dest_const con)^id,map type_of args in
-  let rec create_auxiliary_clauses avoid nty =
-    let id = fst(dest_var(genvar bool_ty)) in
+    let s = fst(dest_const con) in
+    let s' = if forall isalnum (explode s) then s
+             else fst(dest_type(type_of tm)) in
+    s'^id,map type_of args in
+  let rec suffix_of_type ty =
+    if is_vartype ty then dest_vartype ty else
+    let c,args = dest_type ty in
+    String.concat "_" (map suffix_of_type args @ [c]) in
+  let rec create_auxiliary_clauses level avoid cnames nty =
     let tycon,tyargs = dest_type nty in
     let k,ith,rth = try assoc tycon (!inductive_type_store) with Failure _ ->
       failwith ("Can't find definition for nested type: "^tycon) in
@@ -1717,11 +1762,23 @@ let define_type_raw =
     let cjs' = map (inst tyins o rand) (fst(chop_list k cjs)) in
     let mtys = itlist (insert o type_of) cjs' [] in
     let pcons = map (fun ty -> filter (fun t -> type_of t = ty) cjs') mtys in
+    let id =
+      let ok id =
+        forall (fun ty -> let s = fst(dest_type ty)^id in
+                          not(mem (mk_vartype s) avoid) &&
+                          not(can get_type_arity s) &&
+                          not(can get_const_type ("_mk_"^s)) &&
+                          not(can get_const_type ("_dest_"^s))) mtys &&
+        forall (fun t -> not(mem (fst(recover_clause id t)) cnames))
+               (itlist (@) pcons []) in
+      let rec fresh id = if ok id then id else fresh (id^"'") in
+      fresh ("_"^String.concat "_"
+                   (string_of_int level::map suffix_of_type tyargs)) in
     let cls' = zip mtys (map (map (recover_clause id)) pcons) in
     let tyal = map (fun ty -> mk_vartype(fst(dest_type ty)^id),ty) mtys in
     let cls'' = map (modify_type tyal F_F map (modify_item tyal)) cls' in
     k,tyal,cls'',INST_TYPE tyins ith,INST_TYPE tyins rth in
-  let rec define_type_nested def =
+  let rec define_type_nested level def =
     let n = length(itlist (@) (map (map fst o snd) def) []) in
     let newtys = map fst def in
     let utys = unions (itlist (union o map snd o snd) def []) in
@@ -1730,9 +1787,10 @@ let define_type_raw =
       let th1,th2 = define_type_basecase def in n,th1,th2 else
     let nty = hd (sort (fun t1 t2 -> occurs_in t2 t1) rectys) in
     let k,tyal,ncls,ith,rth =
-      create_auxiliary_clauses (itlist (union o tyvars) utys newtys) nty in
+      create_auxiliary_clauses level (itlist (union o tyvars) utys newtys)
+                               (constructor_names def) nty in
     let cls = map (modify_clause tyal) def @ ncls in
-    let _,ith1,rth1 = define_type_nested cls in
+    let _,ith1,rth1 = define_type_nested (level + 1) cls in
     let xnewtys = map (hd o snd o dest_type o type_of)
                       (fst(strip_exists(snd(strip_forall(concl rth1))))) in
     let xtyal = map (fun ty -> let s = dest_vartype ty in
@@ -1782,11 +1840,13 @@ let define_type_raw =
                              (snd(strip_comb(rand(lhs(snd(strip_forall t)))))))
                       (conjuncts(snd(strip_exists
                          (snd(strip_forall(rand(concl irth6))))))) in
+    (* The new constructors are named after the old ones, with a prime.      *)
     let mk_newcon tm =
       let vs,bod = strip_forall tm in
       let rdeb = rand(lhs bod) in
       let rdef = list_mk_abs(vs,rdeb) in
-      let newname = fst(dest_var(genvar bool_ty)) in
+      let newname = fresh_const_name (constructor_names def)
+                      (fst(dest_const(repeat rator rdeb))^"'") in
       let def = mk_eq(mk_var(newname,type_of rdef),rdef) in
       let dth = new_definition def in
       SIMPLE_BETA_RULE dth in
@@ -1815,7 +1875,7 @@ let define_type_raw =
   fun def ->
     let newtys = map fst def in
     let truecons = itlist (@) (map (map fst o snd) def) [] in
-    let (p,ith0,rth0) = define_type_nested def in
+    let (p,ith0,rth0) = define_type_nested 1 def in
     let avs,etm = strip_forall(concl rth0) in
     let allcls = conjuncts(snd(strip_exists etm)) in
     let relcls = fst(chop_list (length truecons) allcls) in
