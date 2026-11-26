@@ -344,6 +344,16 @@ let _ =
   assert (lhs(concl(NUM_SIMPLIFY_CONV tm)) = tm);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test REAL_ARITH's elimination of abs, max and min on a term with a        *)
+(* variable named like the one it abstracts over.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let tm = subst [mk_var("_v1",`:real`),`z:real`]
+                 `abs(z - x) >= &0 /\ max z x >= z /\ min z x <= x` in
+  assert (concl(REAL_ARITH tm) = tm);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test that X_CHOOSE_TAC rejects a variable that is free in the hypotheses  *)
 (* of an assumption, whose use would make the justification fail.           *)
 (* ------------------------------------------------------------------------- *)
