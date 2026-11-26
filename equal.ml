@@ -152,14 +152,30 @@ let (COMB2_CONV: conv->conv->conv) =
 
 let COMB_CONV = W COMB2_CONV;;
 
+(* ------------------------------------------------------------------------- *)
+(* If ABS fails on the result for the body of \v. bod, because v is free in  *)
+(* a hypothesis (a fact of the context about a free variable named like v),  *)
+(* the body is converted again with a variable _vn for v, numbered apart     *)
+(* from all variables of the body and of those hypotheses. If that variable  *)
+(* is free in a hypothesis of the new result too, the context had a variable *)
+(* of that name, and this is tried once more, apart from those hypotheses as *)
+(* well. The result is then renamed back to v, or to a variant of v.         *)
+(* ------------------------------------------------------------------------- *)
+
 let (ABS_CONV:conv->conv) =
+  let renamed_conv conv v bod avoid =
+    let gv = mk_genvar(genvar_index avoid,type_of v) in
+    gv,conv(vsubst[gv,v] bod) in
   fun conv tm ->
     let v,bod = dest_abs tm in
     let th = conv bod in
     try ABS v th with Failure _ ->
-    let gv = genvar(type_of v) in
-    let gbod = vsubst[gv,v] bod in
-    let gth = ABS gv (conv gbod) in
+    let gth =
+      let avoid = bod::hyp th in
+      let gv,gth = renamed_conv conv v bod avoid in
+      try ABS gv gth with Failure _ ->
+      let gv',gth' = renamed_conv conv v bod (avoid @ hyp gth) in
+      ABS gv' gth' in
     let gtm = concl gth in
     let l,r = dest_eq gtm in
     let v' = variant (frees gtm) v in
@@ -310,7 +326,7 @@ let SUBS_CONV ths tm =
       let lefts = map (lhand o concl) ths in
       if forall (is_eq o concl) ths &&
          not(exists (fun l -> free_in l tm) lefts) then REFL tm else
-      let gvs = map (genvar o type_of) lefts in
+      let gvs = genvars (tm::map concl ths) (map type_of lefts) in
       let pat = subst (zip gvs lefts) tm in
       let abs = list_mk_abs(gvs,pat) in
       let th = rev_itlist
