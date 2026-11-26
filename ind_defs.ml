@@ -510,7 +510,7 @@ let derive_strong_induction =
     let gimps = subst (zip gs rs) icon in
     let prs = map2 (fun n (r,p) ->
       let tys,ty = nsplit dest_fun_ty (1--n) (type_of r) in
-      let gvs = map genvar tys in
+      let gvs = genvars [r;p] tys in
       list_mk_abs(gvs,mk_conj(list_mk_comb(r,gvs),list_mk_comb(p,gvs))))
      ns prrs in
     let modify_rule rcl itm =
