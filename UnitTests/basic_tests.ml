@@ -354,6 +354,17 @@ let _ =
   assert (concl(REAL_ARITH tm) = tm);;
 
 (* ------------------------------------------------------------------------- *)
+(* Test ARITH_RULE and INTEGER_RULE on goals with variables named like the   *)
+(* ones they make, and existential variables named like free variables.      *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let tm1 = subst [mk_var("_v1",`:num`),`a:num`] `PRE a <= a /\ a - b <= a`
+  and tm2 = subst [mk_var("_v1",`:int`),`a:int`]
+                  `!x:int. a divides x ==> a divides (x * y)` in
+  assert (concl(ARITH_RULE tm1) = tm1 && concl(INTEGER_RULE tm2) = tm2);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test that X_CHOOSE_TAC rejects a variable that is free in the hypotheses  *)
 (* of an assumption, whose use would make the justification fail.           *)
 (* ------------------------------------------------------------------------- *)
