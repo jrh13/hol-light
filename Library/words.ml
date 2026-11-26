@@ -9080,9 +9080,9 @@ let BITBLAST_THEN =
       CONV_TAC(DEPTH_CONV
        (WORDIFY_ATOM_CONV ORELSEC IWORDIFY_ATOM_CONV)) THEN
       CONV_TAC(DEPTH_CONV WORD_MUL_EXPAND_CONV) THEN
-      REPEAT(W(fun (_,w) ->
+      REPEAT(W(fun (_,w as gl) ->
         let t = hd(sort free_in (find_terms carrying w)) in
-        let v = genvar(type_of t) in
+        let v = mk_genvar(genvar_index_goal gl,type_of t) in
          ABBREV_TAC(mk_eq(v,t)))) THEN
       CONV_TAC(ONCE_DEPTH_CONV
        (BITWISE_EXPAND_CONV THENC TOP_DEPTH_CONV BIT_WORD_CONV)) THEN

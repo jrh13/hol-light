@@ -392,14 +392,16 @@ let XSB_CARRYING = prove
    [BIT_WORD_NEG; BIT_WORD_ADD; BIT_WORD_SUB; BIT_WORD_SHLADD] THEN
   ASM_REWRITE_TAC[ADD_SUB; ARITH_RULE `~(i + 1 = 0) /\ 1 <= i + 1`]);;
 
+(* The abbreviating variables are new to the goal, hypotheses included.     *)
+
 let ABBREVIATE_SHR_TAC ((asl,w) as gl) =
    match sort free_in (find_terms is_shr w) with
-     t::_ -> ABBREV_TAC(mk_eq(genvar(type_of t),t)) gl
+     t::_ -> ABBREV_TAC(mk_eq(mk_genvar(genvar_index_goal gl,type_of t),t)) gl
    | _ -> failwith "ABBREVIATE_SHR_TAC: No word_ushr/word_ishr subterms";;
 
 let ABBREVIATE_CARRYING_TAC ((asl,w) as gl) =
    match sort free_in (find_terms carrying w) with
-     t::_ -> ABBREV_TAC(mk_eq(genvar(type_of t),t)) gl
+     t::_ -> ABBREV_TAC(mk_eq(mk_genvar(genvar_index_goal gl,type_of t),t)) gl
    | _ -> failwith "ABBREVIATE_CARRYING_TAC: No carrying constructs";;
 
 let LSB_CARRY_RULE =
@@ -475,10 +477,14 @@ let CHARACTERIZE_INT_MIN_TAC =
   and n_ty = `:N` in
   fun (asl,w) ->
     let tms = find_terms is_intmin w in
-    MAP_EVERY (fun tm ->
+    let n = max (genvar_index_goal (asl,w))
+                (genvar_index [concl DEFINE_WORD_INT_MIN]) in
+    let gvs = map2 (fun tm i -> mk_genvar(i,type_of tm))
+                   tms (n--(n + length tms - 1)) in
+    MAP_EVERY (fun (tm,gv) ->
       let ty = hd(snd(dest_type(type_of tm))) in
       MP_TAC(INST_TYPE[ty,n_ty] DEFINE_WORD_INT_MIN) THEN
-      SPEC_TAC(tm,genvar(type_of tm)) THEN GEN_TAC) tms (asl,w);;
+      SPEC_TAC(tm,gv) THEN GEN_TAC) (zip tms gvs) (asl,w);;
 
 let PURE_WORD_AUTO_TAC =
   CONV_TAC(DEPTH_CONV(WORD_RED_CONV ORELSEC NUM_RED_CONV)) THEN
