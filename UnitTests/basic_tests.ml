@@ -221,6 +221,26 @@ let UNIFY_REFL_TAC_TEST2 = prove(`?f. y + z = f y z`,
 let UNIFY_REFL_TAC_TEST3 = prove(`?f. y + 1 = f y 0`,
                 META_EXISTS_TAC THEN UNIFY_REFL_TAC);;
 
+(* ------------------------------------------------------------------------- *)
+(* Test ITAUT_TAC with metavariables of the goal from META_EXISTS_TAC inside *)
+(* THEN, that it returns no metavariables of its own, and that the results   *)
+(* of ITAUT_TAC and UNIFY_REFL_TAC do not depend on earlier calls of genvar. *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let tm1 = `?x:A. (P x ==> P x) /\ ((!y:B. Q y) ==> Q b)`
+  and tm2 = `?x:A. (P x ==> P x) /\ (Q x ==> Q x)`
+  and tm3 = `(!x:A. P x) ==> P a /\ P b`
+  and tm4 = `y + 1 = (f:num->num->num) y 0` in
+  let tac = META_EXISTS_TAC THEN CONJ_TAC THEN ITAUT_TAC in
+  assert (concl(prove(tm1,tac)) = tm1 && concl(prove(tm2,tac)) = tm2);
+  let (mvs,_),gls,_ = ITAUT_TAC([],tm3) in
+  assert (mvs = [] && gls = []);
+  let inst() = let (_,i),_,_ = UNIFY_REFL_TAC([],tm4) in i in
+  let i1 = inst() in
+  ignore(genvar `:num`);
+  assert (inst() = i1);;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Test instantiation of variables in the conditions of conditional rewrites *)
