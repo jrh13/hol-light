@@ -173,9 +173,9 @@ let (term_match:term list -> term -> term -> instantiation) =
         if compare y z = 0 then l else failwith "safe_insert"
     with Failure "find" -> n::l in
 
-  let mk_dummy =
-    let name = fst(dest_var(genvar aty)) in
-    fun ty -> mk_var(name,ty) in
+  (* The pairs of dummy variables record the matchings of types; the empty   *)
+  (* name, which no pattern variable has, keeps them apart from the others.  *)
+  let mk_dummy ty = mk_var("",ty) in
 
   let rec term_pmatch lconsts env vtm ctm ((insts,homs) as sofar) =
     match (vtm,ctm) with
@@ -258,8 +258,14 @@ let (term_match:term list -> term -> term -> instantiation) =
           if compare cargs pats = 0 then
             if compare chop vhop = 0
             then insts else safe_inserta (chop,vhop) insts else
-          let ginsts = map
-            (fun p -> (if is_var p then p else genvar(type_of p)),p) pats in
+          let ginsts =
+            if forall is_var pats then map (fun p -> p,p) pats else
+            let rec mk n ps =
+              match ps with
+                [] -> []
+              | p::ops -> if is_var p then (p,p)::mk n ops
+                          else (mk_genvar(n,type_of p),p)::mk (n + 1) ops in
+            mk (genvar_index (ctm::pats)) pats in
           let ctm' = subst ginsts ctm
           and gvs = map fst ginsts in
           let abstm = list_mk_abs(gvs,ctm') in
@@ -529,9 +535,13 @@ let HIGHER_REWRITE_CONV =
            with Failure _ -> RATOR_CONV lconv)
       with Failure _ -> RAND_CONV (free_beta v r) in
     free_beta in
+  (* The free variables of each theorem are renamed to variables _vn that    *)
+  (* are numbered apart from its other variables. As a term may still have   *)
+  (* variables with those names, the predicate and the pattern variables     *)
+  (* are then instantiated simultaneously, by a single INST.                 *)
   let GINST th =
     let fvs = subtract (frees(concl th)) (freesl (hyp th)) in
-    let gvs = map (genvar o type_of) fvs in
+    let gvs = genvars (concl th::hyp th) (map type_of fvs) in
     INST (zip gvs fvs) th in
   fun ths ->
     let thl = map (GINST o SPEC_ALL) ths in
@@ -551,10 +561,10 @@ let HIGHER_REWRITE_CONV =
       let pat = hd(look_fn stm) in
       let _,tmin,tyin = term_match [] pat stm in
       let pred,(th,beta_fn) = assoc pat ass_list in
-      let gv = genvar(type_of stm) in
+      let gv = mk_genvar(genvar_index [tm],type_of stm) in
       let abs = mk_abs(gv,subst[gv,stm] tm) in
       let _,tmin0,tyin0 = term_match [] pred abs in
-      CONV_RULE beta_fn (INST tmin (INST tmin0 (INST_TYPE tyin0 th)));;
+      CONV_RULE beta_fn (INST (tmin0 @ tmin) (INST_TYPE tyin0 th));;
 
 (* ------------------------------------------------------------------------- *)
 (* Derived principle of definition justifying |- c x1 .. xn = t[x1,..,xn]    *)
