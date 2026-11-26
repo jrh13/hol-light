@@ -314,6 +314,23 @@ let _ = MESON[] `ALL2 (=) (l:num list) m /\ (!f:num->bool. f 1) ==> ALL2 (=) l m
 let _ = MESON[] `(!g:num->num->bool. P g ==> Q (g 1)) /\ P (=) ==> Q ((=) 1)`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that the variables made by MESON avoid variables of the goal named   *)
+(* like them, free or bound, and that its equality axioms work when the      *)
+(* goal has variables named like theirs (x, y, x0, y0, ...).                 *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let v1 = mk_var("_v1",`:num`) and v2 = mk_var("_v2",`:num`) in
+  let tm1 = subst [v1,`a:num`; v2,`b:num`]
+             `(!x. P x a ==> Q x b) /\ P b a ==> Q b b`
+  and tm2 = mk_imp(mk_forall(v1,mk_imp(mk_comb(`P:num->bool`,v1),
+                                       mk_comb(`Q:num->bool`,v1))),
+                   `P (a:num) ==> Q a`) in
+  assert (concl(MESON[] tm1) = tm1 && concl(MESON[] tm2) = tm2);
+  ignore(MESON[] `x0 = y0 /\ x = y /\ P (f (x0:num) (x:bool)) ==> P (f y0 y)`);
+  ignore(MESON[] `(!x y. R x (y:num)) ==> R (x0:num) (y0:num)`);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test that X_CHOOSE_TAC rejects a variable that is free in the hypotheses  *)
 (* of an assumption, whose use would make the justification fail.           *)
 (* ------------------------------------------------------------------------- *)

@@ -94,29 +94,20 @@ module Meson = struct
 
   let reset_vars,fol_of_var,hol_of_var =
     let vstore = ref []
-    and gstore = ref []
     and vcounter = ref 0 in
     let inc_vcounter() =
       let n = !vcounter in
       let m = n + 1 in
       if m >= offinc then failwith "inc_vcounter: too many variables" else
       (vcounter := m; n) in
-    let reset_vars() = vstore := []; gstore := []; vcounter := 0 in
+    let reset_vars() = vstore := []; vcounter := 0 in
     let fol_of_var v =
       let currentvars = !vstore in
       try assoc v currentvars with Failure _ ->
       let n = inc_vcounter() in
       vstore := (v,n)::currentvars; n in
-    let hol_of_var v =
-      try rev_assoc v (!vstore)
-      with Failure _ -> rev_assoc v (!gstore) in
-    let hol_of_bumped_var v =
-      try hol_of_var v with Failure _ ->
-      let v' = v mod offinc in
-      let hv' = hol_of_var v' in
-      let gv = genvar(type_of hv') in
-      gstore := (gv,v)::(!gstore); gv in
-    reset_vars,fol_of_var,hol_of_bumped_var
+    let hol_of_var v = rev_assoc v (!vstore) in
+    reset_vars,fol_of_var,hol_of_var
 
   let reset_consts,fol_of_const,hol_of_const =
     let false_tm = `F` in
@@ -171,20 +162,21 @@ module Meson = struct
         Atom(fol_of_literal env consts tm)
 
   (* ----------------------------------------------------------------------- *)
-  (* Further translation functions for HOL formulas.                         *)
+  (* Further translation functions for HOL formulas, where the function hv   *)
+  (* maps shadow variables to HOL variables.                                 *)
   (* ----------------------------------------------------------------------- *)
 
-  let rec hol_of_term tm =
+  let rec hol_of_term hv tm =
     match tm with
-      Fvar v -> hol_of_var v
-    | Fnapp(f,args) -> list_mk_comb(hol_of_const f,map hol_of_term args)
+      Fvar v -> hv v
+    | Fnapp(f,args) -> list_mk_comb(hol_of_const f,map (hol_of_term hv) args)
 
-  let hol_of_atom (p,args) =
-    list_mk_comb(hol_of_const p,map hol_of_term args)
+  let hol_of_atom hv (p,args) =
+    list_mk_comb(hol_of_const p,map (hol_of_term hv) args)
 
-  let hol_of_literal (p,args) =
-    if p < 0 then mk_neg(hol_of_atom(-p,args))
-    else hol_of_atom (p,args)
+  let hol_of_literal hv (p,args) =
+    if p < 0 then mk_neg(hol_of_atom hv (-p,args))
+    else hol_of_atom hv (p,args)
 
   (* ----------------------------------------------------------------------- *)
   (* Versions of shadow syntax operations with variable bumping.             *)
@@ -552,7 +544,12 @@ module Meson = struct
        [TAUT `(~p ==> p) <=> p`; TAUT `(p ==> ~p) <=> ~p`]
 
   (* ----------------------------------------------------------------------- *)
-  (* Translate back the saved proof into HOL.                                *)
+  (* Translate back the saved proof into HOL. A variable that the proof      *)
+  (* leaves uninstantiated becomes a new variable, the same one at each      *)
+  (* occurrence, numbered upwards from the genvar_index of the clauses ths   *)
+  (* (conclusions and hypotheses). The proof is built from those clauses,    *)
+  (* so the new variables are distinct from all the variables it involves    *)
+  (* and from each other.                                                    *)
   (* ----------------------------------------------------------------------- *)
 
   let meson_to_hol =
@@ -560,23 +557,38 @@ module Meson = struct
       try dest_neg tm with Failure _ -> mk_neg tm in
     let merge_inst (t,x) current =
       (fol_subst current t,x)::current in
-    let rec meson_to_hol insts (Subgoal(g,gs,(n,th),offset,locin)) =
+    let rec meson_to_hol hv insts (Subgoal(g,gs,(n,th),offset,locin)) =
       let newins = itlist merge_inst locin insts in
       let g' = fol_inst newins g in
-      let hol_g = hol_of_literal g' in
-      let ths = map (meson_to_hol newins) gs in
+      let hol_g = hol_of_literal hv g' in
+      let ths = map (meson_to_hol hv newins) gs in
       let hth =
         if equals_thm th TRUTH then ASSUME hol_g else
         let cth = make_hol_contrapos(n,th) in
         if ths = [] then cth else MATCH_MP cth (end_itlist CONJ ths) in
       let ith = PART_MATCH I hth hol_g in
       finish_RULE (DISCH (hol_negate(concl ith)) ith) in
-    meson_to_hol
+    fun ths insts proof ->
+      let next = ref (-1) and newvars = ref [] in
+      let hv v =
+        try hol_of_var v with Failure _ ->
+        try rev_assoc v (!newvars) with Failure _ ->
+        let n = if !next >= 0 then !next else
+                itlist (fun th n -> max n (genvar_index(concl th::hyp th)))
+                       ths 1 in
+        let gv = mk_genvar(n,type_of(hol_of_var(v mod offinc))) in
+        next := n + 1; newvars := (gv,v)::(!newvars); gv in
+      meson_to_hol hv insts proof
 
   (* ----------------------------------------------------------------------- *)
   (* Create equality axioms for all the function and predicate symbols in    *)
   (* a HOL term. Not very efficient (but then neither is throwing them into  *)
   (* automated proof search!)                                                *)
+  (*                                                                         *)
+  (* The variables of an axiom are those of a clause, which are renamed      *)
+  (* apart whenever the clause is used, so like the variables x, y and z of  *)
+  (* the equivalence axioms they need only be distinct from each other and   *)
+  (* from those of the function or predicate itself.                         *)
   (* ----------------------------------------------------------------------- *)
 
   let create_equality_axioms =
@@ -621,8 +633,8 @@ module Meson = struct
                                           else fail())
                                (type_of tm) in
       let ctys = fst(chop_list len atys) in
-      let largs = map genvar ctys
-      and rargs = map genvar ctys in
+      let largs = make_args "x" [tm] ctys
+      and rargs = make_args "y" [tm] ctys in
       let th1 = rev_itlist (C (curry MK_COMB)) (map (ASSUME o mk_eq)
           (zip largs rargs)) (REFL tm) in
       let th2 = if pflag then eq_elim_RULE th1 else th1 in
@@ -644,7 +656,10 @@ module Meson = struct
                equivs@pcongs@fcongs
 
   (* ----------------------------------------------------------------------- *)
-  (* Brand's transformation.                                                 *)
+  (* Brand's transformation. The new variables come from gv, which numbers   *)
+  (* them upwards from the genvar_index of the input clauses (conclusions    *)
+  (* and hypotheses), so they are distinct from each other and from all the  *)
+  (* variables of the clauses that they are added to.                        *)
   (* ----------------------------------------------------------------------- *)
 
   let perform_brand_modification =
@@ -658,15 +673,15 @@ module Meson = struct
       let fn,args = strip_comb tm in
       itlist (subterms_refl lconsts) args (insert tm acc) in
     let CLAUSIFY = CONV_RULE(REWR_CONV(TAUT `a ==> b <=> ~a \/ b`)) in
-    let rec BRAND tms th =
+    let rec BRAND gv tms th =
       if tms = [] then th else
       let tm = hd tms in
-      let gv = genvar (type_of tm) in
-      let eq = mk_eq(gv,tm) in
+      let v = gv (type_of tm) in
+      let eq = mk_eq(v,tm) in
       let th' = CLAUSIFY (DISCH eq (SUBS [SYM (ASSUME eq)] th))
-      and tms' = map (subst [gv,tm]) (tl tms) in
-      BRAND  tms' th' in
-    let BRAND_CONGS th =
+      and tms' = map (subst [v,tm]) (tl tms) in
+      BRAND gv tms' th' in
+    let BRAND_CONGS gv th =
       let lconsts = freesl (hyp th) in
       let lits = disjuncts (concl th) in
       let atoms = map (fun t -> try dest_neg t with Failure _ -> t) lits in
@@ -677,45 +692,49 @@ module Meson = struct
       let uts = itlist
         (itlist (subterms_irrefl lconsts) o snd o strip_comb) eqs acc in
       let sts = sort (fun s t -> not(free_in s t)) uts in
-      BRAND sts th in
-    let BRANDE th =
+      BRAND gv sts th in
+    let BRANDE gv th =
       let tm = concl th in
       let l,r = dest_eq tm in
-      let gv = genvar(type_of l) in
-      let eq = mk_eq(r,gv) in
+      let eq = mk_eq(r,gv(type_of l)) in
       CLAUSIFY(DISCH eq (EQ_MP (AP_TERM (rator tm) (ASSUME eq)) th)) in
     let LDISJ_CASES th lth rth =
       DISJ_CASES th (DISJ1 lth (concl rth)) (DISJ2 (concl lth) rth) in
     let ASSOCIATE = CONV_RULE(REWR_CONV(GSYM DISJ_ASSOC)) in
-    let rec BRAND_TRANS th =
+    let rec BRAND_TRANS gv th =
       let tm = concl th in
       try let l,r = dest_disj tm in
           if is_eq l then
             let lth = ASSUME l in
-            let lth1 = BRANDE lth
-            and lth2 = BRANDE (SYM lth)
-            and rth = BRAND_TRANS (ASSUME r) in
+            let lth1 = BRANDE gv lth in
+            let lth2 = BRANDE gv (SYM lth) in
+            let rth = BRAND_TRANS gv (ASSUME r) in
             map (ASSOCIATE o LDISJ_CASES th lth1) rth @
             map (ASSOCIATE o LDISJ_CASES th lth2) rth
           else
-            let rth = BRAND_TRANS (ASSUME r) in
+            let rth = BRAND_TRANS gv (ASSUME r) in
             map (LDISJ_CASES th (ASSUME l)) rth
       with Failure _ ->
-          if is_eq tm then [BRANDE th; BRANDE (SYM th)]
+          if is_eq tm then
+            let th1 = BRANDE gv th in [th1; BRANDE gv (SYM th)]
           else [th] in
     let find_eqs =
       find_terms (fun t -> try fst(dest_const t) = "="
                            with Failure _ -> false) in
-    let REFLEXATE ths =
+    let REFLEXATE gv ths =
       let eqs = itlist (union o find_eqs o concl) ths [] in
       let tys = map (hd o snd o dest_type o snd o dest_const) eqs in
-      let gvs = map genvar tys in
+      let gvs = map gv tys in
       itlist (fun v acc -> (REFL v)::acc) gvs ths in
     fun ths ->
       if exists (can (find_term is_eq o concl)) ths then
-        let ths' = map BRAND_CONGS ths in
-        let ths'' = itlist (union' equals_thm o BRAND_TRANS) ths' [] in
-        REFLEXATE ths''
+        let n0 = itlist (fun th n -> max n (genvar_index(concl th::hyp th)))
+                        ths 1 in
+        let next = ref n0 in
+        let gv ty = let n = !next in next := n + 1; mk_genvar(n,ty) in
+        let ths' = map (BRAND_CONGS gv) ths in
+        let ths'' = itlist (union' equals_thm o BRAND_TRANS gv) ths' [] in
+        REFLEXATE gv ths''
       else ths
 
   (* ----------------------------------------------------------------------- *)
@@ -780,7 +799,7 @@ module Meson = struct
     let proof,(insts,_,_) =
       solve_goal rules (!meson_depth) min max inc (1,[]) in
     meson_dcutin := old_dcutin;
-    meson_to_hol insts proof
+    meson_to_hol ths' insts proof
 
   let CONJUNCTS_THEN' ttac cth =
     ttac(CONJUNCT1 cth) THEN ttac(CONJUNCT2 cth)
@@ -800,6 +819,21 @@ module Meson = struct
      (if n > 0 then FIRST_X_ASSUM DISJ_CASES_TAC THEN SPLIT_TAC (n - 1)
       else NO_TAC) ORELSE
      ALL_TAC) g
+
+  (* ----------------------------------------------------------------------- *)
+  (* Strip the outer universal quantifiers of all the assumptions, using new *)
+  (* variables numbered upwards from the genvar_index_goal of the goal, so   *)
+  (* they are distinct from each other and from all the variables of the     *)
+  (* goal, free or bound, hypotheses of the assumptions included.            *)
+  (* ----------------------------------------------------------------------- *)
+
+  let SPEC_ASSUMS_TAC gl =
+    let next = ref (-1) in
+    let SPEC_NEW th =
+      let ty = type_of(fst(dest_forall(concl th))) in
+      let n = if !next >= 0 then !next else genvar_index_goal gl in
+      next := n + 1; SPEC (mk_genvar(n,ty)) th in
+    RULE_ASSUM_TAC(repeat SPEC_NEW) gl
 
 end;;
 
@@ -825,8 +859,7 @@ let GEN_MESON_TAC min max step ths =
   ASM_FOL_TAC THEN
   Meson.SPLIT_TAC (!meson_split_limit) THEN
   RULE_ASSUM_TAC(CONV_RULE(PRENEX_CONV THENC WEAK_CNF_CONV)) THEN
-  RULE_ASSUM_TAC(repeat
-   (fun th -> SPEC(genvar(type_of(fst(dest_forall(concl th))))) th)) THEN
+  Meson.SPEC_ASSUMS_TAC THEN
   REPEAT (FIRST_X_ASSUM (Meson.CONJUNCTS_THEN' ASSUME_TAC)) THEN
   RULE_ASSUM_TAC(CONV_RULE(ASSOC_CONV DISJ_ASSOC)) THEN
   REPEAT (FIRST_X_ASSUM SUBST_VAR_TAC) THEN
