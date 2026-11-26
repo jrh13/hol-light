@@ -75,7 +75,7 @@ let enter =
     if is_const op then Cnet(fst(dest_const op),length args),args
     else if is_abs op then
       let bv,bod = dest_abs op in
-      let bod' = if mem bv lconsts then vsubst [genvar(type_of bv),bv] bod
+      let bod' = if mem bv lconsts then vsubst [variant lconsts bv,bv] bod
                  else bod in
       Lnet(length args),bod'::args
     else if mem op lconsts then Lcnet(fst(dest_var op),length args),args
