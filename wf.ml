@@ -431,7 +431,7 @@ let WF_INDUCT_TAC =
     with Failure _ -> eqconv tm in
   fun tm (asl,w as gl) ->
     let fvs = frees tm
-    and gv = genvar(type_of tm) in
+    and gv = mk_genvar(genvar_index [w; tm],type_of tm) in
     let pat = list_mk_forall(gv::fvs,mk_imp(mk_eq(gv,tm),w)) in
     let th0 = UNDISCH(PART_MATCH rand num_WF pat) in
     let th1 = MP (SPECL (tm::fvs) th0) (REFL tm) in
