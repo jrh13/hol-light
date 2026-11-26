@@ -746,7 +746,7 @@ let instantiate_casewise_recursion,
       let dty = end_itlist (fun ty1 ty2 -> mk_type("prod",[ty1;ty2])) domtys in
       let f' = variant (frees tm)
                        (mk_var(fst(dest_var f),mk_fun_ty dty ranty)) in
-      let gvs = map genvar domtys in
+      let gvs = genvars [tm; f'] domtys in
       let f'' = list_mk_abs(gvs,mk_comb(f',end_itlist (curry mk_pair) gvs)) in
       let def' = subst [f'',f] def in
       let th1 = EXISTS (tm,f'') (ASSUME def')
@@ -761,7 +761,8 @@ let instantiate_casewise_recursion,
       let lefts,rights = unzip(map dest_eq eqs) in
       let arglists = map (snd o strip_comb) lefts in
       let parms0 = freesl(unions arglists) in
-      let parms = if parms0 <> [] then parms0 else [genvar aty] in
+      let parms = if parms0 <> [] then parms0
+                  else [mk_genvar(genvar_index [def],aty)] in
       let parm = end_itlist (curry mk_pair) parms in
       let ss = map (fun a -> mk_gabs(parm,end_itlist (curry mk_pair) a))
                    arglists
@@ -830,7 +831,8 @@ let instantiate_casewise_recursion,
       let lefts,rights = unzip(map dest_eq eqs) in
       let arglists = map (snd o strip_comb) lefts in
       let parms0 = freesl(unions arglists) in
-      let parms = if parms0 <> [] then parms0 else [genvar aty] in
+      let parms = if parms0 <> [] then parms0
+                  else [mk_genvar(genvar_index (def::hyp th1),aty)] in
       let wfasm = find is_exists (hyp th1) in
       let ord,bod = dest_exists wfasm in
       let SIMP_ADMISS_TAC =
@@ -898,7 +900,8 @@ let instantiate_casewise_recursion,
       fun tac (asl,w) ->
         let ev,bod = dest_exists w in
         let ty = fst(dest_fun_ty(type_of ev)) in
-        (EXISTS_TAC(mk_abs(genvar ty,one_tm)) THEN tac) (asl,w) in
+        (EXISTS_TAC(mk_abs(mk_genvar(genvar_index [w],ty),one_tm)) THEN tac)
+        (asl,w) in
     let GUESS_MEASURE_THEN tac =
       (EXISTS_TAC `\n. n + 1` THEN tac) ORELSE
       (INDUCTIVE_MEASURE_THEN tac) ORELSE
