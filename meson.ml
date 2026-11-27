@@ -89,37 +89,101 @@ module Meson = struct
                   with Unchanged -> [],l
 
   (* ----------------------------------------------------------------------- *)
+  (* Monomorphic versions of list operations on integer keys and on FOL      *)
+  (* terms, avoiding OCaml's polymorphic comparison in the inner loops.      *)
+  (* ----------------------------------------------------------------------- *)
+
+  let rec assoc_int (a:int) (l:(int * 'b) list) : 'b =
+    match l with
+      (x,y)::t -> if x = a then y else assoc_int a t
+    | [] -> failwith "find"
+
+  let rec assocd_int (a:int) (l:(int * 'b) list) (d:'b) : 'b =
+    match l with
+      (x,y)::t -> if x = a then y else assocd_int a t d
+    | [] -> d
+
+  let rec rev_assoc_int (a:int) (l:('b * int) list) : 'b =
+    match l with
+      (x,y)::t -> if y = a then x else rev_assoc_int a t
+    | [] -> failwith "find"
+
+  let rec fol_term_eq (tm1:fol_term) (tm2:fol_term) =
+    tm1 == tm2 ||
+    match tm1,tm2 with
+      Fvar x,Fvar y -> x = y
+    | Fnapp(f,fargs),Fnapp(g,gargs) -> f = g && fol_terms_eq fargs gargs
+    | _ -> false
+
+  and fol_terms_eq (l1:fol_term list) (l2:fol_term list) =
+    l1 == l2 ||
+    match l1,l2 with
+      [],[] -> true
+    | h1::t1,h2::t2 -> fol_term_eq h1 h2 && fol_terms_eq t1 t2
+    | _ -> false
+
+  (* ----------------------------------------------------------------------- *)
+  (* Instantiations are lists of (term,variable) pairs, extended at the      *)
+  (* front, so they typically share long tails; this equality test (which   *)
+  (* is the same as "=" on them) exploits that.                             *)
+  (* ----------------------------------------------------------------------- *)
+
+  let rec insts_eq (l1:(fol_term * int) list) (l2:(fol_term * int) list) =
+    l1 == l2 ||
+    match l1,l2 with
+      [],[] -> true
+    | (t1,x1)::r1,(t2,x2)::r2 ->
+        x1 = x2 && fol_term_eq t1 t2 && insts_eq r1 r2
+    | _ -> false
+
+  (* ----------------------------------------------------------------------- *)
+  (* Find the instantiation of a variable, returning the sentinel no_inst    *)
+  (* (compared by physical equality) if there is none.                       *)
+  (* ----------------------------------------------------------------------- *)
+
+  let no_inst = Fvar(-1)
+
+  let rec lookup_inst (x:int) (insts:(fol_term * int) list) =
+    match insts with
+      (t,y)::rest -> if y = x then t else lookup_inst x rest
+    | [] -> no_inst
+
+  (* ----------------------------------------------------------------------- *)
   (* Translate a term (in NNF) into the shadow syntax.                       *)
   (* ----------------------------------------------------------------------- *)
 
   let reset_vars,fol_of_var,hol_of_var =
     let vstore = ref []
-    and vcounter = ref 0 in
+    and vcounter = ref 0
+    and vtable = (Hashtbl.create 17 : (term,int) Hashtbl.t) in
     let inc_vcounter() =
       let n = !vcounter in
       let m = n + 1 in
       if m >= offinc then failwith "inc_vcounter: too many variables" else
       (vcounter := m; n) in
-    let reset_vars() = vstore := []; vcounter := 0 in
+    let reset_vars() =
+      vstore := []; vcounter := 0; Hashtbl.reset vtable in
     let fol_of_var v =
-      let currentvars = !vstore in
-      try assoc v currentvars with Failure _ ->
+      try Hashtbl.find vtable v with Not_found ->
       let n = inc_vcounter() in
-      vstore := (v,n)::currentvars; n in
-    let hol_of_var v = rev_assoc v (!vstore) in
+      vstore := (v,n)::(!vstore); Hashtbl.replace vtable v n; n in
+    let hol_of_var v = rev_assoc_int v (!vstore) in
     reset_vars,fol_of_var,hol_of_var
 
   let reset_consts,fol_of_const,hol_of_const =
     let false_tm = `F` in
     let cstore = ref ([]:(term * int)list)
-    and ccounter = ref 2 in
-    let reset_consts() = cstore := [false_tm,1]; ccounter := 2 in
+    and ccounter = ref 2
+    and ctable = (Hashtbl.create 17 : (term,int) Hashtbl.t) in
+    let reset_consts() =
+      cstore := [false_tm,1]; ccounter := 2;
+      Hashtbl.reset ctable; Hashtbl.replace ctable false_tm 1 in
     let fol_of_const c =
-      let currentconsts = !cstore in
-      try assoc c currentconsts with Failure _ ->
+      try Hashtbl.find ctable c with Not_found ->
       let n = !ccounter in
-      ccounter := n + 1; cstore := (c,n)::currentconsts; n in
-    let hol_of_const c = rev_assoc c (!cstore) in
+      ccounter := n + 1; cstore := (c,n)::(!cstore);
+      Hashtbl.replace ctable c n; n in
+    let hol_of_const c = rev_assoc_int c (!cstore) in
     reset_consts,fol_of_const,hol_of_const
 
   let rec fol_of_term env consts tm =
@@ -189,7 +253,8 @@ module Meson = struct
 
   let rec fol_subst theta tm =
     match tm with
-      Fvar v -> rev_assocd v theta tm
+      Fvar v -> let t = lookup_inst v theta in
+                if t == no_inst then tm else t
     | Fnapp(f,args) ->
           let args' = qmap (fol_subst theta) args in
           if args' == args then tm else Fnapp(f,args')
@@ -202,9 +267,11 @@ module Meson = struct
     match tm with
       Fvar v -> if v < offinc then
                  let v' = v + offset in
-                 rev_assocd v' theta (Fvar(v'))
+                 let t = lookup_inst v' theta in
+                 if t == no_inst then Fvar(v') else t
                else
-                 rev_assocd v theta tm
+                 let t = lookup_inst v theta in
+                 if t == no_inst then tm else t
     | Fnapp(f,args) ->
           let args' = qmap (fol_subst_bump offset theta) args in
           if args' == args then tm else Fnapp(f,args')
@@ -222,8 +289,8 @@ module Meson = struct
   let rec istriv env x t =
     match t with
       Fvar y -> y = x ||
-                (try let t' = rev_assoc y env in istriv env x t'
-                 with Failure "find" -> false)
+                (let t' = lookup_inst y env in
+                 t' != no_inst && istriv env x t')
     | Fnapp(f,args) -> exists (istriv env x) args && failwith "cyclic"
 
   let rec fol_unify offset tm1 tm2 sofar =
@@ -232,19 +299,18 @@ module Meson = struct
           if f <> g then failwith "" else
           itlist2 (fol_unify offset) fargs gargs sofar
     | _,Fvar(x) ->
-         (let x' = x + offset in
-          try let tm2' = rev_assoc x' sofar in
-              fol_unify 0 tm1 tm2' sofar
-          with Failure "find" ->
-              if istriv sofar x' tm1 then sofar
-              else (tm1,x')::sofar)
+         let x' = x + offset in
+         let tm2' = lookup_inst x' sofar in
+         if tm2' != no_inst then fol_unify 0 tm1 tm2' sofar
+         else if istriv sofar x' tm1 then sofar
+         else (tm1,x')::sofar
     | Fvar(x),_ ->
-         (try let tm1' = rev_assoc x sofar in
-              fol_unify offset tm1' tm2 sofar
-          with Failure "find" ->
-              let tm2' = fol_subst_bump offset [] tm2 in
-              if istriv sofar x tm2' then sofar
-              else (tm2',x)::sofar)
+         let tm1' = lookup_inst x sofar in
+         if tm1' != no_inst then fol_unify offset tm1' tm2 sofar
+         else
+           let tm2' = fol_subst_bump offset [] tm2 in
+           if istriv sofar x tm2' then sofar
+           else (tm2',x)::sofar
 
   (* ----------------------------------------------------------------------- *)
   (* Test for equality under the pending instantiations.                     *)
@@ -256,17 +322,15 @@ module Meson = struct
       Fnapp(f,fargs),Fnapp(g,gargs) ->
           f = g && forall2 (fol_eq insts) fargs gargs
     | _,Fvar(x) ->
-         (try let tm2' = rev_assoc x insts in
-              fol_eq insts tm1 tm2'
-          with Failure "find" ->
-          try istriv insts x tm1 with Failure _ -> false)
+         let tm2' = lookup_inst x insts in
+         if tm2' != no_inst then fol_eq insts tm1 tm2'
+         else (try istriv insts x tm1 with Failure _ -> false)
     | Fvar(x),_ ->
-         (try let tm1' = rev_assoc x insts in
-              fol_eq insts tm1' tm2
-          with Failure "find" ->
-          try istriv insts x tm2 with Failure _ -> false)
+         let tm1' = lookup_inst x insts in
+         if tm1' != no_inst then fol_eq insts tm1' tm2
+         else (try istriv insts x tm2 with Failure _ -> false)
 
-  let fol_atom_eq insts (p1,args1) (p2,args2) =
+  let fol_atom_eq insts ((p1:int),args1) (p2,args2) =
     p1 = p2 && forall2 (fol_eq insts) args1 args2
 
   (* ----------------------------------------------------------------------- *)
@@ -277,7 +341,7 @@ module Meson = struct
     let memory = ref [] in
     fun (gg,(insts,offset,size) as input) ->
       if exists (fun (_,(insts',_,size')) ->
-                     insts = insts' && (size <= size' || !meson_depth))
+                     (size <= size' || !meson_depth) && insts_eq insts insts')
           (!memory)
       then failwith "cachecont"
       else memory := input::(!memory); f input
@@ -289,11 +353,10 @@ module Meson = struct
   let checkan insts (p,a) ancestors =
     let p' = -p in
     let t' = (p',a) in
-    try let ours = assoc p' ancestors in
-        if exists (fun u -> fol_atom_eq insts t' (snd(fst u))) ours
-        then failwith "checkan"
-        else ancestors
-    with Failure "find" -> ancestors
+    let ours = assocd_int p' ancestors [] in
+    if exists (fun u -> fol_atom_eq insts t' (snd(fst u))) ours
+    then failwith "checkan"
+    else ancestors
 
   (* ----------------------------------------------------------------------- *)
   (* Insert new goal's negation in ancestor clause, given refinement.        *)
@@ -316,9 +379,8 @@ module Meson = struct
 
   let rec fol_subst_partial insts tm =
     match tm with
-      Fvar(v) -> (try let t = rev_assoc v insts in
-                      fol_subst_partial insts t
-                  with Failure "find" -> tm)
+      Fvar(v) -> let t = lookup_inst v insts in
+                 if t == no_inst then tm else fol_subst_partial insts t
     | Fnapp(f,args) -> Fnapp(f,map (fol_subst_partial insts) args)
 
   (* ----------------------------------------------------------------------- *)
@@ -329,11 +391,43 @@ module Meson = struct
   let separate_insts offset oldinsts newinsts =
     let locins,globins =
       qpartition (fun (_,v) -> offset <= v) oldinsts newinsts in
-    if globins = oldinsts then
+    if insts_eq globins oldinsts then
       map (fun (t,x) -> fol_subst_partial newinsts t,x) locins,oldinsts
     else
       map (fun (t,x) -> fol_subst_partial newinsts t,x) locins,
       map (fun (t,x) -> fol_subst_partial newinsts t,x) globins
+
+  (* ----------------------------------------------------------------------- *)
+  (* Table of the input clauses, indexed by (signed) predicate code; each    *)
+  (* entry lists the contrapositives for that predicate in order of          *)
+  (* increasing number of hypotheses (see optimize_rules).                   *)
+  (* ----------------------------------------------------------------------- *)
+
+  type meson_rule = (fol_atom list * fol_atom) * (int * thm)
+
+  type rule_table = { rt_bound : int; rt_rules : meson_rule list array }
+
+  let make_rule_table (rules:(int * meson_rule list) list) : rule_table =
+    let bound = itlist (fun (p,_) m -> max (abs p) m) rules 0 in
+    let tab = Array.make (2 * bound + 1) [] in
+    (* Fill in reverse, so the first entry for a predicate wins, as in assoc *)
+    List.iter (fun (p,cls) -> tab.(p + bound) <- cls) (List.rev rules);
+    { rt_bound = bound; rt_rules = tab }
+
+  let rules_of_pred (table:rule_table) (p:int) : meson_rule list =
+    if p > table.rt_bound || p < - table.rt_bound then []
+    else table.rt_rules.(p + table.rt_bound)
+
+  (* The clauses with at most "size" hypotheses: a prefix of the sorted list *)
+
+  let rec rules_within (size:int) (l:meson_rule list) =
+    match l with
+      [] -> l
+    | (((h,_),_) as r)::t ->
+        if List.length h <= size then
+          let t' = rules_within size t in
+          if t' == t then l else r::t'
+        else []
 
   (* ----------------------------------------------------------------------- *)
   (* Perform basic MESON expansion.                                          *)
@@ -367,11 +461,10 @@ module Meson = struct
     let newancestors = insertan insts g ancestors in
     let newstate = (g,newancestors),tup in
     try if !meson_prefine && pr > 0 then failwith "meson_expand" else
-        let arules = assoc pr ancestors in
+        let arules = assoc_int pr ancestors in
         meson_expand_cont 0 arules newstate cont
     with Cut -> failwith "meson_expand" | Failure _ ->
-        try let crules =
-              filter (fun ((h,_),_) -> length h <= size) (assoc pr rules) in
+        try let crules = rules_within size (rules_of_pred rules pr) in
             meson_expand_cont offset crules newstate cont
         with Cut -> failwith "meson_expand"
            | Failure _ -> failwith "meson_expand"
@@ -389,7 +482,7 @@ module Meson = struct
               (cacheconts(fun (gs,(newinsts,newoffset,newsize)) ->
                  let locin,globin = separate_insts offset pinsts newinsts in
                  let g' = Subgoal(g,gs,apprule,offset,locin) in
-                 if globin = insts && gs = [] then
+                 if insts_eq globin insts && gs = [] then
                    try cont(g',(globin,newoffset,size))
                    with Failure _ -> raise Cut
                  else
@@ -484,11 +577,25 @@ module Meson = struct
       if forall (fun (p,_) -> p < 0) flits then
         ((map mk_negated flits,(1,[])),(-1,th))::basics
       else basics in
+    (* This computes the same as itlist (union' eqt o fol_of_hol_clause), *)
+    (* i.e. it keeps the last of each set of duplicates, in their original *)
+    (* order, but uses hashing instead of quadratically many comparisons.  *)
     fun thms ->
-      let rawrules = itlist (union' eqt o fol_of_hol_clause) thms [] in
+      let tab = Hashtbl.create 97 in
+      let keep ((a,(b,_)) as r) acc =
+        let key = Hashtbl.hash (a,b) in
+        let bucket = try Hashtbl.find tab key with Not_found -> [] in
+        if exists (eqt r) bucket then acc
+        else (Hashtbl.replace tab key (r::bucket); r::acc) in
+      let rawrules =
+        itlist (fun th acc -> itlist keep (fol_of_hol_clause th) acc) thms [] in
       let prs = setify (map (fst o snd o fst) rawrules) in
-      let prules =
-        map (fun t -> t,filter ((=) t o fst o snd o fst) rawrules) prs in
+      let groups = Hashtbl.create 17 in
+      List.iter (fun (((_,(p,_)),_) as r) ->
+          Hashtbl.replace groups p
+            (r::(try Hashtbl.find groups p with Not_found -> [])))
+        (List.rev rawrules);
+      let prules = map (fun t -> t,Hashtbl.find groups t) prs in
       let srules = sort (fun (p,_) (q,_) -> abs(p) <= abs(q)) prules in
       srules
 
@@ -795,7 +902,7 @@ module Meson = struct
     if !meson_depth then meson_dcutin := 100001 else ();
     let ths' = if !meson_brand then perform_brand_modification ths
                else ths @ create_equality_axioms (map concl ths) in
-    let rules = optimize_rules(fol_of_hol_clauses ths') in
+    let rules = make_rule_table(optimize_rules(fol_of_hol_clauses ths')) in
     let proof,(insts,_,_) =
       solve_goal rules (!meson_depth) min max inc (1,[]) in
     meson_dcutin := old_dcutin;
