@@ -741,7 +741,7 @@ let define_type_raw =
       let th3 = TRANS th2 (COND_CONV(rand(concl th2))) in
       TRANS th3 (TREE_CONV(rand(concl th3))) in
     let mk_tree fs =
-      let c = genvar num_ty in
+      let c = mk_genvar(genvar_index fs,num_ty) in
       let rec tree k fs =
         let n = length fs in
         if n = 1 then mk_abs(c,hd fs) else
@@ -753,7 +753,11 @@ let define_type_raw =
     fun tybijpairs consindex conthms rath ->
       let isocons = map (create_recursion_iso_constructor consindex) conthms in
       let nums = map mk_small_numeral (0--(length isocons - 1)) in
-      let gv = genvar(mk_fun_ty num_ty (type_of(hd isocons))) in
+      (* A function variable for the constructor numbers, fresh for all the  *)
+      (* terms it is combined with.                                          *)
+      let gv = mk_genvar(genvar_index (concl rath::hyp rath @ isocons @
+                                       map (concl o fst) tybijpairs),
+                         mk_fun_ty num_ty (type_of(hd isocons))) in
       let gths =
         map2 (fun k f -> ASSUME(mk_eq(mk_comb(gv,k),f))) nums isocons in
       let eth = ISPEC gv CONSTR_REC in
@@ -926,11 +930,11 @@ let define_type_raw =
         let avs,bod = strip_forall tm in
         let l,r = dest_eq bod in
         let fn,args = strip_comb r in
-        let pargs = map
-          (fun a -> let g = genvar(type_of a) in
-                    if is_var a then g,g else
-                    let outl = assoc (rator a) outlalist in
-                    mk_comb(outl,g),g) args in
+        let pargs = map2
+          (fun a g -> if is_var a then g,g else
+                      let outl = assoc (rator a) outlalist in
+                      mk_comb(outl,g),g)
+          args (genvars [tm] (map type_of args)) in
         let args',args'' = unzip pargs in
         let inl = assoc (rator l) inlalist in
         let rty = hd(snd(dest_type(type_of inl))) in
@@ -1044,7 +1048,7 @@ let prove_constructors_injective,prove_constructors_distinct,
       let mk_inst (k,v) =
         let xs,_,f,ts = cls'.(k) in
         if nargs.(k) >= 0 then failwith "instantiate_recursion" else
-        let ys = map (genvar o type_of) ts in
+        let ys = genvars [v] (map type_of ts) in
         let theta = map (fun x -> assoc x (zip ts ys),x)
                         (intersect (frees v) xs) in
         nargs.(k) <- length ts; nvars.(k) <- length xs;
@@ -1080,7 +1084,7 @@ let prove_constructors_injective,prove_constructors_distinct,
     let f,args = strip_comb pat in
     let rt = end_itlist (curry mk_pair) args in
     let ty = mk_fun_ty (type_of pat) (type_of rt) in
-    let fn = genvar ty in
+    let fn = mk_genvar(genvar_index [pat],ty) in
     let dtm = mk_eq(mk_comb(fn,pat),rt) in
     let eth = prove_recursive_functions_exist ax (list_mk_forall(args,dtm)) in
     let args' = variants args args in
@@ -1193,7 +1197,8 @@ let prove_constructors_injective,prove_constructors_distinct,
     let NEGATE = GEN_ALL o CONV_RULE (REWR_CONV (TAUT `a ==> F <=> ~a`)) in
     fun ax pat ->
       let nums = map mk_small_numeral (0--(length pat - 1)) in
-      let fn = genvar (mk_type("fun",[type_of(hd pat); num_ty])) in
+      let fn = mk_genvar(genvar_index pat,
+                         mk_type("fun",[type_of(hd pat); num_ty])) in
       let ls = map (curry mk_comb fn) pat in
       let defs = map2 (fun l r -> list_mk_forall(frees (rand l),mk_eq(l,r)))
         ls nums in
@@ -1281,10 +1286,9 @@ let prove_constructors_injective,prove_constructors_distinct,
               else i,j
           with Failure _ -> failwith "constructors_distinct_convs" in
         REWR_CONV (row i).(j) tm in
-      map (fun p -> mk_eq(list_mk_comb(constructor_head p,
-                                       map (genvar o type_of)
-                                           (constructor_args p)),
-                          genvar ty),conv)
+      map (fun p -> let args = constructor_args p in
+                    let gvs = genvars [] (ty::map type_of args) in
+                    mk_eq(list_mk_comb(constructor_head p,tl gvs),hd gvs),conv)
           (Array.to_list pats) in
     itlist ((@) o mk_convs) groups [] in
   prove_constructors_injective,prove_constructors_distinct,
@@ -1510,15 +1514,17 @@ let define_type_raw =
       DISCH_TAC THEN DISCH_THEN SUBST1_TAC THEN
       MATCH_MP_TAC SELECT_AX THEN POP_ASSUM ACCEPT_TAC) in
     let USE_PTH = MATCH_MP pth in
-    let rec DE_EXISTENTIALIZE_RULE th =
+    (* The new variables are numbered from an index that is fresh for the    *)
+    (* theorem; each later theorem only adds the earlier ones to it.         *)
+    let rec DE_EXISTENTIALIZE_RULE n th =
       if not (is_exists(concl th)) then [],th else
       let th1 = USE_PTH th in
       let v1 = rand(rand(concl th1)) in
-      let gv = genvar(type_of v1) in
+      let gv = mk_genvar(n,type_of v1) in
       let th2 = CONV_RULE BETA_CONV (UNDISCH (INST [gv,v1] th1)) in
-      let vs,th3 = DE_EXISTENTIALIZE_RULE th2 in
+      let vs,th3 = DE_EXISTENTIALIZE_RULE (n + 1) th2 in
       gv::vs,th3 in
-    DE_EXISTENTIALIZE_RULE in
+    fun th -> DE_EXISTENTIALIZE_RULE (genvar_index(concl th::hyp th)) th in
 
   let grab_type = type_of o rand o lhand o snd o strip_forall in
 
@@ -1564,7 +1570,7 @@ let define_type_raw =
       and l1,r1 = dest_eq tm1 in
       let vc0,wargs0 = strip_comb r0 in
       let con0,vargs0 = strip_comb(rand l0) in
-      let gargs0 = map (genvar o type_of) wargs0 in
+      let gargs0 = genvars [tm0] (map type_of wargs0) in
       let nestf0 = map (fun a -> can (find (fun t -> is_comb t && rand t = a))
         wargs0) vargs0 in
       let targs0 = map2 (fun a f ->
@@ -1576,7 +1582,7 @@ let define_type_raw =
         list_mk_abs(gargs0,list_mk_comb(fst(strip_comb(rand l1)),xargs)),vc0 in
       let vc1,wargs1 = strip_comb r1 in
       let con1,vargs1 = strip_comb(rand l1) in
-      let gargs1 = map (genvar o type_of) wargs1 in
+      let gargs1 = genvars [tm1] (map type_of wargs1) in
       let targs1 = map2
         (fun a f -> if f then
                     find (fun t -> is_comb t && rand t = a) wargs1
@@ -1592,7 +1598,7 @@ let define_type_raw =
     (* below (hypotheses until scrubbed) do not have them free.             *)
     let insts1 =
       let fvs = map (inst tyins1) fvs1 in
-      insts1 @ map (fun v -> mk_select(genvar(type_of v),t_tm),v)
+      insts1 @ map (fun v -> mk_select(mk_var("v",type_of v),t_tm),v)
                    (subtract fvs (map snd insts1)) in
     let uth0 = BETA_RULE(INST insts0 tth0)
     and uth1 = BETA_RULE(INST insts1 tth1) in
@@ -1660,9 +1666,35 @@ let define_type_raw =
     let l,r = dest_eq eqn in
     MP (INST [r,l] (DISCH eqn th)) (REFL r) in
 
+  (* ----------------------------------------------------------------------- *)
+  (* The internal names are derived from the names in the definition: the    *)
+  (* names s, s', s'', ... are tried until one is neither a constant nor one *)
+  (* of the names given (e.g. those of the constructors of the definition).  *)
+  (* ----------------------------------------------------------------------- *)
+
+  let fresh_const_name avoid s =
+    let rec fresh s =
+      if mem s avoid || can get_const_type s then fresh (s^"'") else s in
+    fresh s in
+
+  let constructor_names def =
+    itlist (fun (_,l) acc -> map fst l @ acc) def [] in
+
+  (* ----------------------------------------------------------------------- *)
+  (* The pseudo-constructors that the basic function defines for the         *)
+  (* constructors C1, ..., Cn of the (expanded) definition are named _C1,    *)
+  (* ..., _Cn, apart from the constants and the names of the constructors.   *)
+  (* ----------------------------------------------------------------------- *)
+
   let define_type_basecase def =
-    let add_id s = fst(dest_var(genvar bool_ty)) in
-    let def' = map (I F_F (map (add_id F_F I))) def in
+    let cnames = constructor_names def in
+    let rec rename avoid l =
+      match l with
+        [] -> []
+      | s::t -> let s' = fresh_const_name avoid ("_"^s) in
+                (s,s')::rename (s'::avoid) t in
+    let tbl = rename cnames cnames in
+    let def' = map (I F_F (map ((fun s -> assoc s tbl) F_F I))) def in
     define_type_raw def' in
 
   let SIMPLE_BETA_RULE = GSYM o PURE_REWRITE_RULE[BETA_THM; FUN_EQ_THM] in
@@ -1686,11 +1718,30 @@ let define_type_raw =
     s,map (modify_type alist) l in
   let modify_clause alist (l,lis) =
      l,map (modify_item alist) lis in
+  (* ----------------------------------------------------------------------- *)
+  (* The auxiliary types for a nested type, say (tree)list, and their        *)
+  (* constructors get names with a suffix made from the level of nesting     *)
+  (* (1 for the outermost) and the type arguments, as in list_1_tree and     *)
+  (* CONS_1_tree, with primes added to the suffix until the names of the     *)
+  (* types are not those of types or type variables in use and those of the  *)
+  (* constructors are not those of the definition (cnames). A constructor    *)
+  (* whose name is not alphanumeric, like "," of the pairs, gives the name   *)
+  (* of its type instead, as in prod_1_tree_num. Since the level comes       *)
+  (* first, auxiliary types with the same type constructor sort in the order *)
+  (* of their creation, as they did when they were numbered by genvar, so    *)
+  (* the order of the functions in the recursion theorem is unchanged.       *)
+  (* ----------------------------------------------------------------------- *)
   let recover_clause id tm =
     let con,args = strip_comb tm in
-    fst(dest_const con)^id,map type_of args in
-  let rec create_auxiliary_clauses avoid nty =
-    let id = fst(dest_var(genvar bool_ty)) in
+    let s = fst(dest_const con) in
+    let s' = if forall isalnum (explode s) then s
+             else fst(dest_type(type_of tm)) in
+    s'^id,map type_of args in
+  let rec suffix_of_type ty =
+    if is_vartype ty then dest_vartype ty else
+    let c,args = dest_type ty in
+    String.concat "_" (map suffix_of_type args @ [c]) in
+  let rec create_auxiliary_clauses level avoid cnames nty =
     let tycon,tyargs = dest_type nty in
     let k,ith,rth = try assoc tycon (!inductive_type_store) with Failure _ ->
       failwith ("Can't find definition for nested type: "^tycon) in
@@ -1711,11 +1762,23 @@ let define_type_raw =
     let cjs' = map (inst tyins o rand) (fst(chop_list k cjs)) in
     let mtys = itlist (insert o type_of) cjs' [] in
     let pcons = map (fun ty -> filter (fun t -> type_of t = ty) cjs') mtys in
+    let id =
+      let ok id =
+        forall (fun ty -> let s = fst(dest_type ty)^id in
+                          not(mem (mk_vartype s) avoid) &&
+                          not(can get_type_arity s) &&
+                          not(can get_const_type ("_mk_"^s)) &&
+                          not(can get_const_type ("_dest_"^s))) mtys &&
+        forall (fun t -> not(mem (fst(recover_clause id t)) cnames))
+               (itlist (@) pcons []) in
+      let rec fresh id = if ok id then id else fresh (id^"'") in
+      fresh ("_"^String.concat "_"
+                   (string_of_int level::map suffix_of_type tyargs)) in
     let cls' = zip mtys (map (map (recover_clause id)) pcons) in
     let tyal = map (fun ty -> mk_vartype(fst(dest_type ty)^id),ty) mtys in
     let cls'' = map (modify_type tyal F_F map (modify_item tyal)) cls' in
     k,tyal,cls'',INST_TYPE tyins ith,INST_TYPE tyins rth in
-  let rec define_type_nested def =
+  let rec define_type_nested level def =
     let n = length(itlist (@) (map (map fst o snd) def) []) in
     let newtys = map fst def in
     let utys = unions (itlist (union o map snd o snd) def []) in
@@ -1724,9 +1787,10 @@ let define_type_raw =
       let th1,th2 = define_type_basecase def in n,th1,th2 else
     let nty = hd (sort (fun t1 t2 -> occurs_in t2 t1) rectys) in
     let k,tyal,ncls,ith,rth =
-      create_auxiliary_clauses (itlist (union o tyvars) utys newtys) nty in
+      create_auxiliary_clauses level (itlist (union o tyvars) utys newtys)
+                               (constructor_names def) nty in
     let cls = map (modify_clause tyal) def @ ncls in
-    let _,ith1,rth1 = define_type_nested cls in
+    let _,ith1,rth1 = define_type_nested (level + 1) cls in
     let xnewtys = map (hd o snd o dest_type o type_of)
                       (fst(strip_exists(snd(strip_forall(concl rth1))))) in
     let xtyal = map (fun ty -> let s = dest_vartype ty in
@@ -1776,11 +1840,13 @@ let define_type_raw =
                              (snd(strip_comb(rand(lhs(snd(strip_forall t)))))))
                       (conjuncts(snd(strip_exists
                          (snd(strip_forall(rand(concl irth6))))))) in
+    (* The new constructors are named after the old ones, with a prime.      *)
     let mk_newcon tm =
       let vs,bod = strip_forall tm in
       let rdeb = rand(lhs bod) in
       let rdef = list_mk_abs(vs,rdeb) in
-      let newname = fst(dest_var(genvar bool_ty)) in
+      let newname = fresh_const_name (constructor_names def)
+                      (fst(dest_const(repeat rator rdeb))^"'") in
       let def = mk_eq(mk_var(newname,type_of rdef),rdef) in
       let dth = new_definition def in
       SIMPLE_BETA_RULE dth in
@@ -1809,7 +1875,7 @@ let define_type_raw =
   fun def ->
     let newtys = map fst def in
     let truecons = itlist (@) (map (map fst o snd) def) [] in
-    let (p,ith0,rth0) = define_type_nested def in
+    let (p,ith0,rth0) = define_type_nested 1 def in
     let avs,etm = strip_forall(concl rth0) in
     let allcls = conjuncts(snd(strip_exists etm)) in
     let relcls = fst(chop_list (length truecons) allcls) in

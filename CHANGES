@@ -8,6 +8,54 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 26th Nov 2026       basics.ml, parser.ml, nums.ml, ind_types.ml, meson.ml,
+                        Multivariate/determinants.ml, passim
+
+Eliminated the uses of genvar from the core system and from Library/ and
+Multivariate/, so that what HOL Light does no longer depends on genvar's
+global counter, i.e. on what was done before (genvar itself is still
+defined). New variables now come from the new functions genvars,
+genvar_index, genvar_index_goal and mk_genvar in basics.ml, which give
+variables _v1, _v2, ... numbered above every variable of that form, free or
+bound, in the terms or the goal they are given, so that the result depends
+only on the arguments; each use avoids what the code combines the new
+variable with. Definitions keep the user's names instead of invented ones,
+e.g. ONE_ONE = (\f. ...) instead of (\_1715. ...), new_specification names
+its tag variable "tag", and the internal constants and types of define_type
+are named after the user's constructors and types (ASCII = _ASCII instead
+of _20382, list_1_tree, CONS_1_tree, ...). The parser gives the bound
+variables of set comprehensions and of match and function the canonical
+names GEN%PVAR%d, MESON keeps its maps of variables local to each call, and
+EXISTS_GENVAR_RULE is replaced by EXISTS_GENVARS_RULE, which takes the terms
+whose variables the new ones must avoid. The theorems are unchanged apart
+from the names of GEN%PVAR% bound variables, and the definitions given to
+the kernel are now the same whatever was done before.
+
+Thu 26th Nov 2026       ind_defs.ml
+
+Made the inductive definitions package regroup the clauses of mutually
+inductive relations directly when they are already grouped by relation, as
+for the types of define_type, instead of proving the regrouping by AC
+normalization, whose cost depended on how the clauses happened to be
+ordered by the term ordering, and so on the names of the constructors. The
+theorems are unchanged; for example two mutually recursive types with 80
+constructors each are now defined in 0.96 seconds instead of 1.81.
+
+Thu 26th Nov 2026       meson.ml
+
+Incorporated Juneyoung Lee's speedups of MESON (pull request #216), with
+the search and its results unchanged (the same inference counts and the
+same theorems). Monomorphic comparisons replace polymorphic ones in the
+inner loops (lookups of instantiations, unification, the continuation
+cache and the ancestor checks), and equality of instantiations first
+checks physical equality, since they share long tails. The input clauses
+are kept in an array indexed by predicate code, and the clauses within the
+size bound are taken as a prefix of the already sorted list. Duplicate
+clauses are removed by hashing, folded per theorem, instead of by a
+quadratic number of comparisons, and the variable and constant stores use
+hash tables. On 5554 goals recorded from MESON calls in the libraries, the
+time in PURE_MESON_TAC goes from 37.8 to 28.5 seconds.
+
 Sun 22nd Nov 2026       Library/words.ml
 
 Removed the second definition of WORD_SUBWORD_IWORD, which was left in

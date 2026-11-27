@@ -21,6 +21,54 @@ let genvar =
               mk_var("_"^(string_of_int count),ty));;
 
 (* ------------------------------------------------------------------------- *)
+(* Repeatable alternatives to genvar, whose results depend only on their     *)
+(* arguments. The variable mk_genvar(n,ty) is named "_v" followed by the     *)
+(* number n, a form of name that genvar never gives. "genvar_index tms" is   *)
+(* the least n >= 1 such that no variable named in that way with a number    *)
+(* >= n occurs, free or bound, in any of the terms tms. "genvars tms tys"    *)
+(* gives a variable for each type in tys, numbered n, n + 1, ... in order    *)
+(* where n is that index, so they are distinct from each other, from all     *)
+(* the variables, free or bound, in tms, whatever their types, and from all  *)
+(* those made by genvar. "genvar_index_goal (asl,w)" is the genvar_index of  *)
+(* the terms of a goal: its conclusion w and the conclusions and hypotheses  *)
+(* of its assumptions asl.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let mk_genvar(n,ty) = mk_var("_v"^(string_of_int n),ty);;
+
+let genvar_index =
+  let rec number s i l acc =
+    if i = l then acc else
+    let d = Char.code(String.get s i) - 48 in
+    if d < 0 || d > 9 || acc > (max_int - d) / 10 then -1
+    else number s (i + 1) l (10 * acc + d) in
+  let index s =
+    let l = String.length s in
+    if l < 3 || String.get s 0 <> '_' || String.get s 1 <> 'v' then -1
+    else if String.get s 2 = '0' then (if l = 3 then 0 else -1)
+    else number s 2 l 0 in
+  let rec scan k tm =
+    match tm with
+      Var(s,_) -> let i = index s in
+                  if i < k then k else if i < max_int then i + 1
+                  else failwith "genvar_index: overflow"
+    | Const(_,_) -> k
+    | Comb(l,r) -> scan (scan k l) r
+    | Abs(v,bod) -> scan (scan k v) bod in
+  fun tms -> itlist (fun tm k -> scan k tm) tms 1;;
+
+let genvars tms tys =
+  let rec gvs n tys =
+    match tys with
+      [] -> []
+    | ty::otys -> mk_genvar(n,ty)::gvs (n + 1) otys in
+  if tys = [] then [] else gvs (genvar_index tms) tys;;
+
+let genvar_index_goal (asl,w) =
+  itlist (fun (_,th) n -> max n (genvar_index(concl th::hyp th)))
+         asl (genvar_index [w]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Convenient functions for manipulating types.                              *)
 (* ------------------------------------------------------------------------- *)
 
@@ -125,7 +173,7 @@ let subst =
     if theta = [] then (fun tm -> tm) else
     let ts,xs = unzip theta in
     fun tm ->
-      let gs = variants (variables tm) (map (genvar o type_of) xs) in
+      let gs = genvars [tm] (map type_of xs) in
       let tm' = ssubst (zip gs xs) tm in
       if tm' == tm then tm else vsubst (zip ts gs) tm';;
 

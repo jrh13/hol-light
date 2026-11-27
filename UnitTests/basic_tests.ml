@@ -221,6 +221,26 @@ let UNIFY_REFL_TAC_TEST2 = prove(`?f. y + z = f y z`,
 let UNIFY_REFL_TAC_TEST3 = prove(`?f. y + 1 = f y 0`,
                 META_EXISTS_TAC THEN UNIFY_REFL_TAC);;
 
+(* ------------------------------------------------------------------------- *)
+(* Test ITAUT_TAC with metavariables of the goal from META_EXISTS_TAC inside *)
+(* THEN, that it returns no metavariables of its own, and that the results   *)
+(* of ITAUT_TAC and UNIFY_REFL_TAC do not depend on earlier calls of genvar. *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let tm1 = `?x:A. (P x ==> P x) /\ ((!y:B. Q y) ==> Q b)`
+  and tm2 = `?x:A. (P x ==> P x) /\ (Q x ==> Q x)`
+  and tm3 = `(!x:A. P x) ==> P a /\ P b`
+  and tm4 = `y + 1 = (f:num->num->num) y 0` in
+  let tac = META_EXISTS_TAC THEN CONJ_TAC THEN ITAUT_TAC in
+  assert (concl(prove(tm1,tac)) = tm1 && concl(prove(tm2,tac)) = tm2);
+  let (mvs,_),gls,_ = ITAUT_TAC([],tm3) in
+  assert (mvs = [] && gls = []);
+  let inst() = let (_,i),_,_ = UNIFY_REFL_TAC([],tm4) in i in
+  let i1 = inst() in
+  ignore(genvar `:num`);
+  assert (inst() = i1);;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Test instantiation of variables in the conditions of conditional rewrites *)
@@ -294,6 +314,57 @@ let _ = MESON[] `ALL2 (=) (l:num list) m /\ (!f:num->bool. f 1) ==> ALL2 (=) l m
 let _ = MESON[] `(!g:num->num->bool. P g ==> Q (g 1)) /\ P (=) ==> Q ((=) 1)`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Test that the variables made by MESON avoid variables of the goal named   *)
+(* like them, free or bound, and that its equality axioms work when the      *)
+(* goal has variables named like theirs (x, y, x0, y0, ...).                 *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let v1 = mk_var("_v1",`:num`) and v2 = mk_var("_v2",`:num`) in
+  let tm1 = subst [v1,`a:num`; v2,`b:num`]
+             `(!x. P x a ==> Q x b) /\ P b a ==> Q b b`
+  and tm2 = mk_imp(mk_forall(v1,mk_imp(mk_comb(`P:num->bool`,v1),
+                                       mk_comb(`Q:num->bool`,v1))),
+                   `P (a:num) ==> Q a`) in
+  assert (concl(MESON[] tm1) = tm1 && concl(MESON[] tm2) = tm2);
+  ignore(MESON[] `x0 = y0 /\ x = y /\ P (f (x0:num) (x:bool)) ==> P (f y0 y)`);
+  ignore(MESON[] `(!x y. R x (y:num)) ==> R (x0:num) (y0:num)`);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that the variables abstracted over by NUM_SIMPLIFY_CONV avoid the    *)
+(* variables of the term named like them, free or bound, so that the term   *)
+(* is unchanged on the left of the result.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let v1 = mk_var("_v1",`:num`) and v2 = mk_var("_v2",`:num`) in
+  let tm = mk_conj
+    (subst [v1,`a:num`; v2,`b:num`] `PRE a + (b - a) + a DIV 3 = b`,
+     mk_forall(v1,mk_eq(v1,mk_binop `(+):num->num->num` v1 `0`))) in
+  assert (lhs(concl(NUM_SIMPLIFY_CONV tm)) = tm);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test REAL_ARITH's elimination of abs, max and min on a term with a        *)
+(* variable named like the one it abstracts over.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let tm = subst [mk_var("_v1",`:real`),`z:real`]
+                 `abs(z - x) >= &0 /\ max z x >= z /\ min z x <= x` in
+  assert (concl(REAL_ARITH tm) = tm);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test ARITH_RULE and INTEGER_RULE on goals with variables named like the   *)
+(* ones they make, and existential variables named like free variables.      *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let tm1 = subst [mk_var("_v1",`:num`),`a:num`] `PRE a <= a /\ a - b <= a`
+  and tm2 = subst [mk_var("_v1",`:int`),`a:int`]
+                  `!x:int. a divides x ==> a divides (x * y)` in
+  assert (concl(ARITH_RULE tm1) = tm1 && concl(INTEGER_RULE tm2) = tm2);;
+
+(* ------------------------------------------------------------------------- *)
 (* Test that X_CHOOSE_TAC rejects a variable that is free in the hypotheses  *)
 (* of an assumption, whose use would make the justification fail.           *)
 (* ------------------------------------------------------------------------- *)
@@ -352,6 +423,80 @@ let _ =
   ignore(TAC_PROOF((asm[`F`; `y = 1`],`x < 3`),ASM_ARITH_TAC));
   ignore(TAC_PROOF((asm[`&0 < x`; `y = &1`],`&0 <= x / &2`),ASM_REAL_ARITH_TAC));
   ignore(TAC_PROOF((asm[`&0 < x`; `y = &1`],`&0 <= x + y`),ASM_REAL_ARITH_TAC));;
+
+(* ------------------------------------------------------------------------- *)
+(* Test genvar_index and genvars: the variables avoid every variable named   *)
+(* like them in the terms, free or bound, whatever its type, never have the  *)
+(* names of genvar, and the results depend only on the arguments, whatever  *)
+(* was called before.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let v s ty = mk_var(s,ty) in
+  let tm1 = mk_abs(v "_v3" `:num`,mk_eq(v "_v1" `:num`,v "x" `:num`))
+  and tm2 = mk_eq(v "_v10" `:bool`,v "_v007" `:bool`)
+  and tm3 = mk_eq(v "_v12'" `:bool`,mk_eq(v "_v" `:bool`,v "_20" `:bool`)) in
+  let tys = [`:num`; `:bool`; `:num`] in
+  let call1() = genvar_index [tm1;tm2;tm3],genvars [tm1;tm2;tm3] tys
+  and call2() = genvar_index [tm1],genvars [tm3] tys in
+  let r1 = (11,[v "_v11" `:num`; v "_v12" `:bool`; v "_v13" `:num`])
+  and r2 = (4,[v "_v1" `:num`; v "_v2" `:bool`; v "_v3" `:num`]) in
+  assert (genvar_index [] = 1 && genvars [tm1] [] = []);
+  assert (genvar_index [`0`; v "_v0" `:num`] = 1 &&
+          genvars [`0`] [`:num`] = [v "_v1" `:num`]);
+  assert (call1() = r1);
+  assert (call2() = r2);
+  ignore(map genvar tys);
+  assert (call2() = r2 && call1() = r1 && call2() = r2);
+  let g1 = genvar `:num` in
+  let gvs = genvars [g1] [`:num`; `:num`] in
+  let g2 = genvar `:num` in
+  assert (gvs = [v "_v1" `:num`; v "_v2" `:num`] &&
+          not(mem g1 gvs) && not(mem g2 gvs));
+  let asl = ["",ASSUME(mk_eq(v "_v5" `:num`,v "_v2" `:num`));
+             "",ADD_ASSUM (mk_eq(v "_v7" `:bool`,`T`)) (ASSUME `x = 1`)] in
+  assert (genvar_index_goal ([],tm3) = 1 &&
+          genvar_index_goal (asl,tm1) = 8 &&
+          genvar_index_goal (tl asl,tm2) = 11);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that ABS_CONV and the simplifier rename a bound variable that is     *)
+(* free in a fact of the context apart from the context, even when the       *)
+(* context has a variable named like the first choice.                       *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let ths = [ASSUME `x = 1`; ASSUME `_v1 = 2`; ADD_CLAUSES] in
+  assert (rhs(concl(REWRITE_CONV ths `\x. x + 0`)) = `\x:num. x`);
+  assert (rhs(concl(SIMP_CONV ths `\x. x + 0`)) = `\x:num. x`);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that new_definition keeps the user's variables in the underlying     *)
+(* definition.                                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let _ = new_definition `genvar_test_def (f:num->num) (x,y) = f x + y` in
+  assert (concl(hd(definitions())) =
+          `genvar_test_def = \(f:num->num) (p:num#num). f (FST p) + SND p`);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that GEN_BETA_CONV gives the term itself as the left-hand side.      *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  let tm = `(\(x,y). x + y) (1,2)` in
+  assert (lhs(concl(GEN_BETA_CONV tm)) = tm);;
+
+(* ------------------------------------------------------------------------- *)
+(* Test that the parser names its bound variables repeatably and that        *)
+(* alpha-equivalent set comprehensions are identical.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let _ =
+  assert (rand `P {x | x < 2}:bool` = `{x | x < 2}`);
+  assert (parse_term "{x | ?y. y IN {z | z < x}}" =
+          parse_term "{x | ?y. y IN {z | z < x}}");;
 
 (* ------------------------------------------------------------------------- *)
 (* Test pa_j preprocessor.                                                   *)

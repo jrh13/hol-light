@@ -151,15 +151,29 @@ let the_definitions = ref
   EXISTS_UNIQUE_DEF; NOT_DEF; F_DEF; OR_DEF; EXISTS_DEF; FORALL_DEF; IMP_DEF;
   AND_DEF; T_DEF];;
 
+(* ------------------------------------------------------------------------- *)
+(* The arguments that are variables are used as they are, so that the        *)
+(* underlying definition has the user's variables, and each tuple is         *)
+(* replaced by a new variable p (or p0, p1, ...), named apart from all the   *)
+(* variables of the definition. If some variable occurs more than once in    *)
+(* the arguments, all the arguments are replaced, so that the first          *)
+(* occurrence is the one that counts, as in the old behaviour.               *)
+(* ------------------------------------------------------------------------- *)
+
 let new_definition =
-  let depair =
-    let rec depair gv arg =
-      try let l,r = dest_pair arg in
-          (depair (list_mk_icomb "FST" [gv]) l) @
-          (depair (list_mk_icomb "SND" [gv]) r)
-      with Failure _ -> [gv,arg] in
-    fun arg -> let gv = genvar(type_of arg) in
-               gv,depair gv arg in
+  let rec depair gv arg =
+    try let l,r = dest_pair arg in
+        (depair (list_mk_icomb "FST" [gv]) l) @
+        (depair (list_mk_icomb "SND" [gv]) r)
+    with Failure _ -> [gv,arg] in
+  let rec vars tm acc =
+    if is_var tm then tm::acc else
+    if is_comb tm then vars (rator tm) (vars (rand tm) acc) else acc in
+  let rec assign rns args pvs =
+    match rns,args with
+      true::orns,_::oargs -> hd pvs::assign orns oargs (tl pvs)
+    | false::orns,a::oargs -> a::assign orns oargs pvs
+    | _ -> [] in
   fun tm ->
     let avs,def = strip_forall tm in
     try if not(is_const(fst(strip_comb(lhs def)))) then fail() else
@@ -170,7 +184,14 @@ let new_definition =
     with Failure _ ->
         let l,r = dest_eq def in
         let fn,args = strip_comb l in
-        let gargs,reps = (I F_F unions) (unzip(map depair args)) in
+        let avs' = itlist vars args [] in
+        let rns = if length(setify avs') = length avs'
+                  then map (not o is_var) args else map (K true) args in
+        let pvs = make_args "p" (variables def)
+                    (map (type_of o snd) (filter fst (zip rns args))) in
+        let gargs = assign rns args pvs in
+        let reps = unions(map2 (fun g a -> if g = a then [] else depair g a)
+                               gargs args) in
         let l' = list_mk_comb(fn,gargs) and r' = subst reps r in
         let th1 = new_definition (mk_eq(l',r')) in
         let slist = zip args gargs in
@@ -225,8 +246,12 @@ let GEN_BETA_CONV =
     let avs,eqn = strip_forall ourcj in
     let con',args = strip_comb(rand eqn) in
     let aargs,zargs = chop_list (length avs) args in
-    let gargs = map (genvar o type_of) zargs in
-    let gcon = genvar(itlist (mk_fun_ty o type_of) avs (type_of(rand eqn))) in
+    let gcon,gargs =
+      match genvars [concl sth]
+              (itlist (mk_fun_ty o type_of) avs (type_of(rand eqn))::
+               map type_of zargs) with
+        gcon::gargs -> gcon,gargs
+      | [] -> failwith "create_projections" in
     let bth =
       INST [list_mk_abs(aargs @ gargs,list_mk_comb(gcon,avs)),con'] sth in
     let cth = el n (CONJUNCTS(ASSUME(snd(strip_exists(concl bth))))) in
@@ -294,12 +319,16 @@ let GEN_BETA_CONV =
       let prjs = create_iterated_projections vstr in
       let th1 = SUBS_CONV prjs bod in
       let bod' = rand(concl th1) in
-      let gv = genvar(type_of vstr) in
+      let gv = mk_genvar(genvar_index [vstr; bod'],type_of vstr) in
       let pat = mk_abs(gv,subst[gv,vstr] bod') in
       pat,TRANS (BETA_CONV (mk_comb(pat,vstr))) (SYM th1) in
     let avs = fst(strip_forall(body(rand l))) in
     let th3 = GENL (fst(strip_forall(body(rand l)))) th2 in
-    let efn = genvar(type_of pat) in
+    (* The bound variable of the generalized abstraction is used again, so   *)
+    (* that the left-hand side of the result is the term itself.             *)
+    let efn = let f = bndvar(rand l) in
+              if type_of f = type_of pat && not(vfree_in f (concl th3)) then f
+              else mk_genvar(genvar_index [concl th3],type_of pat) in
     let th4 = EXISTS(mk_exists(efn,subst[efn,pat] (concl th3)),pat) th3 in
     let th5 = CONV_RULE(funpow (length avs + 1) BINDER_CONV GEQ_CONV) th4 in
     let th6 = CONV_RULE BETA_CONV (GABS_RULE th5) in

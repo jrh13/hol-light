@@ -61,8 +61,9 @@ let INT_OF_REAL_THM =
      let tys,rty = splitlist dest_fun_ty ty in
      if rty <> real_ty then v else
      let ity = itlist mk_fun_ty tys int_ty in
-     let vs = map genvar tys in
-     list_mk_abs(vs,mk_comb(dest,list_mk_comb(mk_var(s,ity),vs))) in
+     let v' = mk_var(s,ity) in
+     let vs = genvars [v'] tys in
+     list_mk_abs(vs,mk_comb(dest,list_mk_comb(v',vs))) in
   let int_of_real_var v =
      let s,ty = dest_var v in
      let tys,rty = splitlist dest_fun_ty ty in

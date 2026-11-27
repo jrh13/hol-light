@@ -144,7 +144,7 @@ let HALF_MK_ABS th =
 
 let SUBST thl pat th =
   let eqs,vs = unzip thl in
-  let gvs = map (genvar o type_of) vs in
+  let gvs = genvars (pat::map concl eqs) (map type_of vs) in
   let gpat = subst (zip gvs vs) pat in
   let ls,rs = unzip (map (dest_eq o concl) eqs) in
   let ths = map (ASSUME o mk_eq) (zip gvs rs) in
@@ -216,7 +216,7 @@ let (IMP_SUBST_TAC:thm_tactic) =
     let tm1 = hd (sort free_in tms) in
     let th1 = PART_MATCH (lhs o snd o dest_imp) th tm1 in
     let (a,(l,r)) = (I F_F dest_eq) (dest_imp (concl th1)) in
-    let gv = genvar (type_of l) in
+    let gv = mk_genvar(genvar_index [w; concl th1],type_of l) in
     let pat = subst[gv,l] w in
     null_meta,
     [(asl,a); (asl,subst[(r,gv)] pat)],

@@ -1,0 +1,36 @@
+\DOC genvars
+
+\TYPE {genvars : term list -> hol_type list -> term list}
+
+\SYNOPSIS
+Returns variables of given types that are fresh for given terms.
+
+\DESCRIBE
+The call {genvars tms tys} returns a list of variables, one for each type in
+the list {tys}, named {_v} followed by a number. The numbers are {n},
+{n + 1}, ... in order, where {n = genvar_index tms}, so the variables are
+distinct from each other and from all the variables, free or bound, in the
+terms {tms}, even ones of other types. They are also distinct from all the
+variables made by {genvar}, whose names are an underscore followed by a
+number. Unlike {genvar}, the result depends only on the arguments, not on any
+earlier calls.
+
+\FAILURE
+Never fails, except in the absurd case noted under {genvar_index}.
+
+\EXAMPLE
+{
+  # genvars [`\x _v3:num. _v1 + x`; `_v10 /\ _v007`] [`:num`; `:bool`];;
+  val it : term list = [`_v11`; `_v12`]
+}
+
+\USES
+Writing derived rules that need fresh variables, without the global state of
+{genvar}, so that the results of a proof are the same whatever was done
+before. If the names are to be visible to a typical user, the function
+{variant} can provide rather more meaningful names.
+
+\SEEALSO
+genvar, genvar_index, genvar_index_goal, mk_genvar, variant, variants.
+
+\ENDDOC

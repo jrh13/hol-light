@@ -621,9 +621,11 @@ let GEN_REAL_ARITH =
     let is_max = is_binop `real_max`
     and is_min = is_binop `real_min`
     and is_abs t = is_comb t && rator t = abs_tm in
+    (* v does not occur in tm, free or bound, so abstracting over it       *)
+    (* captures nothing and the beta-reduction gives back tm itself.       *)
     let eliminate_construct p c tm =
       let t = find_term (fun t -> p t && free_in t tm) tm in
-      let v = genvar(type_of t) in
+      let v = mk_genvar(genvar_index [tm],type_of t) in
       let th0 = SYM(BETA_CONV(mk_comb(mk_abs(v,subst[v,t] tm),t))) in
       let p,ax = dest_comb(rand(concl th0)) in
       CONV_RULE(RAND_CONV(BINOP_CONV(RAND_CONV BETA_CONV)))

@@ -10023,8 +10023,7 @@ let FOL_PREPARE_TAC ths =
   Meson.SPLIT_TAC (!split_limit) THEN
   RULE_ASSUM_TAC(CONV_RULE(PRENEX_CONV THENC WEAK_CNF_CONV)) THEN
 
-  RULE_ASSUM_TAC(repeat
-   (fun th -> SPEC(genvar(type_of(fst(dest_forall(concl th))))) th)) THEN
+  Meson.SPEC_ASSUMS_TAC THEN
   (* destroy all-quantifiers and replace quantified variables by fresh ones *)
 
   REPEAT (FIRST_X_ASSUM (Meson.CONJUNCTS_THEN' ASSUME_TAC)) THEN

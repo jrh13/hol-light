@@ -1,0 +1,24 @@
+\DOC genvar_index_goal
+
+\TYPE {genvar_index_goal : goal -> int}
+
+\SYNOPSIS
+Returns a starting number for fresh variables named like those of genvars for
+a goal.
+
+\DESCRIBE
+The call {genvar_index_goal (asl,w)} returns the {genvar_index} of all the terms
+of the goal: its conclusion {w} and the conclusions and hypotheses of its
+assumptions {asl}. So the variables {mk_genvar(n,ty)}, {mk_genvar(n + 1,ty)},
+... for that number {n} are fresh for everything in the goal.
+
+\FAILURE
+Fails only in the absurd case noted under {genvar_index}.
+
+\USES
+Tactics that need fresh variables for a goal.
+
+\SEEALSO
+genvar, genvar_index, genvars, mk_genvar.
+
+\ENDDOC

@@ -29,6 +29,6 @@ If the names are to be visible to a typical user, the function {variant} can
 provide rather more meaningful names.
 
 \SEEALSO
-variant.
+genvars, variant.
 
 \ENDDOC

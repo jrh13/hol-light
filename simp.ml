@@ -239,7 +239,9 @@ let satisfy_prover =
     let vs,bod = strip_exists tm in
     if vs = [] then failwith "satisfy_prover" else
     let facts = Lazy.force lfacts in
-    let gvs = map (genvar o type_of) vs in
+    (* The vs are renamed apart from the term and the facts, so that the     *)
+    (* matching cannot confuse them with variables of the facts.             *)
+    let gvs = genvars (tm::map concl facts) (map type_of vs) in
     let gbod = vsubst (zip gvs vs) bod in
     let i = satisfy facts gvs ([],[],[]) (conjuncts gbod) in
     prove facts (instantiate i gbod) in
@@ -368,18 +370,19 @@ let AUGMENT_SIMPSET cth (Simpset(net,prover,provers,rewmaker)) =
 (* The body of an abstraction \v. b is simplified with v as it is and, if    *)
 (* the result has a hypothesis in which v is free (a fact of the context     *)
 (* about a free variable named like v) so that ABS fails, again with a       *)
-(* genvar for v; under n such binders that took up to 2^n passes. Now the    *)
-(* first pass is abandoned as soon as a step that is sure to be part of its  *)
-(* result has such a hypothesis. The passes under way are kept on a stack of *)
-(* frames, and a step is sure to reach a frame unless a frame in between can *)
-(* still discard it: an abstraction may take the genvar route, and a         *)
-(* congruence rule may fail after a successful simplification, by GENL for   *)
-(* the bound variables of an antecedent, or by GEN_PART_MATCH when its       *)
-(* right-hand side is not a variable. Steps in side-condition proofs and     *)
-(* witness searches do not count. An antecedent fails at once in the same    *)
-(* way when its bound variables are free in a hypothesis that is sure to     *)
-(* reach it, as GENL would then make it fail. The results are the same as    *)
-(* before.                                                                   *)
+(* variable _vk for v, numbered apart from the variables of b and of the     *)
+(* hypotheses at hand (as in ABS_CONV); under n such binders that took up to *)
+(* 2^n passes. Now the first pass is abandoned as soon as a step that is     *)
+(* sure to be part of its result has such a hypothesis. The passes under way *)
+(* are kept on a stack of frames, and a step is sure to reach a frame unless *)
+(* a frame in between can still discard it: an abstraction may take the      *)
+(* renaming route, and a congruence rule may fail after a successful         *)
+(* simplification, by GENL for the bound variables of an antecedent, or by   *)
+(* GEN_PART_MATCH when its right-hand side is not a variable. Steps in       *)
+(* side-condition proofs and witness searches do not count. An antecedent    *)
+(* fails at once in the same way when its bound variables are free in a      *)
+(* hypothesis that is sure to reach it, as GENL would then make it fail. The *)
+(* results are the same as before.                                           *)
 (* ------------------------------------------------------------------------- *)
 
 exception Simp_abandon of (term list * term list * bool);;
@@ -478,10 +481,15 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
           with Failure _ -> AP_TERM l (strat ss lev r)
         else if is_abs tm then
           let v,bod = dest_abs tm in
-          let via_genvar() =
-            let gv = genvar(type_of v) in
-            let gbod = vsubst[gv,v] bod in
-            let gth = ABS gv (strat ss lev gbod) in
+          let via_fresh avoid =
+            let attempt avoid =
+              let gv = mk_genvar(genvar_index avoid,type_of v) in
+              gv,strat ss lev (vsubst[gv,v] bod) in
+            let gth =
+              let gv,gth = attempt avoid in
+              try ABS gv gth with Failure _ ->
+              let gv',gth' = attempt (avoid @ hyp gth) in
+              ABS gv' gth' in
             let gtm = concl gth in
             let l,r = dest_eq gtm in
             let v' = variant (frees gtm) v in
@@ -491,8 +499,9 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
           let th =
             match (try Some(within f (strat ss lev) bod)
                    with Simp_abandon f' when f' == f -> None) with
-              Some th -> (try ABS v th with Failure _ -> via_genvar())
-            | None -> via_genvar() in
+              Some th -> (try ABS v th
+                          with Failure _ -> via_fresh(bod::hyp th))
+            | None -> via_fresh [bod] in
           commit th; th
         else failwith "GEN_SUB_CONV" in
   let rec ONCE_DEPTH_SQCONV

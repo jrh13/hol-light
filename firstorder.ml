@@ -135,15 +135,14 @@ end
 
 module Mapping = struct
 
-  let reset_vars,fol_of_var,hol_of_var =
+  let reset_vars,fol_of_var =
     let vstore = ref []
-    and gstore = ref []
     and vcounter = ref 0 in
     let inc_vcounter() =
       let n = !vcounter in
       let m = n + 1 in
       (vcounter := m; n) in
-    let reset_vars() = vstore := []; gstore := []; vcounter := 0 in
+    let reset_vars() = vstore := []; vcounter := 0 in
     let fol_of_var v =
       try assoc v !vstore with Failure _ ->
       let n = inc_vcounter() in
@@ -151,11 +150,26 @@ module Mapping = struct
         Format.printf "fol_of_var: %s (ty = %s) <- %d\n%!"
         (string_of_term v) (string_of_type (type_of v)) n;
       vstore := (v,n)::!vstore; n in
-    let hol_of_var v ty =
-      try rev_assoc v !gstore with Failure _ ->
-      let gv = genvar ty in
-      gstore := (gv,v)::!gstore; gv in
-    reset_vars,fol_of_var,hol_of_var
+    reset_vars,fol_of_var
+
+  (* ----------------------------------------------------------------------- *)
+  (* Make a map from shadow variables to HOL variables for translating back  *)
+  (* a proof from the clauses ths. Each shadow variable becomes a new        *)
+  (* variable, the same one each time, numbered upwards from the             *)
+  (* genvar_index of the clauses (conclusions and hypotheses). The proof is  *)
+  (* built from those clauses, so the new variables are distinct from all    *)
+  (* the variables it involves and from each other.                          *)
+  (* ----------------------------------------------------------------------- *)
+
+  let mk_hol_of_var ths =
+    let next = ref (-1) and store = ref [] in
+    fun v ty ->
+      try rev_assoc v (!store) with Failure _ ->
+      let n = if !next >= 0 then !next else
+              itlist (fun th n -> max n (genvar_index(concl th::hyp th)))
+                     ths 1 in
+      let gv = mk_genvar(n,ty) in
+      next := n + 1; store := (gv,v)::(!store); gv
 
   let reset_consts,fol_of_const,hol_of_const =
     Meson.reset_consts,Meson.fol_of_const,Meson.hol_of_const
@@ -200,14 +214,15 @@ module Mapping = struct
         Atom(fol_of_literal env consts tm)
 
   (* ----------------------------------------------------------------------- *)
-  (* Further translation functions for HOL formulas.                         *)
+  (* Further translation functions for HOL formulas, where the function hv   *)
+  (* maps shadow variables and their types to HOL variables.                 *)
   (* ----------------------------------------------------------------------- *)
 
-  let rec hol_of_term ty tm =
+  let rec hol_of_term hv ty tm =
     match tm with
-      Fvar v -> hol_of_var v ty
-    | Fnapp (f,args) -> hol_of_atom (f, args)
-  and hol_of_atom (f, args) =
+      Fvar v -> hv v ty
+    | Fnapp (f,args) -> hol_of_atom hv (f, args)
+  and hol_of_atom hv (f, args) =
     let f' = hol_of_const f in
     let tys = fst (splitlist dest_fun_ty (type_of f')) in
     (* Functions can be translated to FOF
@@ -216,11 +231,11 @@ module Mapping = struct
        as present in the FO term. *)
     assert (List.length args <= List.length tys);
     let tys' = Utils.List.take (List.length args) tys in
-    list_mk_comb (f', List.map2 hol_of_term tys' args)
+    list_mk_comb (f', List.map2 (hol_of_term hv) tys' args)
 
-  let hol_of_literal (p,args) =
-    if p < 0 then mk_neg(hol_of_atom(-p,args))
-    else hol_of_atom (p,args)
+  let hol_of_literal hv (p,args) =
+    if p < 0 then mk_neg(hol_of_atom hv (-p,args))
+    else hol_of_atom hv (p,args)
 
 
   (* ----------------------------------------------------------------------- *)

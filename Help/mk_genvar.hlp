@@ -1,0 +1,25 @@
+\DOC mk_genvar
+
+\TYPE {mk_genvar : int * hol_type -> term}
+
+\SYNOPSIS
+Constructs a variable named like those of genvars with a given number.
+
+\DESCRIBE
+The call {mk_genvar(n,ty)} returns the variable of type {ty} named {_v}
+followed by the number {n}, the names that {genvars} gives. These names are
+never given by {genvar}, whose names are an underscore followed by a number.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # mk_genvar(5,`:bool`);;
+  val it : term = `_v5`
+}
+
+\SEEALSO
+genvar, genvar_index, genvars, mk_var.
+
+\ENDDOC

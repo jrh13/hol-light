@@ -1133,11 +1133,14 @@ let INT_RING,int_ideal_cofactors =
     ONCE_REWRITE_TAC[GSYM INT_SUB_0] THEN
     REWRITE_TAC[GSYM INT_ENTIRE] THEN INT_ARITH_TAC)
   and int_ty = `:int` in
+  (* A boolean variable stands for each missing operation: not being a      *)
+  (* function, it never matches the operator of a term.                      *)
+  let nop_tm = mk_var("nop",bool_ty) in
   let pure,ideal =
   RING_AND_IDEAL_CONV
       (dest_intconst,mk_intconst,INT_EQ_CONV,
        `(--):int->int`,`(+):int->int->int`,`(-):int->int->int`,
-       genvar bool_ty,`(*):int->int->int`,genvar bool_ty,
+       nop_tm,`(*):int->int->int`,nop_tm,
        `(pow):int->num->int`,
        INT_INTEGRAL,TRUTH,INT_POLY_CONV) in
   pure,
@@ -1294,11 +1297,18 @@ let INTEGER_TAC =
     let evs' = subtract evs (map snd cfs)
     and eqs' = map (subst_in_poly cfs) (subtract eqs [eq]) in
     cfs @ solve_idealism evs' ps eqs' in
-  let rec GENVAR_EXISTS_CONV tm =
-    if not(is_exists tm) then REFL tm else
-    let ev,bod = dest_exists tm in
-    let gv = genvar(type_of ev) in
-    (GEN_ALPHA_CONV gv THENC BINDER_CONV GENVAR_EXISTS_CONV) tm in
+  let rec GENVAR_EXISTS_CONV gvs tm =
+    match gvs with
+      [] -> REFL tm
+    | gv::ogvs ->
+          (GEN_ALPHA_CONV gv THENC BINDER_CONV (GENVAR_EXISTS_CONV ogvs)) tm in
+  (* Rename the existential variables apart from each other and from all the *)
+  (* variables of the goal, whose assumptions give the polynomials ps below. *)
+  let GENVAR_EXISTS_TAC (asl,w as gl) =
+    let evs = fst(strip_exists w) and n = genvar_index_goal gl in
+    let gvs = map2 (fun v i -> mk_genvar(i,type_of v))
+                   evs (n--(n + length evs - 1)) in
+    CONV_TAC (GENVAR_EXISTS_CONV gvs) gl in
   let EXISTS_POLY_TAC (asl,w as gl) =
     let evs,bod = strip_exists w
     and ps = mapfilter (check (fun t -> type_of t = int_ty) o
@@ -1321,7 +1331,7 @@ let INTEGER_TAC =
   REWRITE_TAC[GSYM INT_ENTIRE;
               TAUT `a \/ (b /\ c) <=> (a \/ b) /\ (a \/ c)`] THEN
   POP_ASSUM_LIST(K ALL_TAC) THEN
-  REPEAT DISCH_TAC THEN CONV_TAC GENVAR_EXISTS_CONV THEN
+  REPEAT DISCH_TAC THEN GENVAR_EXISTS_TAC THEN
   CONV_TAC(ONCE_DEPTH_CONV INT_POLYEQ_CONV) THEN EXISTS_POLY_TAC;;
 
 let INTEGER_RULE tm = prove(tm,INTEGER_TAC);;
@@ -2055,8 +2065,12 @@ let INTEGER_TAC =
           let gts = find_terms (can dest_gcd) w in
           let ths = map
            (fun tm -> let a,b = dest_gcd tm in SPECL [a;b] int_gcd) gts in
+          let n = max (genvar_index_goal (asl,w))
+                      (genvar_index (map concl ths)) in
+          let gvs = map2 (fun t i -> mk_genvar(i,type_of t))
+                         gts (n--(n + length gts - 1)) in
           MAP_EVERY MP_TAC ths THEN
-          MAP_EVERY SPEC_TAC (zip gts (map (genvar o type_of) gts))) in
+          MAP_EVERY SPEC_TAC (zip gts gvs)) in
   let pth = prove
    (`!d a b:int. d divides gcd(a,b) <=> d divides a /\ d divides b`,
     GCD_ELIM_TAC THEN INTEGER_TAC) in
@@ -2172,7 +2186,8 @@ let ARITH_RULE =
       let tm1 = rand(concl th1) in
       let avs,bod = strip_forall tm1 in
       let nim = setify(find_terms is_numimage bod) in
-      let gvs = map (genvar o type_of) nim in
+      (* The gvs do not occur in bod, or in ibod, so INST restores ibod.   *)
+      let gvs = genvars [bod] (map type_of nim) in
       let pths = map (fun v -> SPEC (rand v) INT_POS) nim in
       let ibod = itlist (curry mk_imp o concl) pths bod in
       let gbod = subst (zip gvs nim) ibod in
@@ -2278,8 +2293,11 @@ let INT_ARITH =
           let x = lhand t and y = rand t in
           let dtm = mk_comb(mk_comb(div_tm,x),y)
           and rtm = mk_comb(mk_comb(rem_tm,x),y) in
-          let vd = genvar(type_of dtm)
-          and vr = genvar(type_of rtm) in
+          (* vd and vr do not occur in tm, so p captures and renames      *)
+          (* nothing, and they disappear in the beta-reductions.          *)
+          let n = genvar_index [tm] in
+          let vd = mk_genvar(n,type_of dtm)
+          and vr = mk_genvar(n + 1,type_of rtm) in
           let p = list_mk_abs([vd;vr],subst[vd,dtm; vr,rtm] tm) in
           let th0 = INST [p,p_tm; x,m_tm; y,n_tm] DIVREM_ELIM_THM_POS in
           let th1 =

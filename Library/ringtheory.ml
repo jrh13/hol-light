@@ -9915,7 +9915,7 @@ let RING_RULE =
         else mk_imp(list_mk_conj (map concl ths'),rand(concl th')) in
       let hvs = find_terms
        (fun t -> is_comb t && rator t = htm && is_var(rand t)) utm in
-      let gvs = map (genvar o type_of) hvs in
+      let gvs = genvars [utm] (map type_of hvs) in
       let vtm = subst (zip gvs hvs) utm in
       let arty = mk_type("ring",[aty]) in
       let atm =
