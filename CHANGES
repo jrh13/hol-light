@@ -8,231 +8,53 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Wed 25th Nov 2026       Multivariate/vectors.ml, Multivariate/determinants.ml,
-                        Multivariate/wlog.ml, Multivariate/flyspeck.ml
+Thu 26th Nov 2026       basics.ml, parser.ml, nums.ml, ind_types.ml, meson.ml,
+                        Multivariate/determinants.ml, passim
 
-Made NORM_ARITH and the "without loss of generality" machinery choose their
-new variables without genvar, numbered from the genvar_index of the terms
-and theorems they are combined with. Added EXISTS_GENVARS_RULE, which
-renames the existential variables of a conclusion to variables avoiding
-given terms and the theorem, and used it instead of EXISTS_GENVAR_RULE,
-which is kept, still based on genvar, only for compatibility. The results
-are unchanged.
+Eliminated the uses of genvar from the core system and from Library/ and
+Multivariate/, so that what HOL Light does no longer depends on genvar's
+global counter, i.e. on what was done before (genvar itself is still
+defined). New variables now come from the new functions genvars,
+genvar_index, genvar_index_goal and mk_genvar in basics.ml, which give
+variables _v1, _v2, ... numbered above every variable of that form, free or
+bound, in the terms or the goal they are given, so that the result depends
+only on the arguments; each use avoids what the code combines the new
+variable with. Definitions keep the user's names instead of invented ones,
+e.g. ONE_ONE = (\f. ...) instead of (\_1715. ...), new_specification names
+its tag variable "tag", and the internal constants and types of define_type
+are named after the user's constructors and types (ASCII = _ASCII instead
+of _20382, list_1_tree, CONS_1_tree, ...). The parser gives the bound
+variables of set comprehensions and of match and function the canonical
+names GEN%PVAR%d, MESON keeps its maps of variables local to each call, and
+EXISTS_GENVAR_RULE is replaced by EXISTS_GENVARS_RULE, which takes the terms
+whose variables the new ones must avoid. The theorems are unchanged apart
+from the names of GEN%PVAR% bound variables, and the definitions given to
+the kernel are now the same whatever was done before.
 
-Wed 25th Nov 2026       Library/analysis.ml, Library/isum.ml,
-                        Library/ringtheory.ml, Library/word_automata.ml,
-                        Library/words.ml
-
-Made SUBST, IMP_SUBST_TAC, INT_OF_REAL_THM, RING_RULE, the abbreviation
-tactics of the word automation and CHARACTERIZE_INT_MIN_TAC choose their
-new variables without genvar, as variables numbered from the genvar_index
-of the terms (or goal) they are combined with. The results are unchanged.
-
-Wed 25th Nov 2026       int.ml, UnitTests/basic_tests.ml
-
-Made INT_RING, INTEGER_TAC, ARITH_RULE and INT_ARITH choose their new
-variables without genvar: INT_RING uses a fixed boolean variable for the
-missing operations, and the others use variables numbered from the
-genvar_index of the formula or goal, which therefore occur in it neither
-free nor bound. The results are unchanged.
-
-Wed 25th Nov 2026       realarith.ml, UnitTests/basic_tests.ml
-
-Made the elimination of abs, max and min in GEN_REAL_ARITH abstract over a
-variable numbered from the genvar_index of the term instead of a genvar.
-The results are unchanged.
-
-Wed 25th Nov 2026       grobner.ml, UnitTests/basic_tests.ml
-
-Made NUM_SIMPLIFY_CONV abstract over variables numbered from the
-genvar_index of the term instead of genvars, and NUM_RING use a fixed
-boolean variable instead of genvars for the operations that the natural
-numbers lack. The results are unchanged.
-
-Wed 25th Nov 2026       firstorder.ml, thecops.ml
-
-Made leanCoP and nanoCoP choose their new variables without genvar: the
-clauses are specialized with Meson.SPEC_ASSUMS_TAC, the congruence axioms
-use the variables x, y, x0, y0, ... as in MESON, and a proof is translated
-back with a map local to the call, from the new Mapping.mk_hol_of_var,
-instead of the global store of Mapping.hol_of_var. Mapping.hol_of_term,
-hol_of_atom and hol_of_literal take that map as a new first argument. The
-theorems proved are unchanged.
-
-Wed 25th Nov 2026       metis.ml
-
-Made METIS specialize its clauses with Meson.SPEC_ASSUMS_TAC instead of
-with genvars. The theorems proved are unchanged.
-
-Wed 25th Nov 2026       meson.ml, UnitTests/basic_tests.ml
-
-Made MESON choose its new variables without genvar, so that what it does
-no longer depends on the global counter: the clauses are specialized by
-the new tactic Meson.SPEC_ASSUMS_TAC with variables numbered from the
-genvar_index_goal of the goal, a variable left uninstantiated by a proof
-is translated back to a variable numbered from the genvar_index of the
-clauses, by a map local to the call that replaces a global store, Brand's
-transformation numbers its variables in the same way, and the congruence
-axioms use the variables x, y, x0, y0, ..., like the variables x, y and z
-of the equivalence axioms. Meson.hol_of_term, hol_of_atom and
-hol_of_literal take the variable map as a new first argument. The theorems
-proved are unchanged.
-
-Wed 25th Nov 2026       itab.ml, UnitTests/basic_tests.ml
-
-Made ITAUT_TAC and UNIFY_REFL_TAC choose their new variables without
-genvar. ITAUT_TAC numbers its metavariables from the genvar_index_goal of
-its goal, with a counter local to the call, and since it solves the goal
-completely and only instantiates metavariables of its own, it no longer
-returns them or their instantiation. The theorems proved are unchanged.
-
-Wed 25th Nov 2026       parser.ml, UnitTests/basic_tests.ml
-
-Made the bound variables that the parser makes for set comprehensions and
-for the clauses of match and function, named GEN%PVAR%n, get canonical
-names instead of numbers from a global counter: after the parsing of a
-quotation, each is renamed GEN%PVAR%d, where d is the number of such
-variables bound around it. So the names depend only on the nesting of the
-constructs, not on what was parsed before, and alpha-equivalent set
-comprehensions get the same names wherever they were parsed. Only these
-bound names change: the theorems are alpha-equivalent to the old ones.
-
-Wed 25th Nov 2026       ind_types.ml
-
-Derived the names of the internal constants and types that define_type
-defines from the names of the definition, instead of making them with
-genvar: the pseudo-constructor for a constructor C is now _C, the
-auxiliary type for a nested type such as (tree)list is list_1_tree, where 1
-is the level of nesting, with constructors NIL_1_tree and CONS_1_tree
-(prod_1_tree_num for the constructor "," of a type tree # num), and the
-constructor defined from a constructor _C is _C'. Primes are added where
-necessary to avoid the existing types and constants and the names of the
-definition. The theorems returned are unchanged.
-
-Wed 25th Nov 2026       ind_defs.ml
+Thu 26th Nov 2026       ind_defs.ml
 
 Made the inductive definitions package regroup the clauses of mutually
 inductive relations directly when they are already grouped by relation, as
 for the types of define_type, instead of proving the regrouping by AC
-normalization, whose cost depends on how the clauses happen to be ordered
-by the term ordering, and so on the names of the constructors. The theorems
-are unchanged, and define_type is faster for types with mutual or nested
-recursion.
+normalization, whose cost depended on how the clauses happened to be
+ordered by the term ordering, and so on the names of the constructors. The
+theorems are unchanged; for example two mutually recursive types with 80
+constructors each are now defined in 0.96 seconds instead of 1.81.
 
-Wed 25th Nov 2026       ind_types.ml
+Thu 26th Nov 2026       meson.ml
 
-Made the internals of define_type and of the proofs of injectivity and
-distinctness use genvars and genvar_index instead of genvar. The arbitrary
-closed values used for the clause functions of the other types in a nested
-definition, which appear in the underlying definitions of its
-constructors, are now @v. T instead of @_123. T. The theorems returned are
-unchanged.
-
-Wed 25th Nov 2026       define.ml
-
-Removed the uses of genvar from define.ml, replacing them by genvars and
-genvar_index. The results are unchanged.
-
-Wed 25th Nov 2026       wf.ml
-
-Made WF_INDUCT_TAC use a variable numbered apart from the goal with
-genvar_index instead of a genvar. The results are unchanged.
-
-Wed 25th Nov 2026       recursion.ml
-
-Made prove_recursive_functions_exist use genvars instead of genvar for the
-function with reordered arguments that it uses when the recursion argument
-of a function is not the first. The results are unchanged.
-
-Wed 25th Nov 2026       nums.ml
-
-Made new_specification call the tag argument of the underlying definition
-"tag" (or a variant) instead of using a genvar, so that for example PRE is
-now defined as (@PRE. !tag. PRE tag 0 = 0 /\ ...) (80,82,69) instead of
-(@PRE. !_2151. PRE _2151 0 = 0 /\ ...) (80,82,69), whatever was done
-before. The theorems returned are unchanged.
-
-Wed 25th Nov 2026       pair.ml, UnitTests/basic_tests.ml
-
-Made GEN_BETA_CONV use genvars instead of genvar, and use the bound
-variable of the generalized abstraction again in the left-hand side of its
-result, which is now the term given instead of an alpha-equivalent one.
-
-Wed 25th Nov 2026       pair.ml, UnitTests/basic_tests.ml
-
-Made the version of new_definition that handles tuples as arguments keep
-the user's variables for the arguments that are variables, so that the
-underlying definitions have the user's names, for example
-ONE_ONE = (\f. !x1 x2. f x1 = f x2 ==> x1 = x2) instead of
-ONE_ONE = (\_2064. !x1 x2. _2064 x1 = _2064 x2 ==> x1 = x2). A tuple is
-replaced by a variable p (or p0, p1, ...), named apart from the variables
-of the definition, as in UNCURRY = (\f p. f (FST p) (SND p)). The theorems
-returned are unchanged.
-
-Wed 25th Nov 2026       impconv.ml
-
-Removed the uses of genvar from impconv.ml, in the term nets and in the
-abstraction case of DEEP_IMP_REWR_MCONV, which now behave as nets.ml and
-ABS_CONV do. The results are unchanged.
-
-Wed 25th Nov 2026       canon.ml
-
-Made SELECT_ELIM_TAC and LAMBDA_ELIM_CONV number the function variable they
-introduce apart from the variables of the term with genvar_index instead of
-using a genvar, so that this bound variable of the new goal or of the
-result is named, say, _v1 whatever was done before.
-
-Wed 25th Nov 2026       ind_defs.ml
-
-Made derive_strong_induction use genvars instead of genvar. The results
-are unchanged.
-
-Wed 25th Nov 2026       simp.ml, UnitTests/basic_tests.ml
-
-Removed the uses of genvar from the simplifier: satisfy_prover renames the
-variables of an existential goal apart from the goal and the facts, and the
-depth conversions rename the bound variable of an abstraction apart from
-the body and the hypotheses at hand, as ABS_CONV does, when ABS fails. The
-results are unchanged.
-
-Wed 25th Nov 2026       drule.ml
-
-Removed the uses of genvar from term_match, PART_MATCH's higher-order
-matching and HIGHER_REWRITE_CONV, which now also does its two
-instantiations as a single simultaneous one, since a term may now have
-variables named like those of its theorems. The results are unchanged.
-
-Wed 25th Nov 2026       equal.ml
-
-Made ABS_CONV and SUBS_CONV use genvars instead of genvar. When ABS fails
-because the bound variable is free in a hypothesis of the result for the
-body, ABS_CONV renames it apart from the body and those hypotheses, and
-once more apart from the hypotheses of the new result if necessary. The
-results are unchanged.
-
-Wed 25th Nov 2026       nets.ml
-
-Made enter rename a bound variable that is also a local constant to a
-variant apart from the local constants instead of a genvar. The nets built
-are unchanged.
-
-Wed 25th Nov 2026       basics.ml
-
-Made subst choose its intermediate variables with genvars instead of genvar
-and variants. The results are unchanged.
-
-Wed 25th Nov 2026       basics.ml, UnitTests/basic_tests.ml, Help/genvars.hlp [new file], Help/genvar_index.hlp [new file], Help/genvar_index_goal.hlp [new file], Help/mk_genvar.hlp [new file], Help/genvar.hlp
-
-Added the functions genvars, genvar_index, genvar_index_goal and mk_genvar,
-repeatable alternatives to genvar whose results depend only on their
-arguments. "genvars tms tys" gives a variable for each type in tys, named
-"_v" followed by a number, a form of name that genvar never gives, with the
-numbers n, n + 1, ... where n = genvar_index tms is the least number n >= 1
-such that no variable named in that way with a number >= n occurs, free or
-bound, in the terms tms. genvar_index_goal gives the index for all the
-terms of a goal, and mk_genvar(n,ty) is the variable numbered n. They are
-meant to replace genvar, whose global counter makes the names of the
-variables it makes depend on everything done before.
+Incorporated Juneyoung Lee's speedups of MESON (pull request #216), with
+the search and its results unchanged (the same inference counts and the
+same theorems). Monomorphic comparisons replace polymorphic ones in the
+inner loops (lookups of instantiations, unification, the continuation
+cache and the ancestor checks), and equality of instantiations first
+checks physical equality, since they share long tails. The input clauses
+are kept in an array indexed by predicate code, and the clauses within the
+size bound are taken as a prefix of the already sorted list. Duplicate
+clauses are removed by hashing, folded per theorem, instead of by a
+quadratic number of comparisons, and the variable and constant stores use
+hash tables. On 5554 goals recorded from MESON calls in the libraries, the
+time in PURE_MESON_TAC goes from 37.8 to 28.5 seconds.
 
 Sun 22nd Nov 2026       Library/words.ml
 
