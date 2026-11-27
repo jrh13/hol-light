@@ -4789,10 +4789,10 @@ let GEOM_TRANSLATE_TAC avoid (asl,w) =
 (* ------------------------------------------------------------------------- *)
 (* Rename existential variables in conclusion to new variables (genvars of  *)
 (* the terms tms and the theorem, hypotheses included), so they occur in    *)
-(* neither. EXISTS_GENVAR_RULE, using genvar, is kept for compatibility.    *)
+(* neither.                                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let EXISTS_GENVARS_RULE,EXISTS_GENVAR_RULE =
+let EXISTS_GENVARS_RULE =
   let rec rule vs th =
     match vs with
       [] -> th
@@ -4800,10 +4800,9 @@ let EXISTS_GENVARS_RULE,EXISTS_GENVAR_RULE =
                 let th1 = rule ovs (ASSUME bod) in
                 let th2 = SIMPLE_CHOOSE x (SIMPLE_EXISTS x th1) in
                 PROVE_HYP th (CONV_RULE (GEN_ALPHA_CONV v) th2) in
-  (fun tms th ->
-     let tys = map type_of (fst(strip_exists(concl th))) in
-     rule (genvars (concl th::hyp th @ tms) tys) th),
-  (fun th -> rule (map (genvar o type_of) (fst(strip_exists(concl th)))) th);;
+  fun tms th ->
+    let tys = map type_of (fst(strip_exists(concl th))) in
+    rule (genvars (concl th::hyp th @ tms) tys) th;;
 
 (* ------------------------------------------------------------------------- *)
 (* Rotate so that WLOG some point is a +ve multiple of basis vector k.       *)
